@@ -70,12 +70,52 @@ function extractInner(svg: string): ParsedSvg {
     return { viewBox, innerJsx };
 }
 
+/** 检测 SVG 内容里所有本地 `id="xxx"` 声明（`<mask>`/`<linearGradient>`/
+ *  `<clipPath>` 等常用来定义局部引用目标），返回去重后的 id 列表。svgo 生成的
+ *  id 是固定字符串（如 `mask id="a"`），同一图标组件在同一页面渲染多个实例时
+ *  会产生重复 id，违反 HTML "id 全文档唯一" 约束，`url(#id)` 引用行为在有多个
+ *  同 id 元素时并不总是可预测。 */
+function extractLocalIds(innerJsx: string): string[] {
+    const ids = new Set<string>();
+    for (const match of innerJsx.matchAll(/\bid="([^"]+)"/g)) {
+        ids.add(match[1]!);
+    }
+    return [...ids];
+}
+
+/** 把 innerJsx 里每个本地 id 的声明处（`id="x"`）和引用处（`url(#x)`）都替换成
+ *  基于组件内 `uid` 变量的模板字符串插值，避免多实例渲染时 id 冲突。 */
+function makeIdsUnique(innerJsx: string, ids: string[]): string {
+    let result = innerJsx;
+    for (const id of ids) {
+        const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        result = result
+            .replace(new RegExp(`id="${escaped}"`, 'g'), `id={\`\${uid}-${id}\`}`)
+            .replace(new RegExp(`url\\(#${escaped}\\)`, 'g'), `url(#\${uid}-${id})`);
+        // 上面第二步会把 `url(#x)` 出现在普通字符串属性值里的场景（如
+        // `mask="url(#x)"`）错误保留为字面量——统一改成模板字符串属性写法。
+        result = result.replace(
+            new RegExp(`="url\\(#\\\${uid}-${id}\\)"`, 'g'),
+            `={\`url(#\${uid}-${id})\`}`,
+        );
+    }
+    return result;
+}
+
 function generateComponent(componentName: string, parsed: ParsedSvg): string {
-    return `/**
+    const localIds = extractLocalIds(parsed.innerJsx);
+    const innerJsx = localIds.length > 0 ? makeIdsUnique(parsed.innerJsx, localIds) : parsed.innerJsx;
+    const uidSetup = localIds.length > 0
+        ? `\n    const uid = \`lotus-${componentName.toLowerCase()}-\${uidCounter++}\`;`
+        : '';
+    const uidCounterDecl = localIds.length > 0
+        ? `/** 模块级自增计数器，为每次渲染生成唯一的本地 id 后缀（见 extractLocalIds/makeIdsUnique）。 */\nlet uidCounter = 0;\n\n`
+        : '';
+    return `${uidCounterDecl}/**
  * 图标资源移植自 Semi Design（MIT License），viewBox/path 数据保留，
  * 组件名与文件按 @lotus/icons 命名规范重写。详见 .claude/skills/semi-porting/SKILL.md。
  */
-export function ${componentName}(props: { class?: string; style?: Record<string, any> }) {
+export function ${componentName}(props: { class?: string; style?: Record<string, any> }) {${uidSetup}
     return <svg
         viewBox="${parsed.viewBox}"
         fill="none"
@@ -86,7 +126,7 @@ export function ${componentName}(props: { class?: string; style?: Record<string,
         aria-hidden={true}
         xmlns="http://www.w3.org/2000/svg"
     >
-        ${parsed.innerJsx}
+        ${innerJsx}
     </svg>;
 }
 `;

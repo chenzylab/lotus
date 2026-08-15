@@ -1,7 +1,7 @@
 import { track } from 'ripple';
 import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
-import { IconTag as IconTagLab, IconTable } from '@lotus/icons-lab';
+import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
 
 const tagColors: TagColor[] = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'grey', 'white'];
@@ -609,6 +609,12 @@ export function App() @{
             <IconTagLab />
             <IconTable />
             <IconLotusLogo style={{ color: 'var(--lotus-color-primary)' }} />
+        </Space>
+        {/* mask id 唯一化验证：同一页面渲染多个 IconAvatar 实例，确认每个 mask 互不干扰。 */}
+        <Space style={{ marginTop: '12px', fontSize: '48px' }}>
+            <IconAvatarLab />
+            <IconAvatarLab />
+            <IconAvatarLab />
         </Space>
     </div>
 }

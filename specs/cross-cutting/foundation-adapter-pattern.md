@@ -953,6 +953,43 @@ ESLint。ESLint 处理行内指令注释（`eslint-disable(-next-line)`）依赖
 不是 tsrx 语言设计的必然限制，未来该 parser 修复后可以把 `eslint.config.js`
 里的按文件禁用改回行内注释，颗粒度更细。
 
+## 踩坑 #29：图标生成脚本硬编码 SVG `<mask>`/`<clipPath>` 的局部 id，
+同一图标组件多实例渲染会产生重复 id
+
+**现象**：全量走查图标系统时注意到 `packages/icons-lab/src/IconAvatar.tsrx`
+用 `<mask id="a">` 定义人像剪影的镂空效果，`id="a"` 是 svgo 处理源文件时保留
+的固定字符串（Semi 官方源文件里其实是构建工具生成的随机串，如
+`mask0_1_3014`，移植时被简化成了 `"a"`）。这意味着同一个页面渲染两个及以上
+`<IconAvatar />` 实例时，DOM 里会出现多个 `id="a"` 的 `<mask>` 元素，违反
+HTML "id 全文档唯一" 的约束；`<g mask="url(#a)">` 在有多个同 id 元素时到底
+引用哪一个，不同浏览器实现的行为并不保证一致，是潜在隐患（当时评估这个
+具体场景在现有 demo 里不会触发——没有任何 demo 同时渲染多个 IconAvatar
+实例——所以先记录风险、没有立即修复）。后续排查发现 `packages/icons-lab/
+svgs/` 下还有 7 个其他图标（`date_picker`/`form`/`navigation`/
+`notification`/`rating`/`select`/`toast`）也用了同样的硬编码 id 模式定义
+`<clipPath>`，是同一类问题的更大范围版本，不是 `IconAvatar` 一个特例。
+
+**修复**：没有针对 `IconAvatar.tsrx` 单独手改（手改会在下次 `pnpm generate`
+重新生成时被覆盖，且不能覆盖到另外 7 个同类文件），改在
+`packages/icons-lab/scripts/generate-icons.ts` 的生成逻辑里加通用处理：
+`extractLocalIds()` 用正则扫描 `innerJsx` 里所有 `id="xxx"` 声明，
+`makeIdsUnique()` 把每个声明处和对应的 `url(#xxx)` 引用都替换成基于组件
+内 `uid` 模板字符串变量的插值写法；`generateComponent()` 检测到某个图标
+含本地 id 时，自动在函数体开头插入 `const uid = \`lotus-${componentName.
+toLowerCase()}-${uidCounter++}\`;`（`uidCounter` 是模块级自增计数器，每次
+调用组件函数生成一个新的唯一后缀）。不含 id 的图标（占绝大多数）生成逻辑
+不变。重新跑 `pnpm generate` 后 8 个受影响文件全部正确改写，真机验证（同一
+页面并排渲染 3 个 `<IconAvatar />`）确认 3 个 mask id 互不相同
+（`lotus-iconavatar-0-a`/`1-a`/`2-a`），人像剪影渲染正常。
+
+**结论性规则**：图标搬运/生成脚本对 SVG 源文件的处理，除了颜色语义（见
+踩坑 #27）之外，还要检查源文件是否用了 `id` 属性定义局部引用目标
+（`<mask>`/`<clipPath>`/`<linearGradient>`/`<radialGradient>` 等都常见这个
+模式）——构建工具生成的原始 id 通常是随机串保证跨文件唯一，人工/脚本简化
+成固定字符串后，唯一性保证被破坏，只有在同一组件多实例渲染的测试场景下
+才会暴露。批量生成脚本应该把"id 唯一化"作为通用后处理步骤而非针对个别
+文件手工修复，避免同一类问题在不同图标文件里重复出现却分别踩坑。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
