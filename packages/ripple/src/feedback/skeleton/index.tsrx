@@ -286,7 +286,7 @@ export function SkeletonParagraph({ rows = 4, style, class: className }: Skeleto
 
     <>
         <div class={classes} style={style}>
-            @for (const i of rowIndexes; index idx; key idx) {
+            @for (const i of rowIndexes; key i) {
                 <div class={['lotus-skeleton-element', 'lotus-skeleton-paragraph-row', i === rows - 1 && rows > 1 ? 'lotus-skeleton-paragraph-row-last' : ''].filter(Boolean).join(' ')} />
             }
         </div>
