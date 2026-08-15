@@ -1,0 +1,5 @@
+{
+  "plugins": ["@tsrx/prettier-plugin"],
+  "singleQuote": true,
+  "printWidth": 100
+}

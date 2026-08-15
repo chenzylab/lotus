@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "jsxImportSource": "ripple",
+    "plugins": [{ "name": "@tsrx/typescript-plugin" }]
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@lotus/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:tokens": "node --experimental-strip-types scripts/generate-global-tokens.ts",
+    "predev": "pnpm generate:tokens",
+    "prebuild": "pnpm generate:tokens",
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "ripple-preview",
+    "typecheck": "tsrx-tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lotus/ripple": "workspace:*",
+    "@lotus/icons": "workspace:*",
+    "@lotus/icons-lab": "workspace:*",
+    "@lotus/tokens": "workspace:*",
+    "ripple": "catalog:",
+    "@ripple-ts/adapter-node": "catalog:",
+    "marked": "catalog:",
+    "shiki": "catalog:"
+  },
+  "devDependencies": {
+    "@ripple-ts/vite-plugin": "catalog:",
+    "vite": "catalog:",
+    "typescript": "npm:typescript@5.9.3",
+    "@tsrx/typescript-plugin": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "26.2.0"
+  }
+}

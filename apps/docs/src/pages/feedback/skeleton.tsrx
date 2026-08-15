@@ -1,0 +1,57 @@
+import { Fragment } from 'ripple';
+import { DocsLayout } from '../../components/docs-layout.tsrx';
+import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
+import { BasicSkeletonDemo } from '../../demos/feedback/skeleton/basic.tsrx';
+import { CombineImageTitleSkeletonDemo } from '../../demos/feedback/skeleton/combine-image-title.tsrx';
+import { CombineDescriptionsSkeletonDemo } from '../../demos/feedback/skeleton/combine-descriptions.tsrx';
+import { CombineAvatarTitleSkeletonDemo } from '../../demos/feedback/skeleton/combine-avatar-title.tsrx';
+import { CombineCenteredSkeletonDemo } from '../../demos/feedback/skeleton/combine-centered.tsrx';
+import { CombineAvatarTitleParagraphSkeletonDemo } from '../../demos/feedback/skeleton/combine-avatar-title-paragraph.tsrx';
+import { CombineTableSkeletonDemo } from '../../demos/feedback/skeleton/combine-table.tsrx';
+import { ActiveSkeletonDemo } from '../../demos/feedback/skeleton/active.tsrx';
+
+module server {
+    import { getDoc } from '../../lib/markdown';
+    export function loadDoc() {
+        return getDoc('feedback/skeleton');
+    }
+}
+
+import { loadDoc } from server;
+
+/** demo 引用路径（markdown.ts extractDemoRefs 产出的 relativePath）→ 真实 demo 组件的静态映射。 */
+const DEMO_COMPONENTS: Record<string, any> = {
+    '../../src/demos/feedback/skeleton/basic.tsrx': BasicSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-image-title.tsrx': CombineImageTitleSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-descriptions.tsrx': CombineDescriptionsSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-avatar-title.tsrx': CombineAvatarTitleSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-centered.tsrx': CombineCenteredSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-avatar-title-paragraph.tsrx': CombineAvatarTitleParagraphSkeletonDemo,
+    '../../src/demos/feedback/skeleton/combine-table.tsrx': CombineTableSkeletonDemo,
+    '../../src/demos/feedback/skeleton/active.tsrx': ActiveSkeletonDemo,
+};
+
+export function SkeletonDocPage() @{
+    const doc = loadDoc();
+
+    <DocsLayout
+        category={doc.frontmatter.category}
+        title={doc.title}
+        toc={doc.toc}
+        currentPath="/feedback/skeleton"
+    >
+        @for (const fragment of doc.fragments; index i) {
+            @if (fragment.type === 'html') {
+                <Fragment innerHTML={fragment.html} />
+            } @else {
+                <DocDemoCard highlightedSource={fragment.highlightedSource}>
+                    <{DEMO_COMPONENTS[fragment.demo.relativePath] ?? MissingDemo} />
+                </DocDemoCard>
+            }
+        }
+    </DocsLayout>
+}
+
+function MissingDemo() {
+    return <p>Demo 未找到</p>;
+}

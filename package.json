@@ -1,0 +1,29 @@
+{
+  "name": "lotus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/* --filter=./apps/* build",
+    "dev": "pnpm --filter @lotus/playground dev",
+    "test": "pnpm -r --filter=./packages/* --filter=./apps/* test",
+    "test:e2e": "playwright test",
+    "typecheck": "pnpm -r --filter=./packages/* --filter=./apps/* typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "vitest": "catalog:",
+    "@playwright/test": "catalog:",
+    "eslint": "catalog:",
+    "@tsrx/eslint-plugin": "catalog:",
+    "@tsrx/eslint-parser": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "prettier": "catalog:",
+    "@tsrx/prettier-plugin": "catalog:",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
+  }
+}

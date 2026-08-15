@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "jsxImportSource": "ripple",
+    "types": ["vite/client"],
+    "plugins": [{ "name": "@tsrx/typescript-plugin" }]
+  },
+  "include": ["src", "vite.config.ts"]
+}

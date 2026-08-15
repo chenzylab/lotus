@@ -1,0 +1,43 @@
+{
+  "name": "@lotus/foundation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./base/*": {
+      "types": "./dist/base/*.d.ts",
+      "import": "./dist/base/*.js"
+    },
+    "./basic/*": {
+      "types": "./dist/basic/*/foundation.d.ts",
+      "import": "./dist/basic/*/foundation.js"
+    },
+    "./input/*": {
+      "types": "./dist/input/*/foundation.d.ts",
+      "import": "./dist/input/*/foundation.js"
+    },
+    "./navigation/*": {
+      "types": "./dist/navigation/*/foundation.d.ts",
+      "import": "./dist/navigation/*/foundation.js"
+    },
+    "./show/*": {
+      "types": "./dist/show/*/foundation.d.ts",
+      "import": "./dist/show/*/foundation.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
