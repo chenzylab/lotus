@@ -909,6 +909,50 @@ generate-icons.ts` 新增 `MULTI_COLOR_ASSETS` 常量登记这 16 个文件名�
 定义，只查其中一个会有遗漏。已修复：`ai_loading.svg` 追加进
 `MULTI_COLOR_ASSETS` 白名单，重新生成后渐变恢复正常。
 
+## 踩坑 #28：`.tsrx` 文件里的 `eslint-disable-next-line` 行内指令注释完全不生效
+
+**现象**：CI 跑 `pnpm lint` 暴露 12 处 `ripple/prefer-oninput` warning——都是
+`Input`/`TextArea`/`Switch`/`Tabs` 组件自己定义的公开 `onChange` prop（对齐
+Semi Design 官方同名 prop 语义），不是原生 DOM 元素上误写的合成事件，属于这条
+规则的误判场景（规则实现纯字符串匹配 `JSXAttribute[name.name="onChange"]`，
+不区分挂在原生元素还是自定义组件上）。给触发行加了标准写法的
+`// eslint-disable-next-line ripple/prefer-oninput -- ...`（或 JSX 场景下的
+`{/* eslint-disable-next-line ... */}`），重新跑 `pnpm lint`，警告数量一个没
+变——注释形式在标准 `.ts`/`.tsx` 文件里完全正确，但在 `.tsrx` 文件里没有任何
+效果。
+
+**根因**：用 Node 直接调用 `@tsrx/eslint-parser`（版本 `0.3.119`）的
+`parseForESLint(code, options)` API 对受影响文件做最小复现，`result.ast.
+comments` 返回的是空数组——parser 完全没有把源码里的注释提取出来交给
+ESLint。ESLint 处理行内指令注释（`eslint-disable(-next-line)`）依赖的正是
+`ast.comments`，注释数组为空，ESLint 自然读不到任何指令，行内禁用（不管
+`//` 还是 `{/* */}` 形式，也不管放在语句块级还是紧贴触发行）在 `.tsrx` 文件
+里全部沉默失效，不会报错也不会生效，非常容易被误判为"注释放错位置"而反复
+调整位置无效。整文件级别的 `/* eslint-disable ripple/xxx */` 同样无效，
+确认问题出在注释收集这一层，与放置位置、单行/块级写法无关。
+
+**修复**：放弃行内注释这条路径，改用 `eslint.config.js` 里按精确文件路径
+数组关闭规则：
+```js
+{
+  files: ['apps/docs/src/demos/input/input/basic.tsrx', /* ... 逐一列出核实过的文件 */],
+  rules: { 'ripple/prefer-oninput': 'off' },
+}
+```
+特意用文件路径清单而非宽泛的 glob（如 `apps/docs/src/demos/**`），因为宽泛
+匹配会连带关闭这条规则对同目录下其他文件里真实 DOM `onChange` 误用的检测
+能力——每个进入清单的文件都要先人工确认过"这里的 onChange 是组件 prop 不是
+原生 DOM 事件"，不能因为行内注释无效就图省事直接关掉大范围规则。
+
+**结论性规则**：在 `.tsrx` 文件里遇到"加了 eslint-disable 注释但警告没有
+消失"的情况，第一反应不是怀疑注释写法或位置（这是 `.ts`/`.tsx` 里最常见的
+误用原因，但在这里是错误假设），而是怀疑自定义 parser 是否正确实现了
+`comments` 收集——可以用上面的最小复现方法（`node` 直接 `import` parser 包
+调 `parseForESLint`，打印 `result.ast.comments.length`）快速验证，比反复
+调整注释位置试错快得多。这是 `@tsrx/eslint-parser` 这个特定版本的工具局限，
+不是 tsrx 语言设计的必然限制，未来该 parser 修复后可以把 `eslint.config.js`
+里的按文件禁用改回行内注释，颗粒度更细。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
