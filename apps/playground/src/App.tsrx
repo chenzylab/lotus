@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
@@ -31,6 +31,7 @@ export function App() @{
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
+    let &[inputNumberControlledValue] = track<number>(0);
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -756,6 +757,46 @@ export function App() @{
                 </>
             }
         />
+
+        <Divider>InputNumber：基本 / 步进 / 边界 / 禁用</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '200px' }}>
+                <InputNumber
+                    defaultValue={0}
+                    onChange={(v: number | undefined) => console.log('inputnumber changed', v)}
+                    aria-label="InputNumber 基本示例"
+                />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber min={1} max={10} defaultValue={1} aria-label="InputNumber 边界示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber step={5} defaultValue={0} aria-label="InputNumber 步进示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={5} disabled aria-label="InputNumber 禁用示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={5} showClear hideButtons aria-label="InputNumber 无步进器可清除示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={100} prefix="￥" suffix="元" aria-label="InputNumber 前后缀示例" />
+            </div>
+        </Space>
+
+        <Divider>InputNumber：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <div style={{ width: '200px' }}>
+                <InputNumber
+                    value={inputNumberControlledValue}
+                    onChange={(v: number | undefined) => { if (v !== undefined) inputNumberControlledValue = v; }}
+                    aria-label="InputNumber 受控示例"
+                />
+            </div>
+            <Button onClick={() => { inputNumberControlledValue = inputNumberControlledValue + 10; }}>加 10</Button>
+        </Space>
     </div>
 }
 

@@ -65,6 +65,11 @@ export {
     TextArea,
     type TextAreaProps,
 } from './input/text-area/index.tsrx';
+export {
+    InputNumber,
+    type InputNumberProps,
+    type InputNumberSize,
+} from './input/input-number/index.tsrx';
 export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
 export {
     Avatar,
