@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
@@ -29,6 +29,8 @@ export function App() @{
     let &[switchControlledChecked] = track<boolean>(false);
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
+    let &[radioControlledChecked] = track<boolean>(false);
+    let &[radioGroupControlledValue] = track<string | number>('A');
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -697,6 +699,60 @@ export function App() @{
                     <Checkbox value="A">A</Checkbox>
                     <Checkbox value="B">B</Checkbox>
                     <Checkbox value="C">C</Checkbox>
+                </>
+            }
+        />
+
+        <Divider>Radio：基本 / 辅助文本 / 禁用</Divider>
+
+        <Space vertical align="start">
+            <Radio name="radio-basic" onChange={(c: boolean) => console.log('radio changed', c)} aria-label="Radio 示例">Lotus Design</Radio>
+            <Radio name="radio-extra" extra="Lotus 是由社区共同设计开发并维护的组件库" aria-label="Radio 带辅助文本示例">带辅助文本</Radio>
+            <Radio name="radio-disabled-unchecked" defaultChecked={false} disabled aria-label="Radio 禁用未选中示例">禁用未选中</Radio>
+            <Radio name="radio-disabled-checked" defaultChecked disabled aria-label="Radio 禁用已选中示例">禁用已选中</Radio>
+        </Space>
+
+        <Divider>Radio：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <Radio
+                name="radio-controlled"
+                checked={radioControlledChecked}
+                onChange={(c: boolean) => { radioControlledChecked = c; }}
+                aria-label="Radio 受控示例"
+            >
+                受控 radio
+            </Radio>
+            <Button onClick={() => { radioControlledChecked = !radioControlledChecked; }}>切换 Radio</Button>
+        </Space>
+
+        <Divider>RadioGroup：数组方式 / 垂直</Divider>
+
+        <RadioGroup
+            direction="vertical"
+            options={[
+                { value: 'A', label: 'A' },
+                { value: 'B', label: 'B' },
+                { value: 'C', label: 'C', disabled: true },
+            ]}
+            defaultValue="A"
+            name="radio-group-array"
+            aria-label="RadioGroup 数组方式示例"
+        />
+
+        <Divider>RadioGroup：JSX 方式 / 水平 / 受控</Divider>
+
+        <RadioGroup
+            direction="horizontal"
+            value={radioGroupControlledValue}
+            onChange={(v: string | number) => { radioGroupControlledValue = v; }}
+            name="radio-group-jsx"
+            aria-label="RadioGroup JSX 方式示例"
+            children={
+                <>
+                    <Radio value="A">A</Radio>
+                    <Radio value="B">B</Radio>
+                    <Radio value="C">C</Radio>
                 </>
             }
         />

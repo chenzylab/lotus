@@ -15,7 +15,7 @@ test.describe('Checkbox', () => {
 
   test('disabled 状态下点击不改变选中态', async ({ page }) => {
     await page.goto('/');
-    const disabledUnchecked = page.getByLabel('禁用未选中示例');
+    const disabledUnchecked = page.getByLabel('禁用未选中示例', { exact: true });
     const clickTarget = disabledUnchecked.locator('xpath=..');
 
     await expect(disabledUnchecked).toBeDisabled();
@@ -26,7 +26,7 @@ test.describe('Checkbox', () => {
 
   test('indeterminate 状态下带对应 class', async ({ page }) => {
     await page.goto('/');
-    const indeterminate = page.getByLabel('indeterminate 示例');
+    const indeterminate = page.getByLabel('indeterminate 示例', { exact: true });
     const label = indeterminate.locator('xpath=..');
 
     await expect(label).toHaveClass(/lotus-checkbox-indeterminate/);
@@ -46,7 +46,7 @@ test.describe('Checkbox', () => {
 
   test('CheckboxGroup 数组方式：点击后选中集合正确更新', async ({ page }) => {
     await page.goto('/');
-    const group = page.getByLabel('CheckboxGroup 数组方式示例');
+    const group = page.getByLabel('CheckboxGroup 数组方式示例', { exact: true });
     const checkboxA = group.getByRole('checkbox').nth(0);
     const checkboxB = group.getByRole('checkbox').nth(1);
     const checkboxC = group.getByRole('checkbox').nth(2);
@@ -63,7 +63,7 @@ test.describe('Checkbox', () => {
 
   test('CheckboxGroup JSX 方式（受控）：点击后触发 onChange 且视觉同步更新', async ({ page }) => {
     await page.goto('/');
-    const group = page.getByLabel('CheckboxGroup JSX 方式示例');
+    const group = page.getByLabel('CheckboxGroup JSX 方式示例', { exact: true });
     const checkboxA = group.getByRole('checkbox').nth(0);
     const checkboxB = group.getByRole('checkbox').nth(1);
     const checkboxC = group.getByRole('checkbox').nth(2);
