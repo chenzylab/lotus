@@ -25,7 +25,7 @@ export interface DropdownProps {
  * Semi 的 `menu` prop（传 JSON Array 快速配置）不是核心能力，且与本次 Nav 综合 demo
  * 无关，未实现；如需数组配置菜单，先用 `.map()` 生成 DropdownItem 数组再传入 render。
  */
-export function Dropdown({
+export function Dropdown(&{
     children,
     render,
     position = 'bottom',

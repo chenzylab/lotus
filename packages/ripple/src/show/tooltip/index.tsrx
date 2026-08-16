@@ -37,7 +37,7 @@ export interface TooltipProps {
 
 let tooltipIdCounter = 0;
 
-export function Tooltip({
+export function Tooltip(&{
     children,
     content,
     position = 'top',

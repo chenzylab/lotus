@@ -38,7 +38,7 @@ export interface InputProps {
     onCompositionUpdate?: (event: CompositionEvent) => void;
 }
 
-export function Input({
+export function Input(&{
     value,
     defaultValue = '',
     disabled = false,

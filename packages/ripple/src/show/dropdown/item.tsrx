@@ -16,7 +16,7 @@ export interface DropdownItemProps {
     onContextMenu?: (event: MouseEvent) => void;
 }
 
-export function DropdownItem({
+export function DropdownItem(&{
     children,
     active = false,
     disabled = false,

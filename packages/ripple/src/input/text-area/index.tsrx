@@ -34,7 +34,7 @@ export interface TextAreaProps {
     onResize?: (size: { height: number }) => void;
 }
 
-export function TextArea({
+export function TextArea(&{
     value,
     defaultValue = '',
     disabled = false,

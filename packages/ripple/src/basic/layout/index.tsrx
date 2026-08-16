@@ -17,7 +17,7 @@ export interface LayoutProps {
     role?: string;
 }
 
-export function Layout({ children, hasSider = false, style, class: className, 'aria-label': ariaLabel, role }: LayoutProps) @{
+export function Layout(&{ children, hasSider = false, style, class: className, 'aria-label': ariaLabel, role }: LayoutProps) @{
     const classes = ['lotus-layout', hasSider ? 'lotus-layout-has-sider' : '', className ?? ''].filter(Boolean).join(' ');
 
     <>
@@ -49,7 +49,7 @@ export interface LayoutSectionProps {
     role?: string;
 }
 
-export function Header({ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
+export function Header(&{ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
     const classes = ['lotus-layout-header', className ?? ''].filter(Boolean).join(' ');
     <>
         <header class={classes} style={style} aria-label={ariaLabel} role={role}>{children}</header>
@@ -62,7 +62,7 @@ export function Header({ children, style, class: className, 'aria-label': ariaLa
     </>
 }
 
-export function Footer({ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
+export function Footer(&{ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
     const classes = ['lotus-layout-footer', className ?? ''].filter(Boolean).join(' ');
     <>
         <footer class={classes} style={style} aria-label={ariaLabel} role={role}>{children}</footer>
@@ -75,7 +75,7 @@ export function Footer({ children, style, class: className, 'aria-label': ariaLa
     </>
 }
 
-export function Content({ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
+export function Content(&{ children, style, class: className, 'aria-label': ariaLabel, role }: LayoutSectionProps) @{
     const classes = ['lotus-layout-content', className ?? ''].filter(Boolean).join(' ');
     <>
         <main class={classes} style={style} aria-label={ariaLabel} role={role}>{children}</main>
@@ -101,7 +101,7 @@ export interface SiderProps {
     role?: string;
 }
 
-export function Sider({ children, breakpoint, onBreakpoint, style, class: className, 'aria-label': ariaLabel, role }: SiderProps) @{
+export function Sider(&{ children, breakpoint, onBreakpoint, style, class: className, 'aria-label': ariaLabel, role }: SiderProps) @{
     // 只在挂载时注册一次断点订阅、卸载时清理，不依赖任何响应式 state（同 Grid Row 的
     // untrack 范式，详见 specs/cross-cutting/foundation-adapter-pattern.md 踩坑记录）。
     effect(() => {

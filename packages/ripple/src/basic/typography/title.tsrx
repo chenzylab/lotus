@@ -12,7 +12,7 @@ export interface TypographyTitleProps extends TypographySharedProps {
     'aria-label'?: string;
 }
 
-export function TypographyTitle({
+export function TypographyTitle(&{
     children,
     heading = 1,
     type = 'primary',

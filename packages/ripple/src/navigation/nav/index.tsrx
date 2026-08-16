@@ -96,7 +96,7 @@ export interface NavProps {
  * /运行时报错）。这两个坑都是真机 console.log 逐层排查实测确认，已记录进
  * specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #16、#17。
  */
-function NavItemTree({ items, level, isInSubNav, renderItem, renderWrapper }: {
+function NavItemTree(&{ items, level, isInSubNav, renderItem, renderWrapper }: {
     items: NormalizedNavItem[];
     level: number;
     isInSubNav: boolean;
@@ -180,7 +180,7 @@ function NavItemTree({ items, level, isInSubNav, renderItem, renderWrapper }: {
     </>
 }
 
-export function Nav({
+export function Nav(&{
     items = [],
     children,
     mode = 'vertical',

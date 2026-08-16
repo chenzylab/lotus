@@ -64,7 +64,7 @@ export function weightStyle(weight?: TypographyWeight): Record<string, any> {
 
 /** 可复制按钮：封装状态机（copied 短暂高亮）+ 剪贴板写入，三个子组件共享同一份实现。
  * `nodeRef` 可选——挂载 JS 精确截断（`measureEllipsisText`）时需要拿到按钮节点一并计入可用宽高。 */
-export function CopyableAction({ config, textContent, nodeRef }: { config: TypographyCopyableConfig; textContent: string; nodeRef?: (node: HTMLElement) => void }) @{
+export function CopyableAction(&{ config, textContent, nodeRef }: { config: TypographyCopyableConfig; textContent: string; nodeRef?: (node: HTMLElement) => void }) @{
     let &[state] = track<CopyableState>({ copied: false });
     const foundation = new CopyableFoundation({
         getState: () => state,

@@ -26,7 +26,7 @@ export interface PopoverProps {
 
 let popoverIdCounter = 0;
 
-export function Popover({
+export function Popover(&{
     children,
     content,
     position = 'bottom',

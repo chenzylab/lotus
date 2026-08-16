@@ -37,7 +37,7 @@ function panesFromTabList(tabList: TabItem[]): TabItemMeta[] {
     return tabList.map(({ itemKey, tab, disabled, closable, icon }) => ({ itemKey, tab, disabled, closable, icon }));
 }
 
-export function Tabs({
+export function Tabs(&{
     tabList,
     activeKey: activeKeyProp,
     defaultActiveKey,

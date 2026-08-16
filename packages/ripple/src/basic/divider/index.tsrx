@@ -8,7 +8,7 @@ export interface DividerProps {
     class?: string;
 }
 
-export function Divider({
+export function Divider(&{
     children,
     layout = 'horizontal',
     align = 'center',

@@ -12,7 +12,7 @@ export interface SkeletonProps {
     class?: string;
 }
 
-export function Skeleton({
+export function Skeleton(&{
     children,
     active = false,
     loading = true,
@@ -45,7 +45,7 @@ export interface SkeletonAvatarProps {
     class?: string;
 }
 
-export function SkeletonAvatar({ size = 'medium', shape = 'circle', style, class: className }: SkeletonAvatarProps) @{
+export function SkeletonAvatar(&{ size = 'medium', shape = 'circle', style, class: className }: SkeletonAvatarProps) @{
     const classes = [
         'lotus-skeleton-element',
         'lotus-skeleton-avatar',
@@ -133,7 +133,7 @@ export interface SkeletonImageProps {
     class?: string;
 }
 
-export function SkeletonImage({ style, class: className }: SkeletonImageProps) @{
+export function SkeletonImage(&{ style, class: className }: SkeletonImageProps) @{
     const classes = ['lotus-skeleton-element', 'lotus-skeleton-image', className ?? ''].filter(Boolean).join(' ');
 
     <>
@@ -187,7 +187,7 @@ export interface SkeletonTitleProps {
     class?: string;
 }
 
-export function SkeletonTitle({ style, class: className }: SkeletonTitleProps) @{
+export function SkeletonTitle(&{ style, class: className }: SkeletonTitleProps) @{
     const classes = ['lotus-skeleton-element', 'lotus-skeleton-title', className ?? ''].filter(Boolean).join(' ');
 
     <>
@@ -233,7 +233,7 @@ export interface SkeletonButtonProps {
     class?: string;
 }
 
-export function SkeletonButton({ style, class: className }: SkeletonButtonProps) @{
+export function SkeletonButton(&{ style, class: className }: SkeletonButtonProps) @{
     const classes = ['lotus-skeleton-element', 'lotus-skeleton-button', className ?? ''].filter(Boolean).join(' ');
 
     <>
@@ -280,7 +280,7 @@ export interface SkeletonParagraphProps {
     class?: string;
 }
 
-export function SkeletonParagraph({ rows = 4, style, class: className }: SkeletonParagraphProps) @{
+export function SkeletonParagraph(&{ rows = 4, style, class: className }: SkeletonParagraphProps) @{
     const classes = ['lotus-skeleton-paragraph', className ?? ''].filter(Boolean).join(' ');
     const rowIndexes = Array.from({ length: rows }, (_, i) => i);
 

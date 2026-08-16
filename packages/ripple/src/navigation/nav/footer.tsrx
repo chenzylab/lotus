@@ -26,7 +26,7 @@ export interface NavFooterProps {
  * 正常，两侧行为不一致直接暴露了这个 client/server 编译路径不对称的 bug。详见
  * specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #20。
  */
-function DefaultCollapseButton({ isCollapsed, collapseText, onToggle }: { isCollapsed: boolean; collapseText?: (collapsed: boolean) => any; onToggle: () => void }) @{
+function DefaultCollapseButton(&{ isCollapsed, collapseText, onToggle }: { isCollapsed: boolean; collapseText?: (collapsed: boolean) => any; onToggle: () => void }) @{
     const hasCollapseText = typeof collapseText === 'function';
     <button type="button" class="lotus-nav-footer-collapse-btn" aria-label={isCollapsed ? '展开导航' : '收起导航'} onClick={onToggle}>
         <IconSidebar />
@@ -36,7 +36,7 @@ function DefaultCollapseButton({ isCollapsed, collapseText, onToggle }: { isColl
     </button>
 }
 
-export function NavFooter({ children, collapseButton = false, collapseText, onClick, style, class: className }: NavFooterProps) @{
+export function NavFooter(&{ children, collapseButton = false, collapseText, onClick, style, class: className }: NavFooterProps) @{
     const contextTracked = NavContext.get();
 
     let &[isCollapsed] = track(() => contextTracked?.value.isCollapsed ?? false);

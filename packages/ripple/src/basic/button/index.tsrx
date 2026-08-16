@@ -43,7 +43,7 @@ function SpinnerIcon() {
     </svg>;
 }
 
-export function Button({
+export function Button(&{
     children,
     type = 'primary',
     theme = 'light',
@@ -331,7 +331,7 @@ export interface ButtonGroupProps {
  * ButtonGroup 退化为纯 CSS 容器：size/disabled/theme 等仍需在每个子 Button 上显式设置，
  * 这是在 Ripple 约束下的诚实设计取舍，而非简化阉割。
  */
-export function ButtonGroup({ children, 'aria-label': ariaLabel, style, class: className }: ButtonGroupProps) @{
+export function ButtonGroup(&{ children, 'aria-label': ariaLabel, style, class: className }: ButtonGroupProps) @{
     const classes = ['lotus-button-group', className ?? ''].filter(Boolean).join(' ');
 
     <>

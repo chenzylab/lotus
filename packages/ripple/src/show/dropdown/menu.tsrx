@@ -4,7 +4,7 @@ export interface DropdownMenuProps {
     class?: string;
 }
 
-export function DropdownMenu({ children, style, class: className }: DropdownMenuProps) @{
+export function DropdownMenu(&{ children, style, class: className }: DropdownMenuProps) @{
     <>
         <ul class={['lotus-dropdown-menu', className ?? ''].filter(Boolean).join(' ')} style={style} role="menu" aria-orientation="vertical">
             {children}

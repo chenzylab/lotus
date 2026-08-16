@@ -75,7 +75,7 @@ function kebabToCamel(color: string): string {
 }
 
 /** 顶部 Slot 徽章背景形状：纯几何 SVG 视觉资产，与具体品牌文字无关。 */
-function TopSlotBadgeSvg({ gradientStart, gradientEnd, gradientId }: { gradientStart: string; gradientEnd: string; gradientId: string }) {
+function TopSlotBadgeSvg(&{ gradientStart, gradientEnd, gradientId }: { gradientStart: string; gradientEnd: string; gradientId: string }) {
     return <svg xmlns="http://www.w3.org/2000/svg" width="51" height="52" viewBox="0 0 51 52" fill="none">
         <path
             d="M40.4918 46.5592C44.6795 43.176 46.261 34.1333 47.5301 25.6141C49.5854 11.8168 39.6662 1 25.8097 1C11.2857 1 3 11.4279 3 25.3518C3 33.7866 6.29361 43.8947 10.4602 46.5592C12.5868 47.9192 12.5868 47.9051 25.8097 47.9192C38.3651 47.9282 38.5352 48.14 40.4918 46.5592Z"
@@ -92,7 +92,7 @@ function TopSlotBadgeSvg({ gradientStart, gradientEnd, gradientId }: { gradientS
 
 let topSlotGradientCounter = 0;
 
-export function Avatar({
+export function Avatar(&{
     children,
     color = 'grey',
     shape = 'circle',

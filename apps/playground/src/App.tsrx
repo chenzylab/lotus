@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
@@ -24,6 +24,11 @@ function closableTabList(): TabItem[] {
 
 export function App() @{
     let &[inputControlledValue] = track<string>('受控初始值');
+    let &[inputExternalControlledValue] = track<string>('初始值');
+    let &[textAreaControlledValue] = track<string>('初始内容');
+    let &[switchControlledChecked] = track<boolean>(false);
+    let &[checkboxControlledChecked] = track<boolean>(false);
+    let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -91,6 +96,13 @@ export function App() @{
             <Switch checked loading />
             <Switch size="large" defaultChecked />
             <Switch size="small" defaultChecked />
+        </Space>
+
+        <Divider>Switch：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <Switch checked={switchControlledChecked} onChange={(c: boolean) => { switchControlledChecked = c; }} aria-label="Switch 受控示例" />
+            <Button onClick={() => { switchControlledChecked = !switchControlledChecked; }}>切换 Switch</Button>
         </Space>
 
         <Divider />
@@ -577,6 +589,13 @@ export function App() @{
             <Input value={inputControlledValue} onChange={(v: string) => { inputControlledValue = v; }} placeholder="受控组件" />
         </Space>
 
+        <Divider>Input：受控（外部按钮驱动，非本组件自身交互触发）</Divider>
+
+        <Space>
+            <Input value={inputExternalControlledValue} onChange={(v: string) => { inputExternalControlledValue = v; }} placeholder="外部按钮驱动" aria-label="Input 外部受控示例" />
+            <Button onClick={() => { inputExternalControlledValue = inputExternalControlledValue + '!'; }}>追加感叹号</Button>
+        </Space>
+
         <Divider>TextArea：多行输入框</Divider>
 
         <Space vertical align="start">
@@ -589,6 +608,15 @@ export function App() @{
             <div style={{ width: '360px' }}>
                 <TextArea placeholder="带字数统计与清除按钮" maxCount={50} showClear defaultValue="可清除且带字数统计" />
             </div>
+        </Space>
+
+        <Divider>TextArea：受控（外部按钮驱动）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '360px' }}>
+                <TextArea value={textAreaControlledValue} onChange={(v: string) => { textAreaControlledValue = v; }} rows={3} aria-label="TextArea 外部受控示例" />
+            </div>
+            <Button onClick={() => { textAreaControlledValue = textAreaControlledValue + '\n新增一行'; }}>追加一行</Button>
         </Space>
 
         <Divider>Icons：@lotus/icons 验证图标</Divider>
@@ -616,6 +644,62 @@ export function App() @{
             <IconAvatarLab />
             <IconAvatarLab />
         </Space>
+
+        <Divider>Checkbox：基本 / 辅助文本 / 禁用 / indeterminate</Divider>
+
+        <Space vertical align="start">
+            <Checkbox onChange={(c: boolean) => console.log('checkbox changed', c)} aria-label="示例">Lotus Design</Checkbox>
+            <Checkbox
+                extra="Lotus 是由社区共同设计开发并维护的组件库"
+                aria-label="带辅助文本示例"
+            >
+                带辅助文本
+            </Checkbox>
+            <Checkbox defaultChecked={false} disabled aria-label="禁用未选中示例">禁用未选中</Checkbox>
+            <Checkbox defaultChecked disabled aria-label="禁用已选中示例">禁用已选中</Checkbox>
+            <Checkbox indeterminate aria-label="indeterminate 示例">indeterminate</Checkbox>
+        </Space>
+
+        <Divider>Checkbox：受控</Divider>
+
+        <Space>
+            <Checkbox
+                checked={checkboxControlledChecked}
+                onChange={(c: boolean) => { checkboxControlledChecked = c; }}
+                aria-label="受控示例"
+            >
+                受控 checkbox
+            </Checkbox>
+            <Button onClick={() => { checkboxControlledChecked = !checkboxControlledChecked; }}>切换</Button>
+        </Space>
+
+        <Divider>CheckboxGroup：数组方式 / 垂直</Divider>
+
+        <CheckboxGroup
+            options={[
+                { value: 'A', label: 'A' },
+                { value: 'B', label: 'B' },
+                { value: 'C', label: 'C', disabled: true },
+            ]}
+            defaultValue={['A', 'B']}
+            aria-label="CheckboxGroup 数组方式示例"
+        />
+
+        <Divider>CheckboxGroup：JSX 方式 / 水平 / 受控</Divider>
+
+        <CheckboxGroup
+            direction="horizontal"
+            value={checkboxGroupControlledValue}
+            onChange={(v: Array<string | number>) => { checkboxGroupControlledValue = v; }}
+            aria-label="CheckboxGroup JSX 方式示例"
+            children={
+                <>
+                    <Checkbox value="A">A</Checkbox>
+                    <Checkbox value="B">B</Checkbox>
+                    <Checkbox value="C">C</Checkbox>
+                </>
+            }
+        />
     </div>
 }
 

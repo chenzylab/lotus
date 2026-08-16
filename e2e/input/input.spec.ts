@@ -50,6 +50,22 @@ test.describe('Input', () => {
     await expect(controlledInput).toHaveValue('受控新值');
   });
 
+  test('受控组件：外部按钮驱动 value 变化时输入框同步更新（非本组件自身交互触发）', async ({ page }) => {
+    // 回归防护：组件 props 若用普通 {} 解构而非 &{} 懒解构，外部独立触发源驱动的
+    // 受控 prop 变化不会传导到组件视觉，详见
+    // specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #30。上面那条"受控组件"
+    // 用例是在这个 input 自身 fill 触发的，走的是原生输入事件路径，不能验证这个场景。
+    await page.goto('/');
+    const externalControlled = page.getByLabel('Input 外部受控示例');
+    const appendButton = page.getByRole('button', { name: '追加感叹号' });
+
+    await expect(externalControlled).toHaveValue('初始值');
+    await appendButton.click();
+    await expect(externalControlled).toHaveValue('初始值!');
+    await appendButton.click();
+    await expect(externalControlled).toHaveValue('初始值!!');
+  });
+
   test('校验状态：validateStatus=error 时容器带对应 class', async ({ page }) => {
     await page.goto('/');
     const errorInput = page.locator('.lotus-input-native').nth(11);

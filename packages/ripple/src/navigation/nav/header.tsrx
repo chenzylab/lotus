@@ -11,7 +11,7 @@ export interface NavHeaderProps {
     class?: string;
 }
 
-export function NavHeader({ children, logo, text, link, linkOptions, style, class: className }: NavHeaderProps) @{
+export function NavHeader(&{ children, logo, text, link, linkOptions, style, class: className }: NavHeaderProps) @{
     const contextTracked = NavContext.get();
 
     let &[isCollapsed] = track(() => contextTracked?.value.isCollapsed ?? false);

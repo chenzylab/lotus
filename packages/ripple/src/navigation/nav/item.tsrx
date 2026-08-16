@@ -29,7 +29,7 @@ function buildPlaceholders(count: number): number[] {
  * 必须用 `@{}` 语句容器写法——内部 `@for` 带 `key` 修饰符，普通 `return <>...</>;` 会
  * 触发踩坑 #16（TrackedValue 不会被正确 unwrap）。
  */
-function NavItemContent({ text, icon, indent, isInSubNav, placeholderCount }: { text: any; icon: any; indent?: boolean; isInSubNav?: boolean; placeholderCount: number }) @{
+function NavItemContent(&{ text, icon, indent, isInSubNav, placeholderCount }: { text: any; icon: any; indent?: boolean; isInSubNav?: boolean; placeholderCount: number }) @{
     const placeholders = buildPlaceholders(placeholderCount);
     <>
         @for (const p of placeholders; key p) {
@@ -44,7 +44,7 @@ function NavItemContent({ text, icon, indent, isInSubNav, placeholderCount }: { 
     </>
 }
 
-export function NavItem({
+export function NavItem(&{
     itemKey,
     text,
     icon,

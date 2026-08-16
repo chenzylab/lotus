@@ -15,7 +15,7 @@ export interface SwitchProps {
     class?: string;
 }
 
-export function Switch({
+export function Switch(&{
     checked,
     defaultChecked = false,
     disabled = false,

@@ -19,7 +19,7 @@ export interface TypographyParagraphProps extends TypographySharedProps {
 }
 
 /** 同 TypographyText：ellipsis/copyable 需要读取文本内容时，调用方必须用 `children={'...'}` 显式 prop 写法。 */
-export function TypographyParagraph({
+export function TypographyParagraph(&{
     children,
     type = 'primary',
     size = 'normal',

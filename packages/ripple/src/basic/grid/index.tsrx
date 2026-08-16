@@ -32,7 +32,7 @@ function resolveGutterSide(gutter: Gutter | undefined, screens: Partial<Record<B
     return RowFoundation.resolveResponsiveValue(screens, gutter) ?? 0;
 }
 
-export function Row({ children, align = 'top', justify = 'start', gutter = 0, style, class: className }: RowProps) @{
+export function Row(&{ children, align = 'top', justify = 'start', gutter = 0, style, class: className }: RowProps) @{
     let &[state] = track<RowState>({ screens: { xs: true } });
 
     const foundation = new RowFoundation({
@@ -191,7 +191,7 @@ function resolveColSize(
     };
 }
 
-export function Col({ children, span, offset, order, pull, push, xs, sm, md, lg, xl, xxl, style, class: className }: ColProps) @{
+export function Col(&{ children, span, offset, order, pull, push, xs, sm, md, lg, xl, xxl, style, class: className }: ColProps) @{
     const contextTracked = RowContext.get();
 
     // 派生 track：函数体内读取 `contextTracked.value` 建立响应式依赖，Row 断点变化时自动重新

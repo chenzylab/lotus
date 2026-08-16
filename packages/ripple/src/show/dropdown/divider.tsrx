@@ -3,7 +3,7 @@ export interface DropdownDividerProps {
     class?: string;
 }
 
-export function DropdownDivider({ style, class: className }: DropdownDividerProps) @{
+export function DropdownDivider(&{ style, class: className }: DropdownDividerProps) @{
     <>
         <li class={['lotus-dropdown-divider', className ?? ''].filter(Boolean).join(' ')} style={style} role="separator" />
 

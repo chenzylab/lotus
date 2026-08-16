@@ -21,7 +21,7 @@ export interface AvatarGroupProps {
     style?: Record<string, any>;
 }
 
-export function AvatarGroup({
+export function AvatarGroup(&{
     items,
     shape = 'circle',
     size = 'medium',

@@ -22,7 +22,7 @@ function resolveSpacingValue(value: SpaceSpacingKeyword | number): string {
     return typeof value === 'number' ? `${value}px` : SPACING_TOKEN[value];
 }
 
-export function Space({
+export function Space(&{
     children,
     wrap = false,
     align = 'center',

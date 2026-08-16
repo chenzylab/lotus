@@ -4,7 +4,7 @@ export interface DropdownTitleProps {
     class?: string;
 }
 
-export function DropdownTitle({ children, style, class: className }: DropdownTitleProps) @{
+export function DropdownTitle(&{ children, style, class: className }: DropdownTitleProps) @{
     <>
         <li class={['lotus-dropdown-title', className ?? ''].filter(Boolean).join(' ')} style={style} role="presentation">
             {children}

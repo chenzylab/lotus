@@ -22,7 +22,7 @@ export interface TypographyTextProps extends TypographySharedProps {
  * Ripple 编译器对 JSX 标签子节点无条件包装成 TSRXElement，只有显式 prop 才原样透传字符串，
  * 详见 specs/cross-cutting/foundation-adapter-pattern.md 踩坑记录。
  */
-export function TypographyText({
+export function TypographyText(&{
     children,
     type = 'primary',
     size = 'normal',

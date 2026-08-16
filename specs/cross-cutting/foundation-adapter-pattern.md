@@ -990,9 +990,180 @@ toLowerCase()}-${uidCounter++}\`;`（`uidCounter` 是模块级自增计数器，
 才会暴露。批量生成脚本应该把"id 唯一化"作为通用后处理步骤而非针对个别
 文件手工修复，避免同一类问题在不同图标文件里重复出现却分别踩坑。
 
+## 踩坑 #30（重大）：组件 props 用普通 `{...}` 解构会丢失响应式，
+跨组件的 prop 变化无法传导给子组件——必须用 `&{...}` 懒解构
+
+**现象**：开发 Checkbox/CheckboxGroup 时，写了一个"受控组件"（`checked`/
+`value` + `onChange`，外部持有状态、通过 props 双向绑定），单独使用时点击
+自己没问题，但用一个**外部按钮**去驱动这个受控值变化（`<Checkbox checked=
+{x} onChange={(v) => { x = v }} />`，另一个 `<Button onClick={() => { x =
+!x }}>`）时，点击外部按钮后 `x` 这个 track 变量确实变了（`console.log`
+验证过），但 `Checkbox` 的视觉完全不跟着更新。CheckboxGroup 受控模式下更
+严重——`<CheckboxGroup value={arr} onChange={...}>` 外部改变 `arr` 后，
+内部所有 `<Checkbox>` 子项完全不重新渲染。
+
+排查过程极其曲折（教训见下），最终用一系列独立的最小复现组件锁定：问题
+与数组/对象类型无关，与 `RippleArray`/`children` prop/`untrack()` 都无关，
+唯一决定性变量是**组件签名的解构写法**。
+
+```tsrx
+// ❌ 错误：普通解构，急切拷贝 props 里的值，之后这些局部变量永远不再更新，
+// 即使父组件用新的 props 重新调用这个函数也没用——因为编译后的组件更新机制
+// 依赖的是"局部变量本身是否被声明为对 props 字段的惰性引用"，普通解构产出的
+// 是解构那一刻的值快照，不是引用。
+function Checkbox({ checked, onChange, ... }: CheckboxProps) @{ ... }
+
+// ✅ 正确：&{...} 懒解构，每个变量编译成对 props 对象的惰性属性访问
+// （deferred property lookup），props 对象本身变化时这些变量会跟着更新。
+function Checkbox(&{ checked, onChange, ... }: CheckboxProps) @{ ... }
+```
+
+**根因**：Ripple 官方文档（`~/i/ripple/website/docs/guide/reactivity.md`
+"Lazy Destructuring" 一节）明确写着：
+
+> Regular destructuring (`{ a, b } = obj`) eagerly copies values and loses
+> reactivity... Use `&{...}` whenever you destructure reactive props or
+> tracked objects and need the variables to remain reactive.
+
+`&{...}`/`&[...]` 是 Ripple 语言层面的懒解构语法（`&` 前缀直接放在 `{`/`[`
+前面），每个解构出的变量会被编译成对源对象的**延迟属性/索引查找**，而不是
+一次性拷贝出的值。**这在文档里是被明确要求的组件 props 写法，但本项目从
+第一个组件到 Checkbox 之前，全部组件清一色用了普通 `{...}` 解构**——之所以
+此前从未暴露，是因为：
+1. 大多数受控 demo 的"外部触发更新"场景，实际触发路径是"用户在这个组件
+   自己的 DOM 节点上操作"（如 `Input` 的受控 demo 是 `.fill()` 直接在
+   这个 `<input>` 上模拟输入），这条路径靠的是原生 DOM 事件 + 组件内部
+   `state` 响应，根本不经过"外部 prop 变化→组件重新渲染"这条链路，测试
+   "过了"但没测到真正的受控契约。
+2. 少数真正测试"点击组件自己内部触发,再验证自己视觉"的场景（Switch 的
+   e2e），也不经过跨组件 prop 传导，只要组件内部 `state` 正确即可通过。
+3. **全项目没有一个 e2e 测试覆盖"外部独立按钮驱动受控 prop 变化，断言
+   被动接收方组件视觉更新"这个模式**——这才是受控组件的核心契约，却是
+   测试盲区。
+
+**修复**：`Checkbox`/`CheckboxGroup` 的组件签名从 `function Xxx({ ... }:
+Props) @{` 改为 `function Xxx(&{ ... }: Props) @{`，问题立即解决（用最小
+复现逐个验证过：普通解构+`RippleArray`+组件内部再包一层 `track()`，都不能
+单独解决；只有 `&{...}` 才能）。
+
+**结论性规则（重大，需要审计现有组件）**：这不只是 Checkbox 一个组件的
+bug，是**贯穿整个项目、影响所有现有组件的系统性风险**——只要某个组件的
+props 存在"父组件在没有该组件自身触发交互的情况下，独立改变某个 prop 值，
+期望子组件被动响应更新"这种用法（这正是"受控组件"这个模式的定义本身），
+用普通 `{...}` 解构的组件大概率都有这个问题，只是恰好没被现有 demo/测试
+覆盖到而暴露。已知使用普通解构的组件（几乎是全部）：Button、Divider、
+Space、Grid、Layout、Typography（三个子组件）、Switch、Input、TextArea、
+Tag、Avatar、Tooltip、Popover、Dropdown（及子组件）、Tabs、Breadcrumb、
+Skeleton（及子组件）、Nav（及子组件）。**后续每开发/修改一个组件，props
+解构一律使用 `&{...}`，不再使用普通 `{...}`**；对存量组件，建议后续排一次
+系统性审计+回归测试（optional next step 里已经记录）。
+
+**排查过程的教训（怎样更快定位到这个问题）**：这次排查耗费了大量轮次，
+反复怀疑了 `RippleArray`、`children` prop、`untrack()`、HMR 缓存、Playwright
+工具本身的坐标问题，最后才找到根因，复盘下来更快的路径应该是：
+1. 一开始就应该去读 Ripple 官方文档的 Reactivity 一章，而不是纯靠试验
+   猜测——`&{...}`/`RippleArray` 都在文档里有专门章节，且用加粗强调写明
+   "此时必须用 XXX"。**遇到"响应式没生效"这类问题，先查官方文档的
+   reactivity/props 相关章节，比开一堆最小复现组件试错快得多**。
+2. 用**独立于既有大文件的最小复现**（新建组件、只有一两行逻辑）排查，
+   比在 `App.tsrx`（600+ 行、混杂大量既有 demo）里加代码排查干扰更少——
+   但即使用了最小复现，也要小心 HMR 增量更新可能保留旧组件实例状态
+   造成假阳性，**每次修改后应该完全重启 dev server + 硬刷新（或新开一个
+   干净的浏览器 tab）再验证**，不能只依赖 Vite 的 HMR。
+3. 用 `console.log` 在浏览器里验证程序化调用（`element.click()`）的结果
+   之前，要意识到**程序化 `.click()` 掩盖真实 UX 问题**这条已知踩坑
+   （#24/#26 的教训）不仅适用于点击本身触发的行为，也可能让人误判"响应
+   式生效了"——回头看，第一次误以为"成功"的那次验证，很可能是 HMR 增量
+   更新期间的巧合状态，而不是真正的响应式生效，应该立刻用 Playwright 或
+   完全重启后的干净环境复核，而不是继续往下走。
+
+## 踩坑 #31：视觉隐藏的原生表单控件（`clip: rect(0,0,0,0)` 模式）无法被
+Playwright／鼠标点击命中，必须让可点击容器承接交互
+
+**现象**：Checkbox 用了标准的"视觉隐藏但保留给屏幕阅读器"CSS 模式隐藏
+原生 `<input type="checkbox">`（`position: absolute; width: 1px; height:
+1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0)`），可见的选中框
+用旁边的 `<span class="lotus-checkbox-box">` 承担。Playwright 用
+`page.getByLabel(...).click()` 点击这个 `<input>` 时，反复报
+`<label>...intercepts pointer events` 和 `element is outside of the
+viewport`，重试到超时失败；但浏览器里用 JS `element.click()` 程序化调用
+却完全正常（这个差异是排查线索）。
+
+**根因**：用 `document.elementFromPoint()` 直接命中测试 `<input>` 的几何
+中心坐标，发现命中的不是 `<input>` 本身、也不是它的父级 `<label>`，而是
+页面**最外层的根容器 `<div>`**（`childCount: 115`，无 class）——说明
+`clip: rect(0,0,0,0)` 这个裁剪属性会让浏览器的 hit-testing 直接"跳过"这个
+元素（即使给它加了 `pointer-events: none` 也无法解决，因为问题根本不是
+"这个元素挡住了点击"，而是"这个元素本身在这个位置对�size点击测试不可
+见"）。Playwright 的 `.click()`（模拟真实用户交互）会做这类可点击性
+校验，而 JS 程序化 `element.click()` 是直接调用 DOM API 触发事件，不做
+任何几何/可见性检查，因此表现不同——这正是"程序化 click 掩盖真实 UX 问题"
+（踩坑 #24/#26）的又一实例：如果只用程序化点击验证过，这个问题会被完全
+掩盖过去，永远不会发现真实用户/自动化工具点不到这个元素。
+
+**修复**：e2e 测试不去点击这个视觉隐藏的 `<input>` 本身，而是定位它的
+可见父容器 `<label>`（`checkbox.locator('xpath=..')`）来发起点击——这也
+更贴近真实用户的操作方式（用户点的是可见的方框，不是这个不可见的
+`<input>`）。组件本身保留 `<label onClick={...}>` 统一承接交互的设计
+不变，`<input>` 只做状态展示 + `aria-label` 语义。
+
+**结论性规则**：任何用"视觉隐藏但屏幕阅读器可见"模式（`clip`/`clip-path`
+配合 1px 尺寸）隐藏原生表单控件的组件，e2e 测试点击操作必须作用于外层
+可见容器，不能对着这个隐藏元素本身发起点击断言；这类元素上也不需要绑定
+`onClick`（交互统一在外层容器处理），避免维护者以为"点击隐藏 input 就够
+了"而重复踩这个坑。
+
+## 踩坑 #32：Foundation 的 `getState()` 在受控模式下不能读取内部 state
+快照——快照在受控时永远是初始化那一刻的旧值
+
+**现象**：`CheckboxGroup` 受控模式下（`value`+`onChange` 外部持有选中值
+数组），连续操作：先勾选 B（B: false→true，通过 `onChange` 正确通知外部，
+外部数组变成 `['A','B']`），再点击 A（应该只影响 A，B 保持选中）——结果
+点击 A 后，B 的选中状态被意外清空。
+
+**根因**：`CheckboxGroupFoundation.toggleValue()` 需要用"当前完整的选中
+集合"做增删运算（`value.includes(itemValue)` 判断是否已选中，进而决定
+`filter` 还是 `[...value, itemValue]`）。这个"当前完整集合"来自 Adapter
+的 `getState()`，而 `group.tsrx` 里 `getState: () => untrack(() => state)`
+——**永远读内部 track 变量 `state`，但受控模式下 `state` 从未被
+`setState` 更新过**（受控分支只调用 `onChange`，不调用 `this.setState`，
+这是受控组件的标准设计——真实状态由外部持有）。于是 `state.value` 永远
+停留在组件挂载那一刻的初始值（这里是 `['A']`，因为受控 `value` prop 首次
+渲染时的初始值），点击 B 时 `onChange` 拿到的 `next` 是基于这个旧快照
+算出来的、看似正确（`['A','B']`），但这个正确只是巧合（因为第一次操作，
+旧快照恰好还没过时）；第二次点击 A 时，`getState()` 依然返回过时的
+`{ value: ['A'] }`（完全不知道 B 已经被勾选），`toggleValue('A', ...)`
+算出 `next = ['A'].filter(v => v !== 'A') = []`——把 B 也一并弄丢了，因为
+Foundation 从始至终不知道 B 存在。
+
+**修复**：`getState()` 必须区分受控/非受控，受控时返回**当前外部
+prop 值**而不是内部快照：
+```tsrx
+const foundation = new CheckboxGroupFoundation({
+    getState: () => ({ value: isControlled ? (value ?? []) : untrack(() => state.value) }),
+    setState: (patch) => { state = { ...state, ...patch }; },
+});
+```
+
+**结论性规则**：任何 Foundation 方法如果需要基于"当前完整状态"做增量
+运算（不是简单取反或整体替换，而是要读旧值算新值，比如集合增删、数组
+过滤、依赖前一个值的计算），受控模式下的 `getState()` 绝不能只读内部
+`state`——内部 `state` 在受控模式下是"事实上已经失效的初始快照"，必须
+显式按 `isControlled` 分支返回外部 prop 的当前值。纯粹的"取反"
+（`SwitchFoundation.handleToggle` 的 `!checked`）或"整体替换"
+（`InputFoundation` 直接用新 value 替换）类逻辑不受这个问题影响，因为
+它们不依赖"旧值里除了这一个字段之外的其他部分"，只有像 `toggleValue`
+这种"从集合里精确增删一个元素、必须保留其余元素"的逻辑才会踩这个坑。
+新增类似"集合类受控状态管理"的 Foundation（比如未来 Select 多选、
+Transfer 穿梭框的选中集合）时要对照检查这一点。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
 - Adapter（`.tsrx`）侧的 `track()` + `new XxxFoundation({ getState, setState })` 三行样板代码可以直接复制本文档的范式，只需替换 State 类型和 Foundation 类名。
 - 新组件开工前，先过一遍上面「已知踩坑」六条，尤其是 Fragment 包裹（#1）和 `tsrx-tsc`（#5）这两条——分别是最容易在编码阶段和 CI 配置阶段踩、且报错信息不直接指向根因的坑。
 - **任何新包只要直接 import `.tsrx` 文件**（无论是组件包还是应用包），typecheck 脚本必须用 `tsrx-tsc` 而非 `tsc`，`package.json` 需要按上面 #5 的写法锁定 `typescript@5.9.3` 别名依赖 + `@tsrx/typescript-plugin` 依赖 + `tsconfig.json` 的 `plugins`/`jsxImportSource` 配置，四者缺一不可。
+- **组件 props 解构一律用 `&{...}` 懒解构，不用普通 `{...}`**（踩坑 #30，重大）：`function Xxx(&{ a, b, ... }: Props) @{`。这是能否正确响应"外部驱动的受控 prop 变化"的前提，新组件从第一行就要写对；改造存量组件时顺手带上这个修复。
+- **受控组件的验收测试必须包含"外部独立触发源驱动 prop 变化"场景**（踩坑 #30 的测试盲区教训）：不能只测"在组件自己的 DOM 节点上操作、验证自己更新"，要专门写一个不依赖该组件自身交互的外部按钮/状态源，驱动 `value`/`checked` 等受控 prop 变化，断言组件被动接收更新——这是受控组件契约的核心，之前全项目没有一个测试覆盖这个模式。
+- **点击视觉隐藏的原生表单控件（`clip` 隐藏模式）时，e2e 测试要点它的可见父容器，不能点隐藏元素本身**（踩坑 #31）。
+- **Foundation 需要"读旧值算新值"的增量运算时（集合增删等），`getState()` 受控模式下必须返回外部 prop 当前值，不能读永远过时的内部 state 快照**（踩坑 #32）。

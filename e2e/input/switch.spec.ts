@@ -39,4 +39,19 @@ test.describe('Switch', () => {
     await loadingSwitch.click({ force: true }).catch(() => {});
     await expect(loadingSwitch).toHaveAttribute('aria-checked', 'true');
   });
+
+  test('受控组件：外部按钮驱动 checked 变化时视觉同步更新（非本组件自身交互触发）', async ({ page }) => {
+    // 回归防护：组件 props 若用普通 {} 解构而非 &{} 懒解构，外部独立触发源驱动的
+    // 受控 prop 变化不会传导到组件视觉，详见
+    // specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #30。
+    await page.goto('/');
+    const controlled = page.getByLabel('Switch 受控示例');
+    const toggleButton = page.getByRole('button', { name: '切换 Switch' });
+
+    await expect(controlled).toHaveAttribute('aria-checked', 'false');
+    await toggleButton.click();
+    await expect(controlled).toHaveAttribute('aria-checked', 'true');
+    await toggleButton.click();
+    await expect(controlled).toHaveAttribute('aria-checked', 'false');
+  });
 });

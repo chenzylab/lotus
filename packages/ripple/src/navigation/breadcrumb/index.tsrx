@@ -49,7 +49,7 @@ function truncateMiddle(name: string, visibleChars: number): string {
     return `${name.slice(0, half)}...${name.slice(name.length - half)}`;
 }
 
-function BreadcrumbLabel({ name, showTooltip }: { name: string; showTooltip: boolean | BreadcrumbShowTooltipOptions }) {
+function BreadcrumbLabel(&{ name, showTooltip }: { name: string; showTooltip: boolean | BreadcrumbShowTooltipOptions }) {
     if (!showTooltip) {
         return <span>{name}</span>;
     }
@@ -70,7 +70,7 @@ function BreadcrumbLabel({ name, showTooltip }: { name: string; showTooltip: boo
     </Tooltip>;
 }
 
-export function Breadcrumb({
+export function Breadcrumb(&{
     routes = [],
     compact = true,
     separator = '/',

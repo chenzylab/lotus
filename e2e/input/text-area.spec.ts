@@ -44,4 +44,17 @@ test.describe('TextArea', () => {
     await clearButton.click();
     await expect(countedTextarea).toHaveValue('');
   });
+
+  test('受控组件：外部按钮驱动 value 变化时同步更新（非本组件自身交互触发）', async ({ page }) => {
+    // 回归防护：组件 props 若用普通 {} 解构而非 &{} 懒解构，外部独立触发源驱动的
+    // 受控 prop 变化不会传导到组件视觉，详见
+    // specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #30。
+    await page.goto('/');
+    const externalControlled = page.getByLabel('TextArea 外部受控示例');
+    const appendButton = page.getByRole('button', { name: '追加一行' });
+
+    await expect(externalControlled).toHaveValue('初始内容');
+    await appendButton.click();
+    await expect(externalControlled).toHaveValue('初始内容\n新增一行');
+  });
 });

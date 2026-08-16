@@ -24,7 +24,7 @@ export interface NavSubProps {
  * `@if` 条件判断在非 `@{}` 组件函数体内失效），详见 footer.tsrx 的 DefaultCollapseButton
  * 注释与 specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #20。
  */
-function SubNavTitleContent({ text, icon, indent, isOpen, toggleIconPosition, showChevron, useChevronRight }: { text: any; icon: any; indent?: boolean; isOpen: boolean; toggleIconPosition: string; showChevron: boolean; useChevronRight: boolean }) @{
+function SubNavTitleContent(&{ text, icon, indent, isOpen, toggleIconPosition, showChevron, useChevronRight }: { text: any; icon: any; indent?: boolean; isOpen: boolean; toggleIconPosition: string; showChevron: boolean; useChevronRight: boolean }) @{
     <>
         @if (toggleIconPosition === 'left' && showChevron) {
             <i class={['lotus-nav-item-icon', 'lotus-nav-subnav-toggle', !useChevronRight && isOpen ? 'lotus-nav-subnav-toggle-open' : ''].filter(Boolean).join(' ')}>
@@ -53,7 +53,7 @@ function SubNavTitleContent({ text, icon, indent, isOpen, toggleIconPosition, sh
     </>
 }
 
-export function NavSub({
+export function NavSub(&{
     children,
     itemKey,
     text,

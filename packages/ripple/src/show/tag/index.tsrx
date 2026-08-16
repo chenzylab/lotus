@@ -23,7 +23,7 @@ export interface TagProps {
     'aria-label'?: string;
 }
 
-export function Tag({
+export function Tag(&{
     children,
     size = 'default',
     color = 'grey',
