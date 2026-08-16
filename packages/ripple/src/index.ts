@@ -70,6 +70,13 @@ export {
     type InputNumberProps,
     type InputNumberSize,
 } from './input/input-number/index.tsrx';
+export {
+    Select,
+    type SelectProps,
+    type SelectOption,
+    type SelectSize,
+    type SelectValidateStatus,
+} from './input/select/index.tsrx';
 export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
 export {
     Avatar,

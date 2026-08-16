@@ -1,10 +1,18 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select } from '@lotus/ripple';
+import type { SelectOption } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
 
 const tagColors: TagColor[] = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'grey', 'white'];
+
+const businessLineOptions: SelectOption[] = [
+    { value: 'douyin', label: '抖音' },
+    { value: 'ulikecam', label: '轻颜相机' },
+    { value: 'jianying', label: '剪映', disabled: true },
+    { value: 'xigua', label: '西瓜视频' },
+];
 
 function lineTabList(): TabItem[] {
     return [
@@ -32,6 +40,7 @@ export function App() @{
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
     let &[inputNumberControlledValue] = track<number>(0);
+    let &[selectControlledValue] = track<string>('douyin');
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -796,6 +805,62 @@ export function App() @{
                 />
             </div>
             <Button onClick={() => { inputNumberControlledValue = inputNumberControlledValue + 10; }}>加 10</Button>
+        </Space>
+
+        <Divider>Select：基本 / 尺寸 / 禁用 / 校验状态</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '200px' }}>
+                <Select
+                    optionList={businessLineOptions}
+                    defaultValue="douyin"
+                    placeholder="请选择业务线"
+                    onChange={(v) => console.log('select changed', v)}
+                    aria-label="Select 基本示例"
+                />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} size="small" defaultValue="douyin" aria-label="Select 小尺寸示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} size="large" defaultValue="douyin" aria-label="Select 大尺寸示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} disabled defaultValue="douyin" aria-label="Select 禁用示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} validateStatus="error" placeholder="请选择" aria-label="Select 错误状态示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} showClear defaultValue="douyin" aria-label="Select 可清除示例" />
+            </div>
+        </Space>
+
+        <Divider>Select：多选</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Select
+                optionList={businessLineOptions}
+                multiple
+                defaultValue={['douyin', 'xigua']}
+                placeholder="请选择业务线"
+                onChange={(v) => console.log('select multiple changed', v)}
+                aria-label="Select 多选示例"
+            />
+        </div>
+
+        <Divider>Select：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <div style={{ width: '200px' }}>
+                <Select
+                    optionList={businessLineOptions}
+                    value={selectControlledValue}
+                    onChange={(v) => { if (typeof v === 'string') selectControlledValue = v; }}
+                    aria-label="Select 受控示例"
+                />
+            </div>
+            <Button onClick={() => { selectControlledValue = selectControlledValue === 'douyin' ? 'xigua' : 'douyin'; }}>切换 Select</Button>
         </Space>
     </div>
 }

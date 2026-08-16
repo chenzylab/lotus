@@ -1157,6 +1157,63 @@ const foundation = new CheckboxGroupFoundation({
 新增类似"集合类受控状态管理"的 Foundation（比如未来 Select 多选、
 Transfer 穿梭框的选中集合）时要对照检查这一点。
 
+## 踩坑 #33：自己接管 Popover 开关状态实现"点击外部关闭"时，判断范围必须
+同时包含浮层内容节点——只判断触发器容器会把"点击浮层内选项"误判为外部点击
+
+**现象**：Select 是第一个复用 Popover/浮层定位基础设施、但不满足于"再点一次
+触发器切换开关"这个默认交互的组件——选择器类组件还需要"选中单选项后自动
+关闭"和"点击页面任意其他地方关闭"，所以用 `Popover trigger="custom"` 完全
+自己接管开关状态，组件挂载时装一个常驻的 `document` 级 `mousedown` 监听器，
+点击目标不在 Select 根节点内时就收起下拉。真机验证时发现：点击触发器展开
+下拉没问题，但点击下拉列表里的选项后，浮层正确关闭了，触发器上显示的选中值
+却没有变化（点了"西瓜视频"，界面还显示原来的"抖音"）。
+
+**根因**：`Popover` 组件把浮层内容通过 `<Portal target={document.body}>`
+渲染到了 `document.body` 下，脱离了 Select 自身的 DOM 子树。全局
+`mousedown` 监听器判断"是否点击外部"时，只检查了
+`rootNode.contains(event.target)`（`rootNode` 是 Select 最外层容器，不包含
+Portal 渲染出去的浮层内容），点击浮层里的 `<li role="option">` 时这个判断
+恒为 `false`——被误判为"点击了外部"。而浏览器原生事件顺序是
+`mousedown` 先于 `click` 触发，全局监听器在选项自己的 `onClick`
+（真正执行"选中该项"逻辑的地方）触发之前就先把 `isOpen` 置为
+`false`，连带把 `@if (displayVisible) {...}` 条件渲染的选项列表从 DOM
+上摘掉；等到浏览器该派发 `click` 事件时，原来的目标元素已经不在 DOM
+里了，选项自己的 `onClick` 从未真正执行。表现出来就是"点击选项后浮层
+关闭了，但值没变"这种介于"完全没反应"和"正常工作"之间的诡异状态，容易
+被误判成响应式失效（这次排查早期确实先怀疑过是踩坑 #30 同类问题，排除
+后才定位到真正原因）。
+
+**修复**：除了 `rootNode`，再给浮层内容的根元素（这里是 `<ul class=
+"lotus-select-list">`）加一个 `ref` 拿到它的 DOM 节点，全局 `mousedown`
+判断时两个节点都要检查，只有两者都不包含点击目标才算"真正点击了外部"：
+```tsrx
+const list = untrack(() => listNode);
+if (list?.contains(event.target)) return;
+```
+
+**结论性规则**：任何组件如果自己接管了 Popover/Dropdown 一类"内容通过
+Portal 渲染到 document.body"的浮层开关状态（而不是用 Popover 内置的
+hover/click toggle 语义），实现"点击外部关闭"逻辑时，判断范围必须覆盖
+**触发器容器 + 浮层内容容器**两部分，只查触发器容器所在的 DOM 子树是不够
+的——这是所有依赖 Portal 渲染浮层的组件（Select 之后的 Cascader、
+TreeSelect、DatePicker、AutoComplete 等同样需要"选中后关闭 + 点击外部
+关闭"的组件）都会遇到的通用问题，新组件设计这段逻辑时应直接对照这个
+模式，不要重新独立踩一遍坑。
+
+**排查方法论备注**：这次排查过程中，用 `computer` 工具（模拟真实鼠标）反复
+点击同一个元素多次得到不一致的结果（有时展开、有时不展开），一度怀疑是
+组件本身状态不稳定；最后定位到是两个独立原因叠加造成的干扰，都值得记录：
+1. 页面滚动位置在多次工具调用之间会变化，之前用 `getBoundingClientRect()`
+   查到的视口坐标缓存下来直接传给下一次点击操作，坐标失效导致点击命中了
+   错误的元素——应该始终用 `find`/`ref` 重新定位，不要复用旧坐标。
+2. Ripple 的 DOM 更新不是同步的，点击操作后立刻同步查询 `aria-expanded`
+   等属性可能读到更新前的旧值；用 JS 程序化验证响应式状态变化时，操作和
+   断言之间要留出至少几十毫秒的等待（或者用 Playwright 的
+   `expect().toHaveAttribute()` 这类带自动重试的断言，不要用一次性的
+   同步读取）。这两个问题都不是组件的真实 bug，但足以在排查过程中制造
+   大量误导性的"复现"和"失败"，需要先排除工具/时序噪音，再下"这是真实
+   bug"的结论。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
