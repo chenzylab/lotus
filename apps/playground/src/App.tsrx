@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -99,6 +99,8 @@ export function App() @{
     let &[selectControlledValue] = track<string>('douyin');
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
+    let &[localeIsEnglish] = track<boolean>(false);
+    let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -964,6 +966,32 @@ export function App() @{
                 <div style={{ marginTop: '12px' }}>{formSubmitResult}</div>
             }
         </div>
+
+        <Divider>ConfigProvider：切换 locale 后文案实时更新（不重新挂载）</Divider>
+
+        <ConfigProvider locale={localeIsEnglish ? enUS : zhCN}>
+            <div style={{ width: '360px' }}>
+                <Space style={{ marginBottom: '12px' }}>
+                    <Button onClick={() => { localeIsEnglish = !localeIsEnglish; }}>
+                        {localeIsEnglish ? 'Switch to 中文' : '切换到 English'}
+                    </Button>
+                </Space>
+                <Form
+                    initValues={{ localeUsername: '' }}
+                    getFormApi={(api) => { localeFormApiRef = api; }}
+                >
+                    <Field
+                        field="localeUsername"
+                        label="Username / 用户名"
+                        rules={[{ required: true }]}
+                        Comp={FormUsernameInput}
+                    />
+                </Form>
+                <div style={{ width: '200px', marginTop: '12px' }}>
+                    <Input showClear defaultValue="lotus" aria-label="ConfigProvider Input 示例" />
+                </div>
+            </div>
+        </ConfigProvider>
     </div>
 }
 

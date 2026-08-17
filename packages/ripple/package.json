@@ -15,6 +15,7 @@
     "@lotus/foundation": "workspace:*",
     "@lotus/icons": "workspace:*",
     "@lotus/icons-lab": "workspace:*",
+    "@lotus/locale": "workspace:*",
     "@lotus/tokens": "workspace:*",
     "ripple": "catalog:"
   },

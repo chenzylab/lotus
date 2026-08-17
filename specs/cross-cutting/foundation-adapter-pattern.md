@@ -1464,6 +1464,74 @@ function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': a
 组件传递范式，设计新组件 API 时要提前对齐这个约束，而不是先按 React
 习惯设计、写到一半才发现行不通。
 
+## 踩坑 #38：i18n 基础设施搭建——Foundation 层的默认文案不能依赖
+`@lotus/locale`，必须作为可注入参数；locale 切换后已显示的错误信息
+需要主动重新校验才会更新
+
+**背景**：项目此前 6 个 Phase 1 组件（Input/InputNumber/Checkbox/Radio/
+Switch/Form）的所有面向用户文案（"清除"、"显示密码"、Form 校验默认
+错误信息等）全部硬编码中文，`packages/locale` 包和 `ConfigProvider`
+横切基础设施此前从未搭建过。这是本次从零搭建时踩的两个坑。
+
+**坑一：Foundation 层不能依赖 `@lotus/locale`**。虽然 `@lotus/locale`
+是纯数据包、不依赖 Ripple 运行时，技术上 Foundation import 它不会产生
+真正的循环依赖或框架耦合，但这违背了 Foundation/Adapter 分层的设计
+初衷——Foundation 应该只依赖自己声明的最小契约类型，不应该反向依赖任何
+"面向 UI 层的横切包"，否则未来每新增一个横切能力（主题、埋点、权限）都
+会诱使 Foundation 逐渐堆积一堆横切依赖，分层形同虚设。正确做法：
+Foundation 声明自己的 `FormMessages` 接口（最小契约，只含用到的字段），
+默认值给一份内置的中文兜底常量（`DEFAULT_MESSAGES`），实际文案由
+`.tsrx` 侧从 `LocaleContext` 读取 `locale.Form` 后，作为参数显式传给
+`validateField(field, messages)`/`validateAll(messages)`/`submit(...,
+messages)`——这些方法签名新增了 `messages` 参数但给了默认值，不破坏
+既有调用方。
+
+**坑二：locale 切换后，已经显示在页面上的旧错误信息不会自动更新**。
+`specs/cross-cutting/i18n-locale.spec.md` 明确要求"Form 组件切换
+locale 后，校验错误文案实时更新（不需要重新挂载组件）"。真机验证时
+发现：先触发一次校验产生中文错误提示，再切换 `ConfigProvider` 的
+`locale` prop 到英文，页面上的错误文案**纹丝不动**，还是中文——因为
+`state.errors[field]` 存的是校验时刻已经算出来的**字符串结果**，不是
+对 `messages` 的引用，locale 变化不会让这个字符串自动重新翻译，只有
+下次用户重新触发 blur/submit 校验时才会用上新文案。
+
+**修复**：在 `Form` 组件内部用 `effect()` 监听 `messages`（响应式，从
+`LocaleContext` 派生）的变化，一旦变化就对`state.errors` 里当前所有
+非空的字段重新跑一次 `foundation.validateField(field, newMessages)`：
+```tsrx
+effect(() => {
+    const currentMessages = messages;  // 响应式读取，建立依赖
+    const fieldsWithError = Object.keys(untrack(() => state).errors)
+        .filter((field) => untrack(() => state).errors[field]);
+    fieldsWithError.forEach((field) => {
+        foundation.validateField(field, currentMessages);
+    });
+});
+```
+只对"当前已经有 error 的字段"重新校验，不是无脑对全部已注册字段重新
+校验——没有错误的字段没有旧文案需要更新，全量重新校验是不必要的浪费。
+`effect` 内部读 `state.errors`（判断哪些字段需要重算）必须包
+`untrack`，只让 `messages` 成为这个 effect 的真实依赖，否则
+`validateField` 写回 `state.errors` 会让这个 effect 因为读了自己刚写
+的 `state` 而重新触发，形成踩坑 #36 那种死循环。
+
+**结论性规则**：
+1. 任何 Foundation 方法如果需要用到"面向用户展示的文案"，一律通过方法
+   参数注入（可以给合理的默认值保持向后兼容），不能让 Foundation 反向
+   依赖 `@lotus/locale` 或任何 UI 横切包——这是分层纪律，不是技术限制。
+2. 任何"结果是从当前 locale 文案计算出来、但计算结果被缓存/存储下来"
+   的场景（校验错误信息只是第一个实例，未来 DatePicker 的月份名称、
+   格式化后的日期字符串等都是同类场景），locale 切换后如果不主动
+   重新计算，缓存的旧文案不会自动更新——设计新组件时要主动检查"这个
+   组件是否存储了任何从文案派生出的字符串"，如果有，就需要类似这里的
+   "监听 locale 变化、重新计算已缓存内容"的 effect。
+3. `ConfigProvider`/`LocaleContext` 归属 `other/` 分类（对齐
+   `AGENTS.md` 的组件分类目录约定），不是随便塞进某个具体组件目录——
+   所有需要消费 locale 的组件统一从
+   `../../other/config-provider/locale-context.js` 引入
+   `LocaleContext`，`fallback` 到 `zhCN`（对齐项目历史上所有硬编码
+   文案都是中文这一事实）。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1478,3 +1546,4 @@ function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': a
 - **多字段容器的 `reset()` 必须恢复到挂载时的完整初始快照，不能只恢复"曾经显式声明过初值"的字段子集**（踩坑 #35）。
 - **`isControlled` 判断必须响应式，且身份切换后组件内部 state 不能残留陈旧值——用 effect 把外部受控值同步进 state，且 effect 内部读写同一 state 要用 untrack 避免死循环**（踩坑 #36，重大）。
 - **Ripple 没有 render-prop 机制，"父组件注入渲染逻辑"类 API 要设计成"组件作为显式 prop + `<Comp {...} />` 渲染"，不能用 `children` 当函数调用**（踩坑 #37）。
+- **Foundation 需要文案时通过方法参数注入（不反向依赖 `@lotus/locale`），且任何"从 locale 文案计算并缓存的结果"在 locale 切换后都需要主动重算，不会自动更新**（踩坑 #38）。

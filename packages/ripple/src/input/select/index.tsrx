@@ -2,6 +2,8 @@ import { track, untrack, effect } from 'ripple';
 import { SelectFoundation, type SelectState, type SelectValue } from '@lotus/foundation/input/select';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { IconChevronDown, IconClear, IconTick } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { Popover } from '../../show/popover/index.tsrx';
 
 export type SelectSize = 'large' | 'default' | 'small';
@@ -60,6 +62,9 @@ export function Select(&{
     style,
     class: className,
 }: SelectProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
     let &[isControlled] = track<boolean>(() => value !== undefined);
@@ -263,7 +268,7 @@ export function Select(&{
                     @if (allowClear) {
                         <span
                             class="lotus-select-clear"
-                            aria-label="清除"
+                            aria-label={locale.Select.clear}
                             onClick={handleClear}
                         >
                             <IconClear />

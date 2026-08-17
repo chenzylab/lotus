@@ -1,8 +1,10 @@
-import { track, untrack } from 'ripple';
-import { FormFoundation, type FormState, type FormValues, type FormErrors } from '@lotus/foundation/input/form';
+import { track, untrack, effect } from 'ripple';
+import { FormFoundation, type FormState, type FormValues, type FormErrors, type FormMessages } from '@lotus/foundation/input/form';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { FormContext, type LabelPosition } from './form-context.js';
 
-export type { FormRule } from '@lotus/foundation/input/form';
+export type { FormRule, FormMessages } from '@lotus/foundation/input/form';
 export type { FormValues, FormErrors } from '@lotus/foundation/input/form';
 export { Field } from './field.tsrx';
 export type { FieldProps, FieldRenderProps } from './field.tsrx';
@@ -53,6 +55,10 @@ export function Form(&{
     style,
     class: className,
 }: FormProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    let &[messages] = track<FormMessages>(() => locale.Form);
+
     let &[state] = track<FormState>({ values: { ...initValues }, errors: {}, touched: {} });
 
     const foundation = new FormFoundation({
@@ -68,8 +74,9 @@ export function Form(&{
             Object.entries(values).forEach(([field, value]) => foundation.setValue(field, value, onValueChange));
         },
         validate: (fields?: string[]) => {
-            if (!fields) return foundation.validateAll();
-            return Promise.all(fields.map((field) => foundation.validateField(field))).then(() => {
+            const currentMessages = untrack(() => messages);
+            if (!fields) return foundation.validateAll(currentMessages);
+            return Promise.all(fields.map((field) => foundation.validateField(field, currentMessages))).then(() => {
                 const errors: FormErrors = {};
                 fields.forEach((field) => {
                     const error = untrack(() => state).errors[field];
@@ -78,10 +85,23 @@ export function Form(&{
                 return errors;
             });
         },
-        submitForm: () => foundation.submit(onSubmit, onSubmitFail),
+        submitForm: () => foundation.submit(onSubmit, onSubmitFail, untrack(() => messages)),
         reset: () => foundation.reset(onReset),
     };
     getFormApi?.(formApi);
+
+    // locale 切换后，已经显示在页面上的校验错误信息要跟着重新翻译，不能等
+    // 用户下次触发 blur/submit 才用上新文案（spec 明确要求"实时更新，不需要
+    // 重新挂载组件"）。用 effect 监听 messages 的变化，对当前所有已经有
+    // error 的字段重新跑一次校验——只有已存在错误的字段才需要重算，避免
+    // 每次切换 locale 都对全部字段做一次不必要的重复校验。
+    effect(() => {
+        const currentMessages = messages;
+        const fieldsWithError = Object.keys(untrack(() => state).errors).filter((field) => untrack(() => state).errors[field]);
+        fieldsWithError.forEach((field) => {
+            foundation.validateField(field, currentMessages);
+        });
+    });
 
     let &[, contextTracked] = track(() => ({
         state,
@@ -89,13 +109,14 @@ export function Form(&{
         disabled,
         labelPosition,
         labelWidth,
+        messages,
         onValueChange,
     }));
     FormContext.set(contextTracked);
 
     const handleSubmit = (event: SubmitEvent) => {
         event.preventDefault();
-        foundation.submit(onSubmit, onSubmitFail);
+        foundation.submit(onSubmit, onSubmitFail, untrack(() => messages));
     };
 
     const handleReset = (event: Event) => {

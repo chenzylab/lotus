@@ -15,7 +15,7 @@ test.describe('Form', () => {
 
   test('blur 触发单字段校验，填写合法值后错误信息消失', async ({ page }) => {
     await page.goto('/');
-    const usernameInput = page.getByPlaceholder('请输入用户名');
+    const usernameInput = page.getByLabel('用户名', { exact: true });
 
     await usernameInput.click();
     await usernameInput.blur();
@@ -29,7 +29,7 @@ test.describe('Form', () => {
   test('全部字段合法时提交成功，onSubmit 收到完整 values', async ({ page }) => {
     await page.goto('/');
 
-    await page.getByPlaceholder('请输入用户名').fill('semi');
+    await page.getByLabel('用户名', { exact: true }).fill('semi');
     await page.getByPlaceholder('请输入年龄').fill('25');
 
     await page.getByLabel('业务线', { exact: true }).click();
@@ -51,7 +51,7 @@ test.describe('Form', () => {
 
   test('重置：所有字段恢复到挂载时的初始值（回归：没有单独声明 initValue、只吃 Form 级 initValues 的字段曾在 reset 后不被清空）', async ({ page }) => {
     await page.goto('/');
-    const usernameInput = page.getByPlaceholder('请输入用户名');
+    const usernameInput = page.getByLabel('用户名', { exact: true });
     const ageInput = page.getByPlaceholder('请输入年龄');
     const resetButton = page.getByRole('button', { name: '重置' });
 
@@ -71,7 +71,7 @@ test.describe('Form', () => {
 
   test('formApi.setValue：外部按钮驱动字段值变化，同步更新到输入框', async ({ page }) => {
     await page.goto('/');
-    const usernameInput = page.getByPlaceholder('请输入用户名');
+    const usernameInput = page.getByLabel('用户名', { exact: true });
     const externalButton = page.getByRole('button', { name: '外部设置用户名' });
 
     await expect(usernameInput).toHaveValue('');

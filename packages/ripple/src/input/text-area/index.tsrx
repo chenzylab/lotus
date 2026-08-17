@@ -2,6 +2,8 @@ import { track, effect, untrack } from 'ripple';
 import { TextAreaFoundation, type TextAreaState } from '@lotus/foundation/input/text-area';
 import { calculateAutosizeHeight, type AutosizeOption } from './measure';
 import { IconClear } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface TextAreaProps {
     value?: string;
@@ -64,6 +66,9 @@ export function TextArea(&{
     onCompositionUpdate,
     onResize,
 }: TextAreaProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
     let &[isControlled] = track<boolean>(() => value !== undefined);
@@ -176,7 +181,7 @@ export function TextArea(&{
                     <button
                         type="button"
                         class="lotus-textarea-clear"
-                        aria-label="清除"
+                        aria-label={locale.TextArea.clear}
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={(event: MouseEvent) => foundation.handleClear(event, isControlled, onChange, onClear)}
                     >

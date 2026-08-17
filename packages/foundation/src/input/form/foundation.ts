@@ -35,22 +35,44 @@ interface FieldConfig {
 }
 
 /**
+ * 规则不满足、且没有传自定义 rule.message 时用到的兜底文案。Foundation 层
+ * 不依赖任何渲染框架或 UI 包（含 @lotus/locale——那是面向 UI 层的横切包，
+ * Foundation 只应该依赖自己声明的最小契约类型），文案由 Adapter（.tsrx）侧
+ * 从 LocaleContext 读取后注入进来，Foundation 本身不关心文案从哪来、是否
+ * 会随 locale 切换而变化。
+ */
+export interface FormMessages {
+  requiredError: string;
+  patternError: string;
+  minError: (min: number) => string;
+  maxError: (max: number) => string;
+}
+
+/** 未从 Adapter 侧注入 messages 时的默认值（中文，对齐项目历史行为）。 */
+const DEFAULT_MESSAGES: FormMessages = {
+  requiredError: '该字段不能为空',
+  patternError: '格式不正确',
+  minError: (min) => `不能小于 ${min}`,
+  maxError: (max) => `不能大于 ${max}`,
+};
+
+/**
  * 校验单个字段的所有规则，按数组顺序执行，第一条不通过的规则决定错误信息。
  * 只有 validator 规则支持异步（返回 Promise），其余规则都是同步的纯函数校验。
  */
-async function validateRules(value: FieldValue, values: FormValues, rules: FormRule[]): Promise<string | undefined> {
+async function validateRules(value: FieldValue, values: FormValues, rules: FormRule[], messages: FormMessages): Promise<string | undefined> {
   for (const rule of rules) {
     if (rule.required && (value === undefined || value === null || value === '')) {
-      return rule.message ?? '该字段不能为空';
+      return rule.message ?? messages.requiredError;
     }
     if (rule.pattern && typeof value === 'string' && !rule.pattern.test(value)) {
-      return rule.message ?? '格式不正确';
+      return rule.message ?? messages.patternError;
     }
     if (rule.min !== undefined && typeof value === 'number' && value < rule.min) {
-      return rule.message ?? `不能小于 ${rule.min}`;
+      return rule.message ?? messages.minError(rule.min);
     }
     if (rule.max !== undefined && typeof value === 'number' && value > rule.max) {
-      return rule.message ?? `不能大于 ${rule.max}`;
+      return rule.message ?? messages.maxError(rule.max);
     }
     if (rule.validator) {
       const result = await rule.validator(value, values);
@@ -110,11 +132,11 @@ export class FormFoundation extends Foundation<FormState> {
     this.setState({ touched: { ...touched, [field]: isTouched } });
   }
 
-  async validateField(field: string): Promise<string | undefined> {
+  async validateField(field: string, messages: FormMessages = DEFAULT_MESSAGES): Promise<string | undefined> {
     const config = this.fields.get(field);
     const rules = config?.rules;
     const { values } = this.getState();
-    const error = rules ? await validateRules(values[field], values, rules) : undefined;
+    const error = rules ? await validateRules(values[field], values, rules, messages) : undefined;
     // 并发校验多个字段时（validateAll 用 Promise.all），每个字段的规则校验都
     // 可能经过至少一次微任务让出（validateRules 对 validator 规则用了
     // await）。写回时必须重新读取当前最新的 errors 再 merge，而不是复用函数
@@ -125,9 +147,9 @@ export class FormFoundation extends Foundation<FormState> {
     return error;
   }
 
-  async validateAll(): Promise<FormErrors> {
+  async validateAll(messages: FormMessages = DEFAULT_MESSAGES): Promise<FormErrors> {
     const results = await Promise.all(
-      Array.from(this.fields.keys()).map(async (field) => [field, await this.validateField(field)] as const),
+      Array.from(this.fields.keys()).map(async (field) => [field, await this.validateField(field, messages)] as const),
     );
     const errors: FormErrors = {};
     for (const [field, error] of results) {
@@ -141,8 +163,9 @@ export class FormFoundation extends Foundation<FormState> {
   async submit(
     onSubmit?: (values: FormValues) => void,
     onSubmitFail?: (errors: FormErrors, values: FormValues) => void,
+    messages: FormMessages = DEFAULT_MESSAGES,
   ): Promise<void> {
-    const errors = await this.validateAll();
+    const errors = await this.validateAll(messages);
     const { values } = this.getState();
     if (Object.keys(errors).length > 0) {
       onSubmitFail?.(errors, values);

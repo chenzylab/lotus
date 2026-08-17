@@ -1,6 +1,8 @@
 import { track, untrack, effect } from 'ripple';
 import { InputNumberFoundation, type InputNumberState, type InputNumberBounds } from '@lotus/foundation/input/input-number';
 import { IconChevronUp, IconChevronDown, IconClear } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type InputNumberSize = 'large' | 'default' | 'small';
 
@@ -47,6 +49,9 @@ export function InputNumber(&{
     style,
     class: className,
 }: InputNumberProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
     let &[isControlled] = track<boolean>(() => value !== undefined);
@@ -146,7 +151,7 @@ export function InputNumber(&{
                 <button
                     type="button"
                     class="lotus-input-number-clear"
-                    aria-label="清除"
+                    aria-label={locale.InputNumber.clear}
                     onMouseDown={(event: MouseEvent) => event.preventDefault()}
                     onClick={() => { foundation.handleInput('', isControlled, handleChange); }}
                 >
@@ -161,7 +166,7 @@ export function InputNumber(&{
                     <button
                         type="button"
                         class="lotus-input-number-button"
-                        aria-label="增加"
+                        aria-label={locale.InputNumber.increase}
                         disabled={stepUpDisabled}
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={handleStepUp}
@@ -171,7 +176,7 @@ export function InputNumber(&{
                     <button
                         type="button"
                         class="lotus-input-number-button"
-                        aria-label="减少"
+                        aria-label={locale.InputNumber.decrease}
                         disabled={stepDownDisabled}
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={handleStepDown}

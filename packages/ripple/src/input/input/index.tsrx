@@ -1,6 +1,8 @@
 import { track, untrack, effect } from 'ripple';
 import { InputFoundation, type InputState } from '@lotus/foundation/input/input';
 import { IconClear, IconEyeOpened, IconEyeClosedSolid } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type InputSize = 'large' | 'default' | 'small';
 export type InputValidateStatus = 'default' | 'warning' | 'error';
@@ -69,6 +71,9 @@ export function Input(&{
     onCompositionEnd,
     onCompositionUpdate,
 }: InputProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     // 用 track() 而非普通 const，让受控身份能随 value 从 undefined 变为有值
     // （或反向变化，例如外部表单 reset 把值清回 undefined）而重新判定——
     // 普通 const 只在组件挂载时求值一次，此后 value 无论怎么变化，组件都会
@@ -174,7 +179,7 @@ export function Input(&{
                     <button
                         type="button"
                         class="lotus-input-clear"
-                        aria-label="清除"
+                        aria-label={locale.Input.clear}
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={(event: MouseEvent) => foundation.handleClear(event, isControlled, onChange, onClear)}
                     >
@@ -185,7 +190,7 @@ export function Input(&{
                     <button
                         type="button"
                         class="lotus-input-eye"
-                        aria-label={state.eyeOpen ? '隐藏密码' : '显示密码'}
+                        aria-label={state.eyeOpen ? locale.Input.hidePassword : locale.Input.showPassword}
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={() => foundation.toggleEye()}
                     >

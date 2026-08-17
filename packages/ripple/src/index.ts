@@ -165,3 +165,5 @@ export {
     type NavItemInput,
     type NormalizedNavItem,
 } from './navigation/nav/index.tsrx';
+export { ConfigProvider, type ConfigProviderProps } from './other/config-provider/index.tsrx';
+export { zhCN, enUS, locales, type LocaleShape, type LocaleCode } from '@lotus/locale';

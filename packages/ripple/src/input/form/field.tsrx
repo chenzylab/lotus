@@ -74,14 +74,14 @@ export function Field(&{
     const handleChange = (nextValue: any) => {
         foundation?.setValue(field, nextValue, onValueChange);
         if (trigger.includes('change')) {
-            foundation?.validateField(field);
+            foundation?.validateField(field, contextTracked?.value.messages);
         }
     };
 
     const handleBlur = () => {
         foundation?.setTouched(field, true);
         if (trigger.includes('blur')) {
-            foundation?.validateField(field);
+            foundation?.validateField(field, contextTracked?.value.messages);
         }
     };
 
