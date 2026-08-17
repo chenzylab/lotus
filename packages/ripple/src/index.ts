@@ -9,6 +9,25 @@ export {
     type ButtonIconPosition,
     type ButtonHtmlType,
 } from './basic/button/index.tsrx';
+export {
+    IconButton,
+    type IconButtonProps,
+    type IconButtonType,
+    type IconButtonTheme,
+    type IconButtonSize,
+} from './basic/icon-button/index.tsrx';
+export {
+    FloatButton,
+    type FloatButtonProps,
+    type FloatButtonShape,
+    type FloatButtonSize,
+} from './basic/float-button/index.tsrx';
+export {
+    Resizable,
+    type ResizableProps,
+    type ResizableSizeChange,
+    type ResizeDirection,
+} from './basic/resizable/index.tsrx';
 export { Divider, type DividerProps } from './basic/divider/index.tsrx';
 export {
     Space,

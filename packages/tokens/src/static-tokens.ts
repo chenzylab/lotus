@@ -244,6 +244,10 @@ export const tagDecorativeColor: Record<
 /** AI 专属渐变色变量（Phase 1 起被 Button/Icon/Tag/FloatButton 的 AI 主题变体消费）。 */
 export const aiColor = {
   general: 'linear-gradient(90deg, #5C4CFF 0%, #A64EFF 50%, #FF57C6 100%)',
+  // hover/active 是 general 渐变整体调深的固定色值（对应 Semi 的 --semi-color-ai-general-hover/active），
+  // 渐变字符串无法用 withAlpha() 派生透明度，故各色标直接给出调深后的十六进制值。
+  generalHover: 'linear-gradient(90deg, #4B3ACC 0%, #8A3ECC 50%, #CC4599 100%)',
+  generalActive: 'linear-gradient(90deg, #3A2D9E 0%, #6E30A3 50%, #A3357A 100%)',
   purpleLight: 'rgba(166, 71, 255, 1)',
   purpleDark: 'rgba(195, 117, 255, 1)',
   backgroundTopLight: 'rgba(166, 71, 255, 0.08)',

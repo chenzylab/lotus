@@ -16,15 +16,15 @@
 ## Phase 1 — 基础层 + 核心表单 (Basic + 高频 Input)
 
 - [x] Button 按钮（含 AI 主题变体，对应官网 AIButton）
-- [ ] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付）
+- [x] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付；复用 ButtonFoundation，未做多色 icon fill 增强）
 - [x] Icon 图标（含 AI 主题变体，对应官网 AIIcon；524 个正式+lab 图标已全部生成）
 - [x] Typography 字体排印
 - [x] Divider 分割线
 - [x] Space 间距
 - [x] Grid 栅格
 - [x] Layout 布局
-- [ ] FloatButton 悬浮按钮（含 AI 主题变体，对应官网 AIFloatButton）
-- [ ] Resizable 可调整大小
+- [x] FloatButton 悬浮按钮（含 AI 主题变体，对应官网 AIFloatButton；badge 支持待 Badge 组件就绪后补齐）
+- [x] Resizable 可调整大小（8 方向手柄，拖拽算法在 Foundation 自研；ResizeGroup 多面板联动留作二期）
 - [x] Input 输入框
 - [x] InputNumber 数字输入框
 - [x] Checkbox 多选框

@@ -151,6 +151,8 @@ function aiLines(mode: 'light' | 'dark'): string[] {
   const bgBottom = mode === 'light' ? aiColor.backgroundBottomLight : aiColor.backgroundBottomDark;
   return [
     `  --lotus-color-ai-general: ${aiColor.general};`,
+    `  --lotus-color-ai-general-hover: ${aiColor.generalHover};`,
+    `  --lotus-color-ai-general-active: ${aiColor.generalActive};`,
     `  --lotus-color-ai-purple: ${purple};`,
     `  --lotus-color-ai-purple-hover: ${withAlpha(purple, 0.85)};`,
     `  --lotus-color-ai-purple-active: ${withAlpha(purple, 0.7)};`,

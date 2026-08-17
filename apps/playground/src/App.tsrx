@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -238,6 +238,45 @@ export function App() @{
             <Button theme="outline">中</Button>
             <Button theme="outline">右</Button>
         </ButtonGroup>
+
+        <Divider>IconButton</Divider>
+
+        <Space>
+            <IconButton icon={<IconSetting />} aria-label="设置" onClick={() => console.log('icon button clicked')} />
+            <IconButton icon={<IconClose />} type="danger" theme="solid" aria-label="关闭" />
+            <IconButton icon={<IconSearch />} theme="outline" aria-label="搜索" />
+            <IconButton icon={<IconPlus />} size="large" aria-label="新增（large）" />
+            <IconButton icon={<IconTickCircle />} size="small" aria-label="确认（small）" />
+            <IconButton icon={<IconSetting />} disabled aria-label="禁用图标按钮" onClick={() => console.log('should not fire')} />
+            <IconButton icon={<IconSetting />} loading aria-label="加载中图标按钮" onClick={() => console.log('should not fire')} />
+        </Space>
+
+        <Divider>FloatButton</Divider>
+
+        {/* FloatButton 默认 position: fixed，演示区用 position: relative 覆盖以便并排展示 */}
+        <div style={{ display: 'flex', gap: '16px', position: 'relative', height: '60px' }}>
+            <FloatButton icon={<IconSetting />} aria-label="悬浮设置" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} onClick={() => console.log('float button clicked')} />
+            <FloatButton icon={<IconAiBellLevel3 />} colorful aria-label="AI 悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} onClick={() => console.log('float button ai clicked')} />
+            <FloatButton icon={<IconSetting />} shape="square" aria-label="方形悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
+            <FloatButton icon={<IconSetting />} size="small" aria-label="小号悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
+            <FloatButton icon={<IconSetting />} disabled aria-label="禁用悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} onClick={() => console.log('should not fire')} />
+        </div>
+
+        <Divider>Resizable</Divider>
+
+        <Resizable
+            defaultWidth={240}
+            defaultHeight={120}
+            minWidth={120}
+            minHeight={80}
+            maxWidth={480}
+            maxHeight={320}
+            aria-label="可调整大小容器"
+            onChange={(size) => console.log('resizable changed', size.width, size.height)}
+            onResizeEnd={(size) => console.log('resizable resize end', size.width, size.height)}
+        >
+            <div style={{ padding: '12px' }}>拖拽边缘或角落调整大小</div>
+        </Resizable>
 
         <Divider />
 

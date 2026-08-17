@@ -1688,6 +1688,126 @@ bug）。本次用 `ego-browser` 的 CDP `DOMDebugger.getEventListeners`
    只在客户端 hydrate 之后），是快速排除"服务端渲染逻辑本身有问题"
    这个方向、把排查范围收窄到"客户端 hydrate/交互层"的有效手段。
 
+## 踩坑 #41：`@if (cond) {...} @else {...}` 两个分支都渲染同一 class 名的
+容器元素时，`@else` 分支内容不显示，拆成两个独立 `@if` 后正常
+
+**现象**：`IconButton` 组件按钮内部结构写成
+```tsrx
+@if (loading) {
+    <span class="lotus-icon-button-icon"><SpinnerIcon /></span>
+} @else {
+    <span class="lotus-icon-button-icon">{icon}</span>
+}
+```
+`loading=false`（默认非加载态）时，用 `ego-browser` 检查真实 DOM，
+`<span class="lotus-icon-button-icon">` 元素存在，但 `childNodes` 为空——
+`{icon}` 传入的 `<IconSetting />` JSX 完全没有渲染出来，`textContent`
+和内部 `innerHTML` 均为空字符串。`icon` prop 本身确认有效传入（同样的
+`icon={<Xxx />}` 写法在已验证工作的 `DropdownItem`/`Tag` 组件里正常
+渲染），排除了 prop 传递层面的问题。
+
+**排查过程**：
+1. 先怀疑是否需要额外包一层容器（Tag 的 `prefixIcon` 写法本身就是
+   `<span>{prefixIcon}</span>`），改写后问题依旧，排除"裸露 `{icon}`
+   插值需要包裹"这个假设——事实上原代码已经包了 `<span>`。
+2. 用 `curl` 直接取 Vite 提供的源文件确认改动已生效、非缓存问题。
+3. 对照检查逻辑完全同构的 `DropdownItem`（`@if (icon != null) { <span
+   class="...">{icon}</span> }`，是单独 `@if` 而非 `@if/@else` 结构，
+   工作正常。
+4. 将 `IconButton` 的 `@if/@else` 改写成两个条件互斥的独立 `@if`
+   （`@if (loading) {...}` + `@if (!loading) {...}`），问题立即消失，
+   `{icon}` 正确渲染成 `<svg>`。
+
+**根因（未深挖到编译器内部实现，仅记录现象与规避方式）**：当 `@if` 和
+`@else` 两个分支渲染的是**结构相同、class 名相同的容器元素**（这里是
+两个分支都输出 `<span class="lotus-icon-button-icon">`）时，Ripple
+编译器/运行时在分支切换的 diff 逻辑上疑似对这种"节点态"复用产生了
+错误判断，导致 `@else` 分支的子节点更新丢失。`SpinnerIcon`/`icon`
+两个分支内容结构不同（一个是 `<svg>`、一个是任意 JSX），但外层 `<span>`
+的 class 完全一致，是本次触发条件的关键差异点（`DropdownIton` 对照组
+只有一个分支、没有 `@else`，天然不会触发这个问题）。
+
+**规避方式**：**两个分支渲染的容器元素即使 class 相同，也不要用
+`@if/@else` 二选一结构，改成两个条件互斥的独立 `@if` 块**（`@if (a)
+{...}` + `@if (!a) {...}`）。这是本次验证中唯一确认有效的 workaround；
+未验证"两个分支加不同 class 是否也能规避"，遇到类似问题优先直接套用
+"拆成独立 `@if`"这个已验证方案，不必重新排查。
+
+**验证方法**：这类问题 **SSR 阶段和"看起来渲染出了 HTML"都不会暴露**
+——本次是用 `ego-browser` 的 `js()` 直接读取 `element.outerHTML`/
+`childNodes` 才发现 `<span>` 是空的（外层元素结构正确，掩盖了内部内容
+缺失）。任何新组件只要用到 `@if/@else` 且两分支输出结构接近，验收测试
+必须真机检查渲染出的 DOM 内部内容（不能只看外层容器/class 是否存在），
+最可靠的方式是断言内部关键子元素（如 `<svg>`）确实存在。
+
+## 踩坑 #42：`var(--lotus-xxx)` 引用不存在的 token 名不会报编译错误，
+浏览器静默 fallback 成默认值，容易被"页面能正常渲染"糊弄过去
+
+**现象**：`FloatButton` 组件开发时凭记忆/推测写了三个不存在的 token 名——
+`--lotus-z-index-popup`（正确是 `--lotus-z-back-top`）、
+`--lotus-border-radius-default`（正确是 `--lotus-border-radius-medium`）、
+`--lotus-color-text-primary`（正确是 `--lotus-color-text-0`）。这三处
+`var()` 引用均未触发任何 typecheck/lint/构建报错，页面也能正常渲染
+（未定义的 CSS 自定义属性在 `var()` 里静默 fallback 为初始值/继承值，
+等价于该条 CSS 声明被忽略），只有真机检查 `getComputedStyle()` 的实际
+计算值才发现 `border-radius` 变成了 `0px`（而不是预期的 6px）。
+
+**规避方式**：任何新写的 `var(--lotus-xxx)` 引用，写完后立即用一行命令
+核对该 token 是否真实存在于 `packages/tokens/dist/tokens.css`：
+```bash
+grep -oE "var\(--lotus-[a-z0-9-]+" <组件文件路径> | sed 's/var(//' | sort -u | \
+  while read t; do grep -q -- "${t#--lotus-}:" packages/tokens/dist/tokens.css \
+  || echo "MISSING: $t"; done
+```
+不要凭记忆/语义联想拼写 token 名（例如想当然认为存在 `border-radius-
+default`、`text-primary`），必须先 `grep packages/tokens/dist/tokens.css`
+或读 `packages/tokens/src/static-tokens.ts` 源码确认真实键名。
+
+**验证方法**：真机验证不能只看"元素是否可见/渲染出来"，对于依赖具体
+token 值呈现视觉效果的场景（圆角、颜色、间距等），必须用
+`getComputedStyle(el).xxx` 读取浏览器真实计算值，与预期 token 值比对，
+才能发现这类静默失败。
+
+## 踩坑 #43：开发中频繁编辑代码时，`ego-browser` 复用同一个浏览器 tab
+可能停留在陈旧的模块缓存上，表现得和真实渲染 bug 一模一样，浪费大量
+排查时间；Playwright 拖拽类测试必须先 `scrollIntoViewIfNeeded()` 再取
+`boundingBox()` 坐标
+
+**现象一（dev server/tab 缓存假象）**：开发 `Resizable` 组件时，playground
+里新增的演示区块在真机验证时完全不渲染（相邻的调试文本标记也一并消失），
+但 `curl` 直接请求 Vite 源码接口、`typecheck`/`lint` 全部正常，怀疑是
+运行时异常，用 `window.onerror`/`unhandledrejection`/`console.error`
+拦截排查了一圈均未捕获到任何错误。用二分法逐步精简组件代码（去掉
+`effect`、去掉 `@for`、去掉复杂 props）想定位触发点，发现无论怎么改，
+浏览器里看到的内容都不变——回看实际渲染出的 class 名（`lotus-resizable-
+debug`），发现这是几个版本之前、早就被覆盖掉的源码留下的产物。根因是
+同一个 `ego-browser` 任务空间反复复用同一个浏览器 tab，Vite 的 HMR 在
+高频连续保存（几秒内改十几次文件）时没有跟上，浏览器实际运行的是某个
+中间态的陈旧模块，而不是当前磁盘上的最新代码。
+
+**规避方式**：怀疑"改了代码但效果不变/更糟"时，不要立即假设代码有 bug
+去做二分排查——先用 `curl` 对比 Vite 提供的源码接口内容与本地文件是否
+一致（排除 Vite 侧缓存问题），若一致但浏览器行为仍不对，直接**重启 dev
+server + 换用全新的 `useOrCreateTaskSpace` 任务空间名 + 全新 tab**
+重新验证，比在旧环境里继续排查更快，且能避免被"陈旧代码产生的现象"
+带偏方向做无用功。改动频繁的调试阶段，每隔几轮修改就应该重开一次全新
+环境交叉验证，而不是无限信任同一个持续复用的 tab。
+
+**现象二（Playwright 拖拽坐标）**：`Resizable` 组件的 e2e 测试里，用
+`page.mouse.move/down/move/up` 模拟拖拽手柄，尺寸断言全部失败（拖拽前
+后尺寸完全不变），但同样的拖拽操作用 `ego-browser` 的 `dragMouse` 助手
+测试完全正常。排查发现 `class after mousedown` 里缺少 `lotus-resizable-
+resizing`，说明 `mousedown` 事件根本没有命中手柄元素——`Resizable`
+演示区块在 playground 页面靠下的位置，`handler.boundingBox()` 取到的
+坐标是基于当前视口的绝对坐标，但页面在获取坐标和执行鼠标操作之间可能
+仍处于滚动过程中，导致坐标与鼠标实际落点错位。
+
+**规避方式**：任何需要精确坐标点击/拖拽的 Playwright 测试，取
+`boundingBox()` 前必须先 `await locator.scrollIntoViewIfNeeded()`
+让页面滚动稳定，再读取坐标、执行 `page.mouse` 操作序列。`locator.click()`
+内部自带这个保护，但 `page.mouse.move/down/up` 这种手动坐标操作没有，
+需要显式调用。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1705,3 +1825,6 @@ bug）。本次用 `ego-browser` 的 CDP `DOMDebugger.getEventListeners`
 - **Foundation 需要文案时通过方法参数注入（不反向依赖 `@lotus/locale`），且任何"从 locale 文案计算并缓存的结果"在 locale 切换后都需要主动重算，不会自动更新**（踩坑 #38）。
 - **`apps/docs/ripple.config.ts`/`routes.ts` 不能从 `@ripple-ts/vite-plugin` 值 import `defineConfig`，但 `RenderRoute` 类值 import 是必需的、不能替换成 plain object**（踩坑 #39，重大）：`defineConfig` 用本地恒等函数 + `import type` 代替（避免 `process.platform` 崩溃），`RenderRoute` 保留原样（替换成 plain object 会破坏 `module server` 的 RPC handler 注册）。
 - **`module server` 声明的数据获取函数在客户端是异步 RPC 调用，页面组件必须用 `async function` + `trackAsync` + `@try`/`@pending` 异步边界，不能写成同步 `const doc = loadDoc();`**（踩坑 #40，重大）：`trackAsync` 的声明和读取必须在同一个 `@try {}` 块的最外层直接语句里，不能拆到内层子组件。新增任何用到 `module server` 的 docs 页面时直接套用这个模式，且验收测试必须真机点击测试交互（不能只看页面渲染出了 HTML）。
+- **`@if (cond) {...} @else {...}` 两分支渲染同 class 容器元素时 `@else` 分支内容可能不显示**（踩坑 #41）：改成两个条件互斥的独立 `@if` 块规避。验收测试必须真机检查渲染出的 DOM 内部内容（用 `outerHTML`/子元素断言），不能只看外层容器是否存在。
+- **`var(--lotus-xxx)` 引用不存在的 token 名不会报任何编译错误，浏览器静默 fallback，页面照常渲染**（踩坑 #42）：新写的每个 `var()` 引用都要 grep `packages/tokens/dist/tokens.css` 核对键名真实存在，不能凭记忆/语义联想拼写；真机验收要用 `getComputedStyle()` 读实际计算值比对，不能只看元素是否可见。
+- **高频连续保存代码时，`ego-browser` 复用的浏览器 tab 可能停留在陈旧 HMR 状态，表现和真实渲染 bug 完全一样**（踩坑 #43）：怀疑"改代码但效果不变"时先用 `curl` 对比 Vite 源码接口内容确认非服务端缓存问题，仍不对就直接重启 dev server + 换全新任务空间/tab 重新验证，不要在旧环境里死磕二分排查。**Playwright 拖拽类测试**在取 `boundingBox()` 前必须先 `scrollIntoViewIfNeeded()`，否则坐标可能与鼠标实际落点错位导致 `mousedown` 落空。
