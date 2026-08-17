@@ -15,55 +15,55 @@
 
 ## Phase 1 — 基础层 + 核心表单 (Basic + 高频 Input)
 
-- [ ] Button 按钮（含 AI 主题变体，对应官网 AIButton）
+- [x] Button 按钮（含 AI 主题变体，对应官网 AIButton）
 - [ ] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付）
-- [ ] Icon 图标（含 AI 主题变体，对应官网 AIIcon）
-- [ ] Typography 字体排印
-- [ ] Divider 分割线
-- [ ] Space 间距
-- [ ] Grid 栅格
-- [ ] Layout 布局
+- [x] Icon 图标（含 AI 主题变体，对应官网 AIIcon；524 个正式+lab 图标已全部生成）
+- [x] Typography 字体排印
+- [x] Divider 分割线
+- [x] Space 间距
+- [x] Grid 栅格
+- [x] Layout 布局
 - [ ] FloatButton 悬浮按钮（含 AI 主题变体，对应官网 AIFloatButton）
 - [ ] Resizable 可调整大小
-- [ ] Input 输入框
-- [ ] InputNumber 数字输入框
-- [ ] Checkbox 多选框
-- [ ] Radio 单选框
-- [ ] Switch 开关
-- [ ] Form 表单
+- [x] Input 输入框
+- [x] InputNumber 数字输入框
+- [x] Checkbox 多选框
+- [x] Radio 单选框
+- [x] Switch 开关
+- [x] Form 表单
 
 ## Phase 2 — 导航 + 反馈 (Navigation + Feedback)
 
-- [ ] Tabs 标签页
-- [ ] Breadcrumb 面包屑
+- [x] Tabs 标签页
+- [x] Breadcrumb 面包屑
 - [ ] Steps 步骤条
 - [ ] Pagination 分页
 - [ ] Anchor 锚点
 - [ ] BackTop 回到顶部
-- [ ] Navigation 导航
+- [x] Navigation 导航
 - [ ] Tree 树形控件（导航用途基础版，数据交互增强见 Phase 4）
 - [ ] Banner 通栏
 - [ ] Notification 通知
 - [ ] Toast 轻提示
 - [ ] Popconfirm 气泡确认框
 - [ ] Progress 进度条
-- [ ] Skeleton 骨架屏
+- [x] Skeleton 骨架屏
 - [ ] Spin 加载中
 - [ ] Feedback（Result 结果页）
 
 ## Phase 3 — 数据展示 (Show)
 
-- [ ] Avatar 头像
+- [x] Avatar 头像
 - [ ] Badge 徽标
 - [ ] Card 卡片
-- [ ] Tag 标签（含 AI 主题变体，对应官网 AITag）
+- [x] Tag 标签（含 AI 主题变体，对应官网 AITag）
 - [ ] Empty 空状态
 - [ ] Descriptions 描述列表
 - [ ] Collapse 折叠面板
 - [ ] Collapsible 可折叠容器
-- [ ] Dropdown 下拉菜单
-- [ ] Popover 气泡卡片
-- [ ] Tooltip 文字提示
+- [x] Dropdown 下拉菜单
+- [x] Popover 气泡卡片
+- [x] Tooltip 文字提示
 - [ ] List 列表
 - [ ] Timeline 时间轴
 - [ ] Image 图片
@@ -81,7 +81,7 @@
 
 > 这批组件大多存在非平凡状态机和/或大数据虚拟化需求，Foundation 层价值最高，同时是 `perf-baseline` skill 的主要适用对象。
 
-- [ ] Select 选择器
+- [x] Select 选择器（提前于 Phase 1 随核心表单一并交付）
 - [ ] Cascader 级联选择
 - [ ] TreeSelect 树形选择
 - [ ] AutoComplete 自动补全
