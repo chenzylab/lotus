@@ -1532,6 +1532,162 @@ effect(() => {
    `LocaleContext`，`fallback` 到 `zhCN`（对齐项目历史上所有硬编码
    文案都是中文这一事实）。
 
+## 踩坑 #39（重大）：`apps/docs/ripple.config.ts` 从 `@ripple-ts/vite-plugin`
+值 import `RenderRoute` 类，dev 模式下把整套服务端渲染逻辑打包进客户端，
+导致 `onClick` 类交互全站失效——真正根因不在这里，是 #40 的连带效应
+
+**背景**：这是继踩坑 #9（`defineConfig` 值 import 触发 `process.platform`
+崩溃）之后，同一个文件里的第二处"值 import 上游包、拖出不该在客户端跑的
+服务端逻辑"。`apps/docs/src/routes.ts` 里 `import { RenderRoute } from
+'@ripple-ts/vite-plugin'`，这个包的主入口 `src/index.js` 顶层 `import` 了
+`./server/router.js`、`./server/middleware.js` 等一整条服务端渲染/路由/
+中间件实现。Vite dev 模式用原生 ESM、不做 tree-shaking，`virtual:ripple-
+hydrate` 客户端入口脚本 `import rippleConfig from "/ripple.config.ts"`
+时，会把这份配置文件（连带它 import 的 `routes.ts`、连带 `RenderRoute`
+所在的整个 `@ripple-ts/vite-plugin` 主模块）完整加载执行一遍。
+
+**排查中的关键弯路**：真机验证发现，`process.platform` 崩溃修复后，
+`Input` 组件的受控输入（`onInput`）恢复正常，但 `Switch`/`Button`/
+`InputNumber` 步进器这类 `onClick` 交互依然完全失效——用 CDP
+`DOMDebugger.getEventListeners` 确认 `#root` 节点上根本没有挂载任何
+`click` 委托监听器。一度怀疑是 `RenderRoute` 类值 import 拖出的服务端
+逻辑污染了 Ripple 事件委托系统的模块级状态（`all_registered_events`/
+`root_event_handles`），把 `routes.ts` 改成 plain object 代替
+`new RenderRoute(...)` 实例后，`#root` 上确实出现了完整的事件监听器
+集合（含 `click`），但页面却完全无法渲染——`module server` 的 RPC 机制
+报 `500 Invalid input`（`devalue.parse` 反序列化失败）。这个"修复"比
+原问题更严重，被迫回滚。
+
+**真正根因（见踩坑 #40）**：`onClick` 失效和 RPC 500 都只是**表象**，
+真正的根因是 `module server` 的 `loadDoc()` 在客户端是异步 RPC 调用，
+但所有 docs 页面组件都写成了 `const doc = loadDoc();` 这种假设同步返回
+的用法。这个不匹配从项目一开始就存在，只是`process.platform` 崩溃
+总是抢在 hydrate 真正执行到 `loadDoc()` 这行代码之前就让整个客户端脚本
+顶层执行中断，所以从未暴露。修完 `process.platform` 崩溃后，hydrate
+第一次真正跑到这行代码，暴露出真正的 bug；而这次暴露出的报错信息
+（`Cannot read properties of undefined (reading 'category')`）表面上
+看起来像是"数据没传对"，牵connect到 `routes.ts`/`RenderRoute` 上是
+一次误诊——`RenderRoute` 类本身对 SSR/RPC 路由匹配是必需的（`plain
+object` 替代版本破坏了 RPC，不是巧合，是因为 RPC handler 的注册收集
+逻辑确实依赖了完整正确的路由配置），只是这个巧合掩盖了真正的异步/
+同步不匹配问题——`RenderRoute` 类版本下，`process.platform` 崩溃仍在
+（因为它本身没被修，这份分析针对的是"如果只改 routes.ts 不改
+`ripple.config.ts`"的中间态），页面提前失败 fallback 到 `mount()`，
+`mount()` 阶段同样会调用一次 `loadDoc()`，同样命中同步/异步不匹配，
+但因为整个客户端脚本更早地在别处失败，这个特定错误被更早的错误链
+掩盖，没有独立浮现。
+
+**结论性规则**：本条本身不是需要修的 bug——`RenderRoute` 类值 import
+是必需的，不能替换成 plain object（会破坏 RPC handler 注册）。真正的
+教训是**排查连环故障时，第一个修复解除的崩溃可能只是掀开了更深一层
+从未被验证过的代码路径**——process.platform 崩溃修复后代码能往前走了，
+反而暴露出一个从项目最初就存在、从未被测试覆盖到的 `module server`
+异步用法错误。诊断这类"修一个问题、冒出另一个更怪异问题"的场景时，
+要优先怀疑"新暴露的错误是被之前的错误一直挡在门外的独立缺陷"，而不是
+"这次改动引入的新问题"——两种假设都要用最小复现验证，不能只凭直觉
+下结论（本条踩坑的教训就是最初误判了方向，多花了不少排查时间）。
+
+## 踩坑 #40（重大）：`module server` 的客户端桥接函数是异步 RPC 调用，
+docs 站全部 17 个页面组件都用 `const doc = loadDoc();` 同步写法，
+必须改成 `trackAsync` + `@try`/`@pending` 异步边界
+
+**现象**：`apps/docs` 每个文档页面组件都用 `module server { export
+function loadDoc() {...} }` + `import { loadDoc } from server;` +
+`const doc = loadDoc();` 的写法，从项目最初的 Input/Switch 两个页面
+到本轮新增的 5 个页面、以及后续补的另外 13 个既有页面，全部 17 个页面
+统一踩了同一个坑——这个 bug 一直存在，只是从未被真机验证覆盖到（此前
+docs 站的验证止步于"页面能渲染出 HTML"，没人真正点击测试过交互，
+`specs` 踩坑 #9 的记录里也明确写过"`apps/docs` 站当前所有交互类组件
+demo 在浏览器里均不可点击验证"——这次修复过程正是在尝试解决 #9 遗留
+的这句话时，牵连出了这个更深层的独立问题）。
+
+**根因**：`packages/ripple/src/runtime/index-client.js` 里客户端的
+`rpc()` 桥接函数（`packages/ripple/src/runtime/internal/client/rpc.js`）
+是 `export async function rpc(hash, args)`——**永远返回 Promise**，
+这是 RPC 调用的本质决定的（跨网络请求不可能同步）。`module server`
+编译器会把 `import { loadDoc } from server;` 在客户端编译成对这个
+`rpc()` 函数的调用。但页面组件代码里 `const doc = loadDoc();` 把返回值
+当同步对象直接用（`doc.frontmatter.category`），在服务端 SSR 阶段
+（`loadDoc` 是直接函数调用，真同步）这样写没有问题，但客户端 hydrate
+阶段执行到这行代码时，`doc` 实际上是一个 `Promise`，`doc.frontmatter`
+是 `undefined.frontmatter`，抛出
+`TypeError: Cannot read properties of undefined (reading 'category')`。
+
+**修复**：改用 Ripple 官方提供的 `trackAsync` + `@try`/`@pending`
+异步边界模式（`ripple` 包顶层导出）：
+```tsrx
+import { Fragment, trackAsync } from 'ripple';
+
+module server {
+  import { getDoc } from '../../lib/markdown';
+  // 必须显式声明 async，否则客户端桥接层不会把这个函数当异步处理，
+  // trackAsync(() => loadDoc()) 的类型也无法正确推导成 Promise<T>。
+  export async function loadDoc() {
+    return getDoc('input/switch');
+  }
+}
+
+import { loadDoc } from server;
+
+export function SwitchDocPage() @{
+  let &[doc] = trackAsync(() => loadDoc());
+
+  @try {
+    <DocsLayout category={doc.frontmatter.category} ...>
+      {/* ... */}
+    </DocsLayout>
+  } @pending {
+    <p>Loading...</p>
+  }
+}
+```
+
+**两个不能省的细节，各自都会导致完全不同的报错**：
+1. **`module server` 里的函数必须显式标 `async`**：`export function
+   loadDoc()`（非 async）即使客户端确实通过 `rpc()` 异步调用它，
+   TypeScript 类型层面 `loadDoc` 的返回类型仍然是同步的 `RenderedDoc`
+   而非 `Promise<RenderedDoc>`，`trackAsync(() => loadDoc())` 会在
+   typecheck 阶段报类型不匹配（`trackAsync` 要求参数返回
+   `PromiseLike<V>`）。加上 `async` 后类型自动变成
+   `Promise<RenderedDoc>`，`trackAsync` 类型对齐，且不需要手写
+   `ReturnType<typeof loadDoc>` 之类的辅助类型。
+2. **`trackAsync` 的声明和对其字段的读取，必须都在同一个 `@try {}`
+   块的直接子级里，不能拆成"外层 `@try` 包一个内层子组件，子组件内部
+   再声明 `trackAsync` 并读取"**——最初尝试过这种更符合直觉的拆分写法
+   （外层页面组件只负责 `@try`/`@pending`，实际数据获取和渲染放进一个
+   独立的内层组件），运行时报
+   `Reads on pending tracked values directly inside component body
+   are prohibited`。根源在 Ripple 运行时对"pending 值合法读取位置"的
+   检测（`runtime.js` 的 `is_try_fn_block` 判断）要求当前渲染块的
+   父级就是 `TRY_BLOCK`——`trackAsync` 声明和读取都必须直接摆在
+   `@try {}` 大括号里的最外层语句序列，不能再套一层组件调用把它们
+   分隔开。
+
+**验证方法**：真机验证必须覆盖"点击某个依赖 `module server` 数据渲染出
+的交互元素、断言状态真的改变"这个完整链路，不能只看"页面渲染出了
+HTML"（SSR 输出永远是完整的，因为 `loadDoc` 在服务端是真同步调用，
+这条路径从未暴露过问题——只有客户端 hydrate 之后的交互才会命中这个
+bug）。本次用 `ego-browser` 的 CDP `DOMDebugger.getEventListeners`
+确认 `#root` 事件监听器集合、`Network.responseReceived` 确认 RPC 请求
+真实状态码与响应体内容、点击后断言 `aria-checked`/`value` 等属性真的
+变化，三层证据链交叉验证，才最终定位到这是"数据获取模式"问题而不是
+"事件委托"问题——排查过程中一度被"`#root` 上确实没有 `click` 监听器"
+这个表面证据带偏方向，误以为要修事件委托系统本身。
+
+**结论性规则**：
+1. **任何新增的 docs 页面，只要用了 `module server` 声明的数据获取
+   函数，一律必须用 `async function` + `trackAsync` + `@try`/
+   `@pending` 模式，不能写成看起来更简单的同步 `const doc =
+   loadDoc();`**——这个错误在服务端渲染阶段完全不会暴露，只有真机
+   点击测试客户端 hydrate 后的交互才会发现，非常容易被"页面能正常
+   显示"的表面现象糊弄过去。
+2. `trackAsync` 的声明变量和对它的属性访问，必须摆在同一个 `@try {}`
+   块的最外层直接语句里，不能拆分到被 `@try` 调用的子组件内部。
+3. 排查"页面能渲染但不能交互"这类问题时，`curl` 直接请求 SSR HTML
+   可以确认服务端渲染本身是否正常（本次验证 SSR 输出始终完整，问题
+   只在客户端 hydrate 之后），是快速排除"服务端渲染逻辑本身有问题"
+   这个方向、把排查范围收窄到"客户端 hydrate/交互层"的有效手段。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1547,3 +1703,5 @@ effect(() => {
 - **`isControlled` 判断必须响应式，且身份切换后组件内部 state 不能残留陈旧值——用 effect 把外部受控值同步进 state，且 effect 内部读写同一 state 要用 untrack 避免死循环**（踩坑 #36，重大）。
 - **Ripple 没有 render-prop 机制，"父组件注入渲染逻辑"类 API 要设计成"组件作为显式 prop + `<Comp {...} />` 渲染"，不能用 `children` 当函数调用**（踩坑 #37）。
 - **Foundation 需要文案时通过方法参数注入（不反向依赖 `@lotus/locale`），且任何"从 locale 文案计算并缓存的结果"在 locale 切换后都需要主动重算，不会自动更新**（踩坑 #38）。
+- **`apps/docs/ripple.config.ts`/`routes.ts` 不能从 `@ripple-ts/vite-plugin` 值 import `defineConfig`，但 `RenderRoute` 类值 import 是必需的、不能替换成 plain object**（踩坑 #39，重大）：`defineConfig` 用本地恒等函数 + `import type` 代替（避免 `process.platform` 崩溃），`RenderRoute` 保留原样（替换成 plain object 会破坏 `module server` 的 RPC handler 注册）。
+- **`module server` 声明的数据获取函数在客户端是异步 RPC 调用，页面组件必须用 `async function` + `trackAsync` + `@try`/`@pending` 异步边界，不能写成同步 `const doc = loadDoc();`**（踩坑 #40，重大）：`trackAsync` 的声明和读取必须在同一个 `@try {}` 块的最外层直接语句里，不能拆到内层子组件。新增任何用到 `module server` 的 docs 页面时直接套用这个模式，且验收测试必须真机点击测试交互（不能只看页面渲染出了 HTML）。

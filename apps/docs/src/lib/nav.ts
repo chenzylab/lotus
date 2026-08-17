@@ -31,6 +31,11 @@ export const navGroups: NavGroup[] = [
     items: [
       { text: 'Input 输入框', href: '/input/input' },
       { text: 'Switch 开关', href: '/input/switch' },
+      { text: 'Checkbox 多选框', href: '/input/checkbox' },
+      { text: 'Radio 单选框', href: '/input/radio' },
+      { text: 'InputNumber 数字输入框', href: '/input/input-number' },
+      { text: 'Select 选择器', href: '/input/select' },
+      { text: 'Form 表单', href: '/input/form' },
     ],
   },
   {
