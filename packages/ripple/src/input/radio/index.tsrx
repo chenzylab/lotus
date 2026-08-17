@@ -1,4 +1,4 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { RadioFoundation, type RadioState } from '@lotus/foundation/input/radio';
 import { RadioContext } from './radio-context.js';
 
@@ -42,7 +42,9 @@ export function Radio(&{
     let &[groupDisabled] = track(() => contextTracked?.value.disabled ?? false);
     let &[groupName] = track(() => contextTracked?.value.name);
 
-    const isControlled = inGroup || checked !== undefined;
+    // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
+    // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
+    let &[isControlled] = track<boolean>(() => inGroup || checked !== undefined);
     let &[state] = track<RadioState>({
         checked: isControlled ? !!checked : defaultChecked,
         disabled,
@@ -51,6 +53,21 @@ export function Radio(&{
     const foundation = new RadioFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<RadioState>) => { state = { ...state, ...patch }; },
+    });
+
+    // 一旦组件经历过"非受控切换 state.checked → 被外部 checked 变为受控 →
+    // 又变回 undefined"，如果不同步，切回非受控展示时 state.checked 会残留
+    // 陈旧值。只针对 checked prop 本身（不涉及 inGroup，理由同 Checkbox）。
+    // 详见 input-number/index.tsrx 同名注释与
+    // specs/cross-cutting/foundation-adapter-pattern.md。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (checked !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, checked }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, checked: false }; });
+        }
     });
 
     let &[displayChecked] = track<boolean>(() => (inGroup ? groupChecked : isControlled ? !!checked : state.checked));

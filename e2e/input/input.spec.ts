@@ -6,7 +6,7 @@ test.describe('Input', () => {
     page.on('console', (msg) => logs.push(msg.text()));
 
     await page.goto('/');
-    const input = page.getByPlaceholder('请输入');
+    const input = page.getByPlaceholder('请输入', { exact: true });
     await input.fill('hello lotus');
 
     await expect(input).toHaveValue('hello lotus');

@@ -24,6 +24,7 @@ export default [
       'apps/docs/src/demos/navigation/tabs/basic.tsrx',
       'apps/docs/src/demos/feedback/skeleton/basic.tsrx',
       'apps/playground/src/App.tsrx',
+      'packages/ripple/src/input/form/field.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',

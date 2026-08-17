@@ -1,4 +1,4 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { CheckboxFoundation, type CheckboxState } from '@lotus/foundation/input/checkbox';
 import { IconTick, IconMinus } from '@lotus/icons';
 import { CheckboxContext } from './checkbox-context.js';
@@ -38,7 +38,9 @@ export function Checkbox(&{
     let &[groupChecked] = track(() => value !== undefined && (contextTracked?.value.value.includes(value) ?? false));
     let &[groupDisabled] = track(() => contextTracked?.value.disabled ?? false);
 
-    const isControlled = inGroup || checked !== undefined;
+    // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
+    // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
+    let &[isControlled] = track<boolean>(() => inGroup || checked !== undefined);
     let &[state] = track<CheckboxState>({
         checked: isControlled ? !!checked : defaultChecked,
         disabled,
@@ -47,6 +49,22 @@ export function Checkbox(&{
     const foundation = new CheckboxFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<CheckboxState>) => { state = { ...state, ...patch }; },
+    });
+
+    // 一旦组件经历过"非受控切换 state.checked → 被外部 checked 变为受控 →
+    // 又变回 undefined"，如果不同步，切回非受控展示时 state.checked 会残留
+    // 陈旧值。只针对 checked prop 本身（不涉及 inGroup——Group 内选中态完全
+    // 由 Context 接管，displayChecked 在 inGroup 时不读 state.checked）。
+    // 详见 input-number/index.tsrx 同名注释与
+    // specs/cross-cutting/foundation-adapter-pattern.md。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (checked !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, checked }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, checked: false }; });
+        }
     });
 
     let &[displayChecked] = track<boolean>(() => (inGroup ? groupChecked : isControlled ? !!checked : state.checked));

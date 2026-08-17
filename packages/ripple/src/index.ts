@@ -77,6 +77,17 @@ export {
     type SelectSize,
     type SelectValidateStatus,
 } from './input/select/index.tsrx';
+export {
+    Form,
+    Field,
+    type FormProps,
+    type FormApi,
+    type FieldProps,
+    type FieldRenderProps,
+    type FormRule,
+    type FormValues,
+    type FormErrors,
+} from './input/form/index.tsrx';
 export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
 export {
     Avatar,

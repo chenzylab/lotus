@@ -1214,6 +1214,256 @@ TreeSelect、DatePicker、AutoComplete 等同样需要"选中后关闭 + 点击�
    大量误导性的"复现"和"失败"，需要先排除工具/时序噪音，再下"这是真实
    bug"的结论。
 
+## 踩坑 #34：Foundation 里并发校验多个字段时，`setState` 基于函数开始时的
+旧快照 spread 合并，后完成的字段会覆盖先完成字段刚写入的值
+
+**现象**：Form 组件的 `FormFoundation.validateAll()` 用 `Promise.all` 并发
+校验所有已注册字段，每个字段各自跑完 `validateField` 后写回
+`state.errors`。真机点击"提交"按钮触发全字段校验后，页面上只显示了
+**最后一个**字段的错误信息，其余字段即使规则不通过，错误提示也不显示。
+单测反而全部通过——因为既有单测只断言 `validateAll()` 的**返回值**（一个
+在函数内部本地累加的 `results` 数组遍历构造出的对象），没有断言
+`getState().errors` 这个真正被组件读取展示的存储状态。
+
+**根因**：
+```ts
+async validateField(field: string): Promise<string | undefined> {
+  const { values, errors } = this.getState();  // 函数开始时读一次
+  const error = rules ? await validateRules(...) : undefined;  // 可能让出微任务
+  this.setState({ errors: { ...errors, [field]: error } });  // 用旧 errors 合并
+  return error;
+}
+```
+`validateRules` 对 `validator` 类型的规则用了 `await`，即使所有规则都是
+纯同步逻辑，函数体本身也至少经过一次微任务让出。`Promise.all` 并发调用
+多个 `validateField` 时，每个调用都在**各自函数刚进入时**读了同一份旧
+`errors` 快照；哪个字段先完成、就先把自己的 `error` 合并进这份旧快照写回
+去；后完成的字段用的还是同一份最初的旧快照（不包含前面字段刚写入的
+`error`），把自己的结果覆盖上去时会连带抹掉前面字段写入的内容。最终
+`state.errors` 里只保留了最后一个完成的字段。
+
+**修复**：`errors` 的读取必须挪到 `await` **之后**、写回**之前**，确保
+每次合并用的都是当前最新状态，不是函数开始时的旧快照：
+```ts
+async validateField(field: string): Promise<string | undefined> {
+  const { values } = this.getState();
+  const error = rules ? await validateRules(values[field], values, rules) : undefined;
+  const { errors } = this.getState();  // 写回前重新读，不用开局那份旧快照
+  this.setState({ errors: { ...errors, [field]: error } });
+  return error;
+}
+```
+
+**结论性规则**：Foundation 里任何"读旧值 → 可能异步让出 → spread 合并写回"
+的模式，只要写回前跨过了至少一次 `await`，读取旧值的时机就必须紧贴在写回
+之前，不能用函数刚进入时的快照——这是 `Promise.all` 并发调用同一个方法时
+的通用竞态陷阱，不止 Form 场景会遇到。单测覆盖这类并发写场景时，必须断言
+`getState()` 的真实存储状态，不能只断言函数的返回值——返回值往往是调用方
+自己在本地累加构造的，不会暴露底层存储状态被覆盖的问题。
+
+## 踩坑 #35：Foundation 的 `reset()` 只恢复"显式声明过 initValue 的字段"，
+遗漏了"只吃 Form 级 initValues、自己没有单独 initValue"的字段
+
+**现象**：Form 有多个字段，其中只有 `username` 字段在 `<Field initValue=
+"...">` 上显式声明了初值，`age`/`businessLine` 两个字段没有单独声明
+`initValue`（只在 `Form` 的 `initValues={{ age: undefined, businessLine:
+undefined }}` 里给了初值，且初值恰好是 `undefined`）。真机测试点击
+"重置"按钮后，`username` 正确清空，但 `age`/`businessLine` 的展示值
+纹丝不动。
+
+**根因**：`FormFoundation` 内部维护的 `initValues` map，只在
+`registerField(field, config, initValue)` 收到非 `undefined` 的
+`initValue` 参数时才会写入这个字段的 key。`age`/`businessLine` 从未走过
+这条写入路径（它们的初值只存在于 `Form` 挂载时对 `state.values` 的一次性
+赋值里，Foundation 构造时如果不主动读取这份挂载快照，就完全不知道这两个
+字段"曾经有过初值"），`reset()` 用 `{ ...this.initValues }` 覆盖
+`state.values` 时，这两个字段的 key 根本不在 map 里，等于没有被重置。
+
+**修复**：`FormFoundation` 的构造函数里，直接把 Adapter 传入的初始
+`state.values`（也就是 Form 挂载那一刻的完整快照，天然包含 Form 级
+`initValues` 里所有字段）整份拷贝作为 `initValues` 的起点，`register
+Field` 里的显式 `initValue` 只是在此基础上补充/覆盖：
+```ts
+constructor(adapter: Adapter<FormState>) {
+  super(adapter);
+  this.initValues = { ...this.getState().values };  // 挂载快照，不局限于显式 initValue
+}
+```
+
+**结论性规则**：任何"多字段容器"类 Foundation（Form 是目前唯一实例，
+未来若有类似的多字段状态管理需求应参考此模式）的 `reset()` 语义，必须
+恢复到**容器挂载那一刻的完整初始快照**，而不是"事后累积记录下来的、
+局限于某个子操作触发路径的部分快照"——后者天然会遗漏那些从未走过该操作
+路径、但确实拥有初值的字段。
+
+## 踩坑 #36（重大）：`isControlled = value !== undefined` 判断受控身份如果
+做成响应式、允许来回切换，组件内部 `state` 会残留"曾经非受控时写入"的
+陈旧值，导致受控值变回 `undefined` 后展示值不会清空
+
+**背景**：全项目 7 个组件（Input/InputNumber/Select/Switch/Checkbox/
+Radio/TextArea）判断受控/非受控身份都用同一个模式：`const isControlled =
+value !== undefined`（Checkbox/Radio 是 `inGroup || checked !== undefined`）。
+这个判断历史上一直是**普通 `const`**，只在组件挂载时求值一次，此后
+`value`/`checked` 无论怎么变化，组件都永久锁死在挂载时判定的模式——这在
+"受控组件只接收非 `undefined` 的值、非受控组件的 `value` 从头到尾都是
+`undefined`"这个此前所有调用方都遵守的隐含约定下，从未暴露过问题。
+
+**现象**：Form 的 `Field` 组件把某个字段的 `value` 原样传给具体输入组件
+（如 `<InputNumber value={value} ... />`），字段初始值是 `undefined`
+（用户还没填），`InputNumber` 因此在挂载时把自己判定为**非受控**。用户
+输入 "30" 后，Field 侧的 `value` 变为 `30` 并回传给 `InputNumber`；点击
+Form 的"重置"按钮后，`value` 又变回 `undefined`，但 `InputNumber` 显示的
+数字仍然是 "30"，没有被清空。
+
+**排查过程**：第一轮修复尝试把 `isControlled` 从普通 `const` 改成
+`track(() => value !== undefined)`（响应式 computed），让受控身份能随
+`value` 变化重新判定——这一步单独看是必要且正确的（否则 `isControlled`
+在挂载后永远不会重新求值，是比本条更基础的响应式缺陷）。但改完后 e2e
+测试仍然复现同样的失败，说明问题不止"`isControlled` 该不该响应式"这
+一层。
+
+**真正根因**：`isControlled` 变成响应式后，组件会随 `value` 的变化在
+受控/非受控身份之间**来回切换**：
+1. 初始 `value=undefined` → `isControlled=false`（非受控），用户输入
+   "30" 走非受控分支，`foundation.handleInput` 把组件**内部** `state.
+   inputValue` 写成 `"30"`
+2. `onChange(30)` 冒泡给 Field，`value` prop 变为 `30` → `isControlled`
+   重新计算为 `true`（受控），此时展示逻辑 `isControlled ? String(value)
+   : state.inputValue` 优先读 `value`，显示正确的 "30"
+3. Form 重置，`value` 变回 `undefined` → `isControlled` 又变回 `false`
+   （非受控），展示逻辑退回读 `state.inputValue`——但这个字段自步骤 1
+   之后就再没被更新过，仍然是陈旧的 `"30"`
+
+问题的本质是：**"受控/非受控身份可以动态切换"这个设计，与"内部 state
+只在非受控分支被写入、受控分支完全不碰 state"这个假设互相冲突**——一旦
+组件真的经历过"非受控写入 → 变为受控 → 又变回非受控"这个完整循环，第三
+步读到的必然是第一步遗留的陈旧数据，不会自动跟着"受控期间外部实际传入
+的值"同步。这不是 InputNumber 独有的问题，是 7 个组件共享的同一设计
+缺陷，只是大多数既有用法从未把 `value` 从有值变回 `undefined`，所以从未
+触发过。
+
+**评估过的替代方案，为什么没采用**：
+- **给组件加显式 `controlled?: boolean` prop**：增加 API 复杂度，且与
+  隐式的 `value !== undefined` 判断容易打架（两者不一致时听谁的？），
+  否决。
+- **用 React `key` 那样的"强制重新挂载"机制清空内部 state**：Ripple 没有
+  这个机制——`key` 只在 `@for` 循环里用于列表 reconciliation，不存在
+  组件级别"换个 key 就整个重新初始化"的语义，否决（除非把目标组件包一层
+  `@for` 循环模拟，过于 hacky）。
+- **要求调用方永远不要把受控 `value` 设为 `undefined`（用空字符串/`0`
+  等哨兵值代替）**：这是 React 生态的通行文档建议，Semi 官方 `withField`
+  文档示例也是这么处理的（`let value = props.value || '';`）。但
+  `InputNumber`/`Select` 的值域里没有天然的"空但非 `undefined`"哨兵值
+  （`InputNumber` 是纯数字类型不能塞空字符串，`Select` 的 `SelectValue`
+  是 `string | number` 联合类型也没有通用空值），这条路对这两个组件
+  根本走不通，只能作为 `Input`/`TextArea` 这类天然有 `''` 可用的组件的
+  兜底文档建议保留，不能当作全项目统一方案。
+
+**采用的修复**：保留 `isControlled` 的响应式 track 化（这一步本身是
+必要的），额外加一个 `effect`，让组件内部 `state` **始终跟随最近一次
+外部受控值同步**，不管当前是否处于受控分支——这样即使身份来回切换，
+`state` 里存的也不会是陈旧数据：
+```ts
+// InputNumber 的具体实现，其余 6 个组件是同样模式（state 字段名不同）
+let &[hasBeenControlled] = track<boolean>(false);
+effect(() => {
+  if (value !== undefined) {
+    hasBeenControlled = true;
+    untrack(() => { state = { ...state, inputValue: String(value), value }; });
+  } else if (untrack(() => hasBeenControlled)) {
+    untrack(() => { state = { ...state, inputValue: '', value: undefined }; });
+  }
+});
+```
+`hasBeenControlled` 这个标记是关键——区分"这次 `value===undefined` 是
+一开始就非受控（用户在自由输入，不该打扰）"还是"曾经受控过、现在被外部
+清空（要主动同步清空 `state`）"，否则会误伤纯非受控用法下用户正常输入
+的场景。
+
+**effect 内部读写同一个 state 变量的死循环陷阱**：第一版实现里，
+`state = { ...state, ... }` 这个赋值表达式右侧的 `{...state}` 展开是在
+`effect` 内部**非 `untrack` 地读取** `state`，而这个 effect 本身又写了
+`state`——构成"读自己刚写的值 → 被记为依赖 → 又触发自己重新执行"的自
+触发循环，真机报错 `Maximum update depth exceeded`。修复：整个赋值语句
+包进 `untrack(() => { state = {...} })`，确保 `state` 的读取不被这个
+effect 记为依赖，只有 `value`（外部 prop）才是这个 effect 的真实依赖。
+
+**结论性规则**：
+1. 任何组件的 `isControlled`/`isChecked` 类身份判断，只要依赖的是可能
+   变化的 prop（`value`/`checked`），一律必须用 `track()` 响应式
+   computed，不能用普通 `const`——这是比 `&{}` 懒解构（踩坑 #30）更深
+   一层的响应式正确性要求，两者缺一都会导致受控组件对外部 prop 变化
+   不敏感。
+2. 如果组件设计允许"受控身份动态切换"（大多数受控组件事实上都允许，
+   因为 `value` prop 本身就可能在 `undefined` 和有值之间变化），必须
+   同时保证内部 `state` 不会在身份切换后残留陈旧数据——用一个 `effect`
+   把外部受控值同步进内部 `state`（哪怕当前正处于受控分支、这份 state
+   暂时不会被展示逻辑读到），是目前验证有效的做法。
+3. `effect` 内部如果要读取自己也会写入的同一个响应式变量做增量更新
+   （`{...state, patch}` 这种 spread 合并模式在 `effect` 里非常常见），
+   读取部分必须包 `untrack`，否则会形成自触发死循环——这条规则和 Foundation
+   侧 `getState()`/`setState()` 通常搭配 `untrack` 使用是同一个道理，
+   只是这次踩在了组件自己手写的 `effect` 里，而非 Foundation 样板代码里。
+4. **任何新的受控组件（或者复用这套 `isControlled` 模式的既有组件二次
+   开发），如果要支持"字段初始值为 `undefined`"这个场景（Form/Field
+   这类通用容器天然会遇到），开发时必须专门测试"受控值 `undefined` →
+   有值 → 变回 `undefined`"这个完整循环，不能只测"有值 → 变成另一个
+   有值"这种单向变化**——后者掩盖了本条踩坑的全部症状。
+
+## 踩坑 #37：Ripple 没有 React 那种"把函数当 prop 传入、组件内部直接调用
+它拿返回值"的 render-prop 机制，组件只能作为整体传递并用 `<Comp />` 渲染
+
+**现象**：设计 Form 的 `Field` 组件时，最初想用 React 生态常见的
+render-prop 模式——`Field` 接收一个 `children: (props: FieldRenderProps)
+=> any` 函数类型的 prop，内部 `{children({ value, onChange, ... })}`
+调用它、把 `value`/`onChange` 等注入进去，调用方在 `children` 里正常
+声明要渲染的具体输入组件。`tsrx-tsc` typecheck 直接报错：`children
+cannot be called like a regular function. Render it with {children} or
+{props.children} instead.`
+
+**根因**：Ripple 里 `children` prop（以及任何"组件类型"的 prop）本质上
+是一个**已经确定了内容、可以直接 `{children}` 渲染的东西**，不是"一个
+在渲染时才被调用、根据传入参数动态生成内容的函数"。官方文档
+`components.md` 的 "Passing Components as Props" 一节明确了这一点：
+组件只能作为**显式 prop** 整体传递，用 `<PropComp />` 这样的 JSX 语法
+渲染，不能当普通函数调用（`children(...)`/`PropComp(...)`）拿返回值。
+
+**修复**：把 `Field` 的 `children: (props) => any` 改成一个独立命名的
+prop `Comp: (props: FieldRenderProps) => any`，调用方传入一个组件（不是
+调用它、也不是它的返回值），`Field` 内部用 `<Comp value={value}
+onChange={handleChange} ... />` 这样的 JSX 语法渲染它，参数通过 JSX
+属性传递：
+```tsrx
+// Field 内部
+<Comp value={value} disabled={disabled} onChange={handleChange} onBlur={handleBlur} aria-label={resolvedLabel} />
+```
+调用方（业务代码，如 playground）需要为每个具体输入组件写一个"桥接
+组件"，接收 `FieldRenderProps` 形状的 props，桥接到具体组件（Input/
+Select/Checkbox 等）各自不同的 `onChange` 签名上：
+```tsrx
+function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return <Input value={value ?? ''} disabled={disabled} onChange={(v) => onChange(v)} onBlur={onBlur} aria-label={ariaLabel} />;
+}
+```
+
+**类型标注的额外陷阱**：如果用 Ripple 提供的 `Component<T>` 类型标注
+`Comp` 的类型（`Comp: Component<FieldRenderProps>`），typecheck 会报
+`Component<FieldRenderProps>` 不能赋值给 JSX 组件类型——因为 `Component<T>`
+的返回类型是 `Renderable | void`，而 `Renderable` 包含 `null`，JSX
+组件类型系统期望的 `ComponentType` 只接受 `void | TSRXElement`，两者有
+落差。规避方式：用更宽松的 `(props: FieldRenderProps) => any` 做类型
+标注，不用官方导出的 `Component<T>` 类型。
+
+**结论性规则**：设计任何需要"父组件把数据注入进子组件渲染逻辑"的 API
+时（render-prop、slot、compound component 等模式在 React/Vue 生态很
+常见），Ripple 下必须用"组件作为显式 prop + `<Comp {...props} />` 渲染"
+的形态，不能设计成"把函数当 prop、调用它拿返回值"的 render-prop 写法。
+这是继 Nav 组件"用独立命名导出组件替代 `Nav.Item` 挂载写法"（Ripple
+无 children 反射能力）之后，Ripple 语言约束在 API 设计层面暴露出的
+又一处需要"诚实设计取舍"的地方——不是缺陷，是与 React 心智模型不同的
+组件传递范式，设计新组件 API 时要提前对齐这个约束，而不是先按 React
+习惯设计、写到一半才发现行不通。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1224,3 +1474,7 @@ TreeSelect、DatePicker、AutoComplete 等同样需要"选中后关闭 + 点击�
 - **受控组件的验收测试必须包含"外部独立触发源驱动 prop 变化"场景**（踩坑 #30 的测试盲区教训）：不能只测"在组件自己的 DOM 节点上操作、验证自己更新"，要专门写一个不依赖该组件自身交互的外部按钮/状态源，驱动 `value`/`checked` 等受控 prop 变化，断言组件被动接收更新——这是受控组件契约的核心，之前全项目没有一个测试覆盖这个模式。
 - **点击视觉隐藏的原生表单控件（`clip` 隐藏模式）时，e2e 测试要点它的可见父容器，不能点隐藏元素本身**（踩坑 #31）。
 - **Foundation 需要"读旧值算新值"的增量运算时（集合增删等），`getState()` 受控模式下必须返回外部 prop 当前值，不能读永远过时的内部 state 快照**（踩坑 #32）。
+- **Foundation 并发写多个字段时（`Promise.all` 场景），spread 合并的旧值读取必须紧贴写回前，不能用函数开局的快照**（踩坑 #34）。
+- **多字段容器的 `reset()` 必须恢复到挂载时的完整初始快照，不能只恢复"曾经显式声明过初值"的字段子集**（踩坑 #35）。
+- **`isControlled` 判断必须响应式，且身份切换后组件内部 state 不能残留陈旧值——用 effect 把外部受控值同步进 state，且 effect 内部读写同一 state 要用 untrack 避免死循环**（踩坑 #36，重大）。
+- **Ripple 没有 render-prop 机制，"父组件注入渲染逻辑"类 API 要设计成"组件作为显式 prop + `<Comp {...} />` 渲染"，不能用 `children` 当函数调用**（踩坑 #37）。

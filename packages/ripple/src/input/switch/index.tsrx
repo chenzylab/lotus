@@ -1,4 +1,4 @@
-import { track } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { SwitchFoundation, type SwitchState } from '@lotus/foundation/input/switch';
 
 export interface SwitchProps {
@@ -28,7 +28,9 @@ export function Switch(&{
     style,
     class: className,
 }: SwitchProps) @{
-    const isControlled = checked !== undefined;
+    // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
+    // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
+    let &[isControlled] = track<boolean>(() => checked !== undefined);
     let &[state] = track<SwitchState>({
         checked: isControlled ? !!checked : defaultChecked,
         disabled,
@@ -43,6 +45,20 @@ export function Switch(&{
     // 受控模式下，视觉状态直接跟随外部传入的 checked，不依赖内部 state.checked
     // （Foundation 受控分支不改写 state，见 SwitchFoundation.handleToggle 注释）。
     let &[displayChecked] = track<boolean>(() => (isControlled ? !!checked : state.checked));
+
+    // 一旦组件经历过"非受控切换 state.checked → 被外部 checked 变为受控 →
+    // 又变回 undefined"，如果不同步，切回非受控展示时 state.checked 会残留
+    // 陈旧值。详见 input-number/index.tsrx 同名注释与
+    // specs/cross-cutting/foundation-adapter-pattern.md。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (checked !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, checked }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, checked: false }; });
+        }
+    });
 
     // classes 必须是派生 track，不能用普通 const 一次性拼接——普通 const 只在组件
     // setup 阶段计算一次，displayChecked 后续变化不会让它重新求值，视觉会与实际状态

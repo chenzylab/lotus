@@ -1,6 +1,6 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select } from '@lotus/ripple';
-import type { SelectOption } from '@lotus/ripple';
+import { Button, ButtonGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field } from '@lotus/ripple';
+import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
@@ -30,6 +30,62 @@ function closableTabList(): TabItem[] {
     ];
 }
 
+// Field 的 Comp 收到统一的 { value, disabled, onChange, onBlur, 'aria-label' }，
+// 由这几个桥接组件把它接到具体输入组件各自的 props 形状上（Input 是
+// onChange(value, event)，InputNumber/Select 是 onChange(value)）。
+function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Input
+            value={value ?? ''}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="请输入用户名"
+        />
+    );
+}
+
+function FormAgeInput(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <InputNumber
+            value={value}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="请输入年龄"
+        />
+    );
+}
+
+function FormBusinessLineSelect(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Select
+            optionList={businessLineOptions}
+            value={value}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="请选择业务线"
+        />
+    );
+}
+
+function FormAgreeCheckbox(&{ value, disabled, onChange, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Checkbox
+            checked={value ?? false}
+            disabled={disabled}
+            onChange={(checked) => onChange(checked)}
+            aria-label={ariaLabel}
+        >
+            我同意用户协议
+        </Checkbox>
+    );
+}
+
 export function App() @{
     let &[inputControlledValue] = track<string>('受控初始值');
     let &[inputExternalControlledValue] = track<string>('初始值');
@@ -41,6 +97,8 @@ export function App() @{
     let &[radioGroupControlledValue] = track<string | number>('A');
     let &[inputNumberControlledValue] = track<number>(0);
     let &[selectControlledValue] = track<string>('douyin');
+    let formApiRef: FormApi | undefined;
+    let &[formSubmitResult] = track<string>('');
 
     <div style={{ padding: '32px' }}>
         <Space wrap>
@@ -862,6 +920,50 @@ export function App() @{
             </div>
             <Button onClick={() => { selectControlledValue = selectControlledValue === 'douyin' ? 'xigua' : 'douyin'; }}>切换 Select</Button>
         </Space>
+
+        <Divider>Form：基本表单 + 校验规则 + formApi</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Form
+                initValues={{ username: '', age: undefined, businessLine: undefined, agree: false }}
+                getFormApi={(api) => { formApiRef = api; }}
+                onSubmit={(values) => { formSubmitResult = `提交成功：${JSON.stringify(values)}`; }}
+                onSubmitFail={(errors) => { formSubmitResult = `提交失败：${JSON.stringify(errors)}`; }}
+            >
+                <Field
+                    field="username"
+                    label="用户名"
+                    rules={[{ required: true, message: '用户名不能为空' }]}
+                    Comp={FormUsernameInput}
+                />
+                <Field
+                    field="age"
+                    label="年龄"
+                    rules={[{ required: true, message: '年龄不能为空' }, { min: 18, message: '未满 18 岁' }]}
+                    Comp={FormAgeInput}
+                />
+                <Field
+                    field="businessLine"
+                    label="业务线"
+                    rules={[{ required: true, message: '请选择业务线' }]}
+                    Comp={FormBusinessLineSelect}
+                />
+                <Field
+                    field="agree"
+                    noLabel
+                    rules={[{ validator: (value) => (value ? undefined : '请先同意用户协议') }]}
+                    Comp={FormAgreeCheckbox}
+                />
+                <Space>
+                    <Button htmlType="submit">提交</Button>
+                    <Button htmlType="reset">重置</Button>
+                    <Button onClick={() => formApiRef?.setValue('username', '预填用户名')}>外部设置用户名</Button>
+                </Space>
+            </Form>
+            @if (formSubmitResult) {
+                <div style={{ marginTop: '12px' }}>{formSubmitResult}</div>
+            }
+        </div>
     </div>
 }
 

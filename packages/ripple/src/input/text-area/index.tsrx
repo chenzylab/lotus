@@ -64,7 +64,9 @@ export function TextArea(&{
     onCompositionUpdate,
     onResize,
 }: TextAreaProps) @{
-    const isControlled = value !== undefined;
+    // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
+    // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
+    let &[isControlled] = track<boolean>(() => value !== undefined);
     let &[state] = track<TextAreaState>({
         value: isControlled ? (value ?? '') : defaultValue,
         isFocus: false,
@@ -76,6 +78,20 @@ export function TextArea(&{
     const foundation = new TextAreaFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<TextAreaState>) => { state = { ...state, ...patch }; },
+    });
+
+    // 一旦组件经历过"非受控写入 state → 被外部 value 变为受控 → 又变回
+    // undefined"，如果不同步，切回非受控展示时 state.value 会残留陈旧值。
+    // 详见 input-number/index.tsrx 同名注释与
+    // specs/cross-cutting/foundation-adapter-pattern.md。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (value !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, value }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, value: '' }; });
+        }
     });
 
     let &[displayValue] = track<string>(() => (isControlled ? (value ?? '') : state.value));

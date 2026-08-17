@@ -1,4 +1,4 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { InputNumberFoundation, type InputNumberState, type InputNumberBounds } from '@lotus/foundation/input/input-number';
 import { IconChevronUp, IconChevronDown, IconClear } from '@lotus/icons';
 
@@ -47,7 +47,9 @@ export function InputNumber(&{
     style,
     class: className,
 }: InputNumberProps) @{
-    const isControlled = value !== undefined;
+    // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
+    // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
+    let &[isControlled] = track<boolean>(() => value !== undefined);
     let &[state] = track<InputNumberState>({
         inputValue: (isControlled ? value : defaultValue) !== undefined ? String(isControlled ? value : defaultValue) : '',
         value: isControlled ? value : defaultValue,
@@ -57,6 +59,23 @@ export function InputNumber(&{
     const foundation = new InputNumberFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<InputNumberState>) => { state = { ...state, ...patch }; },
+    });
+
+    // 受控身份会随 value 的 undefined↔有值 重新判定（见上面 isControlled 的
+    // 注释）。但如果只是"一开始就非受控、用户在自由输入"（value 从未被外部
+    // 传过），不应该被这个 effect 打扰；只有"曾经是受控组件（收到过非
+    // undefined 的 value），之后被外部改回 undefined"（典型场景：Form 字段
+    // 初始 undefined，用户输入后 Form 侧变为受控值，Form.reset() 又改回
+    // undefined）才需要主动清空 state——否则 isControlled 变回 false 后，
+    // state 会残留最后一次非受控写入的陈旧值，导致 reset 后展示值不会清空。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (value !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, inputValue: String(value), value }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, inputValue: '', value: undefined }; });
+        }
     });
 
     let &[bounds] = track<InputNumberBounds>(() => ({ min, max, step }));

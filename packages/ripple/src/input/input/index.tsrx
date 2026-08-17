@@ -1,4 +1,4 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { InputFoundation, type InputState } from '@lotus/foundation/input/input';
 import { IconClear, IconEyeOpened, IconEyeClosedSolid } from '@lotus/icons';
 
@@ -69,7 +69,13 @@ export function Input(&{
     onCompositionEnd,
     onCompositionUpdate,
 }: InputProps) @{
-    const isControlled = value !== undefined;
+    // 用 track() 而非普通 const，让受控身份能随 value 从 undefined 变为有值
+    // （或反向变化，例如外部表单 reset 把值清回 undefined）而重新判定——
+    // 普通 const 只在组件挂载时求值一次，此后 value 无论怎么变化，组件都会
+    // 永久锁死在挂载时判定的受控/非受控模式，导致 reset 场景下受控组件的
+    // 展示值无法被清空。见 specs/cross-cutting/foundation-adapter-pattern.md
+    // 关于 isControlled 响应式修复的记录。
+    let &[isControlled] = track<boolean>(() => value !== undefined);
     let &[state] = track<InputState>({
         value: isControlled ? (value ?? '') : defaultValue,
         isFocus: false,
@@ -80,6 +86,21 @@ export function Input(&{
     const foundation = new InputFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<InputState>) => { state = { ...state, ...patch }; },
+    });
+
+    // 一旦组件经历过"非受控写入 state → 被外部 value 变为受控 → 又变回
+    // undefined"（如 Form 字段初始 undefined、用户输入后受控、reset 又变回
+    // undefined），如果不同步，切回非受控展示时 state.value 会残留 reset 前
+    // 的陈旧值。详见 input-number/index.tsrx 同名注释与
+    // specs/cross-cutting/foundation-adapter-pattern.md。
+    let &[hasBeenControlled] = track<boolean>(false);
+    effect(() => {
+        if (value !== undefined) {
+            hasBeenControlled = true;
+            untrack(() => { state = { ...state, value }; });
+        } else if (untrack(() => hasBeenControlled)) {
+            untrack(() => { state = { ...state, value: '' }; });
+        }
     });
 
     let &[displayValue] = track<string>(() => (isControlled ? (value ?? '') : state.value));
