@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -393,6 +393,26 @@ export function App() @{
                 <Button type="primary" theme="outline">提交（异步回调，600ms）</Button>
             </Popconfirm>
         </Space>
+
+        <Divider>Anchor</Divider>
+
+        <div style={{ display: 'flex', gap: '24px' }}>
+            <Anchor
+                links={[
+                    { href: '#anchor-section-1', title: '第一节' },
+                    { href: '#anchor-section-2', title: '第二节' },
+                    { href: '#anchor-section-3', title: '第三节' },
+                ]}
+                getContainer={() => document.getElementById('anchor-scroll-container')!}
+                onChange={(current) => console.log('anchor changed', current)}
+                aria-label="锚点导航"
+            />
+            <div id="anchor-scroll-container" style={{ width: '400px', height: '200px', overflowY: 'auto', border: '1px solid var(--lotus-color-border)', padding: '12px' }}>
+                <div id="anchor-section-1" style={{ height: '250px' }}>第一节内容</div>
+                <div id="anchor-section-2" style={{ height: '250px' }}>第二节内容</div>
+                <div id="anchor-section-3" style={{ height: '250px' }}>第三节内容</div>
+            </div>
+        </div>
 
         <Divider />
 

@@ -166,6 +166,11 @@ export {
     type BackTopProps,
 } from './navigation/back-top/index.tsrx';
 export {
+    Anchor,
+    type AnchorProps,
+    type AnchorLinkInput,
+} from './navigation/anchor/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,
