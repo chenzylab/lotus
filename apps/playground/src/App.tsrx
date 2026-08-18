@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -595,6 +595,97 @@ export function App() @{
             </Space>
         </Space>
 
+        <Divider>Card</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '20px' }}>
+            <Row gutter={16} style={{ width: '100%' }}>
+                <Col span={8}>
+                    <Card title="基础卡片" aria-label="基础 Card">
+                        <TypographyText>卡片内容区域，展示任意文本或组件。</TypographyText>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card
+                        title="带额外内容"
+                        headerExtraContent={<Button theme="borderless" size="small">更多</Button>}
+                        aria-label="带 headerExtraContent 的 Card"
+                    >
+                        <TypographyText>headerExtraContent 出现在标题右侧。</TypographyText>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card
+                        title="无边框 + hover 阴影"
+                        bordered={false}
+                        shadows="hover"
+                        aria-label="无边框 hover 阴影 Card"
+                    >
+                        <TypographyText>鼠标悬浮查看阴影效果。</TypographyText>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={16} style={{ width: '100%' }}>
+                <Col span={8}>
+                    <Card
+                        cover={<div style={{ height: '120px', background: 'var(--lotus-color-fill-0)' }} />}
+                        title="带封面"
+                        aria-label="带 cover 的 Card"
+                    >
+                        <TypographyText>cover 渲染在标题下方、内容区上方。</TypographyText>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card
+                        title="带底部操作"
+                        actions={[
+                            <Button theme="borderless" size="small">编辑</Button>,
+                            <Button theme="borderless" size="small" type="danger">删除</Button>,
+                        ]}
+                        aria-label="带 actions 的 Card"
+                    >
+                        <TypographyText>actions 是数组形式的底部操作区。</TypographyText>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card
+                        title="带 footer 分割线"
+                        footer={<TypographyText type="tertiary">页脚内容</TypographyText>}
+                        footerLine
+                        aria-label="带 footer 的 Card"
+                    >
+                        <TypographyText>footerLine 控制页脚上方是否有分割线。</TypographyText>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={16} style={{ width: '100%' }}>
+                <Col span={8}>
+                    <Card loading aria-label="loading 中的 Card">
+                        <TypographyText>这段内容在 loading 时不会显示。</TypographyText>
+                    </Card>
+                </Col>
+                <Col span={8}>
+                    <Card aria-label="带 Card.Meta 的 Card">
+                        <CardMeta
+                            avatar={<Avatar size="small">语</Avatar>}
+                            title="语雀"
+                            description="蚂蚁集团出品的专业云端知识库"
+                        />
+                    </Card>
+                </Col>
+            </Row>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">CardGroup（spacing=16）</TypographyText>
+                <CardGroup aria-label="CardGroup 示例">
+                    <Card style={{ width: '200px' }} title="卡片一"><TypographyText>内容一</TypographyText></Card>
+                    <Card style={{ width: '200px' }} title="卡片二"><TypographyText>内容二</TypographyText></Card>
+                    <Card style={{ width: '200px' }} title="卡片三"><TypographyText>内容三</TypographyText></Card>
+                </CardGroup>
+            </div>
+        </Space>
+
         <Divider />
 
         <Divider>带文字的分割线</Divider>
@@ -800,11 +891,11 @@ export function App() @{
             <SkeletonTitle style={{ width: '120px' }} />
             <SkeletonButton />
         </Space>
-        <SkeletonParagraph rows={3} style={{ width: '240px', marginTop: '12px' }} />
+        <SkeletonParagraph rows={3} style={{ width: '240px', marginTop: '12px' }} aria-label="Skeleton 基础元素 Paragraph" />
 
         <Divider>Skeleton：loading 切换</Divider>
 
-        <Skeleton loading={true} placeholder={<SkeletonAvatar />}>
+        <Skeleton loading={true} placeholder={<SkeletonAvatar />} aria-label="Skeleton loading 切换">
             <Avatar color="blue">U</Avatar>
         </Skeleton>
 
@@ -813,6 +904,7 @@ export function App() @{
         <Skeleton
             active
             loading={true}
+            aria-label="Skeleton 加载动画（active）"
             placeholder={
                 <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                     <SkeletonAvatar style={{ marginRight: '12px' }} />

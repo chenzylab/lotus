@@ -10,6 +10,7 @@ export interface SkeletonProps {
     placeholder?: any;
     style?: Record<string, any>;
     class?: string;
+    'aria-label'?: string;
 }
 
 export function Skeleton(&{
@@ -19,12 +20,13 @@ export function Skeleton(&{
     placeholder,
     style,
     class: className,
+    'aria-label': ariaLabel,
 }: SkeletonProps) @{
     const classes = ['lotus-skeleton', active ? 'lotus-skeleton-active' : '', className ?? ''].filter(Boolean).join(' ');
 
     <>
         @if (loading) {
-            <div class={classes} style={style}>{placeholder}</div>
+            <div class={classes} style={style} aria-label={ariaLabel}>{placeholder}</div>
         } @else {
             <>{children}</>
         }
@@ -278,14 +280,15 @@ export interface SkeletonParagraphProps {
     rows?: number;
     style?: Record<string, any>;
     class?: string;
+    'aria-label'?: string;
 }
 
-export function SkeletonParagraph(&{ rows = 4, style, class: className }: SkeletonParagraphProps) @{
+export function SkeletonParagraph(&{ rows = 4, style, class: className, 'aria-label': ariaLabel }: SkeletonParagraphProps) @{
     const classes = ['lotus-skeleton-paragraph', className ?? ''].filter(Boolean).join(' ');
     const rowIndexes = Array.from({ length: rows }, (_, i) => i);
 
     <>
-        <div class={classes} style={style}>
+        <div class={classes} style={style} aria-label={ariaLabel}>
             @for (const i of rowIndexes; key i) {
                 <div class={['lotus-skeleton-element', 'lotus-skeleton-paragraph-row', i === rows - 1 && rows > 1 ? 'lotus-skeleton-paragraph-row-last' : ''].filter(Boolean).join(' ')} />
             }

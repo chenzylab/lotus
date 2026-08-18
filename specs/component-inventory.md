@@ -54,7 +54,7 @@
 
 - [x] Avatar 头像
 - [x] Badge 徽标
-- [ ] Card 卡片
+- [x] Card 卡片
 - [x] Tag 标签（含 AI 主题变体，对应官网 AITag）
 - [ ] Empty 空状态
 - [ ] Descriptions 描述列表

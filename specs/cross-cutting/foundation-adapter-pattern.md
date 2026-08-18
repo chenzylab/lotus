@@ -1921,6 +1921,25 @@ Banner 复用 IconButton 均是如此），但这意味着**任何新组件只�
    `pnpm test:e2e`**——这类因内部组件复用触发的选择器冲突，只有全量
    跑才会暴露，单独跑新组件或旧组件各自的测试文件都不会发现。
 
+**同族案例（Card 组件，比 aria-label 重名更隐蔽的一种形式）**：Card
+组件内部复用了 `Skeleton`/`SkeletonTitle`/`SkeletonParagraph` 做
+`loading` 占位。playground 里 Card 演示区块插入的位置在 DOM 顺序上
+早于既有的 Skeleton 专属演示区块，导致 `packages/foundation` 那批
+存量 e2e 测试里 `page.locator('.lotus-skeleton').first()` 和
+`.locator('.lotus-skeleton-paragraph').first()` 这类"隐式依赖页面
+唯一实例/隐式依赖 DOM 顺序"的选择器，从命中 Skeleton 自己的演示
+实例变成了命中 Card 新插入的 loading 占位实例——不是"选择器命中
+多个元素报严格模式错误"，而是"`.first()` 悄悄换了目标"，某些断言
+因为两个实例结构恰好相似（如都是 3 行、末行更窄）会碰巧仍然通过，
+另一些断言（如"应该有 avatar 子元素"）会失败得莫名其妙。**根治
+方式是给所有可能被复用的展示型组件补齐 `aria-label` prop 支持**
+（本次同时给 `SkeletonProps`/`SkeletonParagraphProps` 补上了这个
+字段），存量测试改用 `getByLabel` 取代 `.first()`/裸 class 选择器。
+这提示一个更通用的教训：**新组件设计阶段就应该给每个会独立渲染出
+DOM 节点的展示型子组件都预留 `aria-label` prop**（哪怕当前用不到），
+不要等到真机验证或全量回归失败才回头补——本次 `CardGroup`/`CardMeta`
+两个子组件最初也漏了这个字段，独立的真机验证环节才发现。
+
 ## 踩坑 #47：`@for` 循环体内直接放 `@if (a) {...} @if (!a) {...}`
 两个互斥分支（不包一层 `<>...</>`）时，`tsrx-tsc` 报
 "A code block renders a single node" 编译错误

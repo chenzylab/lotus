@@ -3,15 +3,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Skeleton', () => {
   test('loading 为 true 时渲染 placeholder，不渲染 children', async ({ page }) => {
     await page.goto('/');
-    const skeleton = page.locator('.lotus-skeleton').first();
+    const skeleton = page.getByLabel('Skeleton loading 切换');
     await expect(skeleton.locator('.lotus-skeleton-avatar')).toBeVisible();
     await expect(skeleton.getByText('U', { exact: true })).not.toBeAttached();
   });
 
   test('active 时骨架元素带渐变动画背景', async ({ page }) => {
     await page.goto('/');
-    const activeSkeleton = page.locator('.lotus-skeleton-active');
+    const activeSkeleton = page.getByLabel('Skeleton 加载动画（active）');
     await expect(activeSkeleton).toBeVisible();
+    await expect(activeSkeleton).toHaveClass(/lotus-skeleton-active/);
     const avatar = activeSkeleton.locator('.lotus-skeleton-avatar');
     const animationName = await avatar.evaluate((el) => getComputedStyle(el).animationName);
     expect(animationName).toContain('lotus-skeleton-loading');
@@ -28,7 +29,7 @@ test.describe('Skeleton', () => {
 
   test('SkeletonParagraph 按 rows 渲染对应行数，末行更窄', async ({ page }) => {
     await page.goto('/');
-    const paragraph = page.locator('.lotus-skeleton-paragraph').first();
+    const paragraph = page.getByLabel('Skeleton 基础元素 Paragraph');
     const rows = paragraph.locator('.lotus-skeleton-paragraph-row');
     await expect(rows).toHaveCount(3);
     const lastRow = rows.last();

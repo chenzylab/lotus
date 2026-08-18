@@ -116,6 +116,15 @@ export {
     type BadgePosition,
 } from './show/badge/index.tsrx';
 export {
+    Card,
+    CardMeta,
+    CardGroup,
+    type CardProps,
+    type CardMetaProps,
+    type CardGroupProps,
+    type CardShadows,
+} from './show/card/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
