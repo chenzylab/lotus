@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -143,6 +143,7 @@ export function App() @{
     let &[paginationPageSize] = track<number>(10);
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[collapseControlledActiveKey] = track<string[]>([]);
+    let &[collapsibleOpen] = track<boolean>(false);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -846,6 +847,27 @@ export function App() @{
                     </CollapsePanel>
                 </Collapse>
             </div>
+        </Space>
+
+        <Divider>Collapsible</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '12px' }}>
+            <TypographyText type="secondary">无头展开容器，触发器与 UI 完全自定义（非 Panel 语义）</TypographyText>
+            <Button onClick={() => { collapsibleOpen = !collapsibleOpen; }} aria-label="Collapsible 触发按钮">
+                {collapsibleOpen ? '收起' : '显示更多'}
+            </Button>
+            <Collapsible isOpen={collapsibleOpen} aria-label="基础 Collapsible">
+                <div style={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}>
+                    <TypographyText>这是任意内容，可以是段落、图片或其他组件，没有 header/itemKey 结构。</TypographyText>
+                </div>
+            </Collapsible>
+
+            <TypographyText type="secondary">keepDOM（收起时保留 DOM，不销毁重建）</TypographyText>
+            <Collapsible isOpen={collapsibleOpen} keepDOM aria-label="keepDOM Collapsible">
+                <div style={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}>
+                    <TypographyText>keepDOM=true，收起后这段内容仍在 DOM 中（只是不可见）。</TypographyText>
+                </div>
+            </Collapsible>
         </Space>
 
         <Divider />

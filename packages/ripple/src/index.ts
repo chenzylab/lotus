@@ -146,6 +146,10 @@ export {
     type CollapsePanelProps,
 } from './show/collapse/panel.tsrx';
 export {
+    Collapsible,
+    type CollapsibleProps,
+} from './show/collapsible/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

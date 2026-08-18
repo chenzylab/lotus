@@ -59,7 +59,7 @@
 - [x] Empty 空状态（新增 @lotus/illustrations 包，完整复刻 Semi 的 8 场景 x 亮/暗 2 配色 = 16 个插图）
 - [x] Descriptions 描述列表
 - [x] Collapse 折叠面板
-- [ ] Collapsible 可折叠容器
+- [x] Collapsible 可折叠容器（无头展开容器，非 Panel 语义，独立于 Collapse）
 - [x] Dropdown 下拉菜单
 - [x] Popover 气泡卡片
 - [x] Tooltip 文字提示

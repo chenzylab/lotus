@@ -2497,6 +2497,47 @@ re-export 语句（无论有没有 `type` 修饰符），所有跨文件导出�
 DoD 流程里"playground 真机验证"始终是typecheck/lint之后的独立步骤，
 不是可选项）。
 
+## 踩坑 #58：`@if (cond)` 里的 `cond` 如果是普通 `const` 变量（哪怕
+它的计算依赖了响应式的 props），只在组件挂载时求值一次，`cond`
+依赖的 prop 后续变化不会触发这个 `@if` 分支重新判定
+
+**现象**：Collapsible 组件点击外部按钮切换 `isOpen` 后，`class`
+属性（`isOpen ? 'lotus-collapsible-open' : ''`）正确响应式更新了，
+但 `@if (shouldRenderChildren) { <div class="lotus-collapsible-inner">
+{children}</div> }` 这个分支的内容却始终保持挂载时的初始状态——
+`isOpen` 从 `false` 变成 `true` 后，`.lotus-collapsible-inner`
+应该从"不存在"变成"存在"，但真机验证显示它一直不存在，`innerText()`
+也始终是空字符串。
+
+**根因**：`shouldRenderChildren` 写成了 `const shouldRenderChildren
+= isOpen || keepDOM;`——这是一次性求值的裸 `const`，不是响应式
+表达式。同一个组件里，写在 JSX **属性值位置**的内联表达式
+（`class={isOpen ? 'a' : 'b'}`）能被 tsrx 编译器识别为需要响应式
+追踪，但抽出成一个独立的 `const` 变量、再把这个变量名传给
+`@if`/属性，就丢失了这层追踪——这与 Nav/SubNav 组件更早记录的
+经验完全一致（"tsrx 编译器判定 JSX 属性/条件分支是否需要响应式
+更新是纯语法层面的，裸 const 只在挂载时求值一次"），但这是这条
+规则在 `@if` 条件表达式位置的第一次真实复现，此前的记录只覆盖了
+JSX 属性值位置。
+
+**修复**：把这类"要在 `@if`/JSX 属性里使用、且依赖 props 计算"
+的中间变量一律用 `track()` 包裹：
+```ts
+let &[shouldRenderChildren] = track<boolean>(() => isOpen || keepDOM);
+```
+修复后真机验证展开/收起状态正确切换。
+
+**结论性规则（扩展自 Nav/SubNav 的既有记录）**：**任何要参与响应式
+渲染判定的中间计算值——不论是用在 `@if` 条件、`@for` 数据源、还是
+JSX 属性值——只要它依赖了 props/其他响应式变量，就必须用 `track()`
+包裹成 `let &[x] = track(() => ...)`，绝不能写成裸 `const x = ...`。**
+唯一的例外是内联写在 JSX 属性值位置的表达式（`class={a ? 'x' : 'y'}`
+这种直接字面量三元表达式），tsrx 编译器对这个特定位置有单独的响应式
+识别逻辑；但凡是把计算过程抽出成一个命名变量，都必须显式 `track()`。
+新组件写完任何 `const someFlag = propA || propB` 这类代码后，只要
+`someFlag` 之后被用在 `@if`/`@for`/传给子组件的响应式渲染路径中，
+默认当作有 bug 处理，除非能证明它确实是挂载时定值不需要响应式。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2530,4 +2571,5 @@ DoD 流程里"playground 真机验证"始终是typecheck/lint之后的独立步�
 - **本机同时开多个项目的 dev server 时，`playwright.config.ts` 固定端口号可能撞上其他项目，导致 e2e 全部定位器返回 0 元素**（踩坑 #54）：端口选高位号段（如 `48213`）避开 `5170-5260` 这个各项目常用的默认端口区间；发现端口冲突时用 `lsof -nP -iTCP:<port> -sTCP:LISTEN` 查清楚是谁的进程，不要贸然 kill 陌生进程。
 - **`<table>` 用 `table-layout: fixed` 时，`<th>` 上"`width:1px` 让列宽由内容撑开"的技巧完全失效，会导致相邻单元格文字重叠**（踩坑 #56）：改用 `table-layout: auto`。这类视觉重叠 bug 纯文本断言（`toContainText`）测不出来，用 `<table>` 或多列布局实现的组件，e2e 必须额外加 `boundingBox()` 几何位置断言，不能只靠人工看截图。
 - **`.tsrx` 文件内部写 `export { X, type Y } from '...'` 这种 re-export 语法，`tsrx-tsc` typecheck 完全测不出问题，但 Vite/rolldown 实际构建时直接解析失败**（踩坑 #57，重大）：typecheck 和实际打包是两条独立解析路径。跨文件导出转发一律放在 `.ts` 文件（包的 `index.ts`）里做，`.tsrx` 文件内部不要写 re-export 语句。`pnpm typecheck` + `pnpm lint` 双绿灯不是组件完成的充分证据，第一次跑 dev server 是独立且必要的验收关卡。
+- **参与 `@if`/`@for`/响应式渲染判定的中间变量若写成裸 `const`（哪怕依赖了响应式 props），只在挂载时求值一次，后续 props 变化不触发重新判定**（踩坑 #58）：一律用 `track(() => ...)` 包裹，唯一例外是内联写在 JSX 属性值位置的字面量表达式。任何 `const someFlag = propA || propB` 之后用于响应式渲染路径的写法，默认当 bug 处理。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。
