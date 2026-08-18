@@ -2412,6 +2412,40 @@ let &[displayContent] = track<any>(() => (dot ? '' : custom ? count : text));
 的教训，环境负载高（本机同时跑多个项目的 dev server）时这类问题
 出现频率会明显升高。
 
+## 踩坑 #56：`<table>` 使用 `table-layout: fixed` 时，`<th>` 上常见的
+"用 `width: 1px` + `white-space: nowrap` 让列宽由内容撑开"技巧完全
+失效，导致相邻单元格文字重叠
+
+**现象**：Descriptions 组件的 vertical/horizontal/plain/row 全部
+布局模式，key 和 value 的文字视觉上重叠在一起（如"姓名"和"张三"叠
+在同一位置），但 e2e 测试断言（`toContainText`）全部通过——因为
+`innerText`/`textContent` 不受 CSS 布局影响，纯文本断言测不出视觉
+重叠这类问题，必须真机截图或用 `boundingBox()` 检查元素几何位置
+才能发现。
+
+**根因**：CSS 里给 `<table>` 设置了 `table-layout: fixed`，同时给
+`<th>` 设置了 `width: 1px`（意图是"key 列尽量窄，具体宽度由内容撑
+开"，这是 `table-layout: auto` 模式下的常见技巧）。但 `fixed` 布局
+模式下，浏览器会把 `width: 1px` 当作这一列的**真实固定宽度**（不
+根据内容调整），导致 key 列被压缩到 1px，文字溢出到相邻单元格，
+和 value 列的内容视觉重叠。这两个 CSS 属性单独看都没问题，组合在
+一起才会出错——`fixed` 布局的设计初衷就是"列宽由声明值决定、不依赖
+内容测量"，这与"用 `width:1px` 撑开列宽"的技巧的前提（内容决定宽度）
+直接矛盾。
+
+**修复**：改用 `table-layout: auto`（浏览器根据内容自动计算列宽），
+保留 `<th>` 的 `width: 1px` + `white-space: nowrap` 组合（在 `auto`
+模式下这个组合是有效的"最小宽度提示"写法，不会真的截断到 1px）。
+
+**验收方法教训**：这次是靠真机截图肉眼发现的，之前写的 e2e 断言
+（`toContainText`、`toHaveClass`）全部通过却完全没测出这个明显的
+视觉 bug。**任何用 `<table>` 或多列 CSS 布局实现的组件，e2e 验收
+除了内容/class 断言外，必须额外加一条用 `boundingBox()` 比较相邻
+元素几何位置的测试**（如断言 `valueBox.x >= keyBox.x + keyBox.width`
+确认不重叠），不能只依赖截图人工看一遍就心安——截图容易被跳过或
+看得不够仔细，而几何断言能固化成回归防护，防止未来改动重新引入
+同类问题。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2443,4 +2477,5 @@ let &[displayContent] = track<any>(() => (dot ? '' : custom ? count : text));
 - **Foundation 层给定时器等原生方法设计默认实现时，`{ setTimeout, clearTimeout }` 对象简写会丢失隐式 `this` 绑定，真机调用抛 `Illegal invocation`**（踩坑 #52，重大）：必须用箭头函数包裹（`(fn, ms) => setTimeout(fn, ms)`）。这类 bug 在 Node 单测环境测不出来，也可能因为"演示代码未触发对应分支"被长期掩盖——新组件验收要覆盖全部条件分支对应的 prop 组合，不能只测默认值路径。
 - **`@for` keyed 循环一次性插入 ≥2 个新节点到列表中间时会插错位置，这是 Ripple 运行时本身的 bug（`for.js` 的 `block_start(a_blocks, j, ...)` 用新数组下标索引老数组），不是 lotus 组件代码的问题**（踩坑 #53，重大）：已在 `~/i/ripple` 修复并本地验证（132 测试文件全绿），lotus 用 `pnpm patch` 固化到 `patches/ripple.patch`。任何组件出现"纯函数算法验证正确、但真机渲染顺序错乱"且命中"一次性插入多个新 keyed 节点到列表中间"这个模式，先用"纯函数单独跑 + 真机 DOM 顺序对比"定位是渲染层还是算法层问题，不要一开始就扎进组件自己的事件/状态逻辑排查。
 - **本机同时开多个项目的 dev server 时，`playwright.config.ts` 固定端口号可能撞上其他项目，导致 e2e 全部定位器返回 0 元素**（踩坑 #54）：端口选高位号段（如 `48213`）避开 `5170-5260` 这个各项目常用的默认端口区间；发现端口冲突时用 `lsof -nP -iTCP:<port> -sTCP:LISTEN` 查清楚是谁的进程，不要贸然 kill 陌生进程。
+- **`<table>` 用 `table-layout: fixed` 时，`<th>` 上"`width:1px` 让列宽由内容撑开"的技巧完全失效，会导致相邻单元格文字重叠**（踩坑 #56）：改用 `table-layout: auto`。这类视觉重叠 bug 纯文本断言（`toContainText`）测不出来，用 `<table>` 或多列布局实现的组件，e2e 必须额外加 `boundingBox()` 几何位置断言，不能只靠人工看截图。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。

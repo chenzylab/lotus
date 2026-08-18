@@ -130,6 +130,14 @@ export {
     type EmptyLayout,
 } from './show/empty/index.tsrx';
 export {
+    Descriptions,
+    type DescriptionsProps,
+    type DescriptionsAlign,
+    type DescriptionsSize,
+    type DescriptionsLayout,
+} from './show/descriptions/index.tsrx';
+export { type DescriptionsItemData } from '@lotus/foundation/show/descriptions';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

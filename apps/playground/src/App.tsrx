@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -715,6 +715,77 @@ export function App() @{
                 layout="horizontal"
                 aria-label="horizontal 布局的 Empty"
             />
+        </Space>
+
+        <Divider>Descriptions</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">vertical 布局（默认，逐条独立一行）</TypographyText>
+                <Descriptions
+                    data={[
+                        { key: '姓名', value: '张三' },
+                        { key: '部门', value: '前端组' },
+                        { key: '入职时间', value: '2023-01-15' },
+                    ]}
+                    aria-label="vertical Descriptions"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">horizontal 布局（column=3，span 控制占列）</TypographyText>
+                <Descriptions
+                    layout="horizontal"
+                    column={3}
+                    data={[
+                        { key: '姓名', value: '张三' },
+                        { key: '部门', value: '前端组' },
+                        { key: '职级', value: 'P6' },
+                        { key: '简介', value: '负责组件库基础设施建设', span: 3 },
+                        { key: '邮箱', value: 'zhangsan@example.com', span: 2 },
+                        { key: '状态', value: '在职' },
+                    ]}
+                    aria-label="horizontal Descriptions"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">align=plain（key 后跟冒号，inline 展示）</TypographyText>
+                <Descriptions
+                    align="plain"
+                    data={[
+                        { key: '姓名', value: '张三' },
+                        { key: '部门', value: '前端组' },
+                        { key: '入职时间', value: '2023-01-15' },
+                    ]}
+                    aria-label="plain Descriptions"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">row（双行/网格展示，value 加粗）</TypographyText>
+                <Descriptions
+                    row
+                    data={[
+                        { key: '姓名', value: '张三' },
+                        { key: '部门', value: '前端组' },
+                        { key: '入职时间', value: '2023-01-15' },
+                    ]}
+                    aria-label="row Descriptions"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">hidden 隐藏条目 + value 懒渲染函数</TypographyText>
+                <Descriptions
+                    data={[
+                        { key: '姓名', value: '张三' },
+                        { key: '内部字段', value: '不应显示', hidden: true },
+                        { key: '当前时间', value: () => '懒渲染函数返回值' },
+                    ]}
+                    aria-label="hidden 与懒渲染 Descriptions"
+                />
+            </div>
         </Space>
 
         <Divider />
