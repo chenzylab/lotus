@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -93,6 +93,7 @@ export function App() @{
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
     let &[spinSpinning] = track<boolean>(true);
+    let &[stepsCurrent] = track<number>(1);
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
@@ -319,6 +320,40 @@ export function App() @{
             <Banner type="warning" title="警告" description="bordered + fullMode=false 卡片模式" bordered fullMode={false} />
             <Banner type="danger" title="错误" closeIcon={null} />
         </Space>
+
+        <Divider>Steps</Divider>
+
+        <Steps
+            type="fill"
+            current={stepsCurrent}
+            items={[
+                { title: '第一步', description: '填写基本信息' },
+                { title: '第二步', description: '确认订单' },
+                { title: '第三步', description: '完成支付' },
+                { title: '第四步', description: '交易完成' },
+            ]}
+            onChange={(c) => { stepsCurrent = c; }}
+            aria-label="fill 类型步骤条"
+        />
+
+        <Space style={{ marginTop: '12px' }}>
+            <Button onClick={() => { stepsCurrent = Math.max(0, stepsCurrent - 1); }}>上一步</Button>
+            <Button onClick={() => { stepsCurrent = Math.min(3, stepsCurrent + 1); }}>下一步</Button>
+        </Space>
+
+        <Steps
+            type="basic"
+            current={1}
+            status="error"
+            direction="vertical"
+            style={{ marginTop: '24px', maxWidth: '300px' }}
+            items={[
+                { title: '步骤一', description: '已完成' },
+                { title: '步骤二', description: '当前步骤出错' },
+                { title: '步骤三', description: '待处理' },
+            ]}
+            aria-label="basic 类型垂直步骤条（error 状态）"
+        />
 
         <Divider />
 

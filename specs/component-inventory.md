@@ -36,7 +36,7 @@
 
 - [x] Tabs 标签页
 - [x] Breadcrumb 面包屑
-- [ ] Steps 步骤条
+- [x] Steps 步骤条（basic/fill 两种变体；nav 可点击导航式变体因与 Tabs 高度重叠本期不做）
 - [ ] Pagination 分页
 - [ ] Anchor 锚点
 - [ ] BackTop 回到顶部

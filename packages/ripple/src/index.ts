@@ -144,6 +144,15 @@ export {
     type TabsSize,
 } from './navigation/tabs/index.tsrx';
 export {
+    Steps,
+    type StepsProps,
+    type StepsType,
+    type StepStatus,
+    type StepsDirection,
+    type StepsSize,
+    type StepItemInput,
+} from './navigation/steps/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,
