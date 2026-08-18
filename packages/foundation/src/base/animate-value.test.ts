@@ -143,4 +143,48 @@ describe('throttle', () => {
     throttled('a', 1);
     expect(fn).toHaveBeenCalledWith('a', 1);
   });
+
+  it('窗口内被跳过的最后一次调用会在窗口结束后补偿执行（trailing edge）', () => {
+    let time = 0;
+    const fn = vi.fn();
+    const pendingTimers: Array<{ cb: () => void; delay: number }> = [];
+    const fakeSetTimeout = (cb: () => void, delay: number) => {
+      pendingTimers.push({ cb, delay });
+      return pendingTimers.length;
+    };
+    const fakeClearTimeout = () => {};
+    const throttled = throttle(fn, 100, () => time, fakeSetTimeout, fakeClearTimeout);
+
+    throttled('first');
+    time += 30;
+    throttled('second'); // 落在窗口内，被跳过但记录为待补偿参数
+    time += 30;
+    throttled('third'); // 同样落在窗口内，覆盖待补偿参数为 'third'
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith('first');
+
+    // 模拟窗口结束后 setTimeout 触发
+    time += 40;
+    pendingTimers[0]!.cb();
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenLastCalledWith('third');
+  });
+
+  it('窗口内只调用一次时不会产生多余的补偿调用', () => {
+    let time = 0;
+    const fn = vi.fn();
+    const pendingTimers: Array<() => void> = [];
+    const throttled = throttle(
+      fn,
+      100,
+      () => time,
+      (cb) => { pendingTimers.push(cb); return pendingTimers.length; },
+      () => {},
+    );
+
+    throttled();
+    expect(pendingTimers.length).toBe(0);
+  });
 });

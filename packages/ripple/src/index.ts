@@ -162,6 +162,10 @@ export {
     type PopconfirmProps,
 } from './feedback/popconfirm/index.tsrx';
 export {
+    BackTop,
+    type BackTopProps,
+} from './navigation/back-top/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,

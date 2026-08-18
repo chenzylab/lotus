@@ -72,14 +72,40 @@ export function animateValue(options: AnimateValueOptions): AnimateValueHandle {
   };
 }
 
-/** 简单节流：距上次触发不足 ms 毫秒时忽略调用。Anchor/BackTop 的滚动监听共用。 */
-export function throttle<T extends (...args: any[]) => void>(fn: T, ms: number, now: () => number = Date.now): T {
+/**
+ * 节流（leading + trailing）：距上次触发不足 ms 毫秒时不立即执行，但会
+ * 安排一次窗口结束后的补偿调用，保证"最后一次调用的最终状态"总会被
+ * 同步——纯 leading-only 节流会丢失窗口内最后一次调用（例如用户滚动
+ * 停止的那一刻恰好落在节流窗口内，状态永远不会更新，这在快速连续两次
+ * 滚动场景下是真实 bug，不只是测试时序问题，见 specs 踩坑记录）。
+ * Anchor/BackTop 的滚动监听共用。
+ */
+export function throttle<T extends (...args: any[]) => void>(
+  fn: T,
+  ms: number,
+  now: () => number = Date.now,
+  setTimeoutFn: (cb: () => void, ms: number) => number = setTimeout,
+  clearTimeoutFn: (handle: number) => void = clearTimeout,
+): T {
   let last: number | null = null;
+  let trailingTimer: number | null = null;
+  let trailingArgs: Parameters<T> | null = null;
+
   return ((...args: Parameters<T>) => {
     const current = now();
     if (last === null || current - last >= ms) {
       last = current;
       fn(...args);
+      return;
     }
+    trailingArgs = args;
+    if (trailingTimer !== null) return;
+    const remaining = ms - (current - last);
+    trailingTimer = setTimeoutFn(() => {
+      trailingTimer = null;
+      last = now();
+      if (trailingArgs) fn(...trailingArgs);
+      trailingArgs = null;
+    }, remaining);
   }) as T;
 }

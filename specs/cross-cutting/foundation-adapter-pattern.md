@@ -2024,6 +2024,40 @@ typecheck/lint 能发现的），且只有真机点击触发对应渲染路径�
 的假设——这个假设会随着后续组件增多持续被打破，`exact: true` 是
 面向未来的防御写法，不是可选的代码风格偏好。
 
+## 踩坑 #50：`throttle()` 只做 leading-edge（首次立即执行、窗口内后续
+调用全部丢弃）会导致"窗口内最后一次调用的最终状态永远丢失"，快速
+连续两次滚动场景下是真实功能 bug，不只是 e2e 测试时序偶发
+
+**现象**：`BackTop` 组件用 `packages/foundation/src/base/animate-
+value.ts` 的 `throttle(handleScroll, 100)` 监听滚动事件。e2e 测试
+"滚动到 500px 后隐藏按钮出现，再滚动回 0px 后按钮重新隐藏"稳定失败——
+`repeat-each=5` 跑 5 次全部在第二个断言（滚回 0px 后应该隐藏）失败，
+按钮一直显示。排查发现两层问题：
+1. **组件挂载时的初始化调用占用了节流窗口**：`effect()` 里 `const
+   throttledHandleScroll = throttle(syncVisible, 100); ...
+   throttledHandleScroll()` 把初始化同步也套进了节流函数，紧随其后
+   的真实 `scroll` 事件如果在 100ms 内到达会被吞掉。**修复**：初始化
+   调用用未节流的 `syncVisible()` 直接执行，节流只包装 `addEventListener`
+   注册的那个监听器。
+2. **修复第一层后仍然失败**：连续两次 `page.evaluate(() => window
+   .scrollTo(...))`（先到 500 再到 0）间隔通常远小于 100ms 节流窗口，
+   第二次滚动事件被节流跳过，而原实现是纯 leading-edge（`current -
+   last >= ms` 才执行，否则直接丢弃，不做任何补偿），所以"滚动停止
+   那一刻"的最终状态永远没有机会被同步——这不是测试时序问题，是
+   `throttle()` 工具函数本身的设计缺陷：任何"高频事件+读最终状态"
+   的消费场景（滚动位置、resize 尺寸等）都会踩到同一个坑。
+
+**修复**：`throttle()` 改造成 leading + trailing 模式——窗口内被跳过
+的调用记录下最新参数，安排一次窗口结束后的补偿调用（`setTimeout`），
+确保最终状态总会被同步。函数签名新增可选的 `setTimeoutFn`/
+`clearTimeoutFn` 注入参数（默认用全局 `setTimeout`/`clearTimeout`），
+保持可脱离浏览器环境单测。
+
+**验证方法**：**必须用 `--repeat-each=N`（N≥5）重复跑同一个 e2e 测试
+确认稳定性**，单次通过不能说明时序类 bug 已修复——本次两次单独运行
+都通过、`repeat-each=5` 才稳定复现失败。任何涉及节流/防抖/滚动监听的
+组件，验收测试都应该用这个方式做稳定性抽查，而不是跑一次绿了就算数。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2050,3 +2084,4 @@ typecheck/lint 能发现的），且只有真机点击触发对应渲染路径�
 - **`@for` 循环体内直接放多个互斥 `@if` 分支（不包 `<>...</>`）会报 "renders a single node" 编译错误**（踩坑 #47）：循环体内容有条件分支时整体包一层 fragment；循环体是单一固定结构时不受影响。
 - **可选 props 直接 `{...spread}` 透传给子组件 JSX 时，值为 `undefined` 会让 Ripple 运行时抛 `Cannot use 'in' operator ... in undefined` 崩溃整棵渲染树**（踩坑 #48，重大）：解构时必须给 `= {}` 默认值，不能依赖 JS 原生"spread undefined 是 no-op"的行为。这类 bug 只在真机点击触发对应渲染路径时暴露，排查时优先看 Playwright `[WebServer]` 前缀的浏览器 console 报错，而非只看断言失败信息。
 - **`getByRole(..., { name: 'X' })` 默认非精确匹配，新组件演示文案若包含旧测试断言文本作为子串会让存量测试报多义选择器错误**（踩坑 #49，踩坑 #46 的变体）：用于身份判断的选择器一律加 `exact: true`，不要假设某段文案在整个 playground 页面里唯一。
+- **`throttle()` 若只做 leading-edge（不补偿窗口内被跳过的最后一次调用）会丢失"事件停止那一刻"的最终状态**（踩坑 #50，重大）：改造成 leading+trailing 模式；任何涉及节流/防抖的组件，e2e 验收要用 `--repeat-each=5` 重复跑确认稳定性，单次通过不代表时序类 bug 已修复。

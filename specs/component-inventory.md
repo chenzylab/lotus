@@ -39,7 +39,7 @@
 - [x] Steps 步骤条（basic/fill 两种变体；nav 可点击导航式变体因与 Tabs 高度重叠本期不做）
 - [x] Pagination 分页
 - [ ] Anchor 锚点
-- [ ] BackTop 回到顶部
+- [x] BackTop 回到顶部
 - [x] Navigation 导航
 - [ ] Tree 树形控件（导航用途基础版，数据交互增强见 Phase 4）
 - [x] Banner 通栏
