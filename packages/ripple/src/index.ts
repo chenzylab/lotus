@@ -158,6 +158,10 @@ export {
     type PaginationSize,
 } from './navigation/pagination/index.tsrx';
 export {
+    Popconfirm,
+    type PopconfirmProps,
+} from './feedback/popconfirm/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,

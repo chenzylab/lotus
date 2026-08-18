@@ -1960,6 +1960,70 @@ multiple nodes or text in a fragment '<>…</>'`，且错误信息不带行号�
 ```
 `@for` 循环体只有单一固定结构（无分支）时不受影响，不需要额外包裹。
 
+## 踩坑 #48（重大）：组件 props 解构里给"透传 spread 到子组件"的可选
+props 不设默认值，值为 `undefined` 时 `{...undefinedValue}` 会让 Ripple
+运行时崩溃（`Cannot use 'in' operator to search for 'x' in undefined`）
+
+**现象**：`Popconfirm` 组件设计为可选透传 `okButtonProps`/
+`cancelButtonProps` 给内部的 `<Button>`：
+```tsrx
+export interface PopconfirmProps {
+    okButtonProps?: ButtonProps;
+    cancelButtonProps?: ButtonProps;
+}
+export function Popconfirm(&{ okButtonProps, cancelButtonProps, ... }: PopconfirmProps) @{
+    <Button theme="solid" ... {...okButtonProps}>{okText}</Button>
+}
+```
+用户没有传 `okButtonProps` 时，`okButtonProps` 值是 `undefined`。这在
+普通 JavaScript 里 `{...undefined}` 是完全合法的 no-op（等价于不展开
+任何属性），但 Playwright 真机测试点击触发按钮时，浏览器控制台抛出
+`TypeError: Cannot use 'in' operator to search for 'disabled' in
+undefined`，堆栈直接指向 `Button` 组件解构 `disabled = false` 那一行
+——Ripple 编译后的属性合并逻辑（`render_tsrx_element`）对 spread 进来
+的 `undefined` 值做了 `'disabled' in props` 这类存在性检查，undefined
+不是对象，`in` 操作符直接抛错，中断了整棵渲染树（触发按钮点击后浮层
+完全不出现，且没有任何 console.error 能在页面上直接看到——只有真机
+点击触发这条渲染路径时才会暴露，纯静态渲染或首屏加载完全不会命中）。
+
+**规避方式**：任何要透传给子组件 JSX 的 `{...props}` 展开，其 props
+若类型上是可选的（`?: SomeProps`），**必须在解构时给一个 `= {}` 默认
+值**，不能依赖"JS spread undefined 是合法 no-op"这个原生语言行为：
+```tsrx
+okButtonProps = {},
+cancelButtonProps = {},
+```
+函数参数解构的默认值兜底在 tsrx 编译产物层面同样生效、且是本仓库已有
+组件的通用写法（对照 rest 参数 `...popoverProps` 天然不会是 undefined，
+不受影响），只有"可选 prop 直接透传 spread"这一种模式需要特别注意。
+
+**验证方法**：这类 bug 的报错完全发生在浏览器运行时（不是
+typecheck/lint 能发现的），且只有真机点击触发对应渲染路径才会暴露，
+`e2e` 测试点击交互失败时，第一时间用 Playwright 的 `--reporter=list`
+输出（会带上 `[WebServer]` 前缀的浏览器 console 报错）而不是只看
+测试断言失败信息本身——真正的根因往往在这些浏览器端日志里，而不是
+表面的 "locator not found" 之类的断言错误。
+
+## 踩坑 #49：Playwright `getByRole('button', { name: 'X' })` 默认非
+精确匹配，新增组件演示按钮的文案若包含旧测试断言文本作为子串，会
+让存量测试报"多义选择器"错误（踩坑 #46 的变体）
+
+**现象**：playground 里新增了 `<Button>提交（异步回调，600ms）</Button>`
+（Popconfirm 演示的一部分），存量的 `e2e/input/form.spec.ts` 里
+`page.getByRole('button', { name: '提交' })`（未加 `exact: true`）
+从"只命中 Form 演示区的提交按钮"变成同时命中这个新按钮——`'提交'`
+是 `'提交（异步回调，600ms）'` 的前缀子串，Playwright 默认的
+`name` 匹配是"包含"而非"完全相等"，触发严格模式报错。这和踩坑 #46
+（新组件复用已有组件导致 aria-label 完全相同）是同一类问题的另一种
+触发方式——**不需要 aria-label 完全相同，只要新文案包含旧断言的
+匹配文本作为子串就会触发**，覆盖面比 #46 描述的更广。
+
+**规避方式**：任何 e2e 测试里用 `getByRole(..., { name: 'X' })` 或
+`getByText('X')` 做精确身份判断（而非"页面上存在含有 X 的东西"这种
+弱校验）时，一律加 `exact: true`，不要依赖"这个文案在页面上唯一"
+的假设——这个假设会随着后续组件增多持续被打破，`exact: true` 是
+面向未来的防御写法，不是可选的代码风格偏好。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1984,3 +2048,5 @@ multiple nodes or text in a fragment '<>…</>'`，且错误信息不带行号�
 - **Foundation 适配器的 `setState` 实现里 `{ ...state, ...patch }` 展开同样需要 `untrack()` 包裹，不只是 `getState`**（踩坑 #45，重大）：遗漏时首次渲染完全正常，只有 prop 变化触发 `effect()` 重新执行、`setState` 被调用时才会因"同一 effect 读写同一 state"抛 `Maximum update depth exceeded`（与踩坑 #36 同根同源，触发点不同）。新组件必须有"外部按钮驱动 prop 变化后断言响应式更新"的 e2e 测试，这类测试天然会暴露此类死循环，纯首次渲染测试无法覆盖。
 - **新组件内部复用已有组件时，可能让存量 e2e 测试的泛化选择器意外命中新增实例**（踩坑 #46）：e2e 测试优先用具体 aria-label/文本定位，通用 label（"关闭"/"确定"等）要追加区分性 class 组合限定范围；每个新组件开发完成后必须跑一次全量 `pnpm test:e2e`，不能只跑该组件自己的测试文件。
 - **`@for` 循环体内直接放多个互斥 `@if` 分支（不包 `<>...</>`）会报 "renders a single node" 编译错误**（踩坑 #47）：循环体内容有条件分支时整体包一层 fragment；循环体是单一固定结构时不受影响。
+- **可选 props 直接 `{...spread}` 透传给子组件 JSX 时，值为 `undefined` 会让 Ripple 运行时抛 `Cannot use 'in' operator ... in undefined` 崩溃整棵渲染树**（踩坑 #48，重大）：解构时必须给 `= {}` 默认值，不能依赖 JS 原生"spread undefined 是 no-op"的行为。这类 bug 只在真机点击触发对应渲染路径时暴露，排查时优先看 Playwright `[WebServer]` 前缀的浏览器 console 报错，而非只看断言失败信息。
+- **`getByRole(..., { name: 'X' })` 默认非精确匹配，新组件演示文案若包含旧测试断言文本作为子串会让存量测试报多义选择器错误**（踩坑 #49，踩坑 #46 的变体）：用于身份判断的选择器一律加 `exact: true`，不要假设某段文案在整个 playground 页面里唯一。

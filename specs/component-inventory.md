@@ -45,7 +45,7 @@
 - [x] Banner 通栏
 - [ ] Notification 通知
 - [ ] Toast 轻提示
-- [ ] Popconfirm 气泡确认框
+- [x] Popconfirm 气泡确认框（组合复用 Popover，未重新实现浮层定位）
 - [x] Progress 进度条
 - [x] Skeleton 骨架屏
 - [x] Spin 加载中

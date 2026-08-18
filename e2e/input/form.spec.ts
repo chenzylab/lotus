@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Form', () => {
   test('提交空表单时所有字段的校验错误都显示（回归：并发校验多个字段时，后完成的字段曾覆盖先完成字段的错误）', async ({ page }) => {
     await page.goto('/');
-    const submitButton = page.getByRole('button', { name: '提交' });
+    const submitButton = page.getByRole('button', { name: '提交', exact: true });
 
     await submitButton.click();
 
@@ -40,7 +40,7 @@ test.describe('Form', () => {
     // specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #31。
     await page.locator('.lotus-checkbox').filter({ hasText: '我同意用户协议' }).click();
 
-    await page.getByRole('button', { name: '提交' }).click();
+    await page.getByRole('button', { name: '提交', exact: true }).click();
 
     await expect(page.getByText('提交成功')).toBeVisible();
     await expect(page.getByText('"username":"semi"')).toBeVisible();
