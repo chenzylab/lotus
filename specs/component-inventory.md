@@ -43,7 +43,7 @@
 - [x] Navigation 导航
 - [ ] Tree 树形控件（导航用途基础版，数据交互增强见 Phase 4）
 - [x] Banner 通栏
-- [ ] Notification 通知
+- [x] Notification 通知（6 个 position 分组渲染；结构对齐 ToastListFoundation，unshift 插入队列头部）
 - [x] Toast 轻提示（stack 折叠视觉已实现；ToastFactory 多实例高阶能力简化为单例模块，已在验收标准里注明是主动简化）
 - [x] Popconfirm 气泡确认框（组合复用 Popover，未重新实现浮层定位）
 - [x] Progress 进度条

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Toast', () => {
   test('点击按钮触发 Toast.info，渲染出对应内容', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Toast.info' }).click();
+    await page.getByRole('button', { name: 'Toast.info', exact: true }).click();
 
     const toast = page.locator('.lotus-toast-info');
     await expect(toast).toBeVisible();
@@ -12,7 +12,7 @@ test.describe('Toast', () => {
 
   test('showClose=true 时渲染关闭按钮，点击后立即移除', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Toast.success（可关闭）' }).click();
+    await page.getByRole('button', { name: 'Toast.success（可关闭）', exact: true }).click();
 
     const toast = page.locator('.lotus-toast-success');
     await expect(toast).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('Toast', () => {
 
   test('duration 到期后自动移除（默认 3 秒）', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Toast.info' }).click();
+    await page.getByRole('button', { name: 'Toast.info', exact: true }).click();
 
     const toast = page.locator('.lotus-toast-info');
     await expect(toast).toBeVisible();
@@ -32,7 +32,7 @@ test.describe('Toast', () => {
 
   test('连续触发多条 Toast 时全部同时显示，各自独立', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: '连续触发 3 条' }).click();
+    await page.getByRole('button', { name: '连续触发 3 条', exact: true }).click();
 
     await expect(page.locator('.lotus-toast-warning')).toBeVisible();
     await expect(page.locator('.lotus-toast-error')).toBeVisible();
@@ -44,10 +44,10 @@ test.describe('Toast', () => {
 
   test('destroyAll() 清空全部通知并卸载挂载容器', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: '连续触发 3 条' }).click();
+    await page.getByRole('button', { name: '连续触发 3 条', exact: true }).click();
     await expect(page.locator('.lotus-toast')).toHaveCount(3);
 
-    await page.getByRole('button', { name: 'destroyAll' }).click();
+    await page.getByRole('button', { name: 'destroyAll', exact: true }).click();
     await expect(page.locator('.lotus-toast')).toHaveCount(0);
     await expect(page.locator('.lotus-toast-root')).toHaveCount(0);
   });

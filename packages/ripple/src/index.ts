@@ -177,6 +177,13 @@ export {
     type ToastItem,
 } from './feedback/toast/index.tsrx';
 export {
+    Notification,
+    type NotificationOptions,
+    type NotificationType,
+    type NotificationItem,
+    type NotificationPosition,
+} from './feedback/notification/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,

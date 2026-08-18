@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -422,6 +422,15 @@ export function App() @{
             <Button onClick={() => Toast.success({ content: '操作成功', showClose: true })}>Toast.success（可关闭）</Button>
             <Button onClick={() => { Toast.warning('警告一'); Toast.error('错误二'); Toast.info('信息三'); }}>连续触发 3 条</Button>
             <Button onClick={() => Toast.destroyAll()}>destroyAll</Button>
+        </Space>
+
+        <Divider>Notification</Divider>
+
+        <Space>
+            <Button onClick={() => Notification.info({ title: '通知标题', content: '这是通知内容', position: 'topRight' })}>Notification.info（topRight）</Button>
+            <Button onClick={() => Notification.success({ title: '成功', content: '操作已完成', position: 'bottomLeft' })}>Notification.success（bottomLeft）</Button>
+            <Button onClick={() => { Notification.warning({ title: '警告一', position: 'topRight' }); Notification.error({ title: '错误二', position: 'topRight' }); }}>连续触发 2 条（topRight）</Button>
+            <Button onClick={() => Notification.destroyAll()}>Notification.destroyAll</Button>
         </Space>
 
         <Divider />
