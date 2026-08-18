@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -525,6 +525,74 @@ export function App() @{
                     aria-label="懒加载 Tree"
                 />
             </div>
+        </Space>
+
+        <Divider>Badge</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '20px' }}>
+            <Space style={{ gap: '24px' }}>
+                <Badge count={5} aria-label="Badge 数字 5">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={0} aria-label="Badge 数字 0（不会自动隐藏）">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={128} overflowCount={99} aria-label="Badge 超出 overflowCount 显示 99+">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge dot aria-label="Badge 红点模式">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count="VIP" type="warning" aria-label="Badge 自定义字符串内容">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+            </Space>
+
+            <Space style={{ gap: '24px' }}>
+                <Badge count={9} type="primary" aria-label="Badge type=primary">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={9} type="danger" aria-label="Badge type=danger">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={9} type="warning" aria-label="Badge type=warning">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={9} type="success" aria-label="Badge type=success">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+            </Space>
+
+            <Space style={{ gap: '24px' }}>
+                <Badge count={9} type="danger" theme="solid" aria-label="Badge theme=solid">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={9} type="danger" theme="light" aria-label="Badge theme=light">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={9} type="danger" theme="inverted" aria-label="Badge theme=inverted">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+            </Space>
+
+            <Space style={{ gap: '24px' }}>
+                <Badge count={4} position="leftTop" aria-label="Badge position=leftTop">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={4} position="rightBottom" aria-label="Badge position=rightBottom">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+                <Badge count={4} position="leftBottom" aria-label="Badge position=leftBottom">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+            </Space>
+
+            <Space style={{ gap: '24px' }}>
+                <Badge count={3} aria-label="独立展示 Badge（无 children）" />
+                <Badge onClick={() => console.log('badge clicked')} count={7} aria-label="Badge onClick">
+                    <div style={{ width: '32px', height: '32px', background: 'var(--lotus-color-fill-0)', borderRadius: '4px' }} />
+                </Badge>
+            </Space>
         </Space>
 
         <Divider />

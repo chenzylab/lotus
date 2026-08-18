@@ -109,6 +109,13 @@ export {
 } from './input/form/index.tsrx';
 export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
 export {
+    Badge,
+    type BadgeProps,
+    type BadgeType,
+    type BadgeTheme,
+    type BadgePosition,
+} from './show/badge/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

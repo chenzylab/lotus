@@ -53,7 +53,7 @@
 ## Phase 3 — 数据展示 (Show)
 
 - [x] Avatar 头像
-- [ ] Badge 徽标
+- [x] Badge 徽标
 - [ ] Card 卡片
 - [x] Tag 标签（含 AI 主题变体，对应官网 AITag）
 - [ ] Empty 空状态
