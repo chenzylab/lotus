@@ -2142,6 +2142,93 @@ Ripple 一般响应式更新机制一致），真机验证/e2e 测试断言 DOM 
 Foundation 设计），`pushUpdate` 只是"把 Foundation 算出的新队列同步
 给已挂载组件"这一层胶水，不要把队列管理逻辑写在这层胶水代码里。
 
+## 踩坑 #51（重大）：`@for` 的 `index`/`key` 修饰符必须严格按
+`index i; key expr` 顺序书写，写反成 `key expr; index i` 会产生
+一长串误导性极强、完全不指向真实错误位置的级联编译错误
+
+**现象**：`Toast` 组件的 `ToastListRoot` 内部写了
+```tsrx
+@for (const item of list; key item.id; index i) {
+```
+`pnpm typecheck` 报出 20+ 条错误，分布在文件的多个不同位置（`let &[list]
+= track(...)` 那一行报 `',' expected`、`<style>` 标签内的普通 CSS 规则
+报 `Unexpected token`、文件最后的 `}` 报 `Declaration or statement
+expected`），错误信息与真实问题（`@for` 修饰符顺序）在语义和位置上
+毫无关联，第一直觉完全被带偏——依次怀疑过具名接口类型、嵌套箭头函数
+类型标注、`track<T[]>([])` 数组字面量语法、模块顶层 JSX（`const
+DEFAULT_ICONS: Record<...> = { success: <Icon />, ... }` 这种写法
+其实是有先例的，被误判为可疑点），逐一试错均未修复问题。
+
+**排查方法**：`tsrx-tsc` 的错误定位机制不可靠时（错误分布在文件各处、
+和直觉上的"最近改动"关联不上），**用 `sed` 截取文件前 N 行 + 手写一个
+最简单的合法收尾（`</>` + `}`），二分定位到底哪一段内容触发了解析
+失败**——本次证明这是唯一真正有效的方法，比"看报错信息猜测"快得多。
+截到只剩函数签名和空 JSX 骨架时完全正常，逐段加回真实内容，加入
+`@for (...; key item.id; index i)` 那一行的瞬间错误立即复现，从而
+精确定位。
+
+**根因**：`specs/references/ripple-llms.txt` 里的官方示例固定写成
+`@for (const user of visibleUsers; index i; key user.id)`——**`index`
+在前、`key` 在后**是唯一合法顺序，此前所有组件都只单独用 `key` 或
+只单独用 `index`，本仓库从未出现过需要同时用两者的场景，直到 Toast
+需要"`key` 做 id 追踪 + `index` 算层叠深度"才第一次撞上这个顺序要求，
+而语言层面对顺序写反没有做任何有意义的错误提示。
+
+**规避方式**：`@for` 需要同时用 `index`/`key` 时，死记顺序
+`index i; key expr`，不要凭直觉按语义重要性排列。这个模式值得作为
+新组件开发前的检查项之一，与文档铁律"函数体用 `@{...}`""顶层包一层
+`<>...</>`"并列。
+
+## 踩坑 #52（重大）：Foundation 层给"可注入定时器"设计默认实现时，
+直接写 `{ setTimeout, clearTimeout }` 会丢失隐式 `this` 绑定，真机
+调用时抛 `TypeError: Illegal invocation`——且这个 bug 在 Node 单测
+环境完全测不出来，也可能被"演示代码恰好没触发对应分支"长期掩盖
+
+**现象**：`Toast`/`Spin` 两个组件的 Foundation 都设计了"定时器可通过
+构造参数注入，默认用全局 `setTimeout`/`clearTimeout`"的模式（保持
+可脱离浏览器环境单测），写成：
+```ts
+const DEFAULT_TIMERS: XxxTimers = { setTimeout, clearTimeout };
+```
+`Toast` 组件 e2e 真机测试第一次点击触发按钮就抛错：
+`TypeError: Illegal invocation`，堆栈精确指向 `this.timerImpl
+.setTimeout(...)` 这一行。根因是**原生 `setTimeout`/`clearTimeout`
+是 `window` 对象上的方法，其内部实现依赖调用时 `this === window`**
+——`{ setTimeout, clearTimeout }` 这种对象字面量简写等价于
+`{ setTimeout: window.setTimeout, clearTimeout: window.clearTimeout
+}`，把函数引用从 `window` 上剥离后单独存放；后续通过
+`this.timerImpl.setTimeout(fn, ms)` 调用时，函数内部的隐式 `this`
+绑定的是 `this.timerImpl` 对象而非 `window`，浏览器原生实现检测到
+`this` 不对就抛 `Illegal invocation`。
+
+**为什么 `Spin` 组件的这个同款 bug 没有在它自己的 e2e 阶段被发现**：
+playground 里 `Spin` 的演示代码从未传过 `delay` prop（默认 `delay=0`
+分支直接跳过定时器逻辑，不会调用 `this.timers.setTimeout`），所以这
+条崩溃路径此前从未被真机测试真正执行到，直到排查 `Toast` 的同款问题
+时顺带复查了本仓库所有用到相同 `{ setTimeout, clearTimeout }` 简写
+模式的地方才发现。**这类"分支覆盖不全导致的隐藏 bug"和踩坑 #40
+（module server 同步/异步写法错误被前置崩溃"意外保护"）是同一类
+教训——bug 存在与否和"是否被执行到"是两回事，新组件的验收测试必须
+覆盖所有条件分支对应的 prop 组合，不能只测默认值路径。**
+
+**规避方式**：Foundation 层任何"注入原生浏览器/Node 全局方法"的默认
+实现，禁止用 `{ method1, method2 }` 对象简写直接解构挂载，必须用
+箭头函数包一层，让调用点落在函数体内部（此时函数体内的裸调用
+`setTimeout(fn, ms)` 是隐式全局调用，语义上等价于 `window.setTimeout
+(fn, ms)`，`this` 绑定正确）：
+```ts
+const DEFAULT_TIMERS: XxxTimers = {
+  setTimeout: (fn, ms) => setTimeout(fn, ms) as unknown as number,
+  clearTimeout: (handle) => clearTimeout(handle),
+};
+```
+本文档 `animate-value.ts` 的 `raf`/`cancelRaf` 默认值（`(cb) =>
+requestAnimationFrame(cb)`）从一开始就用了这个正确写法，`Date.now`
+之所以能直接解构赋值是因为它是不依赖 `this` 的纯静态方法——同一份
+代码里"到底哪个全局方法能直接解构、哪个不能"没有统一规律，唯一
+安全的默认做法是**一律用箭头函数包裹，不要因为"这个方法看起来简单"
+就走捷径直接解构**。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2169,3 +2256,5 @@ Foundation 设计），`pushUpdate` 只是"把 Foundation 算出的新队列同�
 - **可选 props 直接 `{...spread}` 透传给子组件 JSX 时，值为 `undefined` 会让 Ripple 运行时抛 `Cannot use 'in' operator ... in undefined` 崩溃整棵渲染树**（踩坑 #48，重大）：解构时必须给 `= {}` 默认值，不能依赖 JS 原生"spread undefined 是 no-op"的行为。这类 bug 只在真机点击触发对应渲染路径时暴露，排查时优先看 Playwright `[WebServer]` 前缀的浏览器 console 报错，而非只看断言失败信息。
 - **`getByRole(..., { name: 'X' })` 默认非精确匹配，新组件演示文案若包含旧测试断言文本作为子串会让存量测试报多义选择器错误**（踩坑 #49，踩坑 #46 的变体）：用于身份判断的选择器一律加 `exact: true`，不要假设某段文案在整个 playground 页面里唯一。
 - **`throttle()` 若只做 leading-edge（不补偿窗口内被跳过的最后一次调用）会丢失"事件停止那一刻"的最终状态**（踩坑 #50，重大）：改造成 leading+trailing 模式；任何涉及节流/防抖的组件，e2e 验收要用 `--repeat-each=5` 重复跑确认稳定性，单次通过不代表时序类 bug 已修复。
+- **`@for` 同时使用 `index`/`key` 修饰符时顺序写反（`key expr; index i`）会产生一长串完全不指向真实错误位置的级联编译错误**（踩坑 #51，重大）：正确顺序固定是 `index i; key expr`。这类"错误信息与真实问题无关"的编译失败，用 `sed` 截取文件前 N 行 + 手写最简合法收尾做二分定位，比逐条猜测报错含义快得多。
+- **Foundation 层给定时器等原生方法设计默认实现时，`{ setTimeout, clearTimeout }` 对象简写会丢失隐式 `this` 绑定，真机调用抛 `Illegal invocation`**（踩坑 #52，重大）：必须用箭头函数包裹（`(fn, ms) => setTimeout(fn, ms)`）。这类 bug 在 Node 单测环境测不出来，也可能因为"演示代码未触发对应分支"被长期掩盖——新组件验收要覆盖全部条件分支对应的 prop 组合，不能只测默认值路径。

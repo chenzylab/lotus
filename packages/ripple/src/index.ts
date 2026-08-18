@@ -171,6 +171,12 @@ export {
     type AnchorLinkInput,
 } from './navigation/anchor/index.tsrx';
 export {
+    Toast,
+    type ToastOptions,
+    type ToastType,
+    type ToastItem,
+} from './feedback/toast/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,

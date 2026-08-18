@@ -28,4 +28,12 @@ test.describe('Spin', () => {
     await expect(spin).toHaveAttribute('aria-busy', 'false');
     await expect(spin).toHaveClass(/lotus-spin-hidden/);
   });
+
+  test('delay>0 时最终会显示 loading 指示器（回归：Foundation 的 setTimeout 默认实现从 window 解构剥离 this 绑定，曾抛 Illegal invocation 导致这条渲染路径完全崩溃，见 specs 踩坑记录）', async ({ page }) => {
+    await page.goto('/');
+    const spin = page.locator('[aria-label="延迟显示的 Spin（delay=200ms）"]');
+
+    await expect(spin).toHaveAttribute('aria-busy', 'true', { timeout: 1000 });
+    await expect(spin.locator('svg.lotus-spin-icon')).toBeVisible();
+  });
 });

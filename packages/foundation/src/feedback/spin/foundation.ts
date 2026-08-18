@@ -9,7 +9,15 @@ export interface SpinTimers {
   clearTimeout: (handle: number) => void;
 }
 
-const DEFAULT_TIMERS: SpinTimers = { setTimeout, clearTimeout };
+// 不能直接写 { setTimeout, clearTimeout }——原生 setTimeout/clearTimeout
+// 从 window 上解构剥离后会丢失隐式 this 绑定，浏览器实现内部依赖
+// this===window，调用时抛 `TypeError: Illegal invocation`（此前 e2e
+// 一直没暴露是因为 playground 演示未传 delay>0，从未真正调用到这里，
+// 见 specs 踩坑记录）。
+const DEFAULT_TIMERS: SpinTimers = {
+  setTimeout: (fn, ms) => setTimeout(fn, ms) as unknown as number,
+  clearTimeout: (handle) => clearTimeout(handle),
+};
 
 /**
  * Spin 的 delay 状态机：`spinning=true` 且 `delay>0` 时，不立即显示 loading，

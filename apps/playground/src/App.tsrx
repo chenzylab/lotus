@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -307,6 +307,7 @@ export function App() @{
 
         <Space vertical align="start">
             <Spin spinning aria-label="独立 Spin 指示器" />
+            <Spin spinning delay={200} aria-label="延迟显示的 Spin（delay=200ms）" />
             <Spin spinning={spinSpinning} aria-label="包裹内容的 Spin">
                 <div style={{ width: '200px', height: '100px', border: '1px solid var(--lotus-color-border)', padding: '12px' }}>
                     被包裹的内容区域
@@ -413,6 +414,15 @@ export function App() @{
                 <div id="anchor-section-3" style={{ height: '250px' }}>第三节内容</div>
             </div>
         </div>
+
+        <Divider>Toast</Divider>
+
+        <Space>
+            <Button onClick={() => Toast.info('这是一条 info 提示')}>Toast.info</Button>
+            <Button onClick={() => Toast.success({ content: '操作成功', showClose: true })}>Toast.success（可关闭）</Button>
+            <Button onClick={() => { Toast.warning('警告一'); Toast.error('错误二'); Toast.info('信息三'); }}>连续触发 3 条</Button>
+            <Button onClick={() => Toast.destroyAll()}>destroyAll</Button>
+        </Space>
 
         <Divider />
 
