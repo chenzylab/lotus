@@ -2058,6 +2058,90 @@ value.ts` 的 `throttle(handleScroll, 100)` 监听滚动事件。e2e 测试
 都通过、`repeat-each=5` 才稳定复现失败。任何涉及节流/防抖/滚动监听的
 组件，验收测试都应该用这个方式做稳定性抽查，而不是跑一次绿了就算数。
 
+## 全局命令式 API 模式验证（Toast/Notification 的技术基础）：`track()`
+不能在模块顶层使用，但 `mount()` + "组件内部创建状态 + 回调反向暴露
+更新函数"的模式已验证可行
+
+**背景**：Toast.info()/Notification.open() 这类全局命令式 API（不需要
+先在 JSX 里声明 `<Toast/>`，直接调用函数就能让内容出现在页面上）在
+Ripple 下如何实现，此前是未知数——本仓库没有任何先例，Semi(React)
+版本靠 `ReactDOM.render` + `ref` 拿组件实例调用其方法，Ripple 的对应
+能力（`mount()`）语义不完全相同，需要实测验证。
+
+**关键发现一**：**`track()` 只能在"响应式上下文"内使用，不能在模块
+顶层直接调用**——尝试在模块作用域写 `let &[state] = track([])`
+（在任何组件函数体之外）会在 `typecheck` 阶段直接报错：`` `track`
+can only be used within a reactive context, such as a component,
+function or class that is used or created from a component ``。这
+排除了"模块级创建 track() 状态，直接传给 mount() 的组件当 props，
+外部再改这个模块级状态"这个最直观的设计——它在源头就不成立。
+
+**关键发现二**：**`mount(component, options)` 返回一个 `unmount`
+清理函数**（`packages/.../ripple/src/runtime/index-client.js` 里
+`return () => { cleanup_events(); destroy_block(_root); }`），不需要
+额外确认"Ripple 是否有 unmount API"这个此前的未知数——`mount()` 本身
+就是。
+
+**验证通过的可行方案**（已用最小 demo 在 playground 真机跑通，连续
+多次调用、响应式持续生效）：
+```tsrx
+// 模块作用域：只持有普通变量，不持有 track() 状态
+let mounted = false;
+let unmountFn: (() => void) | null = null;
+let pushUpdate: ((items: T[]) => void) | null = null;
+let currentItems: T[] = [];
+
+// 组件内部创建 track() 状态，通过一个 props 回调把"更新函数"反向注册
+// 回模块作用域——这是 Ripple 版本对应 React `ref` 拿实例调用方法的
+// 替代方案，语义上更贴合"细粒度响应式，追踪点在字段读取而非组件实例"
+// 的心智模型。
+function ListRoot(&{ registerController }: { registerController: (fn: (items: T[]) => void) => void }) {
+    let &[items] = track<T[]>([]);
+    registerController((next: T[]) => { items = next; });  // 挂载时立即同步执行（mount 是同步调用）
+    return <div>@for (const item of items; key item.id) { ... }</div>;
+}
+
+function ensureMounted() {
+    if (mounted) return;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    unmountFn = mount(ListRoot as any, {  // mount() 的 TS 类型约束 Component<Record<string,any>>，
+        target: container,                // 自定义 props 形状需要 as any 绕过（运行时无影响）
+        props: { registerController: (fn) => { pushUpdate = fn; } },
+    });
+    mounted = true;
+}
+
+export const Toast = {
+    info: (opts) => {
+        ensureMounted();
+        currentItems = [...currentItems, opts];
+        pushUpdate?.(currentItems);  // 驱动已挂载组件内部的 track() 状态更新
+    },
+    destroyAll: () => {
+        unmountFn?.();
+        mounted = false;
+        pushUpdate = null;
+        currentItems = [];
+    },
+};
+```
+
+**关键时序细节**：`mount()` 内部同步调用 `render_component` →
+`fn(props)`，即 `registerController(fn)` 在 `mount()` 调用返回之前
+就已经执行完毕，`ensureMounted()` 之后立即调用 `pushUpdate?.(...)`
+是安全的，不需要额外等待。但**驱动的状态更新本身是异步生效的**（同
+Ripple 一般响应式更新机制一致），真机验证/e2e 测试断言 DOM 变化前
+需要等待一个 tick（真机验证用 `wait(0.3)` 量级即可，e2e 用 Playwright
+的 `expect().toBeVisible()` 之类的自动重试断言，不要用同步断言）。
+
+**Toast/Notification 正式开发时的落地建议**：`registerController`
+这个模式名字可以按组件语义换成更贴切的（如 `onControllerReady`），
+核心结构不变；`currentItems`（队列数组）的增删改逻辑应该走
+`ToastListFoundation`/`NotificationListFoundation`（对齐调研报告的
+Foundation 设计），`pushUpdate` 只是"把 Foundation 算出的新队列同步
+给已挂载组件"这一层胶水，不要把队列管理逻辑写在这层胶水代码里。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
