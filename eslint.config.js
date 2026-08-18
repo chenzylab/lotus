@@ -23,6 +23,7 @@ export default [
       'apps/docs/src/demos/**',
       'apps/playground/src/App.tsrx',
       'packages/ripple/src/input/form/field.tsrx',
+      'packages/ripple/src/navigation/pagination/index.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',

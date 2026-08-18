@@ -1921,6 +1921,45 @@ Banner 复用 IconButton 均是如此），但这意味着**任何新组件只�
    `pnpm test:e2e`**——这类因内部组件复用触发的选择器冲突，只有全量
    跑才会暴露，单独跑新组件或旧组件各自的测试文件都不会发现。
 
+## 踩坑 #47：`@for` 循环体内直接放 `@if (a) {...} @if (!a) {...}`
+两个互斥分支（不包一层 `<>...</>`）时，`tsrx-tsc` 报
+"A code block renders a single node" 编译错误
+
+**现象**：`Pagination` 组件渲染页码列表时写成：
+```tsrx
+@for (const item of pageList; index i) {
+    @if (item === '...') {
+        <span class="lotus-pagination-item lotus-pagination-ellipsis">...</span>
+    } @if (item !== '...') {
+        <button ...>{item}</button>
+    }
+}
+```
+`pnpm typecheck` 报错 `A code block renders a single node; wrap
+multiple nodes or text in a fragment '<>…</>'`，且错误信息不带行号，
+只指向文件本身，一度需要靠"逐段注释排查"才定位到具体触发点。对照
+`Steps` 组件的 `@for (const step of resolved; key ...) { <div ...>
+...</div> }`（循环体直接是单个 `<div>`，编译通过）与 `IconButton`/
+`FloatButton` 等组件里`@if (a) {...} @if (!a) {...}` 出现在**非
+`@for` 循环体**位置（直接在组件顶层 `<>` 下）也编译通过，说明触发条件
+是"`@for` 循环体的直接内容是多个 `@if` 分支"这个特定组合，而不是
+`@if/@if` 结构本身、也不是 `@for` 本身。
+
+**规避方式**：`@for` 循环体内如果需要按条件渲染不同元素（不是单一
+固定结构），给整个条件分支序列包一层 `<>...</>` fragment：
+```tsrx
+@for (const item of pageList; index i) {
+    <>
+        @if (item === '...') {
+            <span class="lotus-pagination-item lotus-pagination-ellipsis">...</span>
+        } @if (item !== '...') {
+            <button ...>{item}</button>
+        }
+    </>
+}
+```
+`@for` 循环体只有单一固定结构（无分支）时不受影响，不需要额外包裹。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1944,3 +1983,4 @@ Banner 复用 IconButton 均是如此），但这意味着**任何新组件只�
 - **import 一个不存在的 `.tsrx` 文件会让 Vite dev server 静默卡死在启动阶段（不报错、不 ready、`curl` 返回 `000`）**（踩坑 #44，重大）：临时移动/删除某个正被 import 的目录做隔离排查时，必须同步注释掉对应的 import/export 语句。`curl` 返回 `000` 是"dev server 没真正启动完成"的强信号，应优先检查最近改动是否有悬空 import，而非怀疑组件渲染逻辑；`git stash` 比手动逐行注释更快定位这类环境级异常。
 - **Foundation 适配器的 `setState` 实现里 `{ ...state, ...patch }` 展开同样需要 `untrack()` 包裹，不只是 `getState`**（踩坑 #45，重大）：遗漏时首次渲染完全正常，只有 prop 变化触发 `effect()` 重新执行、`setState` 被调用时才会因"同一 effect 读写同一 state"抛 `Maximum update depth exceeded`（与踩坑 #36 同根同源，触发点不同）。新组件必须有"外部按钮驱动 prop 变化后断言响应式更新"的 e2e 测试，这类测试天然会暴露此类死循环，纯首次渲染测试无法覆盖。
 - **新组件内部复用已有组件时，可能让存量 e2e 测试的泛化选择器意外命中新增实例**（踩坑 #46）：e2e 测试优先用具体 aria-label/文本定位，通用 label（"关闭"/"确定"等）要追加区分性 class 组合限定范围；每个新组件开发完成后必须跑一次全量 `pnpm test:e2e`，不能只跑该组件自己的测试文件。
+- **`@for` 循环体内直接放多个互斥 `@if` 分支（不包 `<>...</>`）会报 "renders a single node" 编译错误**（踩坑 #47）：循环体内容有条件分支时整体包一层 fragment；循环体是单一固定结构时不受影响。

@@ -153,6 +153,11 @@ export {
     type StepItemInput,
 } from './navigation/steps/index.tsrx';
 export {
+    Pagination,
+    type PaginationProps,
+    type PaginationSize,
+} from './navigation/pagination/index.tsrx';
+export {
     Breadcrumb,
     type BreadcrumbProps,
     type BreadcrumbRoute,

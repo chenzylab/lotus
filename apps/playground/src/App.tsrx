@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -94,6 +94,8 @@ export function App() @{
     let &[progressPercent] = track<number>(30);
     let &[spinSpinning] = track<boolean>(true);
     let &[stepsCurrent] = track<number>(1);
+    let &[paginationCurrentPage] = track<number>(3);
+    let &[paginationPageSize] = track<number>(10);
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
@@ -354,6 +356,23 @@ export function App() @{
             ]}
             aria-label="basic 类型垂直步骤条（error 状态）"
         />
+
+        <Divider>Pagination</Divider>
+
+        <Space vertical align="start" style={{ width: '100%' }}>
+            <Pagination
+                total={95}
+                currentPage={paginationCurrentPage}
+                pageSize={paginationPageSize}
+                showSizeChanger
+                showQuickJumper
+                showTotal
+                onPageChange={(p) => { paginationCurrentPage = p; console.log('pagination page changed', p); }}
+                onPageSizeChange={(s) => { paginationPageSize = s; }}
+                aria-label="基础分页器（受控）"
+            />
+            <Pagination total={500} defaultCurrentPage={10} size="small" aria-label="小尺寸分页器（省略号截断）" />
+        </Space>
 
         <Divider />
 
