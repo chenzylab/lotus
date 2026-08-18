@@ -25,6 +25,10 @@
     "./show/*": {
       "types": "./dist/show/*/foundation.d.ts",
       "import": "./dist/show/*/foundation.js"
+    },
+    "./feedback/*": {
+      "types": "./dist/feedback/*/foundation.d.ts",
+      "import": "./dist/feedback/*/foundation.js"
     }
   },
   "files": [

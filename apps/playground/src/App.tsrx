@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -91,6 +91,8 @@ export function App() @{
     let &[inputExternalControlledValue] = track<string>('初始值');
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
+    let &[progressPercent] = track<number>(30);
+    let &[spinSpinning] = track<boolean>(true);
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
@@ -277,6 +279,46 @@ export function App() @{
         >
             <div style={{ padding: '12px' }}>拖拽边缘或角落调整大小</div>
         </Resizable>
+
+        <Divider>Progress</Divider>
+
+        <Space vertical align="start">
+            <Progress percent={30} showInfo aria-label="line 基础进度条" />
+            <Progress percent={70} type="circle" showInfo aria-label="circle 基础进度条" />
+            <Progress
+                percent={progressPercent}
+                showInfo
+                stroke={[
+                    { percent: 0, color: '#f93920' },
+                    { percent: 50, color: '#fc8800' },
+                    { percent: 100, color: '#3bb346' },
+                ]}
+                strokeGradient
+                aria-label="多段渐变进度条（受控，按钮驱动）"
+            />
+            <Button onClick={() => { progressPercent = progressPercent >= 100 ? 0 : progressPercent + 20; }}>切换 Progress 百分比</Button>
+        </Space>
+
+        <Divider>Spin</Divider>
+
+        <Space vertical align="start">
+            <Spin spinning aria-label="独立 Spin 指示器" />
+            <Spin spinning={spinSpinning} aria-label="包裹内容的 Spin">
+                <div style={{ width: '200px', height: '100px', border: '1px solid var(--lotus-color-border)', padding: '12px' }}>
+                    被包裹的内容区域
+                </div>
+            </Spin>
+            <Button onClick={() => { spinSpinning = !spinSpinning; }}>切换 Spin 加载态</Button>
+        </Space>
+
+        <Divider>Banner</Divider>
+
+        <Space vertical style={{ width: '100%' }}>
+            <Banner type="info" title="信息提示" description="这是一条 info 类型的通栏提示" onClose={() => console.log('banner info closed')} />
+            <Banner type="success" title="操作成功" bordered fullMode={false} />
+            <Banner type="warning" title="警告" description="bordered + fullMode=false 卡片模式" bordered fullMode={false} />
+            <Banner type="danger" title="错误" closeIcon={null} />
+        </Space>
 
         <Divider />
 

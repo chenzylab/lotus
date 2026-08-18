@@ -46,15 +46,20 @@ test.describe('IconButton', () => {
   test('size / type / theme 组合正确渲染对应 class', async ({ page }) => {
     await page.goto('/');
 
-    const dangerSolid = page.locator('.lotus-icon-button-danger.lotus-icon-button-theme-solid');
-    const outline = page.locator('.lotus-icon-button-theme-outline');
-    const large = page.locator('.lotus-icon-button-size-large');
-    const small = page.locator('.lotus-icon-button-size-small');
+    // 用具体 aria-label 定位到 playground 里的 IconButton 演示实例，不用泛化的
+    // class 选择器——Banner 的关闭按钮内部也复用了 IconButton（size="small"
+    // 默认值，且同样用"关闭"作为 aria-label），泛化选择器/重名 label 都会命中
+    // 多个元素触发 Playwright 严格模式报错，这里用 theme-solid 组合限定范围。
+    const dangerSolid = page.locator('button.lotus-icon-button-theme-solid[aria-label="关闭"]');
+    const outline = page.getByRole('button', { name: '搜索', exact: true });
+    const large = page.getByRole('button', { name: '新增（large）', exact: true });
+    const small = page.getByRole('button', { name: '确认（small）', exact: true });
 
-    await expect(dangerSolid).toBeVisible();
-    await expect(outline).toBeVisible();
-    await expect(large).toBeVisible();
-    await expect(small).toBeVisible();
+    await expect(dangerSolid).toHaveClass(/lotus-icon-button-danger/);
+    await expect(dangerSolid).toHaveClass(/lotus-icon-button-theme-solid/);
+    await expect(outline).toHaveClass(/lotus-icon-button-theme-outline/);
+    await expect(large).toHaveClass(/lotus-icon-button-size-large/);
+    await expect(small).toHaveClass(/lotus-icon-button-size-small/);
   });
 
   test('图标按钮为正方形（宽高相等）', async ({ page }) => {

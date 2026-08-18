@@ -168,6 +168,25 @@ export {
     type SkeletonAvatarShape,
 } from './feedback/skeleton/index.tsrx';
 export {
+    Progress,
+    type ProgressProps,
+    type ProgressType,
+    type ProgressDirection,
+    type ProgressSize,
+    type ProgressStrokeLinecap,
+    type ProgressStrokeStop,
+} from './feedback/progress/index.tsrx';
+export {
+    Spin,
+    type SpinProps,
+    type SpinSize,
+} from './feedback/spin/index.tsrx';
+export {
+    Banner,
+    type BannerProps,
+    type BannerType,
+} from './feedback/banner/index.tsrx';
+export {
     Nav,
     NavItem,
     NavSub,

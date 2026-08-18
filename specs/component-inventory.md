@@ -7,7 +7,7 @@
 >
 > **修正记录**：初版清单误数为 76 个且漏收 Chart（图表）、IconButton，AI 分类下的 AIButton/AIIcon/AITag/AIFloatButton 经源码核实（`packages/semi-ui` 无对应独立目录）**不是独立组件**，而是 Button/Icon/Tag/FloatButton 的 AI 主题视觉变体（`theme`/`type` prop 层面的差异），已并入对应基础组件，不单列 DoD 条目，但会在对应组件的 SPEC 验收标准里要求支持该变体。Chart（Semi DV）经核实是"字节内部 VChart 的主题配置层封装"，非自研图表组件，故仍列入「待裁定」而非排期。
 >
-> **最终口径：实际统计各 Phase 清单条目共 84 个纳入 DoD 排期的自研组件/条目**（Phase 1: 16、Phase 2: 16、Phase 3: 23、Phase 4: 14、Phase 5: 12、Phase 6: 3；含 IconButton、Locale 这类非纯视觉条目）+ 4 项并入基础组件的 AI 主题变体要求（AIButton/AIIcon/AITag/AIFloatButton，不单列 DoD）+ Chart 1 项待裁定（见文末）。此数字大于源码目录数（85）是因为 IconButton 单列，小于「85 源码目录 + 4 官网 AI 变体名目」是因为 AI 变体不重复计数、`trigger`/`resizeObserver` 等内部基础设施不计入面向用户的组件清单。
+> **最终口径：实际统计各 Phase 清单条目共 83 个纳入 DoD 排期的自研组件/条目**（Phase 1: 16、Phase 2: 15、Phase 3: 23、Phase 4: 14、Phase 5: 12、Phase 6: 3；含 IconButton、Locale 这类非纯视觉条目）+ 4 项并入基础组件的 AI 主题变体要求（AIButton/AIIcon/AITag/AIFloatButton，不单列 DoD）+ Chart 1 项待裁定（见文末）。此数字大于源码目录数（85）是因为 IconButton 单列，小于「85 源码目录 + 4 官网 AI 变体名目」是因为 AI 变体不重复计数、`trigger`/`resizeObserver` 等内部基础设施不计入面向用户的组件清单。Phase 2 原清单误列的 Feedback（Result 结果页）经核实是 Ant Design 组件、Semi Design 无对标，已从清单移除。
 >
 > 本文件是唯一进度看板：每个组件完成 DoD（见 AGENTS.md 第 3 节）后在此打勾，不要另建进度文档。
 
@@ -42,14 +42,13 @@
 - [ ] BackTop 回到顶部
 - [x] Navigation 导航
 - [ ] Tree 树形控件（导航用途基础版，数据交互增强见 Phase 4）
-- [ ] Banner 通栏
+- [x] Banner 通栏
 - [ ] Notification 通知
 - [ ] Toast 轻提示
 - [ ] Popconfirm 气泡确认框
-- [ ] Progress 进度条
+- [x] Progress 进度条
 - [x] Skeleton 骨架屏
-- [ ] Spin 加载中
-- [ ] Feedback（Result 结果页）
+- [x] Spin 加载中
 
 ## Phase 3 — 数据展示 (Show)
 

@@ -1808,6 +1808,119 @@ resizing`，说明 `mousedown` 事件根本没有命中手柄元素——`Resiza
 内部自带这个保护，但 `page.mouse.move/down/up` 这种手动坐标操作没有，
 需要显式调用。
 
+## 踩坑 #44（重大）：import 一个不存在的 `.tsrx` 文件时，Vite dev server
+会静默卡死在启动阶段（不报错、不 ready），排查时极易误判为组件代码本身
+的渲染 bug
+
+**现象**：开发 Spin 组件时，为了做最小复现排查（把 Spin 组件临时替换成
+极简调试版本），用 `mv` 把 `packages/ripple/src/feedback/spin/` 整个
+目录移到 `/tmp` 做隔离测试，但 `packages/ripple/src/index.ts` 里
+`export { Spin, ... } from './feedback/spin/index.tsrx';` 这行 import
+语句还在、没有同步注释掉。此后无论怎么重启 dev server、换全新端口、换
+全新 `ego-browser` 任务空间，`curl http://localhost:xxxx/` 都返回
+`000`（连接失败）——Vite 进程本身能启动、能完成 "Scan complete" 阶段，
+但永远卡在这之后、不再打印 "ready" 消息，也没有任何报错输出到 stdout/
+stderr。花了大量时间怀疑是并发进程冲突（`pkill`/`kill -9` 反复清理端口
+占用）、Ripple 编译器死循环、系统资源问题，最终用"把最近改动逐层
+`git stash`/裁剪到已知能工作的版本，二分定位到具体哪个改动导致卡死"
+的方法，才发现是这个悬空 import 路径。
+
+**规避方式**：
+1. **临时移动/删除某个正在被 `index.ts`（或其他文件）import 的目录做
+   隔离测试时，必须同步临时注释掉对应的 import/export 语句**，否则
+   Vite 卡死现象和真实的组件渲染 bug 表现完全不同（一个是 dev server
+   彻底连不上、一个是页面能访问但内容缺失），排查方向会完全跑偏。
+2. **`curl -s -o /dev/null -w "%{http_code}\n" http://localhost:xxxx/`
+   返回 `000`（而不是发起过连接后超时）是一个强信号，指向"dev server
+   进程本身没有真正完成启动"，而不是"页面内容有问题"**——遇到这个信号
+   应该优先检查最近改动是否有 import 指向了不存在的路径，而不是去怀疑
+   组件渲染逻辑。
+3. 排查"改了代码但环境行为异常"类问题时，`git stash` 是比手动逐行注释
+   代码更快、更不容易引入二次污染的隔离手段——`git stash pop` 后如果
+   环境恢复正常，再用 `git stash show -p` 逐段回放改动，能比较快定位到
+   具体是哪一行改动触发的异常。
+4. **同一类"dev server 卡死不报错"现象也可能来自 Vite 的
+   `node_modules/.vite` 依赖预打包缓存损坏，不一定是悬空 import**——
+   开发 Banner 组件时排除了悬空 import 后依然卡死，`rm -rf
+   <app>/node_modules/.vite` 清理依赖预打包缓存后问题消失。遇到
+   `curl` 返回 `000` 且确认没有悬空 import 时，下一步就是清理这个
+   缓存目录重试，而不是继续怀疑组件代码本身。
+
+## 踩坑 #45（重大）：Foundation 的 `getState`/`setState` 适配器实现里，
+`setState` 内部展开 `...state` 若不经过 `untrack()` 包裹，会在
+`effect()` 中触发"读写同一状态"的无限循环（`Maximum update depth
+exceeded`），且这个 bug 在纯 SSR/静态渲染下完全不会暴露
+
+**现象**：`Spin` 组件的 Adapter 层写成
+```tsrx
+const foundation = new SpinFoundation({
+    getState: () => state,                                          // ❌ 未 untrack
+    setState: (patch) => { state = { ...state, ...patch }; },        // ❌ 展开 state 未 untrack
+});
+effect(() => {
+    foundation.syncFromProps(spinning, delay);   // 内部会调用 setState
+});
+```
+真机点击测试（点击按钮把 `spinning` 从 `true` 切到 `false`）时，浏览器
+控制台抛出 `Error: Maximum update depth exceeded. This typically
+indicates that an effect reads and writes the same piece of state.`，
+页面卡死。**页面首次渲染完全正常**（初始 `effect()` 执行时 `spinning`
+不变化，不会触发 `setState` 里对 `state` 的读取被计入依赖），只有当
+`spinning`/`delay` 变化、`effect()` 重新执行、内部再次调用
+`setState` 时，才会因为 `setState` 展开 `...state`（读取了 tracked
+状态）而被 Ripple 运行时判定为"这个 effect 同时读写了 state"，触发
+死循环兜底报错——这与本文档踩坑 #36 是同一根因，但触发路径不同（#36
+是 `getState()` 未 `untrack`，这次是 `setState` 内部 `...state`
+展开同样需要 `untrack`）。
+
+**规避方式**：**Foundation 适配器的 `getState` 和 `setState` 两个实现
+都必须用 `untrack(() => state)` 包裹对 `state` 的读取**，没有例外：
+```tsrx
+const foundation = new XxxFoundation({
+    getState: () => untrack(() => state),
+    setState: (patch) => { state = { ...untrack(() => state), ...patch }; },
+});
+```
+这是本文档「通用范式」章节已经写明的规则，但因为 `setState` 单行写法
+不易察觉自己在"读 state"（`...state` 展开在视觉上不如 `getState`
+那样显眼），后续组件开发容易在照抄样板代码时漏掉 `setState` 里的
+`untrack`，需要作为新组件 code review 的显式检查项。
+
+**验证方法**：这类 bug **必须通过"prop 值变化后再次触发副作用"的真机
+交互测试**才能暴露，纯渲染快照/首次挂载测试完全不会命中——任何组件的
+e2e 测试只要涉及"点击按钮驱动 prop 变化，断言组件响应式更新"的场景
+（例如本文档反复强调的"外部按钮驱动受控 prop 变化"测试模式），天然
+就会覆盖到这类死循环 bug，这也是为什么这类测试模式被反复要求的原因
+之一——它不仅验证功能正确性，还顺带验证了响应式实现本身没有循环依赖。
+
+## 踩坑 #46：新组件内部复用已有组件（如 Banner 复用 IconButton 做关闭按钮）
+会让存量 e2e 测试里的泛化 class/aria-label 选择器意外命中新增元素，
+触发 Playwright 严格模式报错
+
+**现象**：新增 Banner 组件后，全量跑 e2e 时此前一直通过的
+`e2e/basic/icon-button.spec.ts` 里一条测试开始稳定失败——`Banner`
+的关闭按钮内部复用了 `IconButton`（`size="small"`、`aria-label="关闭"`
+均为默认/常见值），旧测试里 `page.locator('.lotus-icon-button-size-
+small')`（选择所有 small 尺寸图标按钮）和 `page.getByRole('button',
+{ name: '关闭' })`（选择 aria-label 为"关闭"的按钮）两个选择器，从
+"只命中 playground 里那一个 IconButton 演示实例"变成"同时命中 Banner
+关闭按钮"，Playwright 严格模式判定为多义选择器报错。
+
+**规避方式**：组件库内部一个组件复用另一个组件是完全正常、值得鼓励的
+设计（IconButton 复用 Button 的 Foundation、Popconfirm 复用 Popover、
+Banner 复用 IconButton 均是如此），但这意味着**任何新组件只要内部用到
+了已有组件，都可能让该已有组件在页面上的实例数量意外增加**。写 e2e
+测试时：
+1. 优先用具体的 `aria-label`/文本内容而不是泛化的 class 选择器定位
+   演示区块里的特定实例。
+2. 当预期的 `aria-label`/文本可能与其他组件内部复用产生的实例重名
+   时（如通用的"关闭"“确定"“取消"），追加区分性的 class/属性组合
+   限定范围（如 `button.lotus-icon-button-theme-solid[aria-label="关闭"]`），
+   不要仅凭直觉认为某个 label 在整个 playground 页面里是唯一的。
+3. **每次新组件开发完成后，除了跑该组件自己的 e2e，必须跑一次全量
+   `pnpm test:e2e`**——这类因内部组件复用触发的选择器冲突，只有全量
+   跑才会暴露，单独跑新组件或旧组件各自的测试文件都不会发现。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -1828,3 +1941,6 @@ resizing`，说明 `mousedown` 事件根本没有命中手柄元素——`Resiza
 - **`@if (cond) {...} @else {...}` 两分支渲染同 class 容器元素时 `@else` 分支内容可能不显示**（踩坑 #41）：改成两个条件互斥的独立 `@if` 块规避。验收测试必须真机检查渲染出的 DOM 内部内容（用 `outerHTML`/子元素断言），不能只看外层容器是否存在。
 - **`var(--lotus-xxx)` 引用不存在的 token 名不会报任何编译错误，浏览器静默 fallback，页面照常渲染**（踩坑 #42）：新写的每个 `var()` 引用都要 grep `packages/tokens/dist/tokens.css` 核对键名真实存在，不能凭记忆/语义联想拼写；真机验收要用 `getComputedStyle()` 读实际计算值比对，不能只看元素是否可见。
 - **高频连续保存代码时，`ego-browser` 复用的浏览器 tab 可能停留在陈旧 HMR 状态，表现和真实渲染 bug 完全一样**（踩坑 #43）：怀疑"改代码但效果不变"时先用 `curl` 对比 Vite 源码接口内容确认非服务端缓存问题，仍不对就直接重启 dev server + 换全新任务空间/tab 重新验证，不要在旧环境里死磕二分排查。**Playwright 拖拽类测试**在取 `boundingBox()` 前必须先 `scrollIntoViewIfNeeded()`，否则坐标可能与鼠标实际落点错位导致 `mousedown` 落空。
+- **import 一个不存在的 `.tsrx` 文件会让 Vite dev server 静默卡死在启动阶段（不报错、不 ready、`curl` 返回 `000`）**（踩坑 #44，重大）：临时移动/删除某个正被 import 的目录做隔离排查时，必须同步注释掉对应的 import/export 语句。`curl` 返回 `000` 是"dev server 没真正启动完成"的强信号，应优先检查最近改动是否有悬空 import，而非怀疑组件渲染逻辑；`git stash` 比手动逐行注释更快定位这类环境级异常。
+- **Foundation 适配器的 `setState` 实现里 `{ ...state, ...patch }` 展开同样需要 `untrack()` 包裹，不只是 `getState`**（踩坑 #45，重大）：遗漏时首次渲染完全正常，只有 prop 变化触发 `effect()` 重新执行、`setState` 被调用时才会因"同一 effect 读写同一 state"抛 `Maximum update depth exceeded`（与踩坑 #36 同根同源，触发点不同）。新组件必须有"外部按钮驱动 prop 变化后断言响应式更新"的 e2e 测试，这类测试天然会暴露此类死循环，纯首次渲染测试无法覆盖。
+- **新组件内部复用已有组件时，可能让存量 e2e 测试的泛化选择器意外命中新增实例**（踩坑 #46）：e2e 测试优先用具体 aria-label/文本定位，通用 label（"关闭"/"确定"等）要追加区分性 class 组合限定范围；每个新组件开发完成后必须跑一次全量 `pnpm test:e2e`，不能只跑该组件自己的测试文件。
