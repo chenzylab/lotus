@@ -41,7 +41,7 @@
 - [x] Anchor 锚点
 - [x] BackTop 回到顶部
 - [x] Navigation 导航
-- [ ] Tree 树形控件（导航用途基础版，数据交互增强见 Phase 4）
+- [x] Tree 树形控件（完整版：展开收起 + 单选/多选三态级联 + 搜索过滤 + loadData 懒加载，用户明确要求不满足于 Phase 2 基础版）
 - [x] Banner 通栏
 - [x] Notification 通知（6 个 position 分组渲染；结构对齐 ToastListFoundation，unshift 插入队列头部）
 - [x] Toast 轻提示（stack 折叠视觉已实现；ToastFactory 多实例高阶能力简化为单例模块，已在验收标准里注明是主动简化）

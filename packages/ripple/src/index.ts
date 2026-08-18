@@ -171,6 +171,12 @@ export {
     type AnchorLinkInput,
 } from './navigation/anchor/index.tsrx';
 export {
+    Tree,
+    type TreeProps,
+    type TreeNodeData,
+    type FilterTreeNode,
+} from './navigation/tree/index.tsrx';
+export {
     Toast,
     type ToastOptions,
     type ToastType,

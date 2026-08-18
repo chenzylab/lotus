@@ -1,9 +1,9 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
-import type { TagColor, TabItem, AvatarGroupItem, NavItemInput } from '@lotus/ripple';
+import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData } from '@lotus/ripple';
 
 const tagColors: TagColor[] = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'grey', 'white'];
 
@@ -28,6 +28,50 @@ function closableTabList(): TabItem[] {
         { itemKey: 'a', tab: '可关闭 A', closable: true, render: () => <div>面板 A</div> },
         { itemKey: 'b', tab: '可关闭 B', closable: true, render: () => <div>面板 B</div> },
     ];
+}
+
+const treeDemoData: TreeNodeData[] = [
+    {
+        key: 'dept-1',
+        label: '研发部',
+        children: [
+            {
+                key: 'dept-1-1',
+                label: '前端组',
+                children: [
+                    { key: 'dept-1-1-1', label: '张三' },
+                    { key: 'dept-1-1-2', label: '李四' },
+                ],
+            },
+            {
+                key: 'dept-1-2',
+                label: '后端组',
+                children: [
+                    { key: 'dept-1-2-1', label: '王五' },
+                    { key: 'dept-1-2-2', label: '赵六', disabled: true },
+                ],
+            },
+        ],
+    },
+    {
+        key: 'dept-2',
+        label: '产品部',
+        children: [
+            { key: 'dept-2-1', label: '刘七' },
+            { key: 'dept-2-2', label: '陈八' },
+        ],
+    },
+];
+
+function loadTreeChildren(node: TreeNodeData): Promise<TreeNodeData[]> {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve([
+                { key: `${node.key}-c1`, label: `${node.label} 子节点 1` },
+                { key: `${node.key}-c2`, label: `${node.label} 子节点 2`, isLeaf: false },
+            ]);
+        }, 600);
+    });
 }
 
 // Field 的 Comp 收到统一的 { value, disabled, onChange, onBlur, 'aria-label' }，
@@ -431,6 +475,56 @@ export function App() @{
             <Button onClick={() => Notification.success({ title: '成功', content: '操作已完成', position: 'bottomLeft' })}>Notification.success（bottomLeft）</Button>
             <Button onClick={() => { Notification.warning({ title: '警告一', position: 'topRight' }); Notification.error({ title: '错误二', position: 'topRight' }); }}>连续触发 2 条（topRight）</Button>
             <Button onClick={() => Notification.destroyAll()}>Notification.destroyAll</Button>
+        </Space>
+
+        <Divider>Tree</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div>
+                <TypographyText type="secondary">单选（默认展开 dept-1）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    defaultExpandedKeys={['dept-1']}
+                    onSelect={(key, selected, node) => console.log('tree select', key, selected, node)}
+                    aria-label="单选 Tree"
+                />
+            </div>
+
+            <div>
+                <TypographyText type="secondary">多选（三态级联，全部展开，含禁用节点）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    multiple
+                    defaultExpandAll
+                    onChange={(value) => console.log('tree multiple change', value)}
+                    aria-label="多选 Tree（三态级联）"
+                />
+            </div>
+
+            <div>
+                <TypographyText type="secondary">搜索过滤（仅展示匹配结果）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    filterTreeNode
+                    showFilteredOnly
+                    searchPlaceholder="搜索姓名或部门"
+                    onSearch={(input) => console.log('tree search', input)}
+                    aria-label="搜索过滤 Tree"
+                />
+            </div>
+
+            <div>
+                <TypographyText type="secondary">懒加载（异步 loadData，600ms 延迟）</TypographyText>
+                <Tree
+                    treeData={[
+                        { key: 'lazy-1', label: '懒加载节点 1' },
+                        { key: 'lazy-2', label: '懒加载节点 2' },
+                    ]}
+                    loadData={loadTreeChildren}
+                    onLoad={(loadedKeys, node) => console.log('tree load', loadedKeys, node)}
+                    aria-label="懒加载 Tree"
+                />
+            </div>
         </Space>
 
         <Divider />

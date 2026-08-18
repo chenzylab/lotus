@@ -2229,6 +2229,106 @@ requestAnimationFrame(cb)`）从一开始就用了这个正确写法，`Date.now
 安全的默认做法是**一律用箭头函数包裹，不要因为"这个方法看起来简单"
 就走捷径直接解构**。
 
+## 踩坑 #53（重大，Ripple 运行时本身的 bug，非 lotus 代码问题）：
+`@for` keyed 循环一次性在数组中间插入 ≥2 个新节点时，除第一个外全部
+插错位置——根因是 `reconcile_by_key`/`reconcile_by_ref` 的纯插入
+快速路径用新数组下标去索引老数组
+
+**现象**：`Tree` 组件展开"前端组"节点（一次性插入"张三""李四"两个
+新的叶子节点到"前端组"和"后端组"之间）时，DOM 实际渲染顺序变成
+`研发部|前端组|张三|后端组|李四|产品部`——"李四"被错误地插到了"后端组"
+之后。用纯 Node 脚本直接调用生成这份列表的纯函数 `flattenTreeData()`
+（`packages/foundation/src/navigation/tree/tree-data.ts`）验证过，
+纯函数本身返回的顺序完全正确；问题只在真机渲染层出现，且插入数量
+为 1 时不会触发（这也是为什么此前的 Toast/Notification/BackTop 等
+组件都没有撞见这个 bug——它们没有"一次性插入多个 keyed 节点到列表
+中间"这个模式，Toast 的追加是"插入到末尾"、BackTop 是纯粹的显示/
+隐藏而非列表增删）。
+
+**根因**：`~/i/ripple`（`Ripple-TS/ripple`，lotus 通过
+`catalog: ripple: 0.3.119` 固定版本依赖的独立第三方框架仓库）的
+`packages/ripple/src/runtime/internal/client/for.js`，
+`reconcile_by_key`（keyed diff）和 `reconcile_by_ref`（非 keyed
+diff）两个函数里"双向 trim 后老数组已耗尽、纯插入新节点"的快速路径
+（`j > a_end` 分支，约 480 行和 767 行）：
+```js
+if (j > a_end) {
+  if (j <= b_end) {
+    while (j <= b_end) {
+      b_val = b[j];
+      var target = block_start(a_blocks, j, a_length, anchor);  // bug：用新数组下标 j 索引老数组 a_blocks
+      b_blocks[j] = create_item(target, b_val, j, render_fn, is_indexed, true);
+      j++;
+    }
+  }
+}
+```
+`block_start(blocks, index, length, fallback)` 语义是"从 `blocks[index]`
+开始往后找第一个非空 DOM 起点"，参数里的 `blocks` 和 `index` 必须
+是同一个数组空间的。这里传入的是**老数组** `a_blocks`，却用**新数组**
+的循环下标 `j` 去索引它——两者语义完全不对齐。整批新节点应该统一
+插入到同一个位置（老数组里"后缀 trim 后幸存下来的第一个块"，
+即 `a_blocks[a_end + 1]`），但代码却让每次循环都用递增的 `j` 重新
+计算一次错误的锚点：第一个新节点凑巧命中了正确位置（此时 `a_blocks[j]`
+恰好等于 `a_blocks[a_end+1]`），后续每个新节点的锚点都往后错位一格。
+文件里另一处相同模式的倒序插入分支（约 603/610/623 行）用的是
+`block_start(b_blocks, next_pos, b_length, anchor)`——**新数组 `b_blocks`
++ 新索引**，这才是正确的组合，证明这是一处孤立的疏漏而非设计原则。
+
+**修复**（已在 `~/i/ripple` 本地验证：132 个测试文件、1511 个测试
+全部通过，新增回归测试 `for.test.tsrx`「keyed for inserts multiple
+new items in the middle in correct order」在修复前失败、修复后
+通过；分支 `fix/for-keyed-multi-insert-anchor` 已 push 到
+`chenzylab/ripple` fork，尚未向上游提交 PR）：把锚点计算移到循环外，
+用固定的 `a_end + 1` 而不是循环变量 `j`：
+```js
+if (j > a_end) {
+  if (j <= b_end) {
+    var insert_target = block_start(a_blocks, a_end + 1, a_length, anchor);
+    while (j <= b_end) {
+      b_val = b[j];
+      b_blocks[j] = create_item(insert_target, b_val, j, render_fn, is_indexed, true);
+      j++;
+    }
+  }
+}
+```
+`reconcile_by_ref` 里的镜像代码同样修复。
+
+**lotus 侧的落地**：用 `pnpm patch ripple` 生成 `patches/ripple.patch`，
+`pnpm-workspace.yaml` 声明 `patchedDependencies: ripple: patches/
+ripple.patch`——这样 `pnpm install` 会自动应用修复，不依赖手动改
+`node_modules`（那种改法会被下一次 `pnpm install` 覆盖，之前验证
+阶段踩过一次）。**任何组件如果出现"纯函数算法验证正确、但真机渲染
+顺序错乱"且命中"一次性插入多个新 keyed 节点到列表中间"这个模式，
+先怀疑这个 Ripple 运行时 bug，而不是先怀疑自己的 Foundation 算法或
+`.tsrx` 组件代码**——本次排查一开始误判方向，以为是 `handleToggleExpand`
+的 toggle 逻辑或点击事件绑定有问题，排查了很久才用"纯函数单独跑
++ 真机对比"的方法定位到问题只在渲染层，未来遇到类似现象应该优先
+做这一步对比，能少走很多弯路。
+
+## 踩坑 #54：本机同时开着多个不同项目的 Vite dev server 时，
+`playwright.config.ts` 里的固定端口号可能撞上其他项目，导致
+`reuseExistingServer` 误连别的项目页面，e2e 全部定位器返回 0 元素
+
+**现象**：Tree 组件 e2e 测试全部失败，报错都是"locator resolved to
+0 elements"——`[aria-label="单选 Tree"]` 这类精确的 aria-label
+定位器理论上不该找不到元素。排查后发现 `playwright.config.ts` 固定
+写死 `baseURL: 'http://localhost:5183'`，而当时 `5183` 端口被
+另一个完全不相关的项目（`chenzy.design`）的 vite dev server 进程
+占用了（本机日常会同时开多个项目的 dev server，5170-5260 这个号段
+是各个项目最常用的默认/常用端口区间，很容易撞车）。本地默认
+`reuseExistingServer: !process.env.CI`，Playwright 探测到端口已经
+有服务在监听就直接复用，实际连上的是别的项目的页面，Tree 组件的
+DOM 自然完全不存在。
+
+**规避方式**：`playwright.config.ts` 的固定端口选用 `5170-5260`
+这类常见开发端口号段之外的高位号段（本仓库改成了 `48213`），撞车
+概率大幅降低。**不要尝试 kill 掉占用端口的陌生进程来"解决"这类
+问题**——那个进程可能是用户在其他项目里正在进行的工作，贸然杀掉
+是破坏性操作，应先用 `lsof -nP -iTCP:<port> -sTCP:LISTEN` 查清楚
+进程属于哪个项目，再决定换端口还是询问用户。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2258,3 +2358,5 @@ requestAnimationFrame(cb)`）从一开始就用了这个正确写法，`Date.now
 - **`throttle()` 若只做 leading-edge（不补偿窗口内被跳过的最后一次调用）会丢失"事件停止那一刻"的最终状态**（踩坑 #50，重大）：改造成 leading+trailing 模式；任何涉及节流/防抖的组件，e2e 验收要用 `--repeat-each=5` 重复跑确认稳定性，单次通过不代表时序类 bug 已修复。
 - **`@for` 同时使用 `index`/`key` 修饰符时顺序写反（`key expr; index i`）会产生一长串完全不指向真实错误位置的级联编译错误**（踩坑 #51，重大）：正确顺序固定是 `index i; key expr`。这类"错误信息与真实问题无关"的编译失败，用 `sed` 截取文件前 N 行 + 手写最简合法收尾做二分定位，比逐条猜测报错含义快得多。
 - **Foundation 层给定时器等原生方法设计默认实现时，`{ setTimeout, clearTimeout }` 对象简写会丢失隐式 `this` 绑定，真机调用抛 `Illegal invocation`**（踩坑 #52，重大）：必须用箭头函数包裹（`(fn, ms) => setTimeout(fn, ms)`）。这类 bug 在 Node 单测环境测不出来，也可能因为"演示代码未触发对应分支"被长期掩盖——新组件验收要覆盖全部条件分支对应的 prop 组合，不能只测默认值路径。
+- **`@for` keyed 循环一次性插入 ≥2 个新节点到列表中间时会插错位置，这是 Ripple 运行时本身的 bug（`for.js` 的 `block_start(a_blocks, j, ...)` 用新数组下标索引老数组），不是 lotus 组件代码的问题**（踩坑 #53，重大）：已在 `~/i/ripple` 修复并本地验证（132 测试文件全绿），lotus 用 `pnpm patch` 固化到 `patches/ripple.patch`。任何组件出现"纯函数算法验证正确、但真机渲染顺序错乱"且命中"一次性插入多个新 keyed 节点到列表中间"这个模式，先用"纯函数单独跑 + 真机 DOM 顺序对比"定位是渲染层还是算法层问题，不要一开始就扎进组件自己的事件/状态逻辑排查。
+- **本机同时开多个项目的 dev server 时，`playwright.config.ts` 固定端口号可能撞上其他项目，导致 e2e 全部定位器返回 0 元素**（踩坑 #54）：端口选高位号段（如 `48213`）避开 `5170-5260` 这个各项目常用的默认端口区间；发现端口冲突时用 `lsof -nP -iTCP:<port> -sTCP:LISTEN` 查清楚是谁的进程，不要贸然 kill 陌生进程。

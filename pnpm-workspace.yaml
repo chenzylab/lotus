@@ -33,3 +33,6 @@ minimumReleaseAgeExclude:
   - '@tsrx/ripple@0.1.58'
   - '@tsrx/typescript-plugin@0.3.119'
   - ripple@0.3.119
+
+patchedDependencies:
+  ripple: patches/ripple.patch
