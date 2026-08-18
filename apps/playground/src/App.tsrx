@@ -1,5 +1,6 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
@@ -684,6 +685,36 @@ export function App() @{
                     <Card style={{ width: '200px' }} title="卡片三"><TypographyText>内容三</TypographyText></Card>
                 </CardGroup>
             </div>
+        </Space>
+
+        <Divider>Empty</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '32px' }}>
+            <Empty title="暂无数据" description="换个筛选条件试试" aria-label="纯文字 Empty（无 image）" />
+
+            <Empty
+                image={<IllustrationNoContent style={{ width: '150px', height: '150px' }} />}
+                title="暂无内容"
+                description="当前没有可展示的数据"
+                aria-label="带插图的 Empty"
+            />
+
+            <Empty
+                image={<IllustrationNotFound style={{ width: '150px', height: '150px' }} />}
+                title="页面未找到"
+                description="请检查链接是否正确"
+                aria-label="带操作按钮的 Empty"
+            >
+                <Button theme="solid">返回首页</Button>
+            </Empty>
+
+            <Empty
+                image={<IllustrationNoAccess style={{ width: '80px', height: '80px' }} />}
+                title="无访问权限"
+                description="请联系管理员开通权限"
+                layout="horizontal"
+                aria-label="horizontal 布局的 Empty"
+            />
         </Space>
 
         <Divider />

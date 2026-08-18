@@ -56,7 +56,7 @@
 - [x] Badge 徽标
 - [x] Card 卡片
 - [x] Tag 标签（含 AI 主题变体，对应官网 AITag）
-- [ ] Empty 空状态
+- [x] Empty 空状态（新增 @lotus/illustrations 包，完整复刻 Semi 的 8 场景 x 亮/暗 2 配色 = 16 个插图）
 - [ ] Descriptions 描述列表
 - [ ] Collapse 折叠面板
 - [ ] Collapsible 可折叠容器

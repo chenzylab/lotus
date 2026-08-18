@@ -144,6 +144,9 @@ importers:
       '@lotus/icons-lab':
         specifier: workspace:*
         version: link:../../packages/icons-lab
+      '@lotus/illustrations':
+        specifier: workspace:*
+        version: link:../../packages/illustrations
       '@lotus/ripple':
         specifier: workspace:*
         version: link:../../packages/ripple
@@ -208,6 +211,22 @@ importers:
         specifier: npm:typescript@5.9.3
         version: 5.9.3
 
+  packages/illustrations:
+    dependencies:
+      ripple:
+        specifier: 'catalog:'
+        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+    devDependencies:
+      '@tsrx/typescript-plugin':
+        specifier: 'catalog:'
+        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+      svgo:
+        specifier: ^3.3.2
+        version: 3.3.4
+      typescript:
+        specifier: npm:typescript@5.9.3
+        version: 5.9.3
+
   packages/locale:
     devDependencies:
       typescript:
@@ -228,6 +247,9 @@ importers:
       '@lotus/icons-lab':
         specifier: workspace:*
         version: link:../icons-lab
+      '@lotus/illustrations':
+        specifier: workspace:*
+        version: link:../illustrations
       '@lotus/locale':
         specifier: workspace:*
         version: link:../locale

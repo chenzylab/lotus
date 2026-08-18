@@ -12,6 +12,7 @@
   "dependencies": {
     "@lotus/icons": "workspace:*",
     "@lotus/icons-lab": "workspace:*",
+    "@lotus/illustrations": "workspace:*",
     "@lotus/ripple": "workspace:*",
     "@lotus/tokens": "workspace:*",
     "ripple": "catalog:"
