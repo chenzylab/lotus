@@ -138,6 +138,14 @@ export {
 } from './show/descriptions/index.tsrx';
 export { type DescriptionsItemData } from '@lotus/foundation/show/descriptions';
 export {
+    Collapse,
+    type CollapseProps,
+} from './show/collapse/index.tsrx';
+export {
+    CollapsePanel,
+    type CollapsePanelProps,
+} from './show/collapse/panel.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

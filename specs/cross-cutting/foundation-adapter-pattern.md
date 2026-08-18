@@ -2446,6 +2446,57 @@ let &[displayContent] = track<any>(() => (dot ? '' : custom ? count : text));
 看得不够仔细，而几何断言能固化成回归防护，防止未来改动重新引入
 同类问题。
 
+## 踩坑 #57（重大）：`.tsrx` 文件内部写 `export { X, type Y } from
+'./other.tsrx'` 这种混合 `type` 修饰符的 re-export 语法，`tsrx-tsc`
+typecheck 完全测不出问题，但 Vite/rolldown 实际构建时直接解析失败
+
+**现象**：Collapse 组件 `packages/ripple/src/show/collapse/index.tsrx`
+末尾写了：
+```ts
+export {
+    CollapsePanel,
+    type CollapsePanelProps,
+} from './panel.tsrx';
+```
+`pnpm typecheck`（`tsrx-tsc -p tsconfig.json --noEmit`）**完全没有报错**，
+`pnpm lint` 也没有报错。但启动 `apps/playground` 的 Vite dev server 时，
+依赖预打包阶段直接抛出解析错误：
+```
+[PARSE_ERROR] Expected `,` or `}` but found `Identifier`
+  ╭─[ .../show/collapse/index.tsrx:106:30 ]
+  │
+106 │ export { CollapsePanel, type CollapsePanelProps } from './panel.tsrx';
+  │        ┬                     ─────────┬────────
+  │        ╰──────────────────────────────────────── Opened here
+  │                                       │
+  │                                       ╰────────── `,` or `}` expected
+```
+错误来自 rolldown（Vite 8 的底层打包引擎）的 SWC/oxc 解析器，说明
+`.tsrx` 文件的编译管线在处理 `export {...} from` 这种 re-export 语法
+时，对 `type` 修饰符的支持和 `tsrx-tsc` 的 TypeScript 类型检查器不
+一致——这是**两条完全独立的解析路径**（typecheck 走 `tsrx-tsc`，
+实际打包走 Vite 插件 + rolldown），其中一条能通过、另一条会硬崩，
+必须两条都过才算真正验证完整。
+
+**规避方式**：仓库里全部现存 re-export 都只出现在纯 `.ts` 文件
+（如 `packages/ripple/src/index.ts`），从未在 `.tsrx` 文件内部转发
+过其他文件的导出——这次是新模式第一次踩坑。修复：把 `CollapsePanel`
+的导出直接挪到 `packages/ripple/src/index.ts`，让它各自独立地从
+`./show/collapse/index.tsrx` 和 `./show/collapse/panel.tsrx` 分别
+import，不在 `.tsrx` 文件内部做二次转发：
+```ts
+export { Collapse, type CollapseProps } from './show/collapse/index.tsrx';
+export { CollapsePanel, type CollapsePanelProps } from './show/collapse/panel.tsrx';
+```
+**结论性规则：`.tsrx` 文件内部不要写 `export {...} from '...'` 这种
+re-export 语句（无论有没有 `type` 修饰符），所有跨文件导出转发一律
+放在 `.ts` 文件（通常是包的 `index.ts`）里做。** 这类"typecheck 过、
+实际构建崩"的坑，`pnpm typecheck` + `pnpm lint` 双绿灯不能作为组件
+开发完成的充分证据，新组件写完后第一次跑 dev server 启动 playground
+本身就是一道独立的验收关卡，不能跳过（这也解释了为什么本仓库的
+DoD 流程里"playground 真机验证"始终是typecheck/lint之后的独立步骤，
+不是可选项）。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2478,4 +2529,5 @@ let &[displayContent] = track<any>(() => (dot ? '' : custom ? count : text));
 - **`@for` keyed 循环一次性插入 ≥2 个新节点到列表中间时会插错位置，这是 Ripple 运行时本身的 bug（`for.js` 的 `block_start(a_blocks, j, ...)` 用新数组下标索引老数组），不是 lotus 组件代码的问题**（踩坑 #53，重大）：已在 `~/i/ripple` 修复并本地验证（132 测试文件全绿），lotus 用 `pnpm patch` 固化到 `patches/ripple.patch`。任何组件出现"纯函数算法验证正确、但真机渲染顺序错乱"且命中"一次性插入多个新 keyed 节点到列表中间"这个模式，先用"纯函数单独跑 + 真机 DOM 顺序对比"定位是渲染层还是算法层问题，不要一开始就扎进组件自己的事件/状态逻辑排查。
 - **本机同时开多个项目的 dev server 时，`playwright.config.ts` 固定端口号可能撞上其他项目，导致 e2e 全部定位器返回 0 元素**（踩坑 #54）：端口选高位号段（如 `48213`）避开 `5170-5260` 这个各项目常用的默认端口区间；发现端口冲突时用 `lsof -nP -iTCP:<port> -sTCP:LISTEN` 查清楚是谁的进程，不要贸然 kill 陌生进程。
 - **`<table>` 用 `table-layout: fixed` 时，`<th>` 上"`width:1px` 让列宽由内容撑开"的技巧完全失效，会导致相邻单元格文字重叠**（踩坑 #56）：改用 `table-layout: auto`。这类视觉重叠 bug 纯文本断言（`toContainText`）测不出来，用 `<table>` 或多列布局实现的组件，e2e 必须额外加 `boundingBox()` 几何位置断言，不能只靠人工看截图。
+- **`.tsrx` 文件内部写 `export { X, type Y } from '...'` 这种 re-export 语法，`tsrx-tsc` typecheck 完全测不出问题，但 Vite/rolldown 实际构建时直接解析失败**（踩坑 #57，重大）：typecheck 和实际打包是两条独立解析路径。跨文件导出转发一律放在 `.ts` 文件（包的 `index.ts`）里做，`.tsrx` 文件内部不要写 re-export 语句。`pnpm typecheck` + `pnpm lint` 双绿灯不是组件完成的充分证据，第一次跑 dev server 是独立且必要的验收关卡。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。

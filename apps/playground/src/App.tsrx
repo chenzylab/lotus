@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -142,6 +142,7 @@ export function App() @{
     let &[paginationCurrentPage] = track<number>(3);
     let &[paginationPageSize] = track<number>(10);
     let &[checkboxControlledChecked] = track<boolean>(false);
+    let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -785,6 +786,65 @@ export function App() @{
                     ]}
                     aria-label="hidden 与懒渲染 Descriptions"
                 />
+            </div>
+        </Space>
+
+        <Divider>Collapse</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">基础用法（可同时展开多个）</TypographyText>
+                <Collapse defaultActiveKey={['1']} aria-label="基础 Collapse">
+                    <CollapsePanel itemKey="1" header="第一节">
+                        <TypographyText>第一节内容，展开收起有 max-height 过渡动画。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="2" header="第二节">
+                        <TypographyText>第二节内容。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="3" header="禁用面板" disabled>
+                        <TypographyText>点击 header 不会展开。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">accordion（手风琴模式，展开一个自动收起其他）</TypographyText>
+                <Collapse accordion defaultActiveKey="a" aria-label="accordion Collapse">
+                    <CollapsePanel itemKey="a" header="面板 A">
+                        <TypographyText>面板 A 内容。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="b" header="面板 B">
+                        <TypographyText>面板 B 内容。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="c" header="面板 C">
+                        <TypographyText>面板 C 内容。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">expandIconPosition=left + extra 附加内容</TypographyText>
+                <Collapse defaultActiveKey={['x']} expandIconPosition="left" aria-label="left 图标 Collapse">
+                    <CollapsePanel itemKey="x" header="带 extra 的面板" extra={<TypographyText type="tertiary">额外信息</TypographyText>}>
+                        <TypographyText>图标在左侧，header 右侧有 extra 内容。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">受控用法（外部按钮驱动 activeKey）</TypographyText>
+                <Space style={{ marginBottom: '8px' }}>
+                    <Button onClick={() => { collapseControlledActiveKey = ['p1']; }}>展开面板一</Button>
+                    <Button onClick={() => { collapseControlledActiveKey = []; }}>全部收起</Button>
+                </Space>
+                <Collapse activeKey={collapseControlledActiveKey} onChange={(keys) => { collapseControlledActiveKey = keys; }} aria-label="受控 Collapse">
+                    <CollapsePanel itemKey="p1" header="面板一">
+                        <TypographyText>由外部按钮驱动展开状态。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="p2" header="面板二">
+                        <TypographyText>面板二内容。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
             </div>
         </Space>
 
