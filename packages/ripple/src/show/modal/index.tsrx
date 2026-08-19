@@ -122,6 +122,7 @@ export function Modal(&{
             if (event.key === 'Escape') handleCancel(event as unknown as MouseEvent);
         };
         window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     });
 
     let &[shouldRender] = track<boolean>(() => visible || !state.displayNone);

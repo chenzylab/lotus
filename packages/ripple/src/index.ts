@@ -198,6 +198,12 @@ export {
     type ModalSize,
 } from './show/modal/index.tsrx';
 export {
+    SideSheet,
+    type SideSheetProps,
+    type SideSheetPlacement,
+    type SideSheetSize,
+} from './show/side-sheet/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

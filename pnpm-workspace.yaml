@@ -3,14 +3,14 @@ packages:
   - 'apps/*'
 
 catalog:
-  ripple: 0.3.119
-  '@ripple-ts/vite-plugin': 0.3.119
-  '@tsrx/ripple': 0.1.58
-  '@tsrx/core': 0.1.57
-  '@tsrx/typescript-plugin': 0.3.119
-  '@tsrx/eslint-plugin': 0.3.119
-  '@tsrx/eslint-parser': 0.3.119
-  '@tsrx/prettier-plugin': 0.3.119
+  ripple: 0.3.123
+  '@ripple-ts/vite-plugin': 0.3.123
+  '@tsrx/ripple': 0.1.61
+  '@tsrx/core': 0.1.60
+  '@tsrx/typescript-plugin': 0.3.123
+  '@tsrx/eslint-plugin': 0.3.123
+  '@tsrx/eslint-parser': 0.3.123
+  '@tsrx/prettier-plugin': 0.3.123
   '@typescript-eslint/parser': 8.67.0
   eslint: 10.8.1
   prettier: 3.9.6
@@ -18,21 +18,22 @@ catalog:
   typescript: 7.0.2
   vitest: 4.1.10
   '@playwright/test': 1.62.1
-  '@ripple-ts/adapter-node': 0.3.119
+  '@ripple-ts/adapter-node': 0.3.123
   marked: 18.0.9
   shiki: 4.4.3
 
 minimumReleaseAgeExclude:
-  - '@ripple-ts/adapter-node@0.3.119'
-  - '@ripple-ts/adapter@0.3.119'
-  - '@ripple-ts/vite-plugin@0.3.119'
-  - '@tsrx/core@0.1.57'
-  - '@tsrx/eslint-parser@0.3.119'
-  - '@tsrx/eslint-plugin@0.3.119'
-  - '@tsrx/prettier-plugin@0.3.119'
-  - '@tsrx/ripple@0.1.58'
-  - '@tsrx/typescript-plugin@0.3.119'
-  - ripple@0.3.119
+  - '@ripple-ts/adapter-node@0.3.123'
+  - '@ripple-ts/adapter@0.3.123'
+  - '@ripple-ts/vite-plugin@0.3.123'
+  - '@tsrx/core@0.1.60'
+  - '@tsrx/eslint-parser@0.3.123'
+  - '@tsrx/eslint-plugin@0.3.123'
+  - '@tsrx/prettier-plugin@0.3.123'
+  - '@tsrx/ripple@0.1.61'
+  - '@tsrx/typescript-plugin@0.3.123'
+  - ripple@0.3.123
+  - '@tsrx/runtime@0.1.1'
 
 patchedDependencies:
-  ripple: patches/ripple.patch
+  ripple@0.3.123: patches/ripple@0.3.123.patch

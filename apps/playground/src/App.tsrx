@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -153,6 +153,13 @@ export function App() @{
     let &[modalCenteredVisible] = track<boolean>(false);
     let &[modalNoMaskCloseVisible] = track<boolean>(false);
     let &[modalAfterCloseLog] = track<string>('');
+    let &[sideSheetRightVisible] = track<boolean>(false);
+    let &[sideSheetLeftVisible] = track<boolean>(false);
+    let &[sideSheetTopVisible] = track<boolean>(false);
+    let &[sideSheetBottomVisible] = track<boolean>(false);
+    let &[sideSheetKeepDomVisible] = track<boolean>(false);
+    let &[sideSheetNoMaskCloseVisible] = track<boolean>(false);
+    let &[sideSheetAfterVisibleChangeLog] = track<string>('');
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -1205,6 +1212,115 @@ export function App() @{
                     >
                         <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
                     </Modal>
+                </div>
+            </div>
+        </Space>
+
+        <Divider>SideSheet</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div>
+                <TypographyText type="secondary">基础用法（placement=right，默认）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetRightVisible = true; }}>打开右侧 SideSheet</Button>
+                    <SideSheet
+                        visible={sideSheetRightVisible}
+                        title="右侧 SideSheet"
+                        onCancel={() => { sideSheetRightVisible = false; }}
+                        afterVisibleChange={(v) => { sideSheetAfterVisibleChangeLog = `afterVisibleChange(${v}) 触发于 ${Date.now()}`; }}
+                        footer={
+                            <Space>
+                                <Button theme="light" type="tertiary" onClick={() => { sideSheetRightVisible = false; }}>取消</Button>
+                                <Button theme="solid" type="primary" onClick={() => { sideSheetRightVisible = false; }}>确定</Button>
+                            </Space>
+                        }
+                        aria-label="右侧 SideSheet"
+                    >
+                        <TypographyText>这是 SideSheet 的内容区域。</TypographyText>
+                    </SideSheet>
+                    <div style={{ marginTop: '8px' }}>
+                        <TypographyText type="tertiary">{sideSheetAfterVisibleChangeLog}</TypographyText>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">placement=left</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetLeftVisible = true; }}>打开左侧 SideSheet</Button>
+                    <SideSheet
+                        visible={sideSheetLeftVisible}
+                        placement="left"
+                        title="左侧 SideSheet"
+                        onCancel={() => { sideSheetLeftVisible = false; }}
+                        aria-label="左侧 SideSheet"
+                    >
+                        <TypographyText>从左侧滑入。</TypographyText>
+                    </SideSheet>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">placement=top / bottom</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Space>
+                        <Button onClick={() => { sideSheetTopVisible = true; }}>打开顶部 SideSheet</Button>
+                        <Button onClick={() => { sideSheetBottomVisible = true; }}>打开底部 SideSheet</Button>
+                    </Space>
+                    <SideSheet
+                        visible={sideSheetTopVisible}
+                        placement="top"
+                        title="顶部 SideSheet"
+                        height={200}
+                        onCancel={() => { sideSheetTopVisible = false; }}
+                        aria-label="顶部 SideSheet"
+                    >
+                        <TypographyText>从顶部滑入，height=200。</TypographyText>
+                    </SideSheet>
+                    <SideSheet
+                        visible={sideSheetBottomVisible}
+                        placement="bottom"
+                        title="底部 SideSheet"
+                        height={200}
+                        onCancel={() => { sideSheetBottomVisible = false; }}
+                        aria-label="底部 SideSheet"
+                    >
+                        <TypographyText>从底部滑入，height=200。</TypographyText>
+                    </SideSheet>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">keepDOM：关闭后内容不卸载，仅 CSS 隐藏</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetKeepDomVisible = true; }}>打开 keepDOM SideSheet</Button>
+                    <SideSheet
+                        visible={sideSheetKeepDomVisible}
+                        keepDOM
+                        title="keepDOM SideSheet"
+                        onCancel={() => { sideSheetKeepDomVisible = false; }}
+                        aria-label="keepDOM SideSheet"
+                    >
+                        <TypographyText>关闭后这段内容仍在 DOM 中，只是被 display:none 隐藏。</TypographyText>
+                    </SideSheet>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">size=large + closable=false + maskClosable=false</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetNoMaskCloseVisible = true; }}>打开 large SideSheet（禁用遮罩点击关闭 &amp; 关闭按钮）</Button>
+                    <SideSheet
+                        visible={sideSheetNoMaskCloseVisible}
+                        title="large + 禁用遮罩关闭"
+                        size="large"
+                        closable={false}
+                        maskClosable={false}
+                        footer={<Button theme="solid" type="primary" onClick={() => { sideSheetNoMaskCloseVisible = false; }}>关闭</Button>}
+                        aria-label="large 无遮罩关闭 SideSheet"
+                    >
+                        <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
+                    </SideSheet>
                 </div>
             </div>
         </Space>

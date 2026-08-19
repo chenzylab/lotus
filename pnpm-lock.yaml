@@ -10,23 +10,23 @@ catalogs:
       specifier: 1.62.1
       version: 1.62.1
     '@ripple-ts/adapter-node':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@ripple-ts/vite-plugin':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@tsrx/eslint-parser':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@tsrx/eslint-plugin':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@tsrx/prettier-plugin':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@tsrx/typescript-plugin':
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     '@typescript-eslint/parser':
       specifier: 8.67.0
       version: 8.67.0
@@ -40,8 +40,8 @@ catalogs:
       specifier: 3.9.6
       version: 3.9.6
     ripple:
-      specifier: 0.3.119
-      version: 0.3.119
+      specifier: 0.3.123
+      version: 0.3.123
     shiki:
       specifier: 4.4.3
       version: 4.4.3
@@ -56,7 +56,7 @@ catalogs:
       version: 4.1.10
 
 patchedDependencies:
-  ripple: a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47
+  ripple@0.3.123: 876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646
 
 importers:
 
@@ -67,13 +67,13 @@ importers:
         version: 1.62.1
       '@tsrx/eslint-parser':
         specifier: 'catalog:'
-        version: 0.3.119(@typescript-eslint/types@8.67.0)(eslint@10.8.1)
+        version: 0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1)
       '@tsrx/eslint-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/eslint-parser@0.3.119(@typescript-eslint/types@8.67.0)(eslint@10.8.1))(@typescript-eslint/parser@8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1))(eslint@10.8.1)
+        version: 0.3.123(@tsrx/eslint-parser@0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1))(@typescript-eslint/parser@8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1))(eslint@10.8.1)
       '@tsrx/prettier-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@typescript-eslint/types@8.67.0)(prettier@3.9.6)
+        version: 0.3.123(@typescript-eslint/types@8.67.0)(prettier@3.9.6)
       '@typescript-eslint/parser':
         specifier: 'catalog:'
         version: 8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1)
@@ -106,23 +106,23 @@ importers:
         version: link:../../packages/tokens
       '@ripple-ts/adapter-node':
         specifier: 'catalog:'
-        version: 0.3.119
+        version: 0.3.123
       marked:
         specifier: 'catalog:'
         version: 18.0.9
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
       shiki:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
       '@ripple-ts/vite-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(@typescript-eslint/types@8.67.0)
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       '@types/node':
         specifier: 26.2.0
         version: 26.2.0
@@ -155,14 +155,14 @@ importers:
         version: link:../../packages/tokens
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@ripple-ts/vite-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(@typescript-eslint/types@8.67.0)
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       typescript:
         specifier: npm:typescript@5.9.3
         version: 5.9.3
@@ -183,11 +183,11 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       svgo:
         specifier: ^3.3.2
         version: 3.3.4
@@ -199,11 +199,11 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       svgo:
         specifier: ^3.3.2
         version: 3.3.4
@@ -215,11 +215,11 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       svgo:
         specifier: ^3.3.2
         version: 3.3.4
@@ -258,11 +258,11 @@ importers:
         version: link:../tokens
       ripple:
         specifier: 'catalog:'
-        version: 0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
-        version: 0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+        version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
       typescript:
         specifier: npm:typescript@5.9.3
         version: 5.9.3
@@ -343,14 +343,14 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@ripple-ts/adapter-node@0.3.119':
-    resolution: {integrity: sha512-4iSFa9G+CzhLXp7W+7UQQWkNtHyH66NVi8exJ3io8G7brXeyIuNZo+lSLn0uOD4jCbu7DWYNw3kTm2zJ8Y8TVA==}
+  '@ripple-ts/adapter-node@0.3.123':
+    resolution: {integrity: sha512-oo7AihbsnWxN6BCONPUJHBaZ6UPeWg19E6f42PGE7fPOXk5blmEHVNX3lqoP+XwdzmbkxOsxPlt7eOkSHvbVHA==}
 
-  '@ripple-ts/adapter@0.3.119':
-    resolution: {integrity: sha512-xyprltQl91Xgs2gJl+EVG3UUGB93KjC2PBl3RM5+knW6z6//dDsNFooAX/X7XqTpM8xx8RosK33jUHQFbMJzoQ==}
+  '@ripple-ts/adapter@0.3.123':
+    resolution: {integrity: sha512-o2fSEQGNbdWzOpsWV3V6ISrrHu5Avm3D2scTLdSaOJ7X8IgLj0VfWYgqFoNFVkebMbOgP/CUWq//1T/Zhuqqng==}
 
-  '@ripple-ts/vite-plugin@0.3.119':
-    resolution: {integrity: sha512-kUWX41FqHvfTQqsdZbDIRyhzlMGV8bb294PwkgDj5wfaH8LDyD/AX0WBRAZiQ5oza8/JAYQUA5JsSCvIIoKzMA==}
+  '@ripple-ts/vite-plugin@0.3.123':
+    resolution: {integrity: sha512-IcAigwB2tWiFIRyDjf6JoWf/MMWM0klQgQ209RoWogIMLRLEWzB2Twv078mcso+91dC7PQwwP274SrE6Hp5HxA==}
     hasBin: true
 
   '@rolldown/binding-android-arm64@1.2.3':
@@ -480,45 +480,48 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@sveltejs/acorn-typescript@1.0.12':
-    resolution: {integrity: sha512-J1jNYG23QWd67UfrQSFHtjhV37r9mVi0gdc12A3MWPldOjRK35Xk+um+qACPVjgw3AleiqoyEAhok8Wm3q46NA==}
+  '@sveltejs/acorn-typescript@1.0.13':
+    resolution: {integrity: sha512-wgKggnhZVL9Bfx1OaKKTrYY9BFRk6C8UAkQNUcIv1+llzYrIqy+RZm5HPKzn0NpEBvTVhTqB4kQyllZywsRBRQ==}
     peerDependencies:
       acorn: ^8.9.0
 
-  '@tsrx/core@0.1.57':
-    resolution: {integrity: sha512-4bX9Ud5VCMoxDLaCw5vqxW2qJZM/qagNJYtbcLjtRoO5oS2Z85yHnZuW4TvNthKKF3a+hCxRRSBXyuOvIGMrFw==}
+  '@tsrx/core@0.1.60':
+    resolution: {integrity: sha512-t/lb8wWrJUsiwGTz3NI2GqF5be9kojmemfur6SdJqhbrMccx8TkHtZh6N8mE9gh2PTiGPuNf6HTZIomOpamA7Q==}
 
-  '@tsrx/eslint-parser@0.3.119':
-    resolution: {integrity: sha512-aQjmPeTNJUnz34YG7g/lJeP7SB/ZcsA3V9UkbWotF+1FgZ2uRNzfZc6xILh6cjARJ5CCXes4W2JhWVAN3dvHHg==}
+  '@tsrx/eslint-parser@0.3.123':
+    resolution: {integrity: sha512-XRSX7A4sqEffOX/miLNQf7tUysUXRPzON1amqYLZ55+RFfssVjAIKGtl5c7DWTo9j160pM4/MGwRGStcqkmaPA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       eslint: '>=9.0.0'
 
-  '@tsrx/eslint-plugin@0.3.119':
-    resolution: {integrity: sha512-+gjIWJooX0ltzr0EvhQYbTOHojzw8Hn6gQwKF9I7gSeqZm7YyKbJbNUNDsskb1bqxwx5FPR4h19yDX8w9dlwug==}
+  '@tsrx/eslint-plugin@0.3.123':
+    resolution: {integrity: sha512-luL3Kb7gISVmwFys8XTtaEqkHC1uJHD0z/89nO/v2b2XobwZzuPW2ARfbQQBOBm/agNKKBLMa7NZdkU4iy3qHA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@tsrx/eslint-parser': 0.3.119
+      '@tsrx/eslint-parser': 0.3.123
       '@typescript-eslint/parser': ^8.56.1
       eslint: '>=9.0.0'
 
-  '@tsrx/prettier-plugin@0.3.119':
-    resolution: {integrity: sha512-ST1WqZeURqzhWxxNJEsrujl+rManb+Q4+RrsXvZtjGVUgCmf86klxv4JabS6mU16ttAgSf/cPl08km8dUJBr2Q==}
+  '@tsrx/prettier-plugin@0.3.123':
+    resolution: {integrity: sha512-/bkDWU4H6pZRU+KQYIdYhYJs+qESO8iE+YTP/w/7PF2mUtT48Rhn9qVPKDB5c15ey76TvkZuFATOFJfWixa/hA==}
     peerDependencies:
       prettier: '>=2.0.0'
 
-  '@tsrx/ripple@0.1.58':
-    resolution: {integrity: sha512-aR9uwBpm6CywNW226odeoPDbujyw95SKp1bMxApulK724EKa8rfr7CgEdZLaBt0s3/o+Wmh6FzPnGYqDZv/Ozw==}
+  '@tsrx/ripple@0.1.61':
+    resolution: {integrity: sha512-5T9tEHFhVpBcpWdrcGGFO02rT62gEhYxVkB88Y7OLXAgojk1sN3grxC6qaqvkAEN+qgN7KspFlobbzYa3+wjPg==}
 
-  '@tsrx/typescript-plugin@0.3.119':
-    resolution: {integrity: sha512-fsIGlzAtR3P0S+RcohN2+SSrS4hnko4mO1sdKjianCIvnqbXHKCZIEgsTkn4uS5/BqKiIz/c8yVUtT42JNty7w==}
+  '@tsrx/runtime@0.1.1':
+    resolution: {integrity: sha512-R7n2forc2XQvqCYpYMqGij1tCwoPILBubRczQ2Kbjj3d6naiseEq6qfMmljEkKp14ERYHstx7ISrw2wY7Ml0DA==}
+
+  '@tsrx/typescript-plugin@0.3.123':
+    resolution: {integrity: sha512-+XLVFvG3WMLn9Y+XuEuX8jsIH0SIIl+4tswcAuuPJpDcbGloOhXScGvl46AmIiJDC0jaOEpLTXVb102+Wo6R8A==}
     hasBin: true
     peerDependencies:
-      '@tsrx/preact': 0.1.57
-      '@tsrx/react': 0.2.57
-      '@tsrx/ripple': 0.1.58
-      '@tsrx/solid': 0.1.57
-      '@tsrx/vue': 0.1.57
+      '@tsrx/preact': 0.1.60
+      '@tsrx/react': 0.2.60
+      '@tsrx/ripple': 0.1.61
+      '@tsrx/solid': 0.1.60
+      '@tsrx/vue': 0.1.60
       octane: '*'
       typescript: ^5.9.3
     peerDependenciesMeta:
@@ -1259,8 +1262,8 @@ packages:
   regex@6.1.0:
     resolution: {integrity: sha512-6VwtthbV4o/7+OaAF9I5L5V3llLEsoPyq9P1JVXkedTP33c7MfCG0/5NOPcSJn0TzXcG9YUrR0gQSWioew3LDg==}
 
-  ripple@0.3.119:
-    resolution: {integrity: sha512-SxPDVsEeLEbMzD/6BCshU1A6CZj3Sj5t//4W/47/E0z6M/q2J1uWWLSNd0wRxNDO77HD6cTbPRkC4LmOvsE0bQ==}
+  ripple@0.3.123:
+    resolution: {integrity: sha512-tYcArlmOtzkM9uSuPHhJ44yYzCN83XeAmhHE+ci5B+HHoaKDIqJNXCc//IcLDjTuKT3qbtDE0ntgtimpg2gwGQ==}
 
   rolldown@1.2.3:
     resolution: {integrity: sha512-rn9wpmxplLf7NLNyCk9FyWh3FM43DbY8jOzCdEPzH7uflhTftRbCEpqi6Ly2osgoU8OwObtmavMbWLaWy4LX7A==}
@@ -1551,17 +1554,17 @@ snapshots:
     dependencies:
       playwright: 1.62.1
 
-  '@ripple-ts/adapter-node@0.3.119':
+  '@ripple-ts/adapter-node@0.3.123':
     dependencies:
-      '@ripple-ts/adapter': 0.3.119
+      '@ripple-ts/adapter': 0.3.123
 
-  '@ripple-ts/adapter@0.3.119': {}
+  '@ripple-ts/adapter@0.3.123': {}
 
-  '@ripple-ts/vite-plugin@0.3.119(@typescript-eslint/types@8.67.0)':
+  '@ripple-ts/vite-plugin@0.3.123(@typescript-eslint/types@8.67.0)':
     dependencies:
-      '@ripple-ts/adapter': 0.3.119
-      '@tsrx/core': 0.1.57(@typescript-eslint/types@8.67.0)
-      '@tsrx/ripple': 0.1.58(@typescript-eslint/types@8.67.0)
+      '@ripple-ts/adapter': 0.3.123
+      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
@@ -1651,15 +1654,16 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@sveltejs/acorn-typescript@1.0.12(acorn@8.18.0)':
+  '@sveltejs/acorn-typescript@1.0.13(acorn@8.18.0)':
     dependencies:
       acorn: 8.18.0
 
-  '@tsrx/core@0.1.57(@typescript-eslint/types@8.67.0)':
+  '@tsrx/core@0.1.60(@typescript-eslint/types@8.67.0)':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
       '@noble/hashes': 2.3.0
-      '@sveltejs/acorn-typescript': 1.0.12(acorn@8.18.0)
+      '@sveltejs/acorn-typescript': 1.0.13(acorn@8.18.0)
+      '@tsrx/runtime': 0.1.1
       '@types/estree': 1.0.9
       '@types/estree-jsx': 1.0.5
       acorn: 8.18.0
@@ -1670,42 +1674,44 @@ snapshots:
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@tsrx/eslint-parser@0.3.119(@typescript-eslint/types@8.67.0)(eslint@10.8.1)':
+  '@tsrx/eslint-parser@0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1)':
     dependencies:
-      '@tsrx/core': 0.1.57(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
       eslint: 10.8.1
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@tsrx/eslint-plugin@0.3.119(@tsrx/eslint-parser@0.3.119(@typescript-eslint/types@8.67.0)(eslint@10.8.1))(@typescript-eslint/parser@8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1))(eslint@10.8.1)':
+  '@tsrx/eslint-plugin@0.3.123(@tsrx/eslint-parser@0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1))(@typescript-eslint/parser@8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1))(eslint@10.8.1)':
     dependencies:
-      '@tsrx/eslint-parser': 0.3.119(@typescript-eslint/types@8.67.0)(eslint@10.8.1)
+      '@tsrx/eslint-parser': 0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1)
       '@typescript-eslint/parser': 8.67.0(@typescript/typescript6@6.0.2)(eslint@10.8.1)
       eslint: 10.8.1
 
-  '@tsrx/prettier-plugin@0.3.119(@typescript-eslint/types@8.67.0)(prettier@3.9.6)':
+  '@tsrx/prettier-plugin@0.3.123(@typescript-eslint/types@8.67.0)(prettier@3.9.6)':
     dependencies:
-      '@tsrx/core': 0.1.57(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
       prettier: 3.9.6
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0)':
+  '@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0)':
     dependencies:
-      '@tsrx/core': 0.1.57(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
       esrap: 2.3.2(@typescript-eslint/types@8.67.0)
       is-reference: 3.0.3
       zimmerframe: 1.1.4
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
-  '@tsrx/typescript-plugin@0.3.119(@tsrx/ripple@0.1.58(@typescript-eslint/types@8.67.0))(typescript@5.9.3)':
+  '@tsrx/runtime@0.1.1': {}
+
+  '@tsrx/typescript-plugin@0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)':
     dependencies:
       '@volar/language-core': 2.4.28
       '@volar/typescript': 2.4.28
       typescript: 5.9.3
     optionalDependencies:
-      '@tsrx/ripple': 0.1.58(@typescript-eslint/types@8.67.0)
+      '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
 
   '@types/chai@5.2.3':
     dependencies:
@@ -2360,10 +2366,10 @@ snapshots:
     dependencies:
       regex-utilities: 2.3.0
 
-  ripple@0.3.119(patch_hash=a40b11381a4cdfbb94cec7f8cbf7878dcd91931819e34e0ba6503fb4d09edd47)(@typescript-eslint/types@8.67.0):
+  ripple@0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0):
     dependencies:
-      '@tsrx/core': 0.1.57(@typescript-eslint/types@8.67.0)
-      '@tsrx/ripple': 0.1.58(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
       clsx: 2.1.1
       devalue: 5.9.0
       esm-env: 1.2.2

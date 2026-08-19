@@ -2767,6 +2767,91 @@ let &[state] = track<ModalState>(initialModalState(untrack(() => visible)));
 正常但内部回调链路断裂"，真机验收同样需要专门监听目标 DOM 事件来
 确认触发，不能只凭视觉判断）。
 
+## 踩坑 #66（重大）：`keepDOM`/持久隐藏态元素只做 `opacity:0` 而不做
+`display:none`（或不加 `pointer-events:none`），会变成一个不可见但
+依然拦截全屏点击事件的"隐形玻璃罩"
+
+**现象**：SideSheet 支持 `keepDOM` prop（关闭后内容不卸载，只是隐藏，
+对齐 Semi 的设计）。`contentClasses`（内容区域）正确处理了这个逻辑
+（`keepDOM && !visible` 时加 `lotus-side-sheet-hidden`，即
+`display:none`），但 `maskClasses`（遮罩层）漏掉了同样的处理——遮罩
+在 `keepDOM=true` 且从未打开过时，`visible=false` 只让它
+`opacity: 0`，元素本身依然是 `position: fixed; inset: 0`（占满整个
+视口）且没有 `display:none` 或 `pointer-events:none`。这个完全透明
+但物理上占满全屏的元素会拦截页面上**所有**其它元素的点击——包括与
+这个 SideSheet 毫无关系的其它按钮。真机测试和 Chrome
+自动化工具的点击操作都会"看起来什么都没发生"，因为点击事件被这个
+看不见的元素吞掉了，报错信息里唯一的线索是 Playwright 的
+`intercepts pointer events` 日志（`await locator.click()` 重试超时
+时打印的诊断信息），肉眼看截图完全看不出异常（因为遮罩透明）。
+
+**规避方式**：任何"隐藏态但依然挂载在 DOM 里"的元素（`keepDOM`、
+`v-show`/`display:none` 类模式），凡是可能占满较大区域（尤其是
+`position: fixed` 全屏元素），隐藏时必须真正 `display:none` 或至少
+`pointer-events: none`，不能只用 `opacity:0`。写这类组件时，只要
+存在两个或以上的 CSS class（比如 mask + content）共同控制同一个
+"隐藏态"语义，必须每一个都过一遍相同的隐藏逻辑，不能只改其中一个就
+认为完成——这类遗漏在真机测试里极易被误判为"点击不生效是另一个功能
+的 bug"（本次排查中曾先怀疑是 `transitionend` 事件绑定问题、Ripple
+事件委托机制问题，兜了一大圈才定位到是这个遗漏），今后遇到"看似无关
+的按钮突然点不动"，第一步就应该检查页面上是否有全屏 `position:fixed`
+元素处于不可见但未真正禁用交互的状态（`document.elementFromPoint(x,y)`
+或 Playwright 的 `intercepts pointer events` 报错是最快的定位方式）。
+
+## 踩坑 #67（重大，Ripple 运行时本身的 bug，非 lotus 代码问题）：
+多个 `Portal` 组件共享同一个 `target`（最常见就是 `document.body`）时，
+任意一个 Portal 卸载都会把该 target 上共享的事件委托监听器整体拆除，
+导致其它仍然挂载在同一 target 上的 Portal 彻底失去事件响应
+
+**现象**：SideSheet 引入 `keepDOM` 场景后，出现一个极难定位的诡异
+现象——"打开 Modal 再关闭它"这个动作之后，页面上任何**其它**通过
+`<Portal target={document.body}>` 挂载的组件（不限于 SideSheet，包括
+另一个 Modal 也会中招）只要是"从未真正走过挂载→卸载生命周期"的实例
+（比如 `keepDOM=true` 从页面加载起就常驻挂载的 SideSheet），其内部
+所有 `onClick` 绑定会突然全部失效——DOM 节点还在、位置正确、
+`__click` 属性（Ripple 内部事件委托机制存 handler 引用的地方）里的
+函数引用完好无损，用 `element.dispatchEvent(new MouseEvent('click'))`
+主动派发也毫无反应，控制台没有任何报错。真机测试和 Chrome
+自动化工具的点击操作全都"看起来点了但没有任何效果"。
+
+**根因**：Ripple 用单一全局事件委托机制（`handle_root_events(target)`
+在每个 `Portal` 挂载时调用一次，返回一个 cleanup 函数），但这个函数
+对"同一个 `target` 被多次调用"的场景没有做引用计数——`Portal`
+组件卸载/内容变化时执行自己的 cleanup，会无条件把 `target` 上的
+`click`（及其它委托事件）监听器整体 `removeEventListener` 掉、并把
+全局 `root_target` 置空，即使**其它 Portal 仍然共享同一个 target 并
+依赖这个监听器**。这本质上是"最后一个卸载的 Portal 替所有共享同一
+target 的 Portal 做了清理"，而不是"只清理自己贡献的部分"。
+
+**排查路径**（供后续遇到类似"看似无关组件突然失去响应"时参考）：
+1. 先排除 Chrome 自动化工具本身抽风（`tabs_context_mcp` 反复超时是
+   信号，但真正的验证要脱离浏览器插件，改用独立的 Playwright 脚本
+   在 headless 环境复现，脱离交互层的不确定性）。
+2. 确认 DOM 节点、事件 handler 引用本身没丢（在 Modal/Ripple 里是
+   `element['__click']` 这种约定属性，不是标准 `addEventListener`）。
+3. 用最小复现二分定位触发条件（"是否必须先操作过某个无关组件"、
+   "是否与组件类型有关还是与 Portal 挂载机制本身有关"）——本次是
+   通过"Modal 开关一次 → keepDOM SideSheet 完全失去响应，即使 Modal
+   和 SideSheet 类型完全不同"这个现象，判断出问题出在两者共享的
+   底层机制（Portal + 事件委托），而非各自的组件逻辑。
+4. 定位到框架层代码（`node_modules/.pnpm/ripple@.../events.js`
+   `portal.js`）而非应用层组件代码时，直接去本地维护的 Ripple 源码
+   仓库（`~/i/ripple`，与本仓库的 `patches/ripple.patch` 对应机制
+   一致）修复，写回归测试验证 fix 前失败/fix 后通过，提交 PR
+   到上游（这是本仓库第二次遇到 Ripple runtime 本身的 bug，第一次
+   见踩坑 #53），并通过 `pnpm patch` 固化到本仓库直到上游发版合并。
+
+**规避方式**：`handle_root_events` 已修复为按 `target` 引用计数
+（`Map<Element, { count, registered_events }>`），只有当共享同一
+target 的所有 Portal 调用方都释放完毕，才真正 `removeEventListener`。
+这个修复已提交 Ripple 上游（PR #1434）并通过 `pnpm patch` 固化到
+`patches/ripple@0.3.123.patch`。任何组件只要用到 `<Portal target=...>`
+且 target 可能与其它组件共享（`document.body` 是最典型场景，几乎
+所有全局浮层组件——Modal/Drawer/SideSheet/Toast/Notification——都会
+用它），新增这类组件后必须补一条"另一个也用 Portal 挂载到同一
+target 的组件开关一次，不影响本组件正常工作"的回归测试，不能只测
+组件自己孤立存在时的行为。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2809,3 +2894,5 @@ let &[state] = track<ModalState>(initialModalState(untrack(() => visible)));
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。
 - **持久状态机的 `state` 用 `track(() => initialState(prop))` 闭包形式声明，闭包体读取的响应式 prop 会建立依赖，prop 每次变化都会把整个 state 重置**（踩坑 #64，重大）：改用 `track(initialState(untrack(() => prop)))`（非闭包 + `untrack`）只读一次初值，后续完全交给 Foundation 方法推进。这类 bug 现象和"正常工作"几乎一致（最终状态看起来对），验收必须专门确认状态机中间过程按预期节奏推进（如监听 `transitionend`、检查回调是否真被调用），不能只看最终结果。
 - **CSS 用 `transition` 做动画时绑定 `onAnimationEnd`（只对 `animation`/`@keyframes` 生效）不会触发**（踩坑 #65，与 #64 同族）：`transition` 对应 `onTransitionEnd`，`animation` 对应 `onAnimationEnd`，写完直接核对该元素 CSS 用的是哪个关键字。两者绑错不会有任何编译期/运行时报错，只会静默永远不触发。
+- **`keepDOM`/隐藏态元素只做 `opacity:0` 不做 `display:none`/`pointer-events:none`，会变成拦截全屏点击的隐形玻璃罩**（踩坑 #66，重大）：同一"隐藏态"语义如果由多个 class（mask + content）共同控制，每一个都要过一遍隐藏逻辑，不能只改一个。"看似无关的按钮突然点不动"时先查页面上是否有全屏 `position:fixed` 元素隐身但未禁用交互。
+- **多个 `Portal` 共享同一 `target`（如 `document.body`）时，任意一个卸载会把共享的事件委托监听器整体拆除，导致其它仍挂载的 Portal 彻底失去响应**（踩坑 #67，重大，Ripple runtime 本身的 bug）：已在 `~/i/ripple` 修复（`handle_root_events` 按 target 引用计数）并提交上游 PR #1434，本仓库用 `pnpm patch` 固化到 `patches/ripple@0.3.123.patch`。任何用 `<Portal target={document.body}>` 的新组件，必须补一条"另一个同样用 Portal 挂载到同一 target 的组件开关一次不影响本组件"的回归测试。
