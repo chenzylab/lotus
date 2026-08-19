@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -935,6 +935,51 @@ export function App() @{
                         <List bordered dataSource={[]} aria-label="empty List" />
                     </div>
                 </Space>
+            </div>
+        </Space>
+
+        <Divider>Timeline</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">基础用法（dataSource，type 语义色）</TypographyText>
+                <Timeline
+                    dataSource={[
+                        { content: '创建服务现场', time: '2023-09-01 09:00', type: 'success' },
+                        { content: '定位问题原因', time: '2023-09-01 10:30', type: 'ongoing' },
+                        { content: '发布修复补丁', time: '2023-09-01 14:00', type: 'warning' },
+                        { content: '服务恢复正常', time: '2023-09-01 15:20', type: 'default' },
+                    ]}
+                    aria-label="基础 Timeline"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">JSX children 用法（自定义 color / extra / dot）</TypographyText>
+                <Timeline aria-label="JSX Timeline">
+                    <TimelineItem index={0} time="2023-08-01" color="#722ed1" extra={<TypographyText type="tertiary">附加说明信息</TypographyText>}>
+                        自定义颜色节点
+                    </TimelineItem>
+                    <TimelineItem index={1} time="2023-08-02" dot={<IconTickCircle style={{ color: 'var(--lotus-color-success)' }} />}>
+                        自定义图标节点
+                    </TimelineItem>
+                    <TimelineItem index={2} time="2023-08-03" type="error">
+                        错误节点
+                    </TimelineItem>
+                </Timeline>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">mode=alternate（左右交替）</TypographyText>
+                <Timeline
+                    mode="alternate"
+                    dataSource={[
+                        { content: '节点一（左）', time: '09:00' },
+                        { content: '节点二（右）', time: '10:00' },
+                        { content: '节点三（左）', time: '11:00' },
+                    ]}
+                    aria-label="alternate Timeline"
+                />
             </div>
         </Space>
 

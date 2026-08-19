@@ -162,6 +162,18 @@ export {
     type ListItemAlign,
 } from './show/list/item.tsrx';
 export {
+    Timeline,
+    type TimelineProps,
+    type TimelineMode,
+    type TimelineDataItem,
+} from './show/timeline/index.tsrx';
+export {
+    TimelineItem,
+    type TimelineItemProps,
+    type TimelineItemType,
+    type TimelinePosition,
+} from './show/timeline/item.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

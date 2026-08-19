@@ -64,7 +64,7 @@
 - [x] Popover 气泡卡片
 - [x] Tooltip 文字提示
 - [x] List 列表
-- [ ] Timeline 时间轴
+- [x] Timeline 时间轴
 - [ ] Image 图片
 - [ ] Carousel 走马灯
 - [ ] Modal 对话框
