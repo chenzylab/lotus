@@ -2852,6 +2852,43 @@ target 的所有 Portal 调用方都释放完毕，才真正 `removeEventListene
 target 的组件开关一次，不影响本组件正常工作"的回归测试，不能只测
 组件自己孤立存在时的行为。
 
+## 踩坑 #68（重大）：单个 `.tsrx` 文件内定义多个组件函数（一个主组件 + 若干
+非导出的辅助子组件函数）时，`.lotus-xxx` class 的 CSS 规则必须在**实际渲染
+该 class 元素的那个组件函数自己的 `<style>` 标签里**定义，写在另一个组件的
+`<style>` 里即使 class 名字符串完全相同也不会生效——Ripple 的 CSS 是按
+组件函数作用域隔离的（scoped，class 名会被加上类似 `tsrx-XXXXXXXX` 的 hash
+后缀，不同组件函数各自的 hash 不同）
+
+**现象**：Calendar 组件为了拆分 week/month 两种视图的渲染逻辑，在同一个
+`index.tsrx` 文件里定义了 5 个组件函数（`Calendar` 主组件 + `CalendarWeekView`
++ `CalendarDayEvents` + `CalendarMonthView` + `CalendarMonthWeekRow`，写法
+参照踩坑列表里 Nav/Steps/Breadcrumb 的先例，非导出辅助组件用
+`function XxxName(&{...}: Props) @{ ... }`）。`.lotus-calendar-event`（事件
+条的背景色/圆角/内边距等基础样式）最初只写在 `CalendarWeekView` 的
+`<style>` 标签里，但真正渲染带这个 class 的 DOM 元素的是 `CalendarDayEvents`
+（分钟级事件）和 `CalendarMonthWeekRow`（月视图横条事件）这两个**不同的
+组件函数**。结果：事件条的背景色完全透明（`getComputedStyle` 读出
+`rgba(0,0,0,0)`），DOM 结构、`top`/`height`/`left`/`width` 内联定位样式全部
+正确，只有这条基础外观规则完全不生效。真机截图看起来是"事件完全不可见"，
+容易被误判为定位算法错误或渲染没有触发，实际上定位和渲染都是对的，只是
+"看不见"因为背景透明、没有圆角边界。`.lotus-calendar-weekend`（周末列背景
+高亮）也是同一根因：只写在 `CalendarWeekView` 里，`CalendarMonthWeekRow`
+自己也用了这个 class 却没有对应规则，月视图周末列完全没有视觉区分。
+
+**规避方式**：单文件多组件模式下，写完 JSX 里的某个 `class="lotus-xxx"`
+或动态 class 数组后，第一反应应该是"这个 class 对应的 CSS 规则我加在了
+哪个组件的 `<style>` 里，和当前正在写的这个组件是同一个函数吗"——不是
+"这个 class 名字之前是不是已经定义过"（字符串层面存在 ≠ 作用域层面生效）。
+CSS **后代选择器**（如 `.lotus-calendar-day-events .lotus-calendar-event`）
+在"父子元素同属一个组件函数渲染的 DOM 子树"时依然有效，不受这条限制；
+真正需要警惕的是"class 单独作为顶层选择器、渲染该 class 元素的却是另一个
+组件函数"这种情况。这类 bug 编译期、typecheck、lint 全部测不出来，
+Playwright 的文本内容/DOM 结构断言（`toBeVisible()`/`textContent`）也测不
+出来（元素确实存在、确实可见、只是没颜色/没背景），必须用
+`getComputedStyle()` 读实际计算值或真机截图肉眼比对才能发现——新组件如果
+采用单文件多组件拆分，验收时不能只看 typecheck/lint 绿灯，必须对每个
+被拆分出去的子组件单独截图确认视觉样式（不只是最外层容器）。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2896,3 +2933,4 @@ target 的组件开关一次，不影响本组件正常工作"的回归测试，
 - **CSS 用 `transition` 做动画时绑定 `onAnimationEnd`（只对 `animation`/`@keyframes` 生效）不会触发**（踩坑 #65，与 #64 同族）：`transition` 对应 `onTransitionEnd`，`animation` 对应 `onAnimationEnd`，写完直接核对该元素 CSS 用的是哪个关键字。两者绑错不会有任何编译期/运行时报错，只会静默永远不触发。
 - **`keepDOM`/隐藏态元素只做 `opacity:0` 不做 `display:none`/`pointer-events:none`，会变成拦截全屏点击的隐形玻璃罩**（踩坑 #66，重大）：同一"隐藏态"语义如果由多个 class（mask + content）共同控制，每一个都要过一遍隐藏逻辑，不能只改一个。"看似无关的按钮突然点不动"时先查页面上是否有全屏 `position:fixed` 元素隐身但未禁用交互。
 - **多个 `Portal` 共享同一 `target`（如 `document.body`）时，任意一个卸载会把共享的事件委托监听器整体拆除，导致其它仍挂载的 Portal 彻底失去响应**（踩坑 #67，重大，Ripple runtime 本身的 bug）：已在 `~/i/ripple` 修复（`handle_root_events` 按 target 引用计数）并提交上游 PR #1434，本仓库用 `pnpm patch` 固化到 `patches/ripple@0.3.123.patch`。任何用 `<Portal target={document.body}>` 的新组件，必须补一条"另一个同样用 Portal 挂载到同一 target 的组件开关一次不影响本组件"的回归测试。
+- **单文件多组件模式下，`.lotus-xxx` class 的 CSS 规则必须写在实际渲染该 class 元素的那个组件函数自己的 `<style>` 里，写在另一个组件的 `<style>` 里即使 class 名相同也不生效**（踩坑 #68，重大，Ripple scoped CSS 按组件函数隔离）：typecheck/lint/DOM 结构断言全部测不出来（元素存在、可见，只是没样式），必须 `getComputedStyle()` 或真机截图逐个子组件核对。写完某处 `class="lotus-xxx"` 时第一反应是"这条规则我加在了哪个组件的 `<style>` 里，和当前组件是同一个函数吗"。

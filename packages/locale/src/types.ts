@@ -30,6 +30,13 @@ export interface ModalLocale {
   cancelText: string;
 }
 
+export interface CalendarLocale {
+  allDay: string;
+  remaining: (remained: number) => string;
+  weekdays: [string, string, string, string, string, string, string];
+  months: [string, string, string, string, string, string, string, string, string, string, string, string];
+}
+
 export interface LocaleShape {
   code: string;
   dir: 'ltr' | 'rtl';
@@ -39,4 +46,5 @@ export interface LocaleShape {
   TextArea: TextAreaLocale;
   Select: SelectLocale;
   Modal: ModalLocale;
+  Calendar: CalendarLocale;
 }

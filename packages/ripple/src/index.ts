@@ -204,6 +204,12 @@ export {
     type SideSheetSize,
 } from './show/side-sheet/index.tsrx';
 export {
+    Calendar,
+    type CalendarProps,
+    type CalendarMode,
+    type CalendarEvent,
+} from './show/calendar/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

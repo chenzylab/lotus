@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -160,6 +160,9 @@ export function App() @{
     let &[sideSheetKeepDomVisible] = track<boolean>(false);
     let &[sideSheetNoMaskCloseVisible] = track<boolean>(false);
     let &[sideSheetAfterVisibleChangeLog] = track<string>('');
+    let &[calendarWeekAnchor] = track<Date>(new Date(2026, 0, 15));
+    let &[calendarMonthAnchor] = track<Date>(new Date(2026, 0, 15));
+    let &[calendarClickLog] = track<string>('');
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -1321,6 +1324,53 @@ export function App() @{
                     >
                         <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
                     </SideSheet>
+                </div>
+            </div>
+        </Space>
+
+        <Divider>Calendar</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">week 模式：普通事件、同时段重叠事件、跨天事件、全天事件</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Calendar
+                        mode="week"
+                        displayValue={calendarWeekAnchor}
+                        height={480}
+                        markWeekend
+                        onClick={(_e, value) => { calendarClickLog = `点击了 ${value.toLocaleString()}`; }}
+                        events={[
+                            { key: 'e1', start: new Date(2026, 0, 12, 9), end: new Date(2026, 0, 12, 10, 30) },
+                            { key: 'e2', start: new Date(2026, 0, 12, 9), end: new Date(2026, 0, 12, 10, 30), children: <TypographyText style={{ color: 'inherit' }}>并排会议</TypographyText> },
+                            { key: 'e3', start: new Date(2026, 0, 13, 22), end: new Date(2026, 0, 14, 1), children: <TypographyText style={{ color: 'inherit' }}>跨天夜间任务</TypographyText> },
+                            { key: 'e4', allDay: true, start: new Date(2026, 0, 15), end: new Date(2026, 0, 16), children: <TypographyText style={{ color: 'inherit' }}>全天活动</TypographyText> },
+                        ]}
+                        renderEvent={(event) => <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>{event.children ?? '默认事件'}</TypographyText>}
+                        aria-label="week Calendar"
+                    />
+                    <div style={{ marginTop: '8px' }}>
+                        <TypographyText type="tertiary">{calendarClickLog}</TypographyText>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">month 模式：跨天横条事件按贪心分层布局</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Calendar
+                        mode="month"
+                        displayValue={calendarMonthAnchor}
+                        height={480}
+                        markWeekend
+                        onClick={(_e, value) => { calendarClickLog = `点击了 ${value.toLocaleString()}`; }}
+                        events={[
+                            { key: 'm1', start: new Date(2026, 0, 5), end: new Date(2026, 0, 8), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>项目排期 A</TypographyText> },
+                            { key: 'm2', start: new Date(2026, 0, 7), end: new Date(2026, 0, 10), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>项目排期 B（与 A 重叠，自动分行）</TypographyText> },
+                            { key: 'm3', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>单日里程碑</TypographyText> },
+                        ]}
+                        aria-label="month Calendar"
+                    />
                 </div>
             </div>
         </Space>

@@ -69,7 +69,7 @@
 - [x] Carousel 走马灯（数据以 items 数组传入，非 Semi 原始的纯 JSX children——Ripple 无 React.Children.map 的必要调整）
 - [x] Modal 对话框（暂不含 Modal.info/success/error/warning/confirm/destroyAll 静态便捷方法，后续单独评估命令式挂载 API）
 - [x] SideSheet 侧边栏（placement 四方向、size 预设、keepDOM，无 Semi 等价的静态便捷方法）
-- [ ] Calendar 日历
+- [x] Calendar 日历（仅 week/month 模式，不含 range/day 模式；重叠事件分组算法对齐 Semi 简化版——仅同起止时间并排，非通用区间重叠检测）
 - [ ] OverflowList 自适应列表
 - [ ] ScrollList 滚动列表
 - [ ] Highlight 高亮
