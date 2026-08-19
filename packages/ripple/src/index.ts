@@ -210,6 +210,11 @@ export {
     type CalendarEvent,
 } from './show/calendar/index.tsrx';
 export {
+    OverflowList,
+    type OverflowListProps,
+    type OverflowListCollapseFrom,
+} from './show/overflow-list/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

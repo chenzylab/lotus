@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -1370,6 +1370,60 @@ export function App() @{
                             { key: 'm3', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>单日里程碑</TypographyText> },
                         ]}
                         aria-label="month Calendar"
+                    />
+                </div>
+            </div>
+        </Space>
+
+        <Divider>OverflowList</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">容器足够宽时全部显示</TypographyText>
+                <div style={{ marginTop: '8px', width: '100%' }}>
+                    <OverflowList
+                        items={['苹果', '香蕉', '橙子']}
+                        visibleItemRenderer={(item) => <Tag style={{ marginRight: '4px' }}>{item}</Tag>}
+                        overflowRenderer={(overflow) => <Tag color="grey">{`+${overflow.length}`}</Tag>}
+                        aria-label="宽容器 OverflowList"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">窄容器：超出部分折叠为 "+N"（collapseFrom=end，默认）</TypographyText>
+                <div style={{ marginTop: '8px', width: '260px', border: '1px dashed var(--lotus-color-border)', padding: '8px' }}>
+                    <OverflowList
+                        items={['标签一', '标签二', '标签三', '标签四', '标签五', '标签六']}
+                        visibleItemRenderer={(item) => <Tag style={{ marginRight: '4px' }}>{item}</Tag>}
+                        overflowRenderer={(overflow) => <Tag color="grey">{`+${overflow.length}`}</Tag>}
+                        aria-label="窄容器 OverflowList"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">collapseFrom=start：折叠头部、保留尾部</TypographyText>
+                <div style={{ marginTop: '8px', width: '260px', border: '1px dashed var(--lotus-color-border)', padding: '8px' }}>
+                    <OverflowList
+                        items={['标签一', '标签二', '标签三', '标签四', '标签五', '标签六']}
+                        collapseFrom="start"
+                        visibleItemRenderer={(item) => <Tag style={{ marginRight: '4px' }}>{item}</Tag>}
+                        overflowRenderer={(overflow) => <Tag color="grey">{`+${overflow.length}`}</Tag>}
+                        aria-label="collapseFrom start OverflowList"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">minVisibleItems=2：即使容器很窄也至少保留 2 项</TypographyText>
+                <div style={{ marginTop: '8px', width: '120px', border: '1px dashed var(--lotus-color-border)', padding: '8px' }}>
+                    <OverflowList
+                        items={['标签一', '标签二', '标签三', '标签四']}
+                        minVisibleItems={2}
+                        visibleItemRenderer={(item) => <Tag style={{ marginRight: '4px' }}>{item}</Tag>}
+                        overflowRenderer={(overflow) => <Tag color="grey">{`+${overflow.length}`}</Tag>}
+                        aria-label="minVisibleItems OverflowList"
                     />
                 </div>
             </div>

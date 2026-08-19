@@ -2889,6 +2889,57 @@ Playwright 的文本内容/DOM 结构断言（`toBeVisible()`/`textContent`）�
 采用单文件多组件拆分，验收时不能只看 typecheck/lint 绿灯，必须对每个
 被拆分出去的子组件单独截图确认视觉样式（不只是最外层容器）。
 
+## 踩坑 #69（重大）：`ref={(node) => fn(node)}` 这种**箭头函数包裹**的写法，
+函数体内部创建的资源（如 `ResizeObserver`）无法在元素卸载时自动清理——
+Ripple 只有当 `ref` 直接是一个具名函数引用、且该函数返回一个清理函数时，
+才会在卸载时调用这个清理函数；包一层箭头函数会导致返回值被丢弃
+
+**现象**：OverflowList 组件的测量阶段，每个待测量的 item 用
+`ref={(node) => handleItemRef(key, node)}` 绑定，`handleItemRef` 内部
+`new ResizeObserver(...).observe(node)`。测量完成后组件从"测量态"切换到
+"正式态"（`@if (allMeasured)` 切换渲染分支），测量阶段的 DOM 元素被卸载，
+但对应的 `ResizeObserver` 从未 `disconnect()`。更严重的是，元素被移出
+DOM 时浏览器给这个仍然存活的 observer 触发了一次"宽度变为 0"的回调，
+这个回调依然被处理并写回了 `itemSizes` 这个 Map，把已经测量好的正确
+宽度**覆盖成了 0**。所有 item 宽度归零后，"逐项累加是否超出容器宽度"
+的算法自然判定"全部都能放下"，导致折叠功能完全失效——所有 item 无论
+容器多窄都会被判定为"可见"，且现象具有强迷惑性：DOM 结构、CSS
+（踩坑 #68 那次的教训）都排查了一遍无果，最终是靠打印 `layoutOverflowList`
+的实际入参才发现 `itemSizes` 数组值不断被"从有效值变回全 0 再重新填充"，
+才追查到是 observer 泄漏导致的脏写。副作用之一是触发浏览器原生
+`ResizeObserver loop completed with undelivered notifications` 警告
+（大量僵尸 observer 堆积导致同一帧内通知处理不完）。
+
+**根因**（对照 Ripple 运行时 `blocks.js` 的 `ref()` 函数实现）：`ref` 属性
+如果拿到的值 `typeof ref_value === 'function'`，会用
+`effect(() => ref_value(element))` 包裹执行——**只有当这个 effect 函数体
+的返回值本身是一个清理函数，元素卸载时才会调用它**。若像
+`ref={(node) => handleXxxRef(key, node)}` 这样包一层箭头函数，箭头函数
+体是一条表达式语句（没有 `return`），`handleXxxRef` 即使自己
+`return () => observer.disconnect()`，这个返回值也会被外层箭头函数
+丢弃——`effect()` 收到的返回值永远是 `undefined`，没有清理函数可调用。
+
+**规避方式**：
+1. 需要清理逻辑的 `ref` 处理函数，写法上要么直接传具名函数引用
+   （`ref={handleContainerRef}`，函数自己 `return () => cleanup()`），
+   要么包一层箭头函数时**显式 `return`**：
+   `ref={(node) => { return handleItemRef(key, node); }}`——不能用
+   看似等价的表达式简写 `ref={(node) => handleItemRef(key, node)}`
+   （在 JS 语义上这两种箭头函数写法返回值应该一致，但当箭头函数体是
+   花括号块 `{ ... }` 时必须显式 `return`，单表达式简写 `=> expr` 才会
+   自动返回——这里的坑是容易把"需要透传闭包参数所以写成箭头函数"和
+   "该不该用块语句体"这两件事搞混，写块语句体时最容易漏掉 `return`）。
+2. 任何 `ref` 回调内部创建了需要显式释放的资源（`ResizeObserver`/
+   `IntersectionObserver`/`MutationObserver`/`addEventListener` 等），
+   都要返回对应的清理函数，并且要专门测试"资源是否在元素卸载后被正确
+   清理"，不能只测"功能表现是否正确"（本次的 bug 甚至一度让功能"看起来
+   正确"——宽区间容器场景不触发折叠，所以没暴露問題，只有窄容器强制
+   折叠场景才会命中这条脏写路径）。
+3. 排查"计算结果不符合预期但输入看起来合理"类问题时，不要只检查最终
+   DOM，要打印计算函数的实际入参值——本次经验是"以为容器宽度或者算法
+   本身有问题，实际是上游写入的原始测量数据本身被污染了"，误判方向会
+   耗费大量排查时间。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2934,3 +2985,4 @@ Playwright 的文本内容/DOM 结构断言（`toBeVisible()`/`textContent`）�
 - **`keepDOM`/隐藏态元素只做 `opacity:0` 不做 `display:none`/`pointer-events:none`，会变成拦截全屏点击的隐形玻璃罩**（踩坑 #66，重大）：同一"隐藏态"语义如果由多个 class（mask + content）共同控制，每一个都要过一遍隐藏逻辑，不能只改一个。"看似无关的按钮突然点不动"时先查页面上是否有全屏 `position:fixed` 元素隐身但未禁用交互。
 - **多个 `Portal` 共享同一 `target`（如 `document.body`）时，任意一个卸载会把共享的事件委托监听器整体拆除，导致其它仍挂载的 Portal 彻底失去响应**（踩坑 #67，重大，Ripple runtime 本身的 bug）：已在 `~/i/ripple` 修复（`handle_root_events` 按 target 引用计数）并提交上游 PR #1434，本仓库用 `pnpm patch` 固化到 `patches/ripple@0.3.123.patch`。任何用 `<Portal target={document.body}>` 的新组件，必须补一条"另一个同样用 Portal 挂载到同一 target 的组件开关一次不影响本组件"的回归测试。
 - **单文件多组件模式下，`.lotus-xxx` class 的 CSS 规则必须写在实际渲染该 class 元素的那个组件函数自己的 `<style>` 里，写在另一个组件的 `<style>` 里即使 class 名相同也不生效**（踩坑 #68，重大，Ripple scoped CSS 按组件函数隔离）：typecheck/lint/DOM 结构断言全部测不出来（元素存在、可见，只是没样式），必须 `getComputedStyle()` 或真机截图逐个子组件核对。写完某处 `class="lotus-xxx"` 时第一反应是"这条规则我加在了哪个组件的 `<style>` 里，和当前组件是同一个函数吗"。
+- **`ref={(node) => fn(node)}` 这种箭头函数包裹写法，`fn` 内部返回的清理函数会被丢弃，元素卸载时不会执行**（踩坑 #69，重大）：Ripple 只在 `ref` 直接是具名函数引用（或箭头函数体显式 `return`）时才会用其返回值作为卸载清理逻辑；`ref` 回调内创建的 `ResizeObserver`/`IntersectionObserver`/事件监听器等资源必须验证"元素卸载后是否真的被清理"，不能只测功能表现——本次教训是资源泄漏导致卸载元素的最后一次尺寸回调（宽度归零）脏写覆盖了有效测量数据，现象却表现为"算法判断错误"，排查时应打印计算函数实际入参而非只检查最终 DOM/CSS。
