@@ -25,6 +25,11 @@ export interface SelectLocale {
   clear: string;
 }
 
+export interface ModalLocale {
+  okText: string;
+  cancelText: string;
+}
+
 export interface LocaleShape {
   code: string;
   dir: 'ltr' | 'rtl';
@@ -33,4 +38,5 @@ export interface LocaleShape {
   InputNumber: InputNumberLocale;
   TextArea: TextAreaLocale;
   Select: SelectLocale;
+  Modal: ModalLocale;
 }

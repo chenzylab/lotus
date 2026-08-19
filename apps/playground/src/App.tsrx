@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -145,6 +145,14 @@ export function App() @{
     let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[collapsibleOpen] = track<boolean>(false);
     let &[carouselControlledIndex] = track<number>(0);
+    let &[modalBasicVisible] = track<boolean>(false);
+    let &[modalCustomFooterVisible] = track<boolean>(false);
+    let &[modalAsyncVisible] = track<boolean>(false);
+    let &[modalControlledVisible] = track<boolean>(false);
+    let &[modalFullScreenVisible] = track<boolean>(false);
+    let &[modalCenteredVisible] = track<boolean>(false);
+    let &[modalNoMaskCloseVisible] = track<boolean>(false);
+    let &[modalAfterCloseLog] = track<string>('');
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -1079,6 +1087,124 @@ export function App() @{
                         ]}
                         aria-label="受控 Carousel"
                     />
+                </div>
+            </div>
+        </Space>
+
+        <Divider>Modal</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div>
+                <TypographyText type="secondary">基础用法</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalBasicVisible = true; }}>打开基础 Modal</Button>
+                    <Modal
+                        visible={modalBasicVisible}
+                        title="基础 Modal"
+                        onOk={() => { modalBasicVisible = false; }}
+                        onCancel={() => { modalBasicVisible = false; }}
+                        afterClose={() => { modalAfterCloseLog = `afterClose 触发于 ${Date.now()}`; }}
+                        aria-label="基础 Modal"
+                    >
+                        <TypographyText>这是 Modal 的内容区域。</TypographyText>
+                    </Modal>
+                    <div style={{ marginTop: '8px' }}>
+                        <TypographyText type="tertiary">{modalAfterCloseLog}</TypographyText>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">自定义 footer</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalCustomFooterVisible = true; }}>打开自定义 footer Modal</Button>
+                    <Modal
+                        visible={modalCustomFooterVisible}
+                        title="自定义 footer"
+                        footer={
+                            <Button theme="solid" type="danger" onClick={() => { modalCustomFooterVisible = false; }}>
+                                我知道了
+                            </Button>
+                        }
+                        onCancel={() => { modalCustomFooterVisible = false; }}
+                        aria-label="自定义 footer Modal"
+                    >
+                        <TypographyText>只有一个自定义按钮的 footer。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">Promise-aware loading（onOk 返回 Promise，1s 后自动关闭）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalAsyncVisible = true; }}>打开异步 Modal</Button>
+                    <Modal
+                        visible={modalAsyncVisible}
+                        title="异步确认"
+                        onOk={() => new Promise<void>((resolve) => {
+                            setTimeout(() => {
+                                modalAsyncVisible = false;
+                                resolve();
+                            }, 1000);
+                        })}
+                        onCancel={() => { modalAsyncVisible = false; }}
+                        aria-label="异步 Modal"
+                    >
+                        <TypographyText>点击「确定」后按钮进入 loading 态，1 秒后自动关闭。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">受控用法 + ESC 关闭 + centered</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalControlledVisible = true; }}>打开受控 Modal（居中，可按 ESC 关闭）</Button>
+                    <Modal
+                        visible={modalControlledVisible}
+                        title="受控 + 居中"
+                        centered
+                        onOk={() => { modalControlledVisible = false; }}
+                        onCancel={() => { modalControlledVisible = false; }}
+                        aria-label="受控居中 Modal"
+                    >
+                        <TypographyText>centered 垂直居中，支持 ESC 关闭。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">fullScreen 全屏模式</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalFullScreenVisible = true; }}>打开全屏 Modal</Button>
+                    <Modal
+                        visible={modalFullScreenVisible}
+                        title="全屏 Modal"
+                        fullScreen
+                        onOk={() => { modalFullScreenVisible = false; }}
+                        onCancel={() => { modalFullScreenVisible = false; }}
+                        aria-label="全屏 Modal"
+                    >
+                        <TypographyText>fullScreen 模式下内容铺满视口。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">size 预设对比（large + closable=false + maskClosable=false）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalNoMaskCloseVisible = true; }}>打开 large Modal（禁用遮罩点击关闭 &amp; 关闭按钮）</Button>
+                    <Modal
+                        visible={modalNoMaskCloseVisible}
+                        title="large + 禁用遮罩关闭"
+                        size="large"
+                        closable={false}
+                        maskClosable={false}
+                        onOk={() => { modalNoMaskCloseVisible = false; }}
+                        onCancel={() => { modalNoMaskCloseVisible = false; }}
+                        aria-label="large 无遮罩关闭 Modal"
+                    >
+                        <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
+                    </Modal>
                 </div>
             </div>
         </Space>

@@ -25,6 +25,10 @@ const enUS: LocaleShape = {
   Select: {
     clear: 'Clear',
   },
+  Modal: {
+    okText: 'OK',
+    cancelText: 'Cancel',
+  },
 };
 
 export default enUS;

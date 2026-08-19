@@ -193,6 +193,11 @@ export {
     type CarouselAutoPlayConfig,
 } from './show/carousel/index.tsrx';
 export {
+    Modal,
+    type ModalProps,
+    type ModalSize,
+} from './show/modal/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

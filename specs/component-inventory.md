@@ -67,7 +67,7 @@
 - [x] Timeline 时间轴
 - [x] Image 图片（含 ImagePreviewGroup 多图批量预览：缩放/旋转/拖拽平移/左右切换）
 - [x] Carousel 走马灯（数据以 items 数组传入，非 Semi 原始的纯 JSX children——Ripple 无 React.Children.map 的必要调整）
-- [ ] Modal 对话框
+- [x] Modal 对话框（暂不含 Modal.info/success/error/warning/confirm/destroyAll 静态便捷方法，后续单独评估命令式挂载 API）
 - [ ] SideSheet 侧边栏
 - [ ] Calendar 日历
 - [ ] OverflowList 自适应列表

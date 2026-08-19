@@ -2711,6 +2711,62 @@ await expect.poll(() =>
 涉及外部资源加载，从写测试的第一天就要用轮询断言，不要等 CI 偶发
 报警才回头修。
 
+## 踩坑 #64（重大）：Foundation 状态机的 `state` 用 `track(() => initialState(prop))`
+这种闭包形式声明时，闭包里读取的响应式 prop 会被 Ripple 判定为依赖，
+prop 每次变化都会重新执行整个初始化函数、把 state 完全重置，导致状态
+机形同虚设
+
+**现象**：Modal 组件的显隐依赖一套独立于 `visible` prop 的状态机
+（`displayNone` 只应该由 `handleShow()`/`handleAnimationEnd()` 两个
+方法推进，用来实现"关闭动画播完才真正隐藏 DOM"）。声明写成
+`let &[state] = track<ModalState>(() => initialModalState(visible));`——
+这是一个 computed，闭包体读取了 `visible`。所以每次 `visible` 从
+`true` 变为 `false`，这行 computed 会立刻重新求值，把 `state` 整个
+替换成 `initialModalState(false)`（即 `{ displayNone: true, ... }`），
+瞬间绕过动画状态机，`shouldRender` 立刻变 false，DOM 被瞬间拔除，
+关闭动画根本没有播放机会，`onTransitionEnd`/`afterClose` 也永远不会
+触发。这个 bug 极具迷惑性：真机测试如果只看"最终 Modal 有没有消失"，
+现象和"正常工作"完全一致（DOM 确实消失了），只有专门监听
+`transitionend` 事件、或者检查 `afterClose` 回调是否被调用，才能
+发现动画状态机根本没有真正工作。
+
+**规避方式**：任何"只应在挂载时取一次响应式 prop 的初值、后续完全由
+Foundation 方法主动推进、不应该跟随该 prop 后续变化重置"的 state，
+必须用 `untrack()` 包裹 prop 读取、且不能用闭包形式（闭包形式即使
+内部包 `untrack()`，只要外层还是 `track(() => ...)`，Ripple 依然会
+在依赖收集阶段扫描到闭包体内的响应式读取并建立依赖）：
+```ts
+// 错误：闭包体读取 visible，每次 visible 变化整个 state 被重置
+let &[state] = track<ModalState>(() => initialModalState(visible));
+
+// 正确：只读一次初值（untrack 防止建立响应式依赖），之后完全交给 Foundation 方法推进
+let &[state] = track<ModalState>(initialModalState(untrack(() => visible)));
+```
+任何"内部持久状态机 + 外部驱动 prop"的组件（尤其是"显隐 + 关闭动画"
+这类模式），验收时不能只用肉眼看"最终有没有消失/出现"，必须专门在
+真机注入 `document.addEventListener('transitionend', ...)` 或检查
+"动画结束回调是否真的被调用"来确认状态机真的按预期节奏推进，而不是
+被响应式重置抄了近道。
+
+## 踩坑 #65：CSS 用 `transition` 实现的动画，事件必须绑定 `onTransitionEnd`
+而非 `onAnimationEnd`——后者只对 CSS `animation`（`@keyframes`）生效，
+`transition` 属性永远不会触发它
+
+**现象**：Modal 的关闭动画结束处理函数最初被绑定在遮罩层的
+`onAnimationEnd` 事件上，但遮罩层 CSS 只写了
+`transition: opacity 0.2s ease`（没有用 `@keyframes`/`animation`）。
+`onAnimationEnd` 只对 CSS Animations API 触发，对 CSS Transitions
+完全不生效，导致关闭动画结束后处理函数永远不会被调用。
+
+**规避方式**：组件用哪种 CSS 机制做动画，就绑定对应的 DOM 事件——
+`transition` 对应 `transitionend`（Ripple 里写作 `onTransitionEnd`），
+`@keyframes`/`animation` 对应 `animationend`（`onAnimationEnd`）。
+写完事件绑定后，直接搜索该元素的 CSS 规则确认用的是 `transition` 还
+是 `animation` 关键字，两者绑错事件不会有任何编译期或运行时报错，
+只会静默地永远不触发（现象与踩坑 #64 类似，都是"最终视觉效果看起来
+正常但内部回调链路断裂"，真机验收同样需要专门监听目标 DOM 事件来
+确认触发，不能只凭视觉判断）。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2751,3 +2807,5 @@ await expect.poll(() =>
 - **高频通用交互文案（"下一张"/"放大"/"关闭"等）迟早会在页面上出现多份，新组件一旦引入同名元素就会让存量测试的裸 `getByLabel` 命中多义选择器报错**（踩坑 #62，#46 同族）：用容器 role/aria-label 限定 scope（如 `page.getByRole('dialog').getByLabel(...)`），不要写页面级裸选择器。
 - **依赖外部资源异步加载完成态的断言（如图片 onLoad 驱动的 opacity），一次性读取会有偶发失败风险**（踩坑 #63）：改用 `expect.poll(...)` 轮询，给比本地交互更宽松的 timeout。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。
+- **持久状态机的 `state` 用 `track(() => initialState(prop))` 闭包形式声明，闭包体读取的响应式 prop 会建立依赖，prop 每次变化都会把整个 state 重置**（踩坑 #64，重大）：改用 `track(initialState(untrack(() => prop)))`（非闭包 + `untrack`）只读一次初值，后续完全交给 Foundation 方法推进。这类 bug 现象和"正常工作"几乎一致（最终状态看起来对），验收必须专门确认状态机中间过程按预期节奏推进（如监听 `transitionend`、检查回调是否真被调用），不能只看最终结果。
+- **CSS 用 `transition` 做动画时绑定 `onAnimationEnd`（只对 `animation`/`@keyframes` 生效）不会触发**（踩坑 #65，与 #64 同族）：`transition` 对应 `onTransitionEnd`，`animation` 对应 `onAnimationEnd`，写完直接核对该元素 CSS 用的是哪个关键字。两者绑错不会有任何编译期/运行时报错，只会静默永远不触发。

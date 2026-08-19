@@ -25,6 +25,10 @@ const zhCN: LocaleShape = {
   Select: {
     clear: '清除',
   },
+  Modal: {
+    okText: '确定',
+    cancelText: '取消',
+  },
 };
 
 export default zhCN;
