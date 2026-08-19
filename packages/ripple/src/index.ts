@@ -182,6 +182,17 @@ export {
     type ImagePreviewGroupProps,
 } from './show/image/preview-group.tsrx';
 export {
+    Carousel,
+    type CarouselProps,
+    type CarouselAnimation,
+    type CarouselTheme,
+    type CarouselArrowType,
+    type CarouselIndicatorType,
+    type CarouselIndicatorPosition,
+    type CarouselTrigger,
+    type CarouselAutoPlayConfig,
+} from './show/carousel/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

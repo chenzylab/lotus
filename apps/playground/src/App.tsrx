@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -144,6 +144,7 @@ export function App() @{
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[collapsibleOpen] = track<boolean>(false);
+    let &[carouselControlledIndex] = track<number>(0);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -1022,6 +1023,62 @@ export function App() @{
                             <Image src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png?i=3" width={80} height={80} aria-label="Group 图片三" />
                         </Space>
                     </ImagePreviewGroup>
+                </div>
+            </div>
+        </Space>
+
+        <Divider>Carousel</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">基础用法（autoPlay，箭头+指示器）</TypographyText>
+                <div style={{ width: '400px', height: '200px', marginTop: '8px' }}>
+                    <Carousel
+                        items={[
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第一页</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第二页</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-warning-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第三页</TypographyText></div>,
+                        ]}
+                        aria-label="基础 Carousel"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">animation=fade，theme=primary，indicatorType=line</TypographyText>
+                <div style={{ width: '400px', height: '200px', marginTop: '8px' }}>
+                    <Carousel
+                        animation="fade"
+                        theme="primary"
+                        indicatorType="line"
+                        autoPlay={false}
+                        items={[
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>Fade 1</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>Fade 2</TypographyText></div>,
+                        ]}
+                        aria-label="fade Carousel"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">受控用法（外部按钮驱动 activeIndex）</TypographyText>
+                <Space style={{ marginBottom: '8px' }}>
+                    <Button onClick={() => { carouselControlledIndex = 0; }}>跳到第一页</Button>
+                    <Button onClick={() => { carouselControlledIndex = 2; }}>跳到第三页</Button>
+                </Space>
+                <div style={{ width: '400px', height: '200px' }}>
+                    <Carousel
+                        activeIndex={carouselControlledIndex}
+                        onChange={(index) => { carouselControlledIndex = index; }}
+                        autoPlay={false}
+                        items={[
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>受控 1</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>受控 2</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-warning-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>受控 3</TypographyText></div>,
+                        ]}
+                        aria-label="受控 Carousel"
+                    />
                 </div>
             </div>
         </Space>

@@ -2630,6 +2630,87 @@ function handleMaskClick(event: MouseEvent) {
 内容本身覆盖，反而更容易在开发时被忽略），是唯一能发现这类问题的
 方法，纯粹审代码看不出来。
 
+## 踩坑 #61：`element.boundingBox()` 返回的是相对页面文档的绝对坐标，
+`page.mouse.move(x, y)` 用的却是当前 viewport 视口坐标——不先
+`scrollIntoViewIfNeeded()` 就把 `boundingBox()` 的结果直接传给
+`mouse.move`，元素在页面下方时坐标系不匹配，事件会移动到错误位置
+（甚至完全在可视区域外），导致悬浮/拖拽类交互测试静默失败
+
+**现象**：Carousel 组件的"鼠标悬浮暂停自动播放"e2e 测试稳定失败——
+`page.mouse.move(box.x + box.width/2, box.y + box.height/2)` 移动
+后，组件的 `onMouseEnter` 处理器完全没有被调用（用临时 `console.log`
+确认过，事件压根没触发）。playground 页面随着组件数量增多，Carousel
+demo 区块在页面里的位置越来越靠下，`element.boundingBox()` 返回的
+`y` 坐标（如 `10012.5`）早已超出测试用的 viewport 高度（`2000`）。
+`page.mouse.move` 内部通过 CDP 直接按 viewport 坐标系发送鼠标事件，
+如果目标坐标对应的浏览器窗口区域根本没有滚动到那里，实际移动到的
+位置和期望元素完全对不上。
+
+**规避方式**：任何用 `boundingBox()` 算出坐标后再喂给
+`page.mouse.move`/`page.mouse.click` 等底层鼠标 API 的测试代码，
+必须先对目标元素调用 `scrollIntoViewIfNeeded()`，确保视口已经
+滚动到位、`boundingBox()` 返回的坐标落在当前可见区域内。这条规则
+早在踩坑 #43 就记录过（"Playwright 拖拽测试需要
+`scrollIntoViewIfNeeded()`"），但当时是偶发案例，这次是同类问题
+的第二次独立复现——**任何直接操作绝对像素坐标的鼠标模拟
+（`mouse.move`/`mouse.down`/`mouse.up`/`mouse.click(x,y)`），
+一律先滚动到位**，应当成为写这类测试时的默认反射动作，而不是遇到
+问题才回头补。相对而言，`locator.click()`/`locator.hover()` 这类
+高层 API 会自动处理滚动，不受这条限制，只有直接算坐标传给
+`page.mouse.*` 时才需要格外小心。
+
+## 踩坑 #62：Image 预览层和 Carousel 都用了"下一张"/"上一张"/
+"放大"/"缩小"/"旋转"这类通用中文 `aria-label` 文案，新组件上线后
+存量测试的页面级裸选择器（`page.getByLabel(...)`）会命中多个同名
+元素，触发 Playwright 严格模式报错——这是踩坑 #46/#49 的又一次
+复现，且这次冲突的双方是完全不同的两个组件（不是同组件内部复用）
+
+**现象**：Carousel 组件上线后，全量 e2e 回归里 Image 组件此前一直
+通过的 `ImagePreviewGroup` 测试开始报错：`getByLabel('下一张')`
+命中了 4 个元素——3 个 Carousel demo 实例的箭头按钮 + 1 个 Image
+预览层的切换按钮，Playwright 严格模式拒绝在多义选择器上执行操作。
+
+**规避方式**：Image 预览层的遮罩容器本身带 `role="dialog"`，用
+`page.getByRole('dialog')` 先把定位范围限定到预览层内部，再在这个
+scoped locator 上调用 `.getByLabel(...)`，即可精确排除页面上其他
+同名元素：
+```ts
+const previewDialog = page.getByRole('dialog');
+await previewDialog.getByLabel('下一张').click();
+```
+**结论性规则（在踩坑 #46 基础上进一步强化）**：`"下一张"`/`"上一张"`/
+`"放大"`/`"缩小"`/`"关闭"`/`"确定"`/`"取消"` 这类高频通用交互文案，
+**从组件设计阶段就应该假设它们迟早会在页面上出现多份**，e2e 测试
+里只要涉及这类文案的 `getByLabel`/`getByRole('button', {name})`，
+一律优先用容器（`role` 或 `aria-label` 唯一标识的外层元素）限定
+scope，不要写页面级裸选择器——不能因为"当前只有一个"就心存侥幸，
+下一个新组件随时可能引入同名交互元素。
+
+## 踩坑 #63：e2e 测试断言依赖外部网络资源（跨域图片 URL）异步加载
+完成的状态时，"元素可见"（`toBeVisible()`）不等于"资源已加载完成"
+（如图片 `onLoad` 驱动的 opacity 状态），读取一次就断言存在偶发
+失败的风险，外部资源加载耗时不可控
+
+**现象**：Image 组件"加载成功后正确显示"这条 e2e 测试，读取
+`getComputedStyle(el).opacity` 一次就断言等于 `'1'`，本地开发阶段
+一直通过，但在全量回归里（并发更多、网络请求更密集时）偶发失败，
+读到的是初始态 `opacity: 0`（图片资源还没真正下载完成，`onLoad`
+事件还没触发，只是 DOM 元素本身已经挂载可见）。
+
+**规避方式**：任何依赖外部资源异步加载完成态的断言，不能用
+"等一下再读一次"这种一次性读取的写法，改用 `expect.poll(...)` 轮询
+到目标状态出现为止，并给一个比默认超时更宽松的 timeout（外部网络
+资源比本地渲染慢得多，不能套用本地交互的超时预期）：
+```ts
+await expect.poll(() =>
+    image.locator('.lotus-image-img').evaluate((el) => getComputedStyle(el).opacity),
+{ timeout: 10000 }).toBe('1');
+```
+这类"看起来稳定实际靠运气"的测试很危险——本地跑几次不会暴露，
+只有在网络波动或并发压力增大时才会现出原形，新组件的 e2e 一旦
+涉及外部资源加载，从写测试的第一天就要用轮询断言，不要等 CI 偶发
+报警才回头修。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2666,4 +2747,7 @@ function handleMaskClick(event: MouseEvent) {
 - **参与 `@if`/`@for`/响应式渲染判定的中间变量若写成裸 `const`（哪怕依赖了响应式 props），只在挂载时求值一次，后续 props 变化不触发重新判定**（踩坑 #58）：一律用 `track(() => ...)` 包裹，唯一例外是内联写在 JSX 属性值位置的字面量表达式。任何 `const someFlag = propA || propB` 之后用于响应式渲染路径的写法，默认当 bug 处理。
 - **`track(() => ...)` 的 computed 求值函数内部不能触发对其它 tracked 值的写操作，哪怕写操作藏在一个看似普通的辅助函数里，Ripple 会直接抛运行时异常**（踩坑 #59，重大）：任何要放进 computed 的调用，不能 100% 确定是纯函数就假设有副作用，移到 `effect()` 里执行（内层用 `untrack()` 包裹自身赋值防止死循环）。
 - **全屏遮罩层内部若有撑满尺寸的 flex 居中子容器，`event.target === event.currentTarget` 判断"点击了遮罩空白处"会永远为 false**（踩坑 #60）：改用排除法（"点击目标不是需要保留交互的元素就视为空白"），并且真机测试要点遮罩的多个不同位置，不能只点中心点。
+- **`page.mouse.move/click(x,y)` 用 viewport 坐标系，`boundingBox()` 返回的是页面绝对坐标，不先 `scrollIntoViewIfNeeded()` 会移动到错误位置甚至可视区域外**（踩坑 #61）：任何直接算坐标传给 `page.mouse.*` 的测试代码，一律先滚动到位；`locator.click()`/`locator.hover()` 这类高层 API 会自动处理，不受此限制。
+- **高频通用交互文案（"下一张"/"放大"/"关闭"等）迟早会在页面上出现多份，新组件一旦引入同名元素就会让存量测试的裸 `getByLabel` 命中多义选择器报错**（踩坑 #62，#46 同族）：用容器 role/aria-label 限定 scope（如 `page.getByRole('dialog').getByLabel(...)`），不要写页面级裸选择器。
+- **依赖外部资源异步加载完成态的断言（如图片 onLoad 驱动的 opacity），一次性读取会有偶发失败风险**（踩坑 #63）：改用 `expect.poll(...)` 轮询，给比本地交互更宽松的 timeout。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。

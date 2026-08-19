@@ -5,8 +5,12 @@ test.describe('Image', () => {
     await page.goto('/');
     const image = page.getByLabel('基础 Image');
     await expect(image.locator('.lotus-image-img')).toBeVisible();
-    const opacity = await image.locator('.lotus-image-img').evaluate((el) => getComputedStyle(el).opacity);
-    expect(opacity).toBe('1');
+    // opacity 由图片 onLoad 事件异步驱动，toBeVisible() 只保证元素在 DOM 里有
+    // 非零尺寸，不代表资源已经加载完——用 expect.poll 等待真正的加载完成态，
+    // 不能读取一次就断言（外部图片资源加载时间不确定，读太早会偶发失败）。
+    await expect.poll(() =>
+      image.locator('.lotus-image-img').evaluate((el) => getComputedStyle(el).opacity),
+    { timeout: 10000 }).toBe('1');
   });
 
   test('加载失败时显示错误占位图标', async ({ page }) => {
@@ -48,16 +52,17 @@ test.describe('Image', () => {
     const image = page.getByLabel('基础 Image');
     await image.click();
 
+    const previewDialog = page.getByRole('dialog');
     const previewImg = page.locator('.lotus-image-preview-img');
     const getTransform = () => previewImg.evaluate((el) => (el as HTMLElement).style.transform);
 
-    await page.getByLabel('放大').click();
+    await previewDialog.getByLabel('放大').click();
     await expect.poll(getTransform).toContain('scale(1.5)');
 
-    await page.getByLabel('旋转').click();
+    await previewDialog.getByLabel('旋转').click();
     await expect.poll(getTransform).toContain('rotate(90deg)');
 
-    await page.getByLabel('缩小').click();
+    await previewDialog.getByLabel('缩小').click();
     await expect.poll(getTransform).toContain('scale(1)');
   });
 
@@ -66,13 +71,16 @@ test.describe('Image', () => {
     const second = page.getByLabel('Group 图片二');
     await second.click();
 
-    const indicator = page.locator('.lotus-image-preview-indicator');
+    // 用 role=dialog 限定范围——Image 预览层和 Carousel 的箭头按钮都叫"下一张"，
+    // 页面级裸选择器会命中多个元素触发 Playwright 严格模式报错（踩坑 #46 同族）。
+    const previewDialog = page.getByRole('dialog');
+    const indicator = previewDialog.locator('.lotus-image-preview-indicator');
     await expect(indicator).toHaveText('2 / 3');
 
-    await page.getByLabel('下一张').click();
+    await previewDialog.getByLabel('下一张').click();
     await expect(indicator).toHaveText('3 / 3');
 
-    await page.getByLabel('下一张').click();
+    await previewDialog.getByLabel('下一张').click();
     await expect(indicator).toHaveText('1 / 3');
 
     await page.keyboard.press('ArrowLeft');
