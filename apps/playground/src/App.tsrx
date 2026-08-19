@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -868,6 +868,74 @@ export function App() @{
                     <TypographyText>keepDOM=true，收起后这段内容仍在 DOM 中（只是不可见）。</TypographyText>
                 </div>
             </Collapsible>
+        </Space>
+
+        <Divider>List</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">基础用法（dataSource + renderItem）</TypographyText>
+                <List
+                    bordered
+                    dataSource={['第一条内容', '第二条内容', '第三条内容']}
+                    renderItem={(item) => <TypographyText>{item}</TypographyText>}
+                    aria-label="基础 List"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">header/main/extra 模板用法</TypographyText>
+                <List
+                    header={<TypographyText>团队成员</TypographyText>}
+                    footer={<TypographyText type="tertiary">共 2 人</TypographyText>}
+                    dataSource={[
+                        { name: '张三', role: '前端工程师' },
+                        { name: '李四', role: '后端工程师' },
+                    ]}
+                    renderItem={(item) => (
+                        <ListItem
+                            header={<TypographyText>{item.name}</TypographyText>}
+                            main={<TypographyText type="tertiary">{item.role}</TypographyText>}
+                            extra={<Button size="small" theme="borderless">详情</Button>}
+                        />
+                    )}
+                    aria-label="模板 List"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">layout=horizontal（横向排列）</TypographyText>
+                <List
+                    layout="horizontal"
+                    dataSource={['A', 'B', 'C']}
+                    renderItem={(item) => <TypographyText style={{ padding: '0 16px' }}>{item}</TypographyText>}
+                    aria-label="horizontal List"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">grid 布局（响应式栅格）</TypographyText>
+                <List
+                    grid={{ gutter: 16, xs: 24, sm: 12, md: 8 }}
+                    dataSource={['卡片一', '卡片二', '卡片三']}
+                    renderItem={(item) => (
+                        <Card title={item}><TypographyText>grid item 内容</TypographyText></Card>
+                    )}
+                    aria-label="grid List"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">loading（Spin 遮罩） / 空状态</TypographyText>
+                <Space style={{ width: '100%', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                        <List loading bordered dataSource={['A', 'B']} renderItem={(item) => <TypographyText>{item}</TypographyText>} aria-label="loading List" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <List bordered dataSource={[]} aria-label="empty List" />
+                    </div>
+                </Space>
+            </div>
         </Space>
 
         <Divider />

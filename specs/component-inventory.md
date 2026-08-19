@@ -63,7 +63,7 @@
 - [x] Dropdown 下拉菜单
 - [x] Popover 气泡卡片
 - [x] Tooltip 文字提示
-- [ ] List 列表
+- [x] List 列表
 - [ ] Timeline 时间轴
 - [ ] Image 图片
 - [ ] Carousel 走马灯

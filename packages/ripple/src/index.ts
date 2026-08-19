@@ -150,6 +150,18 @@ export {
     type CollapsibleProps,
 } from './show/collapsible/index.tsrx';
 export {
+    List,
+    type ListProps,
+    type ListLayout,
+    type ListSize,
+    type ListGrid,
+} from './show/list/index.tsrx';
+export {
+    ListItem,
+    type ListItemProps,
+    type ListItemAlign,
+} from './show/list/item.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
