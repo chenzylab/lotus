@@ -1094,7 +1094,7 @@ viewport`，重试到超时失败；但浏览器里用 JS `element.click()` 程�
 页面**最外层的根容器 `<div>`**（`childCount: 115`，无 class）——说明
 `clip: rect(0,0,0,0)` 这个裁剪属性会让浏览器的 hit-testing 直接"跳过"这个
 元素（即使给它加了 `pointer-events: none` 也无法解决，因为问题根本不是
-"这个元素挡住了点击"，而是"这个元素本身在这个位置对�size点击测试不可
+"这个元素挡住了点击"，而是"这个元素本身在这个位置对点击测试不可
 见"）。Playwright 的 `.click()`（模拟真实用户交互）会做这类可点击性
 校验，而 JS 程序化 `element.click()` 是直接调用 DOM API 触发事件，不做
 任何几何/可见性检查，因此表现不同——这正是"程序化 click 掩盖真实 UX 问题"
@@ -2538,6 +2538,98 @@ JSX 属性值——只要它依赖了 props/其他响应式变量，就必须用
 `someFlag` 之后被用在 `@if`/`@for`/传给子组件的响应式渲染路径中，
 默认当作有 bug 处理，除非能证明它确实是挂载时定值不需要响应式。
 
+## 踩坑 #59（重大）：`track(() => ...)` 的 computed 求值函数内部
+不能触发对其它 tracked 值的写操作（赋值），哪怕写操作发生在一个
+看似普通的辅助函数调用里——Ripple 会直接抛运行时异常，不是静默
+失效
+
+**现象**：`ImagePreviewGroup` 组件里，`Image` 子组件需要在渲染时
+向父级的 Context 注册自己的 `src`（拿到自己在多图列表里的序号），
+最初写成：
+```ts
+const contextTracked = ImagePreviewGroupContext.get();
+let &[groupIndex] = track<number | null>(() => (contextTracked ? contextTracked.value.register(src ?? '') : null));
+```
+`register` 函数内部会执行 `registeredSrcList = [...list, itemSrc]`
+——这是对 `ImagePreviewGroup` 组件里另一个 tracked 值的写操作。真机
+点击图片触发预览时，控制台直接抛出运行时异常：`Assignments or
+updates to tracked values are not allowed during computed
+"track(() => ...)" evaluation`，预览层完全打不开（`register`
+调用链路中断，Context 状态没有正确建立）。这类 bug 和踩坑 #45/#58
+类似——渲染时求值路径里混入了副作用，但这次是运行时**直接抛错**而
+非静默返回旧值，说明 Ripple 对这条规则做了运行时校验，不是只有
+"文档建议"层面的约定。
+
+**根因**：`track(() => expr)` 的求值函数被设计为纯粹的"计算下一个
+派生值"，Ripple 内部实现依赖这个纯度假设做依赖追踪/批量更新调度；
+`register` 这个业务函数虽然从调用点看只是"读一下、拿个 index"，但
+它内部隐藏了写操作，这种"看起来是读、实际有写副作用"的函数一旦被
+装进 computed 求值路径，就违反了这个纯度约定。
+
+**修复**：把有副作用的调用移出 `track()` 的 computed 函数，挪到
+`effect()` 里执行（`effect` 允许产生副作用，这正是它存在的意义）：
+```ts
+let &[groupIndex] = track<number | null>(null);
+
+effect(() => {
+    if (!contextTracked) return;
+    const index = contextTracked.value.register(src ?? '');
+    untrack(() => { groupIndex = index; });
+});
+```
+（内层用 `untrack()` 包裹对 `groupIndex` 自身的赋值，避免 effect
+读写同一个值导致的死循环，同 Foundation 的 `untrack()` 铁律。）
+
+**规避方式**：任何要放进 `track(() => ...)` computed 函数体的调用，
+如果不能 100% 确定它是纯函数（尤其是跨组件通过 Context/props 传入
+的回调、来自其它模块的工具函数），先假设它可能有副作用，宁可移到
+`effect()` 里也不要图省事直接塞进 computed——这类 bug 在真机点击
+交互前完全不会暴露（typecheck/lint 都测不出来，纯逻辑上"读一个值"
+和"读的时候顺便写了别的值"在类型层面看不出区别）。
+
+## 踩坑 #60：全屏预览层用 `flex` 居中布局的内层容器撑满了整个遮罩
+区域时，`event.target === event.currentTarget` 判断"点击的是遮罩
+空白处"会失效——只要遮罩上叠了任何撑满尺寸的子容器，这个判断就
+永远为 false
+
+**现象**：Image 组件的全屏预览层，点击遮罩空白区域（非图片、非
+工具栏按钮）应该关闭预览，写法是最外层 `<div class="...-mask"
+onClick={handleMaskClick}>`，`handleMaskClick` 判断
+`event.target === event.currentTarget`。真机测试点击遮罩四角
+（远离图片和工具栏的位置）预览层完全不关闭。
+
+**根因**：遮罩内部紧跟着一个 `.lotus-image-preview-container`
+（`display:flex; align-items:center; justify-content:center`，
+没有显式限制宽高），这个容器实际撑满了整个遮罩区域（`width:100%;
+height:100%` 是隐式的，因为没有设置任何尺寸限制，flex 子项默认
+占满父级剩余空间）。点击遮罩上任意一点，`event.target` 拿到的都是
+这个 container（或者更深层的图片元素），从不会是 mask 本身——
+`target === currentTarget` 这个等值判断从设计上就不可能为真，因为
+container 完全覆盖了 mask 的可点击区域，用户永远点不到"裸露"的
+mask 像素。
+
+**修复**：放弃 `target === currentTarget` 这种"点击的必须是最外层
+容器自己"的严格判断，改成排除法——只要点击目标不是需要保留交互的
+元素（这里只有图片本身需要排除，因为图片被拖拽时可能触发 click），
+就视为点击了空白区域：
+```ts
+function handleMaskClick(event: MouseEvent) {
+    if (!maskClosable) return;
+    const target = event.target as HTMLElement;
+    if (target.classList.contains('lotus-image-preview-img')) return;
+    onClose?.();
+}
+```
+工具栏按钮/左右切换箭头本身已经用 `event.stopPropagation()` 阻止
+事件冒泡到 mask，不需要在这里额外排除。
+
+**规避方式**：任何"点击遮罩关闭"的实现，只要遮罩内部有撑满尺寸的
+中间容器（哪怕只是为了 flex 居中），`target === currentTarget`
+这个经典写法就大概率是假阳性通过了 review 但实际不生效的坑——
+真机点击测试遮罩的多个不同位置（不只测中心点，因为中心点常常被
+内容本身覆盖，反而更容易在开发时被忽略），是唯一能发现这类问题的
+方法，纯粹审代码看不出来。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2572,4 +2664,6 @@ JSX 属性值——只要它依赖了 props/其他响应式变量，就必须用
 - **`<table>` 用 `table-layout: fixed` 时，`<th>` 上"`width:1px` 让列宽由内容撑开"的技巧完全失效，会导致相邻单元格文字重叠**（踩坑 #56）：改用 `table-layout: auto`。这类视觉重叠 bug 纯文本断言（`toContainText`）测不出来，用 `<table>` 或多列布局实现的组件，e2e 必须额外加 `boundingBox()` 几何位置断言，不能只靠人工看截图。
 - **`.tsrx` 文件内部写 `export { X, type Y } from '...'` 这种 re-export 语法，`tsrx-tsc` typecheck 完全测不出问题，但 Vite/rolldown 实际构建时直接解析失败**（踩坑 #57，重大）：typecheck 和实际打包是两条独立解析路径。跨文件导出转发一律放在 `.ts` 文件（包的 `index.ts`）里做，`.tsrx` 文件内部不要写 re-export 语句。`pnpm typecheck` + `pnpm lint` 双绿灯不是组件完成的充分证据，第一次跑 dev server 是独立且必要的验收关卡。
 - **参与 `@if`/`@for`/响应式渲染判定的中间变量若写成裸 `const`（哪怕依赖了响应式 props），只在挂载时求值一次，后续 props 变化不触发重新判定**（踩坑 #58）：一律用 `track(() => ...)` 包裹，唯一例外是内联写在 JSX 属性值位置的字面量表达式。任何 `const someFlag = propA || propB` 之后用于响应式渲染路径的写法，默认当 bug 处理。
+- **`track(() => ...)` 的 computed 求值函数内部不能触发对其它 tracked 值的写操作，哪怕写操作藏在一个看似普通的辅助函数里，Ripple 会直接抛运行时异常**（踩坑 #59，重大）：任何要放进 computed 的调用，不能 100% 确定是纯函数就假设有副作用，移到 `effect()` 里执行（内层用 `untrack()` 包裹自身赋值防止死循环）。
+- **全屏遮罩层内部若有撑满尺寸的 flex 居中子容器，`event.target === event.currentTarget` 判断"点击了遮罩空白处"会永远为 false**（踩坑 #60）：改用排除法（"点击目标不是需要保留交互的元素就视为空白"），并且真机测试要点遮罩的多个不同位置，不能只点中心点。
 - **两个互斥 `@if` 分支各自只包一段简单 JSX 插值时，可能两个分支都渲染成空**（踩坑 #55，重大，与 #41/#47 同族）：合并成单一 `track()` 派生值 + 三元表达式 + 单一插值即可规避。当"渲染为空但上游数据/纯函数已验证正确"时，优先怀疑这个模式而不是继续下钻业务逻辑。同一次排查中还发现 `pnpm dev` 在 `nohup ... &` 场景下偶发因 TTY 检测失败而没启动（报 `open terminal failed: not a terminal`），加 `CI=true` 前缀绕过；改代码后"效果没变化"要先确认 dev server 真的存活、真的是最新代码在跑，不要在业务逻辑里继续找原因。

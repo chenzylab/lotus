@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -980,6 +980,49 @@ export function App() @{
                     ]}
                     aria-label="alternate Timeline"
                 />
+            </div>
+        </Space>
+
+        <Divider>Image</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div>
+                <TypographyText type="secondary">基础用法（点击可预览大图）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Image
+                        src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png"
+                        alt="示例图片"
+                        width={120}
+                        height={120}
+                        aria-label="基础 Image"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">加载失败 fallback</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Image
+                        src="https://not-exist.invalid/broken.png"
+                        width={120}
+                        height={120}
+                        preview={false}
+                        aria-label="加载失败 Image"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">ImagePreviewGroup（多图批量预览，点击任意一张后可左右切换）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <ImagePreviewGroup>
+                        <Space style={{ gap: '8px' }}>
+                            <Image src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png?i=1" width={80} height={80} aria-label="Group 图片一" />
+                            <Image src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png?i=2" width={80} height={80} aria-label="Group 图片二" />
+                            <Image src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png?i=3" width={80} height={80} aria-label="Group 图片三" />
+                        </Space>
+                    </ImagePreviewGroup>
+                </div>
             </div>
         </Space>
 

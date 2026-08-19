@@ -174,6 +174,14 @@ export {
     type TimelinePosition,
 } from './show/timeline/item.tsrx';
 export {
+    Image,
+    type ImageProps,
+} from './show/image/index.tsrx';
+export {
+    ImagePreviewGroup,
+    type ImagePreviewGroupProps,
+} from './show/image/preview-group.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

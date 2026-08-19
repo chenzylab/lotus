@@ -65,7 +65,7 @@
 - [x] Tooltip 文字提示
 - [x] List 列表
 - [x] Timeline 时间轴
-- [ ] Image 图片
+- [x] Image 图片（含 ImagePreviewGroup 多图批量预览：缩放/旋转/拖拽平移/左右切换）
 - [ ] Carousel 走马灯
 - [ ] Modal 对话框
 - [ ] SideSheet 侧边栏
