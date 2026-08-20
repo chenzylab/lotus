@@ -44,6 +44,42 @@ const enUS: LocaleShape = {
     skip: 'Skip',
     finish: 'Finish',
   },
+  TimePicker: {
+    placeholder: 'Select time',
+    placeholderRange: 'Select time range',
+    hour: '',
+    minute: '',
+    second: '',
+    hourLabel: 'Hour',
+    minuteLabel: 'Minute',
+    secondLabel: 'Second',
+    AM: 'AM',
+    PM: 'PM',
+    begin: 'Begin',
+    end: 'End',
+  },
+  DatePicker: {
+    placeholder: {
+      date: 'Select date',
+      dateRange: 'Select date range',
+      dateTime: 'Select date time',
+      dateTimeRange: 'Select date time range',
+      month: 'Select month',
+      monthRange: 'Select month range',
+      year: 'Select year',
+    },
+    weeks: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    months: [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ],
+    monthText: (year, month) => `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1]} ${year}`,
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    clear: 'Clear',
+    today: 'Today',
+    now: 'Now',
+  },
 };
 
 export default enUS;

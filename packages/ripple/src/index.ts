@@ -120,6 +120,14 @@ export {
     type AutoCompleteDataItem,
 } from './input/auto-complete/index.tsrx';
 export {
+    TimePicker,
+    type TimePickerProps,
+    type TimePickerType,
+    type TimePickerSize,
+    type TimePickerValidateStatus,
+    type TimePickerValue,
+} from './input/time-picker/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,

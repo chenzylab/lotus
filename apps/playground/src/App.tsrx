@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -239,6 +239,9 @@ export function App() @{
     let &[autoCompleteControlledValue] = track<string>('北京');
     let &[autoCompleteLoading] = track<boolean>(false);
     let &[autoCompleteLoadingResult] = track<string[]>([]);
+    let &[timePickerChangeLog] = track<string>('');
+    let &[timePickerRangeChangeLog] = track<string>('');
+    let &[timePickerControlledValue] = track<Date | null>(null);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2734,6 +2737,66 @@ export function App() @{
                 }}
                 aria-label="AutoComplete loading"
             />
+        </div>
+
+        <Divider>TimePicker：基础用法（type=time，24 小时制）</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                onChange={(v) => { timePickerChangeLog = `变化：${v ? (v as Date).toLocaleTimeString() : 'null'}`; }}
+                aria-label="TimePicker 基础"
+            />
+            <TypographyText type="secondary" aria-label="TimePicker 事件日志">{timePickerChangeLog}</TypographyText>
+        </div>
+
+        <Divider>TimePicker：12 小时制 + 秒步进</Divider>
+
+        <div style={{ width: '260px' }}>
+            <TimePicker use12Hours secondStep={10} aria-label="TimePicker 12小时制" />
+        </div>
+
+        <Divider>TimePicker：timeRange（范围选择，左右双列）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <TimePicker
+                type="timeRange"
+                onChange={(v) => {
+                    const pair = v as [Date | null, Date | null];
+                    timePickerRangeChangeLog = `变化：${pair[0]?.toLocaleTimeString() ?? 'null'} ~ ${pair[1]?.toLocaleTimeString() ?? 'null'}`;
+                }}
+                aria-label="TimePicker 范围"
+            />
+            <TypographyText type="secondary" aria-label="TimePicker 范围事件日志">{timePickerRangeChangeLog}</TypographyText>
+        </div>
+
+        <Divider>TimePicker：禁用小时/分钟 + 隐藏禁用项</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                disabledHours={() => [0, 1, 2, 3, 4, 5, 22, 23]}
+                disabledMinutes={(h) => (h === 9 ? [0, 15, 30, 45] : [])}
+                hideDisabledOptions
+                aria-label="TimePicker 禁用项"
+            />
+        </div>
+
+        <Divider>TimePicker：受控（外部按钮驱动）</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                value={timePickerControlledValue}
+                onChange={(v) => { timePickerControlledValue = v as Date | null; }}
+                aria-label="TimePicker 受控示例"
+            />
+            <Button
+                onClick={() => {
+                    const d = new Date();
+                    d.setHours(14, 30, 0, 0);
+                    timePickerControlledValue = timePickerControlledValue ? null : d;
+                }}
+            >
+                切换 TimePicker
+            </Button>
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>

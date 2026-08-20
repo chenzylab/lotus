@@ -44,6 +44,41 @@ export interface UserGuideLocale {
   finish: string;
 }
 
+export interface TimePickerLocale {
+  placeholder: string;
+  placeholderRange: string;
+  hour: string;
+  minute: string;
+  second: string;
+  hourLabel: string;
+  minuteLabel: string;
+  secondLabel: string;
+  AM: string;
+  PM: string;
+  begin: string;
+  end: string;
+}
+
+export interface DatePickerLocale {
+  placeholder: {
+    date: string;
+    dateRange: string;
+    dateTime: string;
+    dateTimeRange: string;
+    month: string;
+    monthRange: string;
+    year: string;
+  };
+  weeks: [string, string, string, string, string, string, string];
+  months: [string, string, string, string, string, string, string, string, string, string, string, string];
+  monthText: (year: number, month: number) => string;
+  confirm: string;
+  cancel: string;
+  clear: string;
+  today: string;
+  now: string;
+}
+
 export interface LocaleShape {
   code: string;
   dir: 'ltr' | 'rtl';
@@ -55,4 +90,6 @@ export interface LocaleShape {
   Modal: ModalLocale;
   Calendar: CalendarLocale;
   UserGuide: UserGuideLocale;
+  TimePicker: TimePickerLocale;
+  DatePicker: DatePickerLocale;
 }
