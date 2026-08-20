@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -38,6 +38,11 @@ const cascaderRegionData: CascaderNodeData[] = [
 const cascaderLazyData: CascaderNodeData[] = [
     { value: 'fruit', label: '水果', isLeaf: false },
     { value: 'vegetable', label: '蔬菜', isLeaf: false },
+];
+
+const treeSelectLazyData: TreeNodeData[] = [
+    { key: 'fruit', label: '水果', isLeaf: false },
+    { key: 'vegetable', label: '蔬菜', isLeaf: false },
 ];
 
 // Cropper 演示用同源 SVG data URI：跨域图片会污染 canvas，getImageData/toDataURL 会被浏览器拒绝
@@ -224,6 +229,9 @@ export function App() @{
     let &[cascaderMultipleValue] = track<Array<Array<string | number>>>([]);
     let &[cascaderChangeLog] = track<string>('');
     let &[cascaderLazyTreeData] = track<CascaderNodeData[]>(cascaderLazyData);
+    let &[treeSelectControlledValue] = track<string>('dept-1-1-1');
+    let &[treeSelectChangeLog] = track<string>('');
+    let &[treeSelectLazyTreeData] = track<TreeNodeData[]>(treeSelectLazyData);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2550,6 +2558,100 @@ export function App() @{
                     });
                 }}
                 aria-label="Cascader 懒加载"
+            />
+        </div>
+
+        <Divider>TreeSelect：单选</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div>
+                <div style={{ width: '280px' }}>
+                    <TreeSelect
+                        treeData={treeDemoData}
+                        placeholder="请选择员工"
+                        onChange={(v) => { treeSelectChangeLog = `单选 onChange: ${JSON.stringify(v)}`; }}
+                        aria-label="TreeSelect 单选"
+                    />
+                </div>
+                <TypographyText type="secondary" aria-label="TreeSelect 事件日志">{treeSelectChangeLog}</TypographyText>
+            </div>
+        </Space>
+
+        <Divider>TreeSelect：多选（三态级联 + tag 折叠展示）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                showClear
+                maxTagCount={2}
+                placeholder="请选择部门/员工"
+                aria-label="TreeSelect 多选"
+            />
+        </div>
+
+        <Divider>TreeSelect：多选 checkRelation=unRelated（选中态互不联动）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                checkRelation="unRelated"
+                showClear
+                placeholder="请选择（不联动父子）"
+                aria-label="TreeSelect unRelated"
+            />
+        </div>
+
+        <Divider>TreeSelect：搜索</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                filterTreeNode
+                searchPlaceholder="搜索姓名/部门"
+                placeholder="请选择员工"
+                aria-label="TreeSelect 搜索"
+            />
+        </div>
+
+        <Divider>TreeSelect：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <div style={{ width: '280px' }}>
+                <TreeSelect
+                    treeData={treeDemoData}
+                    value={treeSelectControlledValue}
+                    onChange={(v) => { if (typeof v === 'string') treeSelectControlledValue = v; }}
+                    aria-label="TreeSelect 受控示例"
+                />
+            </div>
+            <Button
+                onClick={() => {
+                    treeSelectControlledValue = treeSelectControlledValue === 'dept-1-1-1' ? 'dept-2-1' : 'dept-1-1-1';
+                }}
+            >
+                切换 TreeSelect
+            </Button>
+        </Space>
+
+        <Divider>TreeSelect：懒加载（loadData 异步追加子节点）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeSelectLazyTreeData}
+                placeholder="请选择分类"
+                loadData={(node) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            const children = node.key === 'fruit'
+                                ? [{ key: 'apple', label: '苹果' }, { key: 'banana', label: '香蕉' }]
+                                : [{ key: 'carrot', label: '胡萝卜' }, { key: 'potato', label: '土豆' }];
+                            resolve(children);
+                        }, 400);
+                    });
+                }}
+                aria-label="TreeSelect 懒加载"
             />
         </div>
 

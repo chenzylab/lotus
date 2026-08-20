@@ -89,7 +89,7 @@ test.describe('Select', () => {
     // 受控 prop 变化不会传导到组件视觉，详见
     // specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #30。
     await page.goto('/');
-    const trigger = page.getByLabel('Select 受控示例');
+    const trigger = page.getByLabel('Select 受控示例', { exact: true });
     const toggleButton = page.getByRole('button', { name: '切换 Select' });
 
     await expect(trigger).toHaveText('抖音');

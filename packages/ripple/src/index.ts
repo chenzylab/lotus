@@ -105,6 +105,13 @@ export {
     type CascaderCheckRelation,
 } from './input/cascader/index.tsrx';
 export {
+    TreeSelect,
+    type TreeSelectProps,
+    type TreeSelectSize,
+    type TreeSelectValidateStatus,
+    type TreeSelectCheckRelation,
+} from './input/tree-select/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,

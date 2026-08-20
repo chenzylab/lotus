@@ -24,6 +24,7 @@ export default [
       'apps/playground/src/App.tsrx',
       'packages/ripple/src/input/cascader/index.tsrx',
       'packages/ripple/src/input/form/field.tsrx',
+      'packages/ripple/src/input/tree-select/index.tsrx',
       'packages/ripple/src/navigation/pagination/index.tsrx',
       'packages/ripple/src/navigation/tree/index.tsrx',
     ],
