@@ -85,7 +85,7 @@ function pad2(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
 }
 
-interface ColumnsProps {
+export interface ColumnsProps {
     date: Date | null;
     format: string;
     use12Hours: boolean;
@@ -110,7 +110,7 @@ interface ColumnsProps {
 }
 
 /** 单侧时间列面板：ampm?/hour/minute/second，对齐参考实现 Combobox（照搬 Semi ComboxFoundation）。 */
-function TimeColumns(&{
+export function TimeColumns(&{
     date,
     format,
     use12Hours,

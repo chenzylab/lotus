@@ -21,6 +21,7 @@ catalog:
   '@ripple-ts/adapter-node': 0.3.123
   marked: 18.0.9
   shiki: 4.4.3
+  date-fns: 4.4.0
 
 minimumReleaseAgeExclude:
   - '@ripple-ts/adapter-node@0.3.123'

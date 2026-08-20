@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -242,6 +242,9 @@ export function App() @{
     let &[timePickerChangeLog] = track<string>('');
     let &[timePickerRangeChangeLog] = track<string>('');
     let &[timePickerControlledValue] = track<Date | null>(null);
+    let &[datePickerChangeLog] = track<string>('');
+    let &[datePickerRangeChangeLog] = track<string>('');
+    let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2796,6 +2799,85 @@ export function App() @{
                 }}
             >
                 切换 TimePicker
+            </Button>
+        </div>
+
+        <Divider>DatePicker：基础用法（type=date）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                onChange={(v) => { datePickerChangeLog = `变化：${v ? (v as Date).toDateString() : 'null'}`; }}
+                aria-label="DatePicker 基础"
+            />
+            <TypographyText type="secondary" aria-label="DatePicker 事件日志">{datePickerChangeLog}</TypographyText>
+        </div>
+
+        <Divider>DatePicker：dateRange（范围选择，双面板）</Divider>
+
+        <div style={{ width: '520px' }}>
+            <DatePicker
+                type="dateRange"
+                onChange={(v) => {
+                    const pair = v as [Date | null, Date | null];
+                    datePickerRangeChangeLog = `变化：${pair?.[0]?.toDateString() ?? 'null'} ~ ${pair?.[1]?.toDateString() ?? 'null'}`;
+                }}
+                aria-label="DatePicker 范围"
+            />
+            <TypographyText type="secondary" aria-label="DatePicker 范围事件日志">{datePickerRangeChangeLog}</TypographyText>
+        </div>
+
+        <Divider>DatePicker：禁用日期（周末不可选）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                disabledDate={(d) => d.getDay() === 0 || d.getDay() === 6}
+                aria-label="DatePicker 禁用周末"
+            />
+        </div>
+
+        <Divider>DatePicker：快捷选项 presets</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                presets={[
+                    { text: '今天', start: () => new Date() },
+                    { text: '一周后', start: () => { const d = new Date(); d.setDate(d.getDate() + 7); return d; } },
+                ]}
+                aria-label="DatePicker presets"
+            />
+        </div>
+
+        <Divider>DatePicker：dateTime（日期时间联动）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker type="dateTime" aria-label="DatePicker 日期时间" />
+        </div>
+
+        <Divider>DatePicker：month / year 类型（年月滚轮）</Divider>
+
+        <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ width: '200px' }}>
+                <DatePicker type="month" aria-label="DatePicker 月份" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <DatePicker type="year" aria-label="DatePicker 年份" />
+            </div>
+        </div>
+
+        <Divider>DatePicker：受控（外部按钮驱动）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                value={datePickerControlledValue}
+                onChange={(v) => { datePickerControlledValue = v as Date | null; }}
+                aria-label="DatePicker 受控示例"
+            />
+            <Button
+                onClick={() => {
+                    datePickerControlledValue = datePickerControlledValue ? null : new Date(2024, 2, 5);
+                }}
+            >
+                切换 DatePicker
             </Button>
         </div>
 

@@ -128,6 +128,14 @@ export {
     type TimePickerValue,
 } from './input/time-picker/index.tsrx';
 export {
+    DatePicker,
+    type DatePickerProps,
+    type DatePickerType,
+    type DatePickerSize,
+    type DatePickerValidateStatus,
+    type DatePickerValue,
+} from './input/date-picker/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,

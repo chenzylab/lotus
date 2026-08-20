@@ -84,7 +84,7 @@
 - [x] Cascader 级联选择（单个 Popover + 内部横向 flex 多列面板，对齐 Semi 架构不做多浮层依次定位；多选三态级联直接复用 Tree 的 check-cascade 算法，Semi 源码本身也是同一份算法；`autoMergeValue`/`leafOnly`/`checkRelation` 选中态折叠层为 Cascader 特有；搜索用路径打平匹配，模型与 Tree 的"展开祖先链"不同；支持 loadData 异步懒加载）
 - [x] TreeSelect 树形选择（"Select 式触发器外壳 + Tree 渲染逻辑内联进浮层"，算法层 100% 复用 Tree 的 tree-data/check-cascade/expand/search 四个纯函数模块零改动，不重新实现；不直接嵌入整个 Tree 组件避免双重搜索框/状态同步问题；新增 `checkRelation='unRelated'` 独立勾选分支与 `maxTagCount` 多选标签折叠——lotus 目前唯一支持标签折叠的选择器类组件）
 - [x] AutoComplete 自动补全（增强型 Input 而非选择器：允许自由文本，无内置候选项过滤/匹配算法，`data` 展示什么完全由消费方在 `onSearch` 回调里自行决定；复用 Cascader 已验证的 Popover(trigger="custom") + document mousedown 双 contains 判断浮层开关模式，但触发器点击语义改为"仅关闭态点击才打开，已打开时点击输入框内部不关闭"——因为触发器本身是可编辑文本框，不能像 Cascader/TreeSelect 那样无条件 toggle；键盘导航含循环回绕、跳过 disabled 项）
-- [ ] DatePicker 日期选择器
+- [x] DatePicker 日期选择器（参考同源项目 chenzy.design 的 Semi 对齐实现移植，date-fns 驱动，是 lotus Foundation 层第一次引入外部依赖；覆盖全部 7 种 type：date/dateRange/dateTime/dateTimeRange/month/monthRange/year；date/dateRange 走日历网格，month/monthRange/year 走独立的 ScrollList/ScrollItem 年月滚轮，dateTime 系列复用 TimePicker 拆出的 TimeColumns 时间列；range 选择状态机、双面板防撞月导航、disabledDate、presets 快捷选项、needConfirm+Footer 确认流程、点导航标题 drill-down 到年月滚轮再跳回日历网格均已实现；insetInput 面板内输入框未接入 UI 层（Foundation 方法已就绪，留作后续迭代）；timeZone 时区转换未实现（Semi 该特性依赖 date-fns-tz + IANA 偏移表，收益/成本比低，明确排除在外））
 - [x] TimePicker 时间选择器（为支撑 DatePicker 的 dateTime 系列而先行拆出：触发器复用 Input 可键入时间串，面板复用 ScrollList/ScrollItem 滚动列；type='time' 单选/type='timeRange' 范围选择共用同一个可编辑输入框，按 rangeSeparator 拆两端；12 小时制 AM/PM 列、disabledHours/Minutes/Seconds、hideDisabledOptions、按已选值联动的 disabledTime 全部对齐 Semi；浮层开关复用 AutoComplete 已验证的"仅关闭态点击才打开"模式）
 - [ ] Slider 滑动输入条
 - [ ] Rating 评分
