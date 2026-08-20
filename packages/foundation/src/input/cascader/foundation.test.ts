@@ -1,0 +1,192 @@
+import { describe, it, expect } from 'vitest';
+import { buildCascaderEntities, joinValuePath, type CascaderNodeData, type CascaderState } from './foundation.js';
+import { CascaderFoundation } from './foundation.js';
+
+const DATA: CascaderNodeData[] = [
+  {
+    value: 'zhejiang',
+    label: '浙江',
+    children: [
+      {
+        value: 'hangzhou',
+        label: '杭州',
+        children: [
+          { value: 'xihu', label: '西湖区' },
+          { value: 'binjiang', label: '滨江区' },
+        ],
+      },
+      { value: 'ningbo', label: '宁波', children: [{ value: 'yinzhou', label: '鄞州区' }] },
+    ],
+  },
+  { value: 'jiangsu', label: '江苏', children: [{ value: 'nanjing', label: '南京' }] },
+];
+
+function makeFoundation(initial: Partial<CascaderState> = {}) {
+  let state: CascaderState = {
+    activeKeys: new Set(),
+    selectedKey: null,
+    checkedKeys: new Set(),
+    halfCheckedKeys: new Set(),
+    searchInput: '',
+    loadingKeys: new Set(),
+    loadedKeys: new Set(),
+    ...initial,
+  };
+  const foundation = new CascaderFoundation({
+    getState: () => state,
+    setState: (patch) => { state = { ...state, ...patch }; },
+  });
+  return { foundation, getState: () => state };
+}
+
+describe('handleActivate', () => {
+  it('把 activeKeys 设为该节点的完整祖先路径', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou']);
+    foundation.handleActivate(key, entities);
+    expect(getState().activeKeys).toEqual(new Set([joinValuePath(['zhejiang']), key]));
+  });
+});
+
+describe('handleSingleSelect', () => {
+  it('非叶子节点默认不可选中，只展开（changeOnSelect=false）', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou']);
+    const result = foundation.handleSingleSelect(key, entities, false);
+    expect(result.selectedKey).toBeNull();
+    expect(result.canClose).toBe(false);
+    expect(getState().selectedKey).toBeNull();
+    expect(getState().activeKeys.has(key)).toBe(true);
+  });
+
+  it('changeOnSelect=true 时非叶子节点可直接选中', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou']);
+    const result = foundation.handleSingleSelect(key, entities, true);
+    expect(result.selectedKey).toBe(key);
+    expect(result.canClose).toBe(false);
+    expect(getState().selectedKey).toBe(key);
+  });
+
+  it('叶子节点选中后 canClose=true', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
+    const result = foundation.handleSingleSelect(key, entities, false);
+    expect(result.selectedKey).toBe(key);
+    expect(result.canClose).toBe(true);
+  });
+
+  it('key 不存在时返回 null/false', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation } = makeFoundation();
+    const result = foundation.handleSingleSelect('not-exist', entities, false);
+    expect(result).toEqual({ selectedKey: null, canClose: false });
+  });
+});
+
+describe('handleMultipleCheck', () => {
+  it('related（默认）：勾选父节点会级联选中全部子孙', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou']);
+    const result = foundation.handleMultipleCheck(key, entities);
+    expect(result.checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(true);
+    expect(result.checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'binjiang']))).toBe(true);
+  });
+
+  it('related：再次点击已选中节点走取消勾选分支', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
+    foundation.handleMultipleCheck(key, entities);
+    expect(getState().checkedKeys.has(key)).toBe(true);
+    foundation.handleMultipleCheck(key, entities);
+    expect(getState().checkedKeys.has(key)).toBe(false);
+  });
+
+  it('unRelated：勾选/取消只影响当前 key，不做三态级联传播', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const parentKey = joinValuePath(['zhejiang', 'hangzhou']);
+    foundation.handleMultipleCheck(parentKey, entities, 'unRelated');
+    expect(getState().checkedKeys).toEqual(new Set([parentKey]));
+    expect(getState().checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(false);
+  });
+});
+
+describe('syncCheckedKeysFromValue', () => {
+  it('从外部 valuePaths 反推 checkedKeys（含三态级联半选标记）', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    foundation.syncCheckedKeysFromValue([['zhejiang', 'hangzhou', 'xihu']], entities);
+    expect(getState().checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(true);
+    expect(getState().halfCheckedKeys.has(joinValuePath(['zhejiang', 'hangzhou']))).toBe(true);
+    expect(getState().halfCheckedKeys.has(joinValuePath(['zhejiang']))).toBe(true);
+  });
+
+  it('不存在的 valuePath 被忽略，不报错', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    foundation.syncCheckedKeysFromValue([['unknown', 'path']], entities);
+    expect(getState().checkedKeys.size).toBe(0);
+  });
+});
+
+describe('resolveValue', () => {
+  it('基于当前 checkedKeys 折叠出对外 value（默认 autoMergeValue）', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation } = makeFoundation();
+    foundation.handleMultipleCheck(joinValuePath(['zhejiang', 'hangzhou']), entities);
+    const value = foundation.resolveValue(entities);
+    expect(value).toEqual([['zhejiang', 'hangzhou']]);
+  });
+});
+
+describe('computeColumns', () => {
+  it('基于当前 activeKeys 计算多列面板数据', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation } = makeFoundation();
+    foundation.handleActivate(joinValuePath(['zhejiang']), entities);
+    const columns = foundation.computeColumns(DATA, entities);
+    expect(columns.length).toBe(2);
+    expect(columns[1].map((e) => e.data.label)).toEqual(['杭州', '宁波']);
+  });
+});
+
+describe('handleSearch', () => {
+  it('更新 searchInput 并返回匹配结果', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const result = foundation.handleSearch('西湖', entities, true);
+    expect(getState().searchInput).toBe('西湖');
+    expect(result.length).toBe(1);
+  });
+});
+
+describe('handleLoadStart / handleLoadEnd', () => {
+  it('loadStart 加入 loadingKeys', () => {
+    const { foundation, getState } = makeFoundation();
+    foundation.handleLoadStart('k1');
+    expect(getState().loadingKeys.has('k1')).toBe(true);
+  });
+
+  it('loadEnd 成功时移出 loadingKeys 并加入 loadedKeys', () => {
+    const { foundation, getState } = makeFoundation();
+    foundation.handleLoadStart('k1');
+    foundation.handleLoadEnd('k1', true);
+    expect(getState().loadingKeys.has('k1')).toBe(false);
+    expect(getState().loadedKeys.has('k1')).toBe(true);
+  });
+
+  it('loadEnd 失败时移出 loadingKeys 但不加入 loadedKeys（允许重试）', () => {
+    const { foundation, getState } = makeFoundation();
+    foundation.handleLoadStart('k1');
+    foundation.handleLoadEnd('k1', false);
+    expect(getState().loadingKeys.has('k1')).toBe(false);
+    expect(getState().loadedKeys.has('k1')).toBe(false);
+  });
+});

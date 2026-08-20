@@ -1,12 +1,44 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
-import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData } from '@lotus/ripple';
+import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
 
 const tagColors: TagColor[] = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'grey', 'white'];
+
+const cascaderRegionData: CascaderNodeData[] = [
+    {
+        value: 'zhejiang',
+        label: '浙江',
+        children: [
+            {
+                value: 'hangzhou',
+                label: '杭州',
+                children: [
+                    { value: 'xihu', label: '西湖区' },
+                    { value: 'binjiang', label: '滨江区' },
+                ],
+            },
+            { value: 'ningbo', label: '宁波', children: [{ value: 'yinzhou', label: '鄞州区' }] },
+        ],
+    },
+    {
+        value: 'jiangsu',
+        label: '江苏',
+        children: [
+            { value: 'nanjing', label: '南京', children: [{ value: 'xuanwu', label: '玄武区' }] },
+            { value: 'suzhou', label: '苏州', children: [{ value: 'gusu', label: '姑苏区' }] },
+        ],
+    },
+    { value: 'shanghai', label: '上海', disabled: true, children: [{ value: 'pudong', label: '浦东新区' }] },
+];
+
+const cascaderLazyData: CascaderNodeData[] = [
+    { value: 'fruit', label: '水果', isLeaf: false },
+    { value: 'vegetable', label: '蔬菜', isLeaf: false },
+];
 
 // Cropper 演示用同源 SVG data URI：跨域图片会污染 canvas，getImageData/toDataURL 会被浏览器拒绝
 // （SecurityError: The canvas has been tainted by cross-origin data），改用同源资源规避。
@@ -188,6 +220,10 @@ export function App() @{
     let &[radioGroupControlledValue] = track<string | number>('A');
     let &[inputNumberControlledValue] = track<number>(0);
     let &[selectControlledValue] = track<string>('douyin');
+    let &[cascaderControlledValue] = track<Array<string | number>>(['zhejiang', 'hangzhou', 'xihu']);
+    let &[cascaderMultipleValue] = track<Array<Array<string | number>>>([]);
+    let &[cascaderChangeLog] = track<string>('');
+    let &[cascaderLazyTreeData] = track<CascaderNodeData[]>(cascaderLazyData);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2431,6 +2467,91 @@ export function App() @{
             </div>
             <Button onClick={() => { selectControlledValue = selectControlledValue === 'douyin' ? 'xigua' : 'douyin'; }}>切换 Select</Button>
         </Space>
+
+        <Divider>Cascader：单选（非叶子节点点击展开下一级）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '280px' }}>
+                <Cascader
+                    treeData={cascaderRegionData}
+                    placeholder="请选择省市区"
+                    onChange={(v) => { cascaderChangeLog = `单选 onChange: ${JSON.stringify(v)}`; }}
+                    aria-label="Cascader 单选"
+                />
+            </div>
+            <TypographyText type="secondary" aria-label="Cascader 单选事件日志">{cascaderChangeLog}</TypographyText>
+        </Space>
+
+        <Divider>Cascader：多选（三态级联 + tag 折叠展示）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Cascader
+                treeData={cascaderRegionData}
+                multiple
+                showClear
+                placeholder="请选择多个地区"
+                onChange={(v) => { cascaderChangeLog = `多选 onChange: ${JSON.stringify(v)}`; }}
+                aria-label="Cascader 多选"
+            />
+        </div>
+
+        <Divider>Cascader：搜索（内置路径文本匹配，仅展示叶子节点结果）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderRegionData}
+                filterTreeNode
+                searchPlaceholder="搜索地区"
+                placeholder="请选择省市区"
+                aria-label="Cascader 搜索"
+            />
+        </div>
+
+        <Divider>Cascader：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <div style={{ width: '280px' }}>
+                <Cascader
+                    treeData={cascaderRegionData}
+                    value={cascaderControlledValue}
+                    onChange={(v) => { if (Array.isArray(v) && typeof v[0] !== 'object') cascaderControlledValue = v as Array<string | number>; }}
+                    aria-label="Cascader 受控示例"
+                />
+            </div>
+            <Button
+                onClick={() => {
+                    cascaderControlledValue = cascaderControlledValue[0] === 'zhejiang'
+                        ? ['jiangsu', 'suzhou', 'gusu']
+                        : ['zhejiang', 'hangzhou', 'xihu'];
+                }}
+            >
+                切换 Cascader
+            </Button>
+        </Space>
+
+        <Divider>Cascader：懒加载（loadData 异步追加子节点）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderLazyTreeData}
+                placeholder="请选择分类"
+                loadData={(entity) => {
+                    return new Promise((resolve) => {
+                        setTimeout(() => {
+                            cascaderLazyTreeData = cascaderLazyTreeData.map((node) => {
+                                if (node.value !== entity.value) return node;
+                                const children = entity.value === 'fruit'
+                                    ? [{ value: 'apple', label: '苹果' }, { value: 'banana', label: '香蕉' }]
+                                    : [{ value: 'carrot', label: '胡萝卜' }, { value: 'potato', label: '土豆' }];
+                                return { ...node, children };
+                            });
+                            resolve();
+                        }, 400);
+                    });
+                }}
+                aria-label="Cascader 懒加载"
+            />
+        </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>
 

@@ -22,6 +22,7 @@ export default [
     files: [
       'apps/docs/src/demos/**',
       'apps/playground/src/App.tsrx',
+      'packages/ripple/src/input/cascader/index.tsrx',
       'packages/ripple/src/input/form/field.tsrx',
       'packages/ripple/src/navigation/pagination/index.tsrx',
       'packages/ripple/src/navigation/tree/index.tsrx',

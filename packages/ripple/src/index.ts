@@ -97,6 +97,14 @@ export {
     type SelectValidateStatus,
 } from './input/select/index.tsrx';
 export {
+    Cascader,
+    type CascaderProps,
+    type CascaderNodeData,
+    type CascaderSize,
+    type CascaderValidateStatus,
+    type CascaderCheckRelation,
+} from './input/cascader/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,

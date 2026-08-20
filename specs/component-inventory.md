@@ -81,7 +81,7 @@
 > 这批组件大多存在非平凡状态机和/或大数据虚拟化需求，Foundation 层价值最高，同时是 `perf-baseline` skill 的主要适用对象。
 
 - [x] Select 选择器（提前于 Phase 1 随核心表单一并交付）
-- [ ] Cascader 级联选择
+- [x] Cascader 级联选择（单个 Popover + 内部横向 flex 多列面板，对齐 Semi 架构不做多浮层依次定位；多选三态级联直接复用 Tree 的 check-cascade 算法，Semi 源码本身也是同一份算法；`autoMergeValue`/`leafOnly`/`checkRelation` 选中态折叠层为 Cascader 特有；搜索用路径打平匹配，模型与 Tree 的"展开祖先链"不同；支持 loadData 异步懒加载）
 - [ ] TreeSelect 树形选择
 - [ ] AutoComplete 自动补全
 - [ ] DatePicker 日期选择器
