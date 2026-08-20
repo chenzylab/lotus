@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -44,6 +44,8 @@ const treeSelectLazyData: TreeNodeData[] = [
     { key: 'fruit', label: '水果', isLeaf: false },
     { key: 'vegetable', label: '蔬菜', isLeaf: false },
 ];
+
+const autoCompleteAllCities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '苏州'];
 
 // Cropper 演示用同源 SVG data URI：跨域图片会污染 canvas，getImageData/toDataURL 会被浏览器拒绝
 // （SecurityError: The canvas has been tainted by cross-origin data），改用同源资源规避。
@@ -232,6 +234,11 @@ export function App() @{
     let &[treeSelectControlledValue] = track<string>('dept-1-1-1');
     let &[treeSelectChangeLog] = track<string>('');
     let &[treeSelectLazyTreeData] = track<TreeNodeData[]>(treeSelectLazyData);
+    let &[autoCompleteSearchResult] = track<string[]>(autoCompleteAllCities);
+    let &[autoCompleteChangeLog] = track<string>('');
+    let &[autoCompleteControlledValue] = track<string>('北京');
+    let &[autoCompleteLoading] = track<boolean>(false);
+    let &[autoCompleteLoadingResult] = track<string[]>([]);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2652,6 +2659,80 @@ export function App() @{
                     });
                 }}
                 aria-label="TreeSelect 懒加载"
+            />
+        </div>
+
+        <Divider>AutoComplete：基础用法（onSearch 里自行过滤候选项，组件本身不做匹配）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div>
+                <div style={{ width: '280px' }}>
+                    <AutoComplete
+                        data={autoCompleteSearchResult}
+                        placeholder="输入城市名搜索"
+                        showClear
+                        onSearch={(v) => {
+                            const input = String(v);
+                            autoCompleteSearchResult = input
+                                ? autoCompleteAllCities.filter((c) => c.includes(input))
+                                : autoCompleteAllCities;
+                        }}
+                        onChange={(v) => { autoCompleteChangeLog = `onChange: ${JSON.stringify(v)}`; }}
+                        aria-label="AutoComplete 基础"
+                    />
+                </div>
+                <TypographyText type="secondary" aria-label="AutoComplete 事件日志">{autoCompleteChangeLog}</TypographyText>
+            </div>
+        </Space>
+
+        <Divider>AutoComplete：defaultActiveFirstOption（打开面板默认高亮第一项，回车直接选中）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <AutoComplete
+                data={autoCompleteAllCities}
+                defaultActiveFirstOption
+                placeholder="按方向键/回车试试"
+                aria-label="AutoComplete defaultActiveFirstOption"
+            />
+        </div>
+
+        <Divider>AutoComplete：受控（外部按钮驱动）</Divider>
+
+        <Space>
+            <div style={{ width: '280px' }}>
+                <AutoComplete
+                    data={autoCompleteAllCities}
+                    value={autoCompleteControlledValue}
+                    onChange={(v) => { autoCompleteControlledValue = String(v); }}
+                    aria-label="AutoComplete 受控示例"
+                />
+            </div>
+            <Button
+                onClick={() => {
+                    autoCompleteControlledValue = autoCompleteControlledValue === '北京' ? '上海' : '北京';
+                }}
+            >
+                切换 AutoComplete
+            </Button>
+        </Space>
+
+        <Divider>AutoComplete：loading（远程搜索加载态）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <AutoComplete
+                data={autoCompleteLoadingResult}
+                loading={autoCompleteLoading}
+                placeholder="模拟远程搜索"
+                onSearch={(v) => {
+                    const input = String(v);
+                    if (!input) { autoCompleteLoadingResult = []; autoCompleteLoading = false; return; }
+                    autoCompleteLoading = true;
+                    setTimeout(() => {
+                        autoCompleteLoadingResult = autoCompleteAllCities.filter((c) => c.includes(input));
+                        autoCompleteLoading = false;
+                    }, 500);
+                }}
+                aria-label="AutoComplete loading"
             />
         </div>
 

@@ -112,6 +112,14 @@ export {
     type TreeSelectCheckRelation,
 } from './input/tree-select/index.tsrx';
 export {
+    AutoComplete,
+    type AutoCompleteProps,
+    type AutoCompleteSize,
+    type AutoCompleteValidateStatus,
+    type AutoCompleteValue,
+    type AutoCompleteDataItem,
+} from './input/auto-complete/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
