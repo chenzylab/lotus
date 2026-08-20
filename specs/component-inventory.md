@@ -73,7 +73,7 @@
 - [x] OverflowList 自适应列表（仅 renderMode=collapse，不含 scroll 模式；ResizeObserver 驱动的两阶段渲染+线性累加折叠算法）
 - [x] ScrollList 滚动列表（wheel/normal 两种模式 + cycled 循环滚动，交互完全依赖原生滚动+JS吸附判定，对齐 Semi 的"零自研拖拽层"设计）
 - [x] Highlight 高亮（三段式纯函数流水线算法：findChunks→combineChunks→fillInChunks，对齐 Semi 的重叠合并策略）
-- [ ] Cropper 图片裁剪
+- [x] Cropper 图片裁剪（自研坐标系：`centerPoint` 表达图片/裁切框位置，8 方向拖拽+可选 aspectRatio 锁定，滚轮以鼠标为锚点缩放，绕裁切框中心旋转；导出用 Canvas 2D `getImageData`/`putImageData` 处理越界裁切；主动新增 Semi 没有的 `onCrop` 声明式回调 + `getCropperApi` 命令式 API 并存）
 - [ ] UserGuide 用户引导
 
 ## Phase 4 — 复杂数据录入与展示 (Data Entry 高阶 + Table)

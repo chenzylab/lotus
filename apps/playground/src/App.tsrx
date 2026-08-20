@@ -1,12 +1,29 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
+import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData } from '@lotus/ripple';
 
 const tagColors: TagColor[] = ['blue', 'red', 'green', 'orange', 'purple', 'cyan', 'grey', 'white'];
+
+// Cropper 演示用同源 SVG data URI：跨域图片会污染 canvas，getImageData/toDataURL 会被浏览器拒绝
+// （SecurityError: The canvas has been tainted by cross-origin data），改用同源资源规避。
+const CROPPER_DEMO_SRC =
+    'data:image/svg+xml;base64,' +
+    btoa(
+        unescape(
+            encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600">' +
+                    '<rect width="800" height="600" fill="#eef2ff"/>' +
+                    '<circle cx="250" cy="300" r="180" fill="#60a5fa"/>' +
+                    '<rect x="450" y="120" width="280" height="360" fill="#f472b6"/>' +
+                    '<text x="400" y="580" font-size="28" text-anchor="middle" fill="#1e293b">lotus cropper demo</text>' +
+                    '</svg>',
+            ),
+        ),
+    );
 
 const businessLineOptions: SelectOption[] = [
     { value: 'douyin', label: '抖音' },
@@ -175,6 +192,11 @@ export function App() @{
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
     let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
+    let &[cropperResultUrl] = track<string>('');
+    let &[cropperZoom] = track<number>(1);
+    let &[cropperRotate] = track<number>(0);
+    let &[cropperApiResultUrl] = track<string>('');
+    let cropperApiRef: CropperApi | undefined;
 
     <>
     <div style={{ padding: '32px' }}>
@@ -1571,6 +1593,96 @@ export function App() @{
                 <TypographyText type="secondary">关键词不存在时原样显示，无高亮</TypographyText>
                 <div style={{ marginTop: '8px' }}>
                     <Highlight sourceString="Nothing matches here" searchWords={['xyz']} aria-label="无匹配 Highlight" />
+                </div>
+            </div>
+        </Space>
+
+        <Divider>Cropper</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div>
+                <TypographyText type="secondary">基础用法：拖拽移动/缩放裁切框，滚轮缩放图片，拖拽图片平移</TypographyText>
+                <div style={{ marginTop: '8px', width: '400px', height: '300px' }}>
+                    <Cropper
+                        src={CROPPER_DEMO_SRC}
+                        style={{ width: '100%', height: '100%' }}
+                        aria-label="基础 Cropper"
+                        onCrop={(canvas: HTMLCanvasElement) => { cropperResultUrl = canvas.toDataURL(); }}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">导出预览（裁切框/缩放/旋转变化后 onCrop 实时回调）</TypographyText>
+                <div style={{ marginTop: '8px', width: '200px', height: '150px', border: '1px solid var(--lotus-color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    @if (cropperResultUrl) {
+                        <img src={cropperResultUrl} aria-label="Cropper 导出预览" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                    }
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">aspectRatio 锁定宽高比 = 16/9，shape=round 圆形裁切框</TypographyText>
+                <div style={{ marginTop: '8px', width: '400px', height: '300px' }}>
+                    <Cropper
+                        src={CROPPER_DEMO_SRC}
+                        aspectRatio={16 / 9}
+                        shape="round"
+                        style={{ width: '100%', height: '100%' }}
+                        aria-label="锁定比例 Cropper"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">受控 zoom + rotate（外部按钮驱动）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Space style={{ marginBottom: '8px' }}>
+                        <Button size="small" onClick={() => { cropperZoom = Math.min(3, Number((cropperZoom + 0.2).toFixed(2))); }}>放大</Button>
+                        <Button size="small" onClick={() => { cropperZoom = Math.max(0.1, Number((cropperZoom - 0.2).toFixed(2))); }}>缩小</Button>
+                        <Button size="small" onClick={() => { cropperRotate = (cropperRotate + 90) % 360; }}>旋转 90°</Button>
+                        <TypographyText aria-label="Cropper zoom 值">zoom: {cropperZoom.toFixed(2)} / rotate: {cropperRotate}</TypographyText>
+                    </Space>
+                    <div style={{ width: '400px', height: '300px' }}>
+                        <Cropper
+                            src={CROPPER_DEMO_SRC}
+                            zoom={cropperZoom}
+                            rotate={cropperRotate}
+                            onZoomChange={(z: number) => { cropperZoom = z; }}
+                            style={{ width: '100%', height: '100%' }}
+                            aria-label="受控 Cropper"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">getCropperApi 命令式获取裁切结果</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Space style={{ marginBottom: '8px' }}>
+                        <Button
+                            size="small"
+                            onClick={() => {
+                                const canvas = cropperApiRef?.getCropperCanvas();
+                                if (canvas) cropperApiResultUrl = canvas.toDataURL();
+                            }}
+                        >
+                            获取裁切结果
+                        </Button>
+                    </Space>
+                    <div style={{ width: '400px', height: '300px' }}>
+                        <Cropper
+                            src={CROPPER_DEMO_SRC}
+                            getCropperApi={(api: CropperApi) => { cropperApiRef = api; }}
+                            style={{ width: '100%', height: '100%' }}
+                            aria-label="命令式 Cropper"
+                        />
+                    </div>
+                    <div style={{ marginTop: '8px', width: '200px', height: '150px', border: '1px solid var(--lotus-color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        @if (cropperApiResultUrl) {
+                            <img src={cropperApiResultUrl} aria-label="命令式 Cropper 导出预览" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                        }
+                    </div>
                 </div>
             </div>
         </Space>

@@ -231,6 +231,14 @@ export {
     type HighlightSearchWordInput,
 } from './show/highlight/index.tsrx';
 export {
+    Cropper,
+    type CropperProps,
+    type CropperApi,
+    type CropperShape,
+    type CropperCornerDir,
+    type CropperInteractionMode,
+} from './show/cropper/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
