@@ -225,6 +225,12 @@ export {
     type ScrollListItemData,
 } from './show/scroll-list/item.tsrx';
 export {
+    Highlight,
+    type HighlightProps,
+    type HighlightComponent,
+    type HighlightSearchWordInput,
+} from './show/highlight/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

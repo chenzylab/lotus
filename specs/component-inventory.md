@@ -72,7 +72,7 @@
 - [x] Calendar 日历（仅 week/month 模式，不含 range/day 模式；重叠事件分组算法对齐 Semi 简化版——仅同起止时间并排，非通用区间重叠检测）
 - [x] OverflowList 自适应列表（仅 renderMode=collapse，不含 scroll 模式；ResizeObserver 驱动的两阶段渲染+线性累加折叠算法）
 - [x] ScrollList 滚动列表（wheel/normal 两种模式 + cycled 循环滚动，交互完全依赖原生滚动+JS吸附判定，对齐 Semi 的"零自研拖拽层"设计）
-- [ ] Highlight 高亮
+- [x] Highlight 高亮（三段式纯函数流水线算法：findChunks→combineChunks→fillInChunks，对齐 Semi 的重叠合并策略）
 - [ ] Cropper 图片裁剪
 - [ ] UserGuide 用户引导
 

@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -1504,6 +1504,73 @@ export function App() @{
                             aria-label="受控选择"
                         />
                     </ScrollList>
+                </div>
+            </div>
+        </Space>
+
+        <Divider>Highlight</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div>
+                <TypographyText type="secondary">基础用法：单个关键词高亮</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="The quick brown fox jumps over the lazy dog" searchWords={['fox']} aria-label="基础 Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">多个关键词同时高亮</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="The quick brown fox jumps over the lazy dog" searchWords={['quick', 'lazy', 'dog']} aria-label="多关键词 Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">重叠关键词自动合并（搜索 "abc" 和 "bcd"，命中 "abcd" 应合并为一段，不重复渲染）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="xxabcdxx" searchWords={['abc', 'bcd']} aria-label="重叠合并 Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">caseSensitive：大小写敏感（搜索 "Fox" 只命中大写开头）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="Fox fox FOX" searchWords={['Fox']} caseSensitive aria-label="大小写敏感 Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">autoEscape：关键词含正则特殊字符时按字面量匹配</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="Price: $9.99 (discounted)" searchWords={['$9.99']} aria-label="特殊字符转义 Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">ComplexSearchWord：不同关键词各自指定高亮样式</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight
+                        sourceString="Error: connection failed. Warning: retry limit reached."
+                        searchWords={[
+                            { text: 'Error', style: { backgroundColor: 'var(--lotus-color-danger-light-default)', color: 'var(--lotus-color-danger)' } },
+                            { text: 'Warning', style: { backgroundColor: 'var(--lotus-color-warning-light-default)', color: 'var(--lotus-color-warning)' } },
+                        ]}
+                        aria-label="ComplexSearchWord Highlight"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">component=span：非 mark 标签渲染高亮</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="Rendered with a span tag instead of mark" searchWords={['span']} component="span" aria-label="span component Highlight" />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">关键词不存在时原样显示，无高亮</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Highlight sourceString="Nothing matches here" searchWords={['xyz']} aria-label="无匹配 Highlight" />
                 </div>
             </div>
         </Space>
