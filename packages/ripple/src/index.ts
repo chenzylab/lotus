@@ -215,6 +215,16 @@ export {
     type OverflowListCollapseFrom,
 } from './show/overflow-list/index.tsrx';
 export {
+    ScrollList,
+    type ScrollListProps,
+} from './show/scroll-list/index.tsrx';
+export {
+    ScrollItem,
+    type ScrollItemProps,
+    type ScrollItemMode,
+    type ScrollListItemData,
+} from './show/scroll-list/item.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -163,6 +163,9 @@ export function App() @{
     let &[calendarWeekAnchor] = track<Date>(new Date(2026, 0, 15));
     let &[calendarMonthAnchor] = track<Date>(new Date(2026, 0, 15));
     let &[calendarClickLog] = track<string>('');
+    let &[scrollHourIndex] = track<number>(3);
+    let &[scrollMinuteIndex] = track<number>(0);
+    let &[scrollControlledIndex] = track<number>(2);
     let &[checkboxGroupControlledValue] = track<Array<string | number>>(['A']);
     let &[radioControlledChecked] = track<boolean>(false);
     let &[radioGroupControlledValue] = track<string | number>('A');
@@ -1425,6 +1428,82 @@ export function App() @{
                         overflowRenderer={(overflow) => <Tag color="grey">{`+${overflow.length}`}</Tag>}
                         aria-label="minVisibleItems OverflowList"
                     />
+                </div>
+            </div>
+        </Space>
+
+        <Divider>ScrollList</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
+            <div>
+                <TypographyText type="secondary">wheel 模式（默认）+ cycled 循环滚动：时/分两列组合模拟时间选择器</TypographyText>
+                <div style={{ marginTop: '8px', width: '200px' }}>
+                    <ScrollList bodyHeight={180} header={<div style={{ display: 'flex', width: '100%' }}><div style={{ flex: 1, textAlign: 'center', padding: '4px 0' }}><TypographyText type="tertiary">时</TypographyText></div><div style={{ flex: 1, textAlign: 'center', padding: '4px 0' }}><TypographyText type="tertiary">分</TypographyText></div></div>}>
+                        <ScrollItem
+                            list={Array.from({ length: 24 }, (_, i) => ({ value: i, text: String(i).padStart(2, '0') }))}
+                            cycled
+                            selectedIndex={scrollHourIndex}
+                            onSelect={(data) => { scrollHourIndex = data.index; }}
+                            aria-label="小时选择"
+                        />
+                        <ScrollItem
+                            list={Array.from({ length: 60 }, (_, i) => ({ value: i, text: String(i).padStart(2, '0') }))}
+                            selectedIndex={scrollMinuteIndex}
+                            onSelect={(data) => { scrollMinuteIndex = data.index; }}
+                            aria-label="分钟选择"
+                        />
+                    </ScrollList>
+                    <div style={{ marginTop: '8px' }}>
+                        <TypographyText type="tertiary">{`已选：${String(scrollHourIndex).padStart(2, '0')}:${String(scrollMinuteIndex).padStart(2, '0')}`}</TypographyText>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">normal 模式：普通点击列表，无中心线吸附</TypographyText>
+                <div style={{ marginTop: '8px', width: '120px' }}>
+                    <ScrollList bodyHeight={150}>
+                        <ScrollItem
+                            list={['苹果', '香蕉', '橙子', '葡萄', '西瓜'].map((v) => ({ value: v, text: v }))}
+                            mode="normal"
+                            aria-label="水果选择"
+                        />
+                    </ScrollList>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">禁用项：跳过点击和吸附命中</TypographyText>
+                <div style={{ marginTop: '8px', width: '120px' }}>
+                    <ScrollList bodyHeight={150}>
+                        <ScrollItem
+                            list={[
+                                { value: 0, text: '选项一' },
+                                { value: 1, text: '选项二（禁用）', disabled: true },
+                                { value: 2, text: '选项三' },
+                                { value: 3, text: '选项四' },
+                            ]}
+                            aria-label="含禁用项选择"
+                        />
+                    </ScrollList>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">受控用法：外部按钮驱动 selectedIndex</TypographyText>
+                <Space style={{ marginBottom: '8px' }}>
+                    <Button onClick={() => { scrollControlledIndex = 0; }}>跳到第一项</Button>
+                    <Button onClick={() => { scrollControlledIndex = 4; }}>跳到第五项</Button>
+                </Space>
+                <div style={{ width: '120px' }}>
+                    <ScrollList bodyHeight={150}>
+                        <ScrollItem
+                            list={['A', 'B', 'C', 'D', 'E'].map((v) => ({ value: v, text: v }))}
+                            selectedIndex={scrollControlledIndex}
+                            onSelect={(data) => { scrollControlledIndex = data.index; }}
+                            aria-label="受控选择"
+                        />
+                    </ScrollList>
                 </div>
             </div>
         </Space>

@@ -2940,6 +2940,78 @@ DOM 时浏览器给这个仍然存活的 observer 触发了一次"宽度变为 0
    本身有问题，实际是上游写入的原始测量数据本身被污染了"，误判方向会
    耗费大量排查时间。
 
+## 踩坑 #70（重大）：flex 子项用 `flex:1` 试图从**没有固定高度的父级**分配空间，
+若子项渲染内容的多少又反过来依赖对自身尺寸的响应式测量（`ResizeObserver`），
+会形成"测量值→内容量→DOM尺寸→测量值"的正反馈几何级数增长，最终把整个浏览器
+标签页拖死（不是抖动或性能问题，是真实的指数级失控）
+
+**现象**：ScrollList 的 `cycled`（循环滚动）模式下，`ScrollItem` 会根据自身
+测得的容器高度算出需要渲染多少组循环副本数据（副本越多，`<li>` 越多，内容
+高度越大）。`.lotus-scroll-list-body`（容纳多列 `ScrollItem` 的横向 flex
+容器）当初写成 `flex:1`，期望从父级 `.lotus-scroll-list`（`display:flex;
+flex-direction:column`）分配到"剩余空间"，但 `.lotus-scroll-list` 本身
+**没有设置任何 `height`**——`flex-grow:1` 在父级高度不确定（`auto`）时，
+`flex-basis:auto` 会退化为参照内容的 intrinsic size 参与计算，而不是真正
+"分配剩余空间"。于是：`ResizeObserver` 测出 `.lotus-scroll-list-body` 当前
+高度 H → `ScrollItem` 据此算出需要渲染的循环副本数（副本数正比于 H）→
+渲染出的 `<li>` 内容总高度约等于 `4H`（副本数 × 单项高度的乘积恰好放大 4
+倍，这个倍数由 `calcCycledListLayout` 的 `ratio` 参数和单项高度共同决定）
+→ 因为父级没有硬性高度约束，这个新内容高度直接变成 `.lotus-scroll-list-body`
+的下一次测量值 → 循环重新开始，H 以约 4 倍/轮的速度指数增长（180→2592→
+11232→45792→184032→736992...），几轮之内就会撑出几十万像素高的 DOM 树，
+浏览器主线程被完全占满，连 `page.goto()` 的 `load` 事件、`page.evaluate()`
+都无法响应，Playwright 只能报告整个 target 无响应并强制关闭连接。
+
+**规避方式**：任何"子项内容量依赖对自身测量结果"的组件（这类"内容决定自己
+下一步渲染量"的反身依赖，在虚拟滚动/循环列表/自适应折叠类组件里很常见，
+本仓库 OverflowList 的踩坑 #69 也是同类根源的变体），驱动测量的那个 flex
+容器必须有一条**不依赖内容、不参与 flex-grow 分配**的高度来源——要么是
+显式的固定 `height`（不用 `flex:1`，而是让上层传入的高度值直接赋给它，
+不参与父级的 flex 空间分配逻辑），要么整条父级链路上每一层都有真正确定的
+高度（不能有任何一层是 `auto`）。排查这类"指数级失控"时的关键诊断手段：
+给 `ResizeObserver` 回调加"熔断计数器"（超过 N 次后停止真正赋值但继续打印
+诊断日志），观察连续几次测得的高度值序列，如果发现**稳定的倍数关系**（如
+本例的约 4 倍/轮），几乎可以确定是"测量值反馈进内容量计算"的正反馈环，
+而不是随机抖动或者布局性能问题——不要一开始就去查是不是浏览器 bug 或者
+CSS 属性覆盖顺序问题，先用倍数关系的规律性快速定位到反馈环本身。
+
+## 踩坑 #71：CSS `content-box`（默认）盒模型下，一个元素同时设置 `height:100%`
+和显式 `padding`，浏览器计算出的 `clientHeight`（含 padding）会**大于**
+`height:100%` 本身算出的值，`clientHeight = height + padding-top +
+padding-bottom`——如果 JS 逻辑里用于坐标计算的"容器高度"变量，混用了这两个
+不同语义的值（有的地方指 content 区域高度，有的地方指含 padding 的完整可视
+高度），滚动定位计算会出现固定量级的坐标偏移
+
+**现象**：ScrollList 的 `ScrollItem` 需要给列表首尾项留白（`padding-top`/
+`padding-bottom`，让第一项/最后一项也能真正滚到视觉中心，这是对齐 Semi 用
+`::before` 伪元素做留白的等价手法，这里改用了更直接的 `padding`）。最初
+`<ul>` 写成 `height:100%; padding-top:Npx; padding-bottom:Npx`（`content-box`
+默认盒模型），本意是让 `<ul>` 的可视高度等于外层容器高度、padding 只用于
+制造额外的可滚动空间。但 `content-box` 下 `height:100%` 只决定 content
+区域，`padding` 是在这之上**额外叠加**的，导致 `<ul>.clientHeight` 实际
+变成 `外层高度 + 2*padding`（本例中 150px 外层高度、每侧 57px padding，
+`clientHeight` 变成了 264px，不是预期的 150px）。JS 侧计算滚动目标位置
+（`getScrollTopForIndex`）和吸附判定（`findNearestIndex`）用的却是"外层
+150px"这个语义的高度参数，与浏览器实际使用的 264px 可视窗口不一致，导致
+算出的目标 `scrollTop` 系统性偏离正确值——现象是"受控 `selectedIndex`
+prop 变化后，滚动到的位置总是错开几项"，容易被误判为响应式更新没生效
+（因为最终选中的确实不是期望的那一项，很容易先怀疑 prop 传递链路本身），
+实际上 `effect` 的响应式追踪、prop 传递全部正确，纯粹是坐标系不一致这一
+个几何计算问题。
+
+**规避方式**：一个元素如果要"用 `height:100%`/固定 px 表达可视窗口大小"
+同时还要"用 `padding` 制造滚动余量"，两者必须在同一个盒模型语义下统一：
+要么显式 `box-sizing:border-box`（padding 被含在 height 内，此时 padding
+会挤占 content 空间，若这不是期望效果则不适用），要么像本例最终采用的
+方案——不依赖 `height:100%`，而是用 JS 显式计算 `element.style.height =
+(外层高度 - 2*padding) + 'px'`，让 `content-box` 语义下"content 高度 +
+padding = clientHeight"恰好等于外层高度。无论选哪种方案，JS 里任何读取
+"容器高度"的地方，都要清楚这个数值到底是 content 区域高度还是含 padding
+的 `clientHeight`，不能在计算链路的不同环节混用两种语义却不做换算——这
+类偏移量通常是固定值（本例恒定 114px = 2×57px），若发现"滚动定位/吸附
+命中总是稳定偏离预期几项、偏移量本身不随机变化"，应优先怀疑盒模型/坐标
+系不一致，而不是逻辑分支写错。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。
@@ -2986,3 +3058,5 @@ DOM 时浏览器给这个仍然存活的 observer 触发了一次"宽度变为 0
 - **多个 `Portal` 共享同一 `target`（如 `document.body`）时，任意一个卸载会把共享的事件委托监听器整体拆除，导致其它仍挂载的 Portal 彻底失去响应**（踩坑 #67，重大，Ripple runtime 本身的 bug）：已在 `~/i/ripple` 修复（`handle_root_events` 按 target 引用计数）并提交上游 PR #1434，本仓库用 `pnpm patch` 固化到 `patches/ripple@0.3.123.patch`。任何用 `<Portal target={document.body}>` 的新组件，必须补一条"另一个同样用 Portal 挂载到同一 target 的组件开关一次不影响本组件"的回归测试。
 - **单文件多组件模式下，`.lotus-xxx` class 的 CSS 规则必须写在实际渲染该 class 元素的那个组件函数自己的 `<style>` 里，写在另一个组件的 `<style>` 里即使 class 名相同也不生效**（踩坑 #68，重大，Ripple scoped CSS 按组件函数隔离）：typecheck/lint/DOM 结构断言全部测不出来（元素存在、可见，只是没样式），必须 `getComputedStyle()` 或真机截图逐个子组件核对。写完某处 `class="lotus-xxx"` 时第一反应是"这条规则我加在了哪个组件的 `<style>` 里，和当前组件是同一个函数吗"。
 - **`ref={(node) => fn(node)}` 这种箭头函数包裹写法，`fn` 内部返回的清理函数会被丢弃，元素卸载时不会执行**（踩坑 #69，重大）：Ripple 只在 `ref` 直接是具名函数引用（或箭头函数体显式 `return`）时才会用其返回值作为卸载清理逻辑；`ref` 回调内创建的 `ResizeObserver`/`IntersectionObserver`/事件监听器等资源必须验证"元素卸载后是否真的被清理"，不能只测功能表现——本次教训是资源泄漏导致卸载元素的最后一次尺寸回调（宽度归零）脏写覆盖了有效测量数据，现象却表现为"算法判断错误"，排查时应打印计算函数实际入参而非只检查最终 DOM/CSS。
+- **flex 子项用 `flex:1` 从没有固定高度的父级分配空间，若子项渲染内容量又依赖对自身尺寸的响应式测量，会形成正反馈几何级数增长直到浏览器完全无响应**（踩坑 #70，重大）：连续测得的高度值如果呈稳定倍数关系（如约 4 倍/轮），几乎可确定是"测量值反馈进内容量计算"的反馈环，不是随机抖动或性能问题。驱动测量的 flex 容器必须有不依赖内容、不参与 flex-grow 分配的高度来源（显式固定高度，或确保整条父级链路每层都有确定高度）。
+- **`content-box`（默认）盒模型下 `height:100%` + 显式 `padding`，`clientHeight` 会等于 `height + 2*padding`，若 JS 计算滚动坐标时误用了不含 padding 的高度语义，会导致固定量级的坐标系偏移**（踩坑 #71）：现象是"选中索引变化了但滚动到的位置总是错开几项"，容易误判为响应式更新没生效——若偏移量恒定不随机变化，优先怀疑盒模型/坐标系不一致而非逻辑分支写错。要么显式 `box-sizing:border-box`，要么用 JS 让 `element.style.height = (外层高度 - 2*padding) + 'px'` 使含 padding 的 `clientHeight` 精确等于外层高度。
