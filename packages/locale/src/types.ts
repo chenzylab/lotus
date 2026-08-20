@@ -37,6 +37,13 @@ export interface CalendarLocale {
   months: [string, string, string, string, string, string, string, string, string, string, string, string];
 }
 
+export interface UserGuideLocale {
+  next: string;
+  prev: string;
+  skip: string;
+  finish: string;
+}
+
 export interface LocaleShape {
   code: string;
   dir: 'ltr' | 'rtl';
@@ -47,4 +54,5 @@ export interface LocaleShape {
   Select: SelectLocale;
   Modal: ModalLocale;
   Calendar: CalendarLocale;
+  UserGuide: UserGuideLocale;
 }

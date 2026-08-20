@@ -74,7 +74,7 @@
 - [x] ScrollList 滚动列表（wheel/normal 两种模式 + cycled 循环滚动，交互完全依赖原生滚动+JS吸附判定，对齐 Semi 的"零自研拖拽层"设计）
 - [x] Highlight 高亮（三段式纯函数流水线算法：findChunks→combineChunks→fillInChunks，对齐 Semi 的重叠合并策略）
 - [x] Cropper 图片裁剪（自研坐标系：`centerPoint` 表达图片/裁切框位置，8 方向拖拽+可选 aspectRatio 锁定，滚轮以鼠标为锚点缩放，绕裁切框中心旋转；导出用 Canvas 2D `getImageData`/`putImageData` 处理越界裁切；主动新增 Semi 没有的 `onCrop` 声明式回调 + `getCropperApi` 命令式 API 并存）
-- [ ] UserGuide 用户引导
+- [x] UserGuide 用户引导（popup/modal 两种模式；popup 用 SVG `<mask>` 镂空遮罩 + 复用 Tooltip/Popover 的共享定位引擎（虚拟锚点=高亮框矩形，不重复实现坐标数学）；主动修正 Semi 源码的 `||` 吞掉 `spotlightPadding: 0`、状态机负索引边界 bug；新增键盘方向键/ESC、resize 自动重定位——Semi 完全空白；不做 Semi 半成品的 `getPopupContainer`）
 
 ## Phase 4 — 复杂数据录入与展示 (Data Entry 高阶 + Table)
 

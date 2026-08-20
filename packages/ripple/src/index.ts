@@ -239,6 +239,12 @@ export {
     type CropperInteractionMode,
 } from './show/cropper/index.tsrx';
 export {
+    UserGuide,
+    type UserGuideProps,
+    type UserGuideMode,
+    type UserGuideStep,
+} from './show/user-guide/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

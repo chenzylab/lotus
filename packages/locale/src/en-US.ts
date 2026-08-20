@@ -38,6 +38,12 @@ const enUS: LocaleShape = {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ],
   },
+  UserGuide: {
+    next: 'Next',
+    prev: 'Prev',
+    skip: 'Skip',
+    finish: 'Finish',
+  },
 };
 
 export default enUS;

@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -197,6 +197,13 @@ export function App() @{
     let &[cropperRotate] = track<number>(0);
     let &[cropperApiResultUrl] = track<string>('');
     let cropperApiRef: CropperApi | undefined;
+    let &[userGuideVisible] = track<boolean>(false);
+    let &[userGuideCurrent] = track<number>(0);
+    let &[userGuideLog] = track<string>('');
+    let &[userGuideModalVisible] = track<boolean>(false);
+    let userGuideStepAEl: HTMLElement | undefined;
+    let userGuideStepBEl: HTMLElement | undefined;
+    let userGuideStepCEl: HTMLElement | undefined;
 
     <>
     <div style={{ padding: '32px' }}>
@@ -1683,6 +1690,59 @@ export function App() @{
                             <img src={cropperApiResultUrl} aria-label="命令式 Cropper 导出预览" style={{ maxWidth: '100%', maxHeight: '100%' }} />
                         }
                     </div>
+                </div>
+            </div>
+        </Space>
+
+        <Divider>UserGuide</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div>
+                <TypographyText type="secondary">popup 模式：依次高亮下方三个按钮，支持上一步/下一步/跳过，ESC 跳过，方向键切换</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Space style={{ marginBottom: '16px' }}>
+                        <Button size="small" onClick={() => { userGuideVisible = true; }}>开始引导</Button>
+                        <TypographyText aria-label="UserGuide 事件日志">{userGuideLog}</TypographyText>
+                    </Space>
+                    <Space style={{ gap: '24px' }}>
+                        <span ref={(node: HTMLElement) => { userGuideStepAEl = node; }}><Button theme="light">步骤一目标</Button></span>
+                        <span ref={(node: HTMLElement) => { userGuideStepBEl = node; }}><Button theme="light">步骤二目标</Button></span>
+                        <span ref={(node: HTMLElement) => { userGuideStepCEl = node; }}><Button theme="light">步骤三目标</Button></span>
+                    </Space>
+                    <UserGuide
+                        visible={userGuideVisible}
+                        current={userGuideCurrent}
+                        steps={[
+                            { target: () => userGuideStepAEl ?? null, title: '第一步', description: '这是第一个目标元素的说明文案。', position: 'bottom' },
+                            { target: () => userGuideStepBEl ?? null, title: '第二步', description: '这是第二个目标元素的说明文案，spotlightPadding 覆盖为 0。', position: 'bottom', spotlightPadding: 0 },
+                            { target: () => userGuideStepCEl ?? null, title: '第三步', description: '最后一步，点击完成结束引导。', position: 'top', theme: 'primary' },
+                        ]}
+                        onChange={(current: number) => { userGuideCurrent = current; userGuideLog = `onChange: ${current}`; }}
+                        onNext={(current: number) => { userGuideLog = `onNext -> ${current}`; }}
+                        onPrev={(current: number) => { userGuideLog = `onPrev -> ${current}`; }}
+                        onSkip={() => { userGuideLog = 'onSkip'; userGuideVisible = false; userGuideCurrent = 0; }}
+                        onFinish={() => { userGuideLog = 'onFinish'; userGuideVisible = false; userGuideCurrent = 0; }}
+                        aria-label="popup UserGuide"
+                    />
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">modal 模式：居中弹窗轮播式介绍，无目标元素高亮</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button size="small" onClick={() => { userGuideModalVisible = true; }}>打开 modal 引导</Button>
+                    <UserGuide
+                        mode="modal"
+                        visible={userGuideModalVisible}
+                        steps={[
+                            { title: '欢迎使用 lotus', description: 'lotus 是对齐 Semi Design 能力的 Ripple 组件库。' },
+                            { title: '功能强大', description: '涵盖基础、导航、数据录入、数据展示等多个分类的组件。' },
+                            { title: '开始使用', description: '点击完成关闭本引导，开始探索吧。' },
+                        ]}
+                        onFinish={() => { userGuideModalVisible = false; }}
+                        onSkip={() => { userGuideModalVisible = false; }}
+                        aria-label="modal UserGuide"
+                    />
                 </div>
             </div>
         </Space>
