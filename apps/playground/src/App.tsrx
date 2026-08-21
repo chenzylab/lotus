@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -248,6 +248,9 @@ export function App() @{
     let &[sliderChangeLog] = track<string>('');
     let &[sliderRangeChangeLog] = track<string>('');
     let &[sliderControlledValue] = track<number>(30);
+    let &[ratingChangeLog] = track<string>('');
+    let &[ratingHalfChangeLog] = track<string>('');
+    let &[ratingControlledValue] = track<number>(3);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2938,6 +2941,55 @@ export function App() @{
             />
             <Button onClick={() => { sliderControlledValue = sliderControlledValue === 30 ? 70 : 30; }}>
                 切换 Slider
+            </Button>
+        </div>
+
+        <Divider>Rating：基础用法</Divider>
+
+        <div style={{ width: '260px' }}>
+            <Rating
+                onChange={(v) => { ratingChangeLog = `变化：${v}`; }}
+                aria-label="Rating 基础"
+            />
+            <TypographyText type="secondary" aria-label="Rating 事件日志">{ratingChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Rating：allowHalf 半星 + 自定义 count</Divider>
+
+        <div style={{ width: '260px' }}>
+            <Rating
+                allowHalf
+                count={10}
+                defaultValue={3.5}
+                onChange={(v) => { ratingHalfChangeLog = `变化：${v}`; }}
+                aria-label="Rating 半星"
+            />
+            <TypographyText type="secondary" aria-label="Rating 半星事件日志">{ratingHalfChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Rating：allowClear=false（点击已选值不清零）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <Rating allowClear={false} defaultValue={3} aria-label="Rating 不可清零" />
+        </div>
+
+        <Divider>Rating：small 尺寸 + 禁用</Divider>
+
+        <div style={{ display: 'flex', gap: '24px' }}>
+            <Rating size="small" defaultValue={4} aria-label="Rating 小尺寸" />
+            <Rating disabled defaultValue={2} aria-label="Rating 禁用" />
+        </div>
+
+        <Divider>Rating：受控（外部按钮驱动）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <Rating
+                value={ratingControlledValue}
+                onChange={(v) => { ratingControlledValue = v; }}
+                aria-label="Rating 受控示例"
+            />
+            <Button onClick={() => { ratingControlledValue = ratingControlledValue === 3 ? 5 : 3; }}>
+                切换 Rating
             </Button>
         </div>
 

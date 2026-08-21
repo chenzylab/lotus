@@ -87,7 +87,7 @@
 - [x] DatePicker 日期选择器（参考同源项目 chenzy.design 的 Semi 对齐实现移植，date-fns 驱动，是 lotus Foundation 层第一次引入外部依赖；覆盖全部 7 种 type：date/dateRange/dateTime/dateTimeRange/month/monthRange/year；date/dateRange 走日历网格，month/monthRange/year 走独立的 ScrollList/ScrollItem 年月滚轮，dateTime 系列复用 TimePicker 拆出的 TimeColumns 时间列；range 选择状态机、双面板防撞月导航、disabledDate、presets 快捷选项、needConfirm+Footer 确认流程、点导航标题 drill-down 到年月滚轮再跳回日历网格均已实现；insetInput 面板内输入框未接入 UI 层（Foundation 方法已就绪，留作后续迭代）；timeZone 时区转换未实现（Semi 该特性依赖 date-fns-tz + IANA 偏移表，收益/成本比低，明确排除在外））
 - [x] TimePicker 时间选择器（为支撑 DatePicker 的 dateTime 系列而先行拆出：触发器复用 Input 可键入时间串，面板复用 ScrollList/ScrollItem 滚动列；type='time' 单选/type='timeRange' 范围选择共用同一个可编辑输入框，按 rangeSeparator 拆两端；12 小时制 AM/PM 列、disabledHours/Minutes/Seconds、hideDisabledOptions、按已选值联动的 disabledTime 全部对齐 Semi；浮层开关复用 AutoComplete 已验证的"仅关闭态点击才打开"模式）
 - [x] Slider 滑动输入条（单值/range 双滑块共用同一组件，`range` prop 切换，对齐 Semi 的设计；拖拽状态机移植自 Semi semi-foundation/slider/foundation.ts 的像素↔数值换算算法，range 模式两手柄允许贴住不允许穿越——越界时两值一起收缩到静止那一端的当前值；键盘方向键/PageUp/PageDown/Home/End 完整实现，range 下 Home/End 对贴住对侧手柄而非跳全局边界；marks 刻度标记、tipFormatter 自定义提示、vertical 垂直方向、disabled 均已实现；rail 点击跳转按像素距离判定操作哪个手柄）
-- [ ] Rating 评分
+- [x] Rating 评分（像素↔分值换算、hover 预览、点击清零、键盘环绕移植自 Semi semi-foundation/rating/foundation.ts 算法；`allowHalf` 半星判定按点击/悬停位置在星星宽度内的比例 <0.5 算半星；`allowClear` 控制再次点击已选值是否清零，清零后有 `clearedValue` 守卫防止 hover 视觉复原；键盘方向键越界是环绕（wrap-around）不是钳制——超过 count 直接归零、低于 0 直接跳到 count；星星填充用"背景星+裁剪叠层星"两层 CSS 实现半星视觉，比 Semi 原始双 role=radio 结构简化，整组只用一个可聚焦容器+方向键操作，未做逐星 roving tabindex）
 - [ ] ColorPicker 颜色选择器
 - [ ] Transfer 穿梭框
 - [ ] Upload 上传

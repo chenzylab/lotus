@@ -140,6 +140,11 @@ export {
     type SliderProps,
 } from './input/slider/index.tsrx';
 export {
+    Rating,
+    type RatingProps,
+    type RatingSize,
+} from './input/rating/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
