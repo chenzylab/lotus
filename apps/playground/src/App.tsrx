@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -118,6 +118,27 @@ const treeDemoData: TreeNodeData[] = [
             { key: 'dept-2-2', label: '陈八' },
         ],
     },
+];
+
+const transferListData = [
+    { key: 'a1', label: '苹果' },
+    { key: 'a2', label: '香蕉' },
+    { key: 'a3', label: '樱桃' },
+    { key: 'a4', label: '榴莲' },
+    { key: 'a5', label: '芒果', disabled: true },
+];
+
+const transferGroupData = [
+    { title: '水果', children: [{ key: 'g1', label: '苹果' }, { key: 'g2', label: '香蕉' }] },
+    { title: '蔬菜', children: [{ key: 'g3', label: '西红柿' }, { key: 'g4', label: '黄瓜', disabled: true }] },
+];
+
+const transferManyData = Array.from({ length: 60 }, (_v, i) => ({ key: `m${i}`, label: `选项 ${i + 1}` }));
+
+const transferControlledData = [
+    { key: 'c1', label: '选项 A' },
+    { key: 'c2', label: '选项 B' },
+    { key: 'c3', label: '选项 C' },
 ];
 
 function loadTreeChildren(node: TreeNodeData): Promise<TreeNodeData[]> {
@@ -257,6 +278,10 @@ export function App() @{
         rgba: { r: 46, g: 184, b: 230, a: 1 },
         hex: '#2eb8e6',
     });
+    let &[transferValue] = track<Array<string | number>>(['a1', 'a3']);
+    let &[transferGroupValue] = track<Array<string | number>>([]);
+    let &[transferTreeValue] = track<Array<string | number>>([]);
+    let &[transferControlledValue] = track<Array<string | number>>(['c1']);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -3026,6 +3051,86 @@ export function App() @{
                 onChange={(v) => { colorPickerNoAlphaValue = v; }}
                 aria-label="ColorPicker 无透明度"
             />
+        </div>
+
+        <Divider>Transfer：基础用法（type=list，含搜索/全选/禁用项）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                value={transferValue}
+                onChange={(v) => { transferValue = v; }}
+                aria-label="Transfer 基础"
+            />
+        </div>
+
+        <Divider>Transfer：type=groupList 分组</Divider>
+
+        <div>
+            <Transfer
+                type="groupList"
+                dataSource={transferGroupData}
+                value={transferGroupValue}
+                onChange={(v) => { transferGroupValue = v; }}
+                aria-label="Transfer 分组"
+            />
+        </div>
+
+        <Divider>Transfer：type=treeList 树形</Divider>
+
+        <div>
+            <Transfer
+                type="treeList"
+                dataSource={treeDemoData}
+                value={transferTreeValue}
+                onChange={(v) => { transferTreeValue = v; }}
+                aria-label="Transfer 树形"
+            />
+        </div>
+
+        <Divider>Transfer：draggable 拖拽排序已选列表</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                draggable
+                aria-label="Transfer 拖拽"
+            />
+        </div>
+
+        <Divider>Transfer：virtualize 虚拟化已选列表（60 项数据）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferManyData}
+                virtualize={{ height: 240, itemSize: 40 }}
+                aria-label="Transfer 虚拟化"
+            />
+        </div>
+
+        <Divider>Transfer：disabled 整体禁用</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                value={['a1']}
+                disabled
+                aria-label="Transfer 禁用"
+            />
+        </div>
+
+        <Divider>Transfer：受控（外部按钮驱动）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferControlledData}
+                value={transferControlledValue}
+                onChange={(v) => { transferControlledValue = v; }}
+                aria-label="Transfer 受控示例"
+            />
+            <Button onClick={() => { transferControlledValue = transferControlledValue.length > 0 ? [] : ['c1', 'c2']; }}>
+                切换 Transfer 选中值
+            </Button>
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>

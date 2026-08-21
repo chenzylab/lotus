@@ -153,6 +153,16 @@ export {
     type HsvaColor,
 } from './input/color-picker/index.tsrx';
 export {
+    Transfer,
+    type TransferProps,
+    type TransferType,
+    type TransferDataSource,
+    type TransferFilter,
+    type TransferEmptyContent,
+    type TransferVirtualizeConfig,
+    type TransferPaginationConfig,
+} from './input/transfer/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
