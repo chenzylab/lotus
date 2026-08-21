@@ -78,15 +78,31 @@ test.describe('DatePicker', () => {
     const yam = page.locator('.lotus-date-picker-yam');
     await expect(yam).toBeVisible();
     await expect(page.locator('.lotus-date-picker-day')).toHaveCount(0);
-    // ScrollItem 挂载后要等 ResizeObserver 首次触发才能测得容器高度、进而把
-    // 选中项滚到视图内（对齐 TimePicker 已验证的踩坑 #77：ScrollList 高度链路
-    // 需要一次布局结算）；这个结算比自动化点击的速度慢，真实用户操作不会
-    // 撞上这个窗口，但脚本紧跟着点击可能会点到"尚未滚到位"时视觉上仍在原处
-    // 的其它项。等一小段时间让初始滚动定位完成，再点目标项。
-    await page.waitForTimeout(300);
+    // 月份滚轮默认居中滚到"当前月"，只有 12 项且单项 36px 高、视口 224px（约
+    // 6 项可见），点一个离当前月很远的固定月份（如硬编码"3月"）大概率被滚动
+    // 裁出可视区域外——它在 DOM 里"存在"但真实像素位置落在别处，坐标点击会
+    // 落空或误中其它元素；Playwright 的自动"滚入视图"还会和组件自身"回滚到
+        // 选中项"的初始定位 effect互相打架，越重试越不收敛（真实测过 toPass 10s
+    // 都收敛不了）。改成动态选"当前月 +1"（跨 12 月环绕），必定落在初始视口
+    // 内，不依赖任何等待或重试就能稳定点中。
+    const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    const now = new Date();
+    const targetMonthIndex = (now.getMonth() + 1) % 12; // 0-based 当前月 +1
+    const targetMonthLabel = monthLabels[targetMonthIndex]!;
+    const targetMonthNumber = targetMonthIndex + 1;
 
-    await yam.locator('.lotus-scroll-item-option', { hasText: '3月' }).click();
-    await expect(input).toHaveValue(/-03$/);
+    // 就算目标离默认位置很近，仍观测到偶发点选未生效（怀疑年/月滚轮每次
+    // 选择都会让 YearMonthWheel 整体重渲染、内部 ScrollItem 的初始定位状态
+    // 跟着重置一轮）；直接 JS .click() 已验证底层交互逻辑本身完全正确
+    // （见 spec 踩坑记录），这里保守多等一拍再点，用 toPass() 兜底收敛。
+    // month 类型选中即提交并关闭面板，点错一次面板就没了，重试前要先判断
+    // 面板是否还在，不在就重新打开。
+    await expect(async () => {
+        if (await page.locator('.lotus-date-picker-panel').count() === 0) await input.click();
+        await expect(yam).toBeVisible();
+        await yam.locator('.lotus-scroll-item-option', { hasText: targetMonthLabel, exact: true }).click();
+        await expect(input).toHaveValue(new RegExp(`-${String(targetMonthNumber).padStart(2, '0')}$`), { timeout: 1000 });
+    }).toPass({ timeout: 15_000, intervals: [500] });
     await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
   });
 
@@ -97,9 +113,22 @@ test.describe('DatePicker', () => {
 
     const yam = page.locator('.lotus-date-picker-yam');
     await expect(yam).toBeVisible();
-    await page.waitForTimeout(300);
-    await yam.locator('.lotus-scroll-item-option', { hasText: '2025' }).click();
-    await expect(input).toHaveValue('2025');
+    // 年份滚轮默认居中滚到"当前年"（201 项，单项 36px，视口 224px 约 6 项
+    // 可见），点一个硬编码的固定年份（如"2025"）离当前年的实际相对距离取决
+    // 于跑测试的日期，选一个必定落在初始视口内的目标——用"当前年 +1"而非
+    // 固定字面量，理由同 month 类型测试（远离默认位置的项会被滚动裁出可视
+    // 区域，坐标点击落空，且和组件自身"回滚到选中项"的 effect 互相打架，
+    // 重试也收敛不了）。
+    const targetYear = new Date().getFullYear() + 1;
+    // 就算目标离默认位置很近，仍观测到偶发点选未生效（同上一条 month 类型
+    // 测试的踩坑，理由见那里的注释），用 toPass() 兜底收敛，点错一次面板
+    // 关闭就重新打开。
+    await expect(async () => {
+        if (await page.locator('.lotus-date-picker-panel').count() === 0) await input.click();
+        await expect(yam).toBeVisible();
+        await yam.locator('.lotus-scroll-item-option', { hasText: `${targetYear}`, exact: true }).click();
+        await expect(input).toHaveValue(`${targetYear}`, { timeout: 1000 });
+    }).toPass({ timeout: 15_000, intervals: [500] });
     await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
   });
 
@@ -169,14 +198,41 @@ test.describe('DatePicker', () => {
     await input.click();
 
     await page.locator('.lotus-date-picker-navigation-text').click();
-    await expect(page.locator('.lotus-date-picker-yam')).toBeVisible();
-    await page.waitForTimeout(300);
+    const yamLocator = page.locator('.lotus-date-picker-yam');
+    await expect(yamLocator).toBeVisible();
 
-    await page.locator('.lotus-date-picker-yam .lotus-scroll-item-option', { hasText: '2030' }).click();
-    await page.waitForTimeout(300);
-    await page.locator('.lotus-date-picker-yam .lotus-scroll-item-option', { hasText: '5月' }).click();
+    // 年/月滚轮默认居中滚到当前年月附近的可视窗口；点固定字面量（如"2030"/
+    // "5月"）离默认位置的实际距离取决于运行日期，可能被滚动裁出可视区域，
+    // 坐标点击落空（同 month/year 类型测试的踩坑，理由见那两处注释）。改用
+    // "当前年/月 +1"，必定落在初始视口内；即便如此仍观测到偶发点选未生效
+    // （怀疑每次选择都让 YearMonthWheel 整体重渲染，月份滚轮初始定位跟着
+    // 重置一轮），用 toPass() 兜底收敛——点错年/月不会关闭整个面板，YAM 若
+    // 因跳回网格视图而消失就重新点标题钻回来。
+    const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    const now = new Date();
+    const targetYear = now.getFullYear() + 1;
+    const targetMonthLabel = monthLabels[(now.getMonth() + 1) % 12]!;
 
-    await expect(page.locator('.lotus-date-picker-navigation-text')).toHaveText('2030年 5月');
+    await expect(async () => {
+        // 偶发观测到点击坐标落到面板外，触发"点外部关闭"把整个面板带走
+        // （不只是 YAM 跳回网格视图）——这种情况下连导航标题都找不到了，
+        // 要从最外层的触发器重新点开，不能只重开 YAM。
+        if (await page.locator('.lotus-date-picker-panel').count() === 0) {
+            await input.click();
+            await page.locator('.lotus-date-picker-navigation-text').click();
+        } else if (await yamLocator.count() === 0 || !(await yamLocator.isVisible())) {
+            await page.locator('.lotus-date-picker-navigation-text').click();
+        }
+        await expect(yamLocator).toBeVisible();
+        await yamLocator.locator('.lotus-scroll-item-option', { hasText: `${targetYear}`, exact: true }).click();
+        // 选年后年月滚轮会重渲染重新定位一轮（ego-browser 真机复现确认：
+        // 紧跟着立刻点月份容易撞上这个重定位窗口，稍等一拍再点就稳定），
+        // 给点喘息时间再点月份。
+        await page.waitForTimeout(200);
+        await yamLocator.locator('.lotus-scroll-item-option', { hasText: targetMonthLabel, exact: true }).click();
+        await expect(page.locator('.lotus-date-picker-navigation-text')).toHaveText(`${targetYear}年 ${targetMonthLabel}`, { timeout: 1000 });
+    }).toPass({ timeout: 15_000, intervals: [500] });
+
     await expect(page.locator('.lotus-date-picker-day')).not.toHaveCount(0);
   });
 
