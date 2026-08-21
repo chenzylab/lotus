@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -251,6 +251,12 @@ export function App() @{
     let &[ratingChangeLog] = track<string>('');
     let &[ratingHalfChangeLog] = track<string>('');
     let &[ratingControlledValue] = track<number>(3);
+    let &[colorPickerChangeLog] = track<string>('');
+    let &[colorPickerNoAlphaValue] = track<ColorValue>({
+        hsva: { h: 200, s: 80, v: 90, a: 1 },
+        rgba: { r: 46, g: 184, b: 230, a: 1 },
+        hex: '#2eb8e6',
+    });
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2991,6 +2997,35 @@ export function App() @{
             <Button onClick={() => { ratingControlledValue = ratingControlledValue === 3 ? 5 : 3; }}>
                 切换 Rating
             </Button>
+        </div>
+
+        <Divider>ColorPicker：基础用法（直接展开面板）</Divider>
+
+        <div>
+            <ColorPicker
+                onChange={(v) => { colorPickerChangeLog = `变化：${v.hex}`; }}
+                aria-label="ColorPicker 基础"
+            />
+            <TypographyText type="secondary" aria-label="ColorPicker 事件日志">{colorPickerChangeLog}</TypographyText>
+        </div>
+
+        <Divider>ColorPicker：usePopover + 自定义触发器</Divider>
+
+        <div>
+            <ColorPicker usePopover aria-label="ColorPicker 弹层">
+                <Button>点击选择颜色</Button>
+            </ColorPicker>
+        </div>
+
+        <Divider>ColorPicker：alpha=false（无透明度条）</Divider>
+
+        <div>
+            <ColorPicker
+                alpha={false}
+                value={colorPickerNoAlphaValue}
+                onChange={(v) => { colorPickerNoAlphaValue = v; }}
+                aria-label="ColorPicker 无透明度"
+            />
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>

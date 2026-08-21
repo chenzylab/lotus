@@ -88,7 +88,7 @@
 - [x] TimePicker 时间选择器（为支撑 DatePicker 的 dateTime 系列而先行拆出：触发器复用 Input 可键入时间串，面板复用 ScrollList/ScrollItem 滚动列；type='time' 单选/type='timeRange' 范围选择共用同一个可编辑输入框，按 rangeSeparator 拆两端；12 小时制 AM/PM 列、disabledHours/Minutes/Seconds、hideDisabledOptions、按已选值联动的 disabledTime 全部对齐 Semi；浮层开关复用 AutoComplete 已验证的"仅关闭态点击才打开"模式）
 - [x] Slider 滑动输入条（单值/range 双滑块共用同一组件，`range` prop 切换，对齐 Semi 的设计；拖拽状态机移植自 Semi semi-foundation/slider/foundation.ts 的像素↔数值换算算法，range 模式两手柄允许贴住不允许穿越——越界时两值一起收缩到静止那一端的当前值；键盘方向键/PageUp/PageDown/Home/End 完整实现，range 下 Home/End 对贴住对侧手柄而非跳全局边界；marks 刻度标记、tipFormatter 自定义提示、vertical 垂直方向、disabled 均已实现；rail 点击跳转按像素距离判定操作哪个手柄）
 - [x] Rating 评分（像素↔分值换算、hover 预览、点击清零、键盘环绕移植自 Semi semi-foundation/rating/foundation.ts 算法；`allowHalf` 半星判定按点击/悬停位置在星星宽度内的比例 <0.5 算半星；`allowClear` 控制再次点击已选值是否清零，清零后有 `clearedValue` 守卫防止 hover 视觉复原；键盘方向键越界是环绕（wrap-around）不是钳制——超过 count 直接归零、低于 0 直接跳到 count；星星填充用"背景星+裁剪叠层星"两层 CSS 实现半星视觉，比 Semi 原始双 role=radio 结构简化，整组只用一个可聚焦容器+方向键操作，未做逐星 roving tabindex）
-- [ ] ColorPicker 颜色选择器
+- [x] ColorPicker 颜色选择器（参考 Semi semi-foundation/colorPicker 算法思路 + 同源项目 chenzy.design 已验证实现；内部统一用 `{hsva,rgba,hex}` 三态 ColorValue，hsva 刻度对齐 Semi 原生 h:0-360/s,v:0-100/a:0-1，不引入 0-1 归一化刻度；三个可拖拽区域（饱和度-明度矩形/色相条/透明度条）统一走 document 级 mousemove/mouseup，复用 Slider 已验证的拖拽模式；Semi 源码没有 presetColors/disabled/onChangeComplete、也完全没有键盘交互，不额外发明前两者，但补上方向键步进的键盘无障碍能力对齐 chenzy.design 的增强方案；usePopover 模式下 children 缺省时渲染默认色块触发器；eyeDropper 基于 window.EyeDropper 特性检测，不支持时自动隐藏按钮）
 - [ ] Transfer 穿梭框
 - [ ] Upload 上传
 - [ ] TagInput 标签输入框

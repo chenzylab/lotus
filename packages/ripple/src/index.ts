@@ -145,6 +145,14 @@ export {
     type RatingSize,
 } from './input/rating/index.tsrx';
 export {
+    ColorPicker,
+    colorStringToValue,
+    type ColorPickerProps,
+    type ColorFormat,
+    type ColorValue,
+    type HsvaColor,
+} from './input/color-picker/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
