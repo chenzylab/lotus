@@ -35,4 +35,18 @@ export default [
       'ripple/prefer-oninput': 'off',
     },
   },
+  {
+    // Upload 组件是这条规则唯一一次真正命中原生 DOM 元素误用的情况（不是像
+    // 上面那批文件那样的组件 prop 误报）：两个隐藏的 <input type="file">
+    // onChange 本该被规则建议改成 onInput，但文件选择器（type="file"）浏览器
+    // 规范上只派发 change 事件、不派发 input 事件——改成 onInput 会让选择文件
+    // 后回调永远不触发，是比 lint 告警更严重的真实功能性 bug。核实过 Ripple
+    // 的 onInput 属性名确实映射的是原生 input 事件（对照 Input 组件内部实现），
+    // 保留 onChange 是唯一正确选择，此处关闭规则不是回避审查，是这条规则的
+    // 检测范围本身没考虑 type="file" 这个例外。
+    files: ['packages/ripple/src/input/upload/index.tsrx'],
+    rules: {
+      'ripple/prefer-oninput': 'off',
+    },
+  },
 ];

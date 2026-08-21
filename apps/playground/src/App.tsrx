@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -152,6 +152,22 @@ function loadTreeChildren(node: TreeNodeData): Promise<TreeNodeData[]> {
     });
 }
 
+// 模拟上传：无真实后端时用定时器伪造进度事件，演示 customRequest 完全接管
+// 网络 IO 的能力（不发起真实 XHR）。
+function mockUploadRequest(args: CustomRequestArgs) {
+    let percent = 0;
+    const timer = setInterval(() => {
+        percent += 20;
+        if (percent >= 100) {
+            clearInterval(timer);
+            args.onProgress(100);
+            args.onSuccess({ url: `https://example.com/${args.fileName}` });
+            return;
+        }
+        args.onProgress(percent);
+    }, 200);
+}
+
 // Field 的 Comp 收到统一的 { value, disabled, onChange, onBlur, 'aria-label' }，
 // 由这几个桥接组件把它接到具体输入组件各自的 props 形状上（Input 是
 // onChange(value, event)，InputNumber/Select 是 onChange(value)）。
@@ -282,6 +298,10 @@ export function App() @{
     let &[transferGroupValue] = track<Array<string | number>>([]);
     let &[transferTreeValue] = track<Array<string | number>>([]);
     let &[transferControlledValue] = track<Array<string | number>>(['c1']);
+    let &[uploadFileList] = track<FileItem[]>([]);
+    let &[uploadDragFileList] = track<FileItem[]>([]);
+    let &[uploadPictureFileList] = track<FileItem[]>([]);
+    let &[uploadChangeLog] = track<string>('');
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -3131,6 +3151,72 @@ export function App() @{
             <Button onClick={() => { transferControlledValue = transferControlledValue.length > 0 ? [] : ['c1', 'c2']; }}>
                 切换 Transfer 选中值
             </Button>
+        </div>
+
+        <Divider>Upload：基础用法（listType=list，点击触发，customRequest 模拟上传）</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                fileList={uploadFileList}
+                onChange={(list) => { uploadFileList = list; uploadChangeLog = `变化：${list.length} 个文件`; }}
+                aria-label="Upload 基础"
+            />
+            <TypographyText type="secondary" aria-label="Upload 事件日志">{uploadChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Upload：draggable 拖拽上传区域</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                draggable
+                fileList={uploadDragFileList}
+                onChange={(list) => { uploadDragFileList = list; }}
+                aria-label="Upload 拖拽"
+            />
+        </div>
+
+        <Divider>Upload：listType=picture 图片墙 + multiple 多选</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                listType="picture"
+                multiple
+                accept="image/*"
+                fileList={uploadPictureFileList}
+                onChange={(list) => { uploadPictureFileList = list; }}
+                aria-label="Upload 图片墙"
+            />
+        </div>
+
+        <Divider>Upload：limit=2 + maxSize 限制</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                multiple
+                limit={2}
+                maxSize={5000}
+                onExceed={() => { uploadChangeLog = '超出数量限制'; }}
+                aria-label="Upload 限制"
+            />
+        </div>
+
+        <Divider>Upload：disabled 禁用</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                disabled
+                defaultFileList={[{ uid: 'd1', name: 'readonly.png', size: 2048, status: 'success', percent: 100 }]}
+                aria-label="Upload 禁用"
+            />
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>
