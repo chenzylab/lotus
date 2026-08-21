@@ -136,6 +136,10 @@ export {
     type DatePickerValue,
 } from './input/date-picker/index.tsrx';
 export {
+    Slider,
+    type SliderProps,
+} from './input/slider/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,

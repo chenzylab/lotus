@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -245,6 +245,9 @@ export function App() @{
     let &[datePickerChangeLog] = track<string>('');
     let &[datePickerRangeChangeLog] = track<string>('');
     let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
+    let &[sliderChangeLog] = track<string>('');
+    let &[sliderRangeChangeLog] = track<string>('');
+    let &[sliderControlledValue] = track<number>(30);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -2878,6 +2881,63 @@ export function App() @{
                 }}
             >
                 切换 DatePicker
+            </Button>
+        </div>
+
+        <Divider>Slider：基础用法</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Slider
+                onChange={(v) => { sliderChangeLog = `变化：${v}`; }}
+                aria-label="Slider 基础"
+            />
+            <TypographyText type="secondary" aria-label="Slider 事件日志">{sliderChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Slider：range 双滑块</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Slider
+                range
+                defaultValue={[20, 80]}
+                onChange={(v) => { sliderRangeChangeLog = `变化：${JSON.stringify(v)}`; }}
+                aria-label="Slider 范围"
+            />
+            <TypographyText type="secondary" aria-label="Slider 范围事件日志">{sliderRangeChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Slider：marks 刻度标记 + step=10</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Slider
+                step={10}
+                marks={{ 0: '0°C', 20: '20°C', 40: '40°C', 60: '60°C', 80: '80°C', 100: '100°C' }}
+                aria-label="Slider 刻度"
+            />
+        </div>
+
+        <Divider>Slider：禁用</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Slider disabled defaultValue={40} aria-label="Slider 禁用" />
+        </div>
+
+        <Divider>Slider：vertical 垂直方向</Divider>
+
+        <div style={{ height: '200px', display: 'flex', gap: '32px' }}>
+            <Slider vertical defaultValue={30} aria-label="Slider 垂直" />
+        </div>
+
+        <Divider>Slider：受控（外部按钮驱动）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Slider
+                value={sliderControlledValue}
+                onChange={(v) => { sliderControlledValue = v as number; }}
+                aria-label="Slider 受控示例"
+            />
+            <Button onClick={() => { sliderControlledValue = sliderControlledValue === 30 ? 70 : 30; }}>
+                切换 Slider
             </Button>
         </div>
 
