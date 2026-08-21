@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -310,6 +310,93 @@ export function App() @{
     let &[pinCodeChangeLog] = track<string>('');
     let &[pinCodeCompleteLog] = track<string>('');
     let &[pinCodeControlledValue] = track<string>('123');
+
+    interface TablePerson {
+        key: string;
+        name: string;
+        age: number;
+        city: string;
+        dept: string;
+        children?: TablePerson[];
+    }
+    const tableBasicColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '年龄', dataIndex: 'age', key: 'age', sorter: (a, b) => a.age - b.age },
+        {
+            title: '城市',
+            dataIndex: 'city',
+            key: 'city',
+            filters: [
+                { text: '北京', value: '北京' },
+                { text: '上海', value: '上海' },
+                { text: '深圳', value: '深圳' },
+            ],
+            onFilter: (value, record) => record.city === value,
+        },
+    ];
+    const tableBasicData: TablePerson[] = [
+        { key: '1', name: '张三', age: 32, city: '北京', dept: '研发' },
+        { key: '2', name: '李四', age: 28, city: '上海', dept: '产品' },
+        { key: '3', name: '王五', age: 45, city: '深圳', dept: '研发' },
+        { key: '4', name: '赵六', age: 24, city: '北京', dept: '设计' },
+        { key: '5', name: '孙七', age: 36, city: '上海', dept: '运营' },
+    ];
+
+    let &[tableChangeLog] = track<string>('');
+    let &[tableSelectedKeys] = track<Array<string | number>>([]);
+
+    const tablePageColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '年龄', dataIndex: 'age', key: 'age', sorter: (a, b) => a.age - b.age },
+        { title: '部门', dataIndex: 'dept', key: 'dept' },
+    ];
+    const tablePageData: TablePerson[] = Array.from({ length: 23 }, (_, i) => ({
+        key: `p${i + 1}`,
+        name: `员工${i + 1}`,
+        age: 22 + (i % 20),
+        city: i % 2 === 0 ? '北京' : '上海',
+        dept: i % 3 === 0 ? '研发' : i % 3 === 1 ? '产品' : '设计',
+    }));
+
+    const tableTreeColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '部门', dataIndex: 'dept', key: 'dept' },
+    ];
+    const tableTreeData: TablePerson[] = [
+        {
+            key: 't1',
+            name: '研发中心',
+            age: 0,
+            city: '',
+            dept: '研发',
+            children: [
+                { key: 't1-1', name: '前端组', age: 0, city: '', dept: '研发' },
+                { key: 't1-2', name: '后端组', age: 0, city: '', dept: '研发' },
+            ],
+        },
+        {
+            key: 't2',
+            name: '产品中心',
+            age: 0,
+            city: '',
+            dept: '产品',
+            children: [{ key: 't2-1', name: '产品组', age: 0, city: '', dept: '产品' }],
+        },
+    ];
+
+    const tableExpandColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '部门', dataIndex: 'dept', key: 'dept' },
+    ];
+
+    const tableFixedColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name', fixed: 'left', width: 120 },
+        { title: '年龄', dataIndex: 'age', key: 'age', width: 100 },
+        { title: '城市', dataIndex: 'city', key: 'city', width: 120 },
+        { title: '部门', dataIndex: 'dept', key: 'dept', width: 120 },
+        { title: '操作', key: 'action', fixed: 'right', width: 100, render: () => <a href="javascript:void(0)">编辑</a> },
+    ];
+
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -3336,6 +3423,98 @@ export function App() @{
             <Button onClick={() => { pinCodeControlledValue = pinCodeControlledValue === '' ? '9876' : ''; }}>
                 切换 PinCode 值
             </Button>
+        </div>
+
+        <Divider>Table：基础用法（排序 + 筛选）</Divider>
+
+        <div>
+            <Table
+                columns={tableBasicColumns}
+                dataSource={tableBasicData}
+                pagination={false}
+                onChange={(info) => { tableChangeLog = `sort=${JSON.stringify(info.sortState)} filter=${JSON.stringify(info.filterState)}`; }}
+                aria-label="Table 基础"
+            />
+            <TypographyText type="secondary" aria-label="Table 变化日志">{tableChangeLog}</TypographyText>
+        </div>
+
+        <Divider>Table：行选择（checkbox 多选 + 全选）</Divider>
+
+        <div>
+            <Table
+                columns={tableBasicColumns}
+                dataSource={tableBasicData}
+                pagination={false}
+                rowSelection={{
+                    selectedRowKeys: tableSelectedKeys,
+                    onChange: (keys) => { tableSelectedKeys = keys; },
+                }}
+                aria-label="Table 行选择"
+            />
+            <TypographyText type="secondary" aria-label="Table 选中日志">{`已选：${tableSelectedKeys.join(',')}`}</TypographyText>
+        </div>
+
+        <Divider>Table：内置分页</Divider>
+
+        <div>
+            <Table
+                columns={tablePageColumns}
+                dataSource={tablePageData}
+                pagination={{ pageSize: 5 }}
+                aria-label="Table 分页"
+            />
+        </div>
+
+        <Divider>Table：树形数据（父子级联选择）</Divider>
+
+        <div>
+            <Table
+                columns={tableTreeColumns}
+                dataSource={tableTreeData}
+                pagination={false}
+                rowSelection={{}}
+                defaultExpandedRowKeys={['t1']}
+                aria-label="Table 树形数据"
+            />
+        </div>
+
+        <Divider>Table：展开行（expandedRowRender）</Divider>
+
+        <div>
+            <Table
+                columns={tableExpandColumns}
+                dataSource={tableBasicData}
+                pagination={false}
+                expandedRowRender={(record) => <span>{`${record.name} 的详细信息：城市 ${record.city}，年龄 ${record.age}`}</span>}
+                aria-label="Table 展开行"
+            />
+        </div>
+
+        <Divider>Table：固定列（左右两侧 fixed）</Divider>
+
+        <div>
+            <Table
+                columns={tableFixedColumns}
+                dataSource={tableBasicData}
+                pagination={false}
+                scroll={{ x: 700 }}
+                aria-label="Table 固定列"
+            />
+        </div>
+
+        <Divider>Table：loading / bordered / size</Divider>
+
+        <div>
+            <Space vertical style={{ width: '100%' }}>
+                <Table columns={tableBasicColumns} dataSource={tableBasicData} pagination={false} loading aria-label="Table loading" />
+                <Table columns={tableBasicColumns} dataSource={tableBasicData} pagination={false} bordered size="small" aria-label="Table bordered small" />
+            </Space>
+        </div>
+
+        <Divider>Table：空数据</Divider>
+
+        <div>
+            <Table columns={tableBasicColumns} dataSource={[]} pagination={false} aria-label="Table 空数据" />
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>

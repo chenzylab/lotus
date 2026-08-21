@@ -359,6 +359,15 @@ export { DropdownItem, type DropdownItemProps, type DropdownItemType } from './s
 export { DropdownTitle, type DropdownTitleProps } from './show/dropdown/title.tsrx';
 export { DropdownDivider, type DropdownDividerProps } from './show/dropdown/divider.tsrx';
 export {
+    Table,
+    type TableProps,
+    type TableRowSelection,
+    type TableExpandable,
+    type TableSize,
+    type ColumnDef,
+    type SortOrder,
+} from './show/table/index.tsrx';
+export {
     Tabs,
     type TabsProps,
     type TabItem,

@@ -30,6 +30,7 @@ export default [
       'packages/ripple/src/navigation/tree/index.tsrx',
       'packages/ripple/src/input/time-picker/index.tsrx',
       'packages/ripple/src/input/transfer/index.tsrx',
+      'packages/ripple/src/show/table/index.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',
