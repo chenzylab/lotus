@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, Form, Field, ConfigProvider, zhCN, enUS } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -302,6 +302,11 @@ export function App() @{
     let &[uploadDragFileList] = track<FileItem[]>([]);
     let &[uploadPictureFileList] = track<FileItem[]>([]);
     let &[uploadChangeLog] = track<string>('');
+    let &[tagInputValue] = track<string[]>(['苹果', '香蕉']);
+    let &[tagInputChangeLog] = track<string>('');
+    let &[tagInputFoldValue] = track<string[]>(['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6']);
+    let &[tagInputDragValue] = track<string[]>(['red', 'green', 'blue', 'yellow']);
+    let &[tagInputControlledValue] = track<string[]>(['a', 'b']);
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let &[localeIsEnglish] = track<boolean>(false);
@@ -3217,6 +3222,71 @@ export function App() @{
                 defaultFileList={[{ uid: 'd1', name: 'readonly.png', size: 2048, status: 'success', percent: 100 }]}
                 aria-label="Upload 禁用"
             />
+        </div>
+
+        <Divider>TagInput：基础用法（Enter/逗号新增，Backspace 删除最后一个）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                value={tagInputValue}
+                onChange={(v) => { tagInputValue = v; tagInputChangeLog = `变化：${v.join(',')}`; }}
+                placeholder="输入后按 Enter 或逗号添加"
+                aria-label="TagInput 基础"
+            />
+            <TypographyText type="secondary" aria-label="TagInput 事件日志">{tagInputChangeLog}</TypographyText>
+        </div>
+
+        <Divider>TagInput：maxTagCount 折叠 + showRestTagsPopover</Divider>
+
+        <div style={{ width: '260px' }}>
+            <TagInput
+                value={tagInputFoldValue}
+                onChange={(v) => { tagInputFoldValue = v; }}
+                maxTagCount={3}
+                aria-label="TagInput 折叠"
+            />
+        </div>
+
+        <Divider>TagInput：draggable 拖拽排序</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                value={tagInputDragValue}
+                onChange={(v) => { tagInputDragValue = v; }}
+                draggable
+                aria-label="TagInput 拖拽"
+            />
+        </div>
+
+        <Divider>TagInput：showClear + allowDuplicates=false + max=5</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                defaultValue={['x']}
+                showClear
+                allowDuplicates={false}
+                max={5}
+                aria-label="TagInput 限制"
+            />
+        </div>
+
+        <Divider>TagInput：disabled 禁用</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput defaultValue={['只读1', '只读2']} disabled aria-label="TagInput 禁用" />
+        </div>
+
+        <Divider>TagInput：受控（外部按钮驱动）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                value={tagInputControlledValue}
+                onChange={(v) => { tagInputControlledValue = v; }}
+                aria-label="TagInput 受控示例"
+            />
+            <Button onClick={() => { tagInputControlledValue = tagInputControlledValue.length > 0 ? [] : ['a', 'b']; }}>
+                切换 TagInput 选中值
+            </Button>
         </div>
 
         <Divider>Form：基本表单 + 校验规则 + formApi</Divider>

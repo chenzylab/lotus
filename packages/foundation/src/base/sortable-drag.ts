@@ -62,3 +62,74 @@ export function arrayMove<T>(arr: T[], oldIndex: number, newIndex: number): T[] 
   if (moved !== undefined) next.splice(newIndex, 0, moved);
   return next;
 }
+
+// ===================== flex-wrap 多行二维拖拽（TagInput 等标签换行场景） =====================
+
+export interface WrapRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * flex-wrap 多行布局下的二维拖拽目标索引：用"最近中心点"（欧几里得距离）
+ * 而非 1D 版本的"越过中心线计数"——1D 的中线扫描法在跨行移动时会失效
+ * （同一行内左右相邻和跨行的"上一行末尾/下一行开头"在几何上不构成单调
+ * 序列），移植自参考实现 chenzy.design 的 computeTargetIndexWrap 纯函数
+ * 算法（对齐 dnd-kit closestCenter 策略思路，已用单测验证覆盖同行/跨行/
+ * 不等宽列等边界情况）。
+ */
+export function computeTargetIndexWrap(pointerX: number, pointerY: number, rects: readonly WrapRect[]): number {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i]!;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const dx = pointerX - cx;
+    const dy = pointerY - cy;
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/**
+ * flex-wrap 布局下每一项应该产生的 CSS transform 位移：被拖拽项跟随指针，
+ * 其余受影响项精确滑动到"目标邻居的实际矩形位置"（而非 1D 版本的统一轴向
+ * 位移）——因为 wrap 布局下每个标签宽度不同，"精确对齐到邻居的真实矩形"
+ * 才能在不等宽标签之间正确让位，统一位移量的方案在这里不成立。
+ */
+export function computeItemTransformsWrap(
+  activeIndex: number,
+  targetIndex: number,
+  pointerDeltaX: number,
+  pointerDeltaY: number,
+  rects: readonly WrapRect[],
+): Array<{ x: number; y: number }> {
+  const transforms: Array<{ x: number; y: number }> = rects.map(() => ({ x: 0, y: 0 }));
+  if (activeIndex < 0 || activeIndex >= rects.length) return transforms;
+
+  transforms[activeIndex] = { x: pointerDeltaX, y: pointerDeltaY };
+  if (targetIndex === activeIndex) return transforms;
+
+  const activeRect = rects[activeIndex]!;
+  if (targetIndex > activeIndex) {
+    for (let i = activeIndex + 1; i <= targetIndex; i++) {
+      const rect = rects[i]!;
+      const prevRect = i === activeIndex + 1 ? activeRect : rects[i - 1]!;
+      transforms[i] = { x: prevRect.left - rect.left, y: prevRect.top - rect.top };
+    }
+  } else {
+    for (let i = activeIndex - 1; i >= targetIndex; i--) {
+      const rect = rects[i]!;
+      const nextRect = i === activeIndex - 1 ? activeRect : rects[i + 1]!;
+      transforms[i] = { x: nextRect.left - rect.left, y: nextRect.top - rect.top };
+    }
+  }
+  return transforms;
+}

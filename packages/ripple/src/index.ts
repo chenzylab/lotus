@@ -172,6 +172,12 @@ export {
     type FileItem,
 } from './input/upload/index.tsrx';
 export {
+    TagInput,
+    type TagInputProps,
+    type TagInputSize,
+    type TagInputValidateStatus,
+} from './input/tag-input/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
