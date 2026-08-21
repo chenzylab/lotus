@@ -178,6 +178,12 @@ export {
     type TagInputValidateStatus,
 } from './input/tag-input/index.tsrx';
 export {
+    PinCode,
+    type PinCodeProps,
+    type PinCodeSize,
+    type PinCodeValidateStatus,
+} from './input/pin-code/index.tsrx';
+export {
     Form,
     Field,
     type FormProps,
