@@ -20,8 +20,14 @@ test.describe('MarkdownRender', () => {
   test('无序列表渲染为 ul > li', async ({ page }) => {
     await page.goto('/');
     const root = page.locator('.demo-markdown-render');
-    const items = await root.locator('ul > li').allTextContents();
-    expect(items).toEqual(['列表项一', '列表项二']);
+    const items = root.locator('ul > li');
+    // compileToHast 异步编译（unified/remark 生态动态 import + 编译耗时），
+    // 先等待列表项数量达到预期再读取文本快照——allTextContents() 本身不带
+    // Playwright 的 auto-retry 轮询，在编译尚未完成时会立即返回空数组，
+    // 必须先用 toHaveCount 这类会重试的断言等编译结果落地。
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toHaveText('列表项一');
+    await expect(items.nth(1)).toHaveText('列表项二');
   });
 
   test('GFM 表格语法渲染为 table，含表头与两行数据', async ({ page }) => {
