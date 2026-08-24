@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -403,6 +403,10 @@ export function App() @{
     let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
     let &[cropperResultUrl] = track<string>('');
     let &[cropperZoom] = track<number>(1);
+    let &[chatMessages] = track<ChatMessage[]>(() => [
+        { id: 'demo-1', role: 'assistant', content: '你好，我可以帮你做什么？', status: 'complete' } as ChatMessage,
+        { id: 'demo-2', role: 'user', content: '介绍一下 lotus 组件库', status: 'complete' } as ChatMessage,
+    ]);
     let &[cropperRotate] = track<number>(0);
     let &[cropperApiResultUrl] = track<string>('');
     let cropperApiRef: CropperApi | undefined;
@@ -3642,6 +3646,21 @@ export function App() @{
                     value={{ a: { b: { c: [1, 2, 3] } } }}
                 />
             </div>
+        </div>
+
+        <Divider>Chat：聊天组件（基础版）</Divider>
+
+        <div class="demo-chat" style={{ width: '480px', height: '420px', border: '1px solid var(--lotus-color-border)', borderRadius: 'var(--lotus-border-radius-medium)' }}>
+            <Chat
+                chats={chatMessages}
+                roleConfig={{
+                    user: { name: '我' },
+                    assistant: { name: 'lotus 助手' },
+                }}
+                hints={['介绍一下组件库', '如何开始使用']}
+                onChatsChange={(next) => { chatMessages = next; }}
+                onMessageSend={(content) => console.log('chat send:', content)}
+            />
         </div>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />

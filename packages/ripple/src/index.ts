@@ -344,6 +344,13 @@ export {
     type JsonViewerProps,
 } from './show/json-viewer/index.tsrx';
 export {
+    Chat,
+    type ChatProps,
+    type ChatMessage,
+    type ChatRoleConfig,
+    type SendHotKey,
+} from './show/chat/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
