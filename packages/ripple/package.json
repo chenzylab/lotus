@@ -18,9 +18,11 @@
     "@lotus/illustrations": "workspace:*",
     "@lotus/locale": "workspace:*",
     "@lotus/tokens": "workspace:*",
+    "prismjs": "^1.30.0",
     "ripple": "catalog:"
   },
   "devDependencies": {
+    "@types/prismjs": "^1.26.6",
     "typescript": "npm:typescript@5.9.3",
     "@tsrx/typescript-plugin": "catalog:"
   }

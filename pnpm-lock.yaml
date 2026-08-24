@@ -263,6 +263,9 @@ importers:
       '@lotus/tokens':
         specifier: workspace:*
         version: link:../tokens
+      prismjs:
+        specifier: ^1.30.0
+        version: 1.30.0
       ripple:
         specifier: 'catalog:'
         version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
@@ -270,6 +273,9 @@ importers:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
         version: 0.3.123(@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0))(typescript@5.9.3)
+      '@types/prismjs':
+        specifier: ^1.26.6
+        version: 1.26.6
       typescript:
         specifier: npm:typescript@5.9.3
         version: 5.9.3
@@ -571,6 +577,9 @@ packages:
 
   '@types/node@26.2.0':
     resolution: {integrity: sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg==}
+
+  '@types/prismjs@1.26.6':
+    resolution: {integrity: sha512-vqlvI7qlMvcCBbVe0AKAb4f97//Hy0EBTaiW8AalRnG/xAN5zOiWWyrNqNXeq8+KAuvRewjCVY1+IPxk4RdNYw==}
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
@@ -1256,6 +1265,10 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
+  prismjs@1.30.0:
+    resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
+    engines: {node: '>=6'}
+
   property-information@7.2.0:
     resolution: {integrity: sha512-IAtzIB6sUiWaJYrX9smp3V46pBGbBeLFRGdh25kg1334VcBlD8HzhPeNIWQH9zhGmo2itIe25EHt9dQP7G5hmg==}
 
@@ -1751,6 +1764,8 @@ snapshots:
   '@types/node@26.2.0':
     dependencies:
       undici-types: 8.3.0
+
+  '@types/prismjs@1.26.6': {}
 
   '@types/unist@3.0.3': {}
 
@@ -2363,6 +2378,8 @@ snapshots:
   prelude-ls@1.2.1: {}
 
   prettier@3.9.6: {}
+
+  prismjs@1.30.0: {}
 
   property-information@7.2.0: {}
 

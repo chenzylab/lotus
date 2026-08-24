@@ -332,6 +332,10 @@ export {
     type UserGuideStep,
 } from './show/user-guide/index.tsrx';
 export {
+    CodeHighlight,
+    type CodeHighlightProps,
+} from './show/code-highlight/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
