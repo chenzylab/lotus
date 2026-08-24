@@ -340,6 +340,10 @@ export {
     type MarkdownRenderProps,
 } from './show/markdown-render/index.tsrx';
 export {
+    JsonViewer,
+    type JsonViewerProps,
+} from './show/json-viewer/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
