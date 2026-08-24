@@ -97,8 +97,8 @@
 
 ## Phase 5 — 全局配置 + 富媒体/工具类 (Other + Plus)
 
-- [ ] ConfigProvider 全局配置
-- [ ] Locale 国际化（对接 `@lotus/locale`，非独立视觉组件）
+- [x] ConfigProvider 全局配置（此前已随各输入类组件的 locale 需求顺带实现，本次核实补勾：纯 Context Provider，`LocaleContext.set()` 响应式下发 `LocaleShape`，切换 locale 后子树文案实时更新不需要重新挂载；无独立 Foundation——组件本身无状态机，只做透传，符合"纯展示/透传型组件可以没有 Foundation"的惯例；已有专门 e2e 覆盖 `e2e/other/config-provider.spec.ts`，3 个用例全过）
+- [x] Locale 国际化（对接 `@lotus/locale`，非独立视觉组件；同上一并核实完成，覆盖 Form/Input/InputNumber/TextArea/Select/Modal/Calendar/UserGuide/TimePicker/DatePicker 共 10 个组件的 zh-CN/en-US 双语词条，`LocaleShape` 类型定义于 `packages/locale/src/types.ts`）
 - [ ] Sidebar 侧边栏容器（Plus/AI 分类，纳入此阶段做通用容器）
 - [ ] CodeHighlight 代码高亮
 - [ ] MarkdownRender Markdown 渲染
