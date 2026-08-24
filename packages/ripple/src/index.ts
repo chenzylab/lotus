@@ -367,6 +367,11 @@ export {
     type AnimationItem,
 } from './show/lottie/index.tsrx';
 export {
+    DragMove,
+    type DragMoveProps,
+    type DragPositionStrategy,
+} from './basic/drag-move/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
