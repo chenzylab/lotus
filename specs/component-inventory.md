@@ -101,7 +101,7 @@
 - [x] Locale 国际化（对接 `@lotus/locale`，非独立视觉组件；同上一并核实完成，覆盖 Form/Input/InputNumber/TextArea/Select/Modal/Calendar/UserGuide/TimePicker/DatePicker 共 10 个组件的 zh-CN/en-US 双语词条，`LocaleShape` 类型定义于 `packages/locale/src/types.ts`）
 - [ ] Sidebar 侧边栏容器（Plus/AI 分类，纳入此阶段做通用容器）
 - [x] CodeHighlight 代码高亮（对齐 Semi semi-ui/codeHighlight：底层 prismjs，Foundation 层为纯函数 `resolveCodeClassName`，无状态机；DOM 结构 div > pre > code，`textContent` 纯文本写入 + `Prism.highlightElement` 就地高亮，不经 innerHTML，规避 XSS；props 严格对齐 Semi 真实 API（code/language/lineNumber/defaultTheme/class/style），不臆造 copyable 等 Semi 没有的丰富特性；e2e 覆盖 `e2e/show/code-highlight.spec.ts`，6 用例 30/30（`--repeat-each=5`）全过）
-- [ ] MarkdownRender Markdown 渲染
+- [x] MarkdownRender Markdown 渲染（Semi 用 `@mdx-js/mdx` evaluate 编译成 React 组件，lotus 无 jsx-runtime 无法复用，改用 unified/remark-parse/remark-gfm/remark-rehype 管线把 markdown 编译到 hast（HTML AST），渲染层用 tsrx 动态标签语法 `<{node.tagName}>` 递归渲染成真实 DOM；XSS 防护走架构级方案——全程不经过 HTML 字符串/innerHTML，`remark-rehype` 的 `allowDangerousHtml` 保持默认 false，markdown 源码内嵌的 raw HTML 在编译期被直接丢弃，不引入 DOMPurify；围栏代码块复用已有 CodeHighlight 组件（对齐 Semi markdownRender/components/code.tsx 的语言探测转发模式），行内代码渲染为 simple-code span；Foundation 层 `compileToHast`/`hastPropsToAttrs` 均为纯函数，无状态机；e2e 覆盖 `e2e/show/markdown-render.spec.ts`，8 用例 40/40（`--repeat-each=5`）全过，含 `<script>` 注入的显式回归测试）
 - [ ] JsonViewer JSON 查看器
 - [ ] Chat 聊天组件（基础版，AI 交互增强见 Phase 6）
 - [ ] AudioPlayer 音频播放器

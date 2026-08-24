@@ -22,6 +22,7 @@
     "ripple": "catalog:"
   },
   "devDependencies": {
+    "@types/hast": "^3.0.5",
     "@types/prismjs": "^1.26.6",
     "typescript": "npm:typescript@5.9.3",
     "@tsrx/typescript-plugin": "catalog:"

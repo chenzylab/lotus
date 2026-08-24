@@ -336,6 +336,10 @@ export {
     type CodeHighlightProps,
 } from './show/code-highlight/index.tsrx';
 export {
+    MarkdownRender,
+    type MarkdownRenderProps,
+} from './show/markdown-render/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
