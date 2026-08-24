@@ -372,6 +372,12 @@ export {
     type DragPositionStrategy,
 } from './basic/drag-move/index.tsrx';
 export {
+    HotKeys,
+    type HotKeysProps,
+    type HotKey,
+    Keys as HotKeysKeys,
+} from './basic/hotkeys/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
