@@ -351,6 +351,12 @@ export {
     type SendHotKey,
 } from './show/chat/index.tsrx';
 export {
+    AudioPlayer,
+    type AudioPlayerProps,
+    type AudioUrl,
+    type PlaybackRate,
+} from './show/audio-player/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,
