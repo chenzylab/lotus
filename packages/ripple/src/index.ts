@@ -361,6 +361,12 @@ export {
     type VideoPlayerProps,
 } from './show/video-player/index.tsrx';
 export {
+    Lottie,
+    type LottieProps,
+    type LottieLoadParams,
+    type AnimationItem,
+} from './show/lottie/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

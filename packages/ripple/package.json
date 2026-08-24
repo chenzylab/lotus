@@ -18,6 +18,7 @@
     "@lotus/illustrations": "workspace:*",
     "@lotus/locale": "workspace:*",
     "@lotus/tokens": "workspace:*",
+    "lottie-web": "^5.13.0",
     "prismjs": "^1.30.0",
     "ripple": "catalog:"
   },
