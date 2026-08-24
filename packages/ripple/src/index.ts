@@ -357,6 +357,10 @@ export {
     type PlaybackRate,
 } from './show/audio-player/index.tsrx';
 export {
+    VideoPlayer,
+    type VideoPlayerProps,
+} from './show/video-player/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

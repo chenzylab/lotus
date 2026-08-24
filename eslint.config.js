@@ -33,6 +33,7 @@ export default [
       'packages/ripple/src/show/table/index.tsrx',
       'packages/ripple/src/show/chat/index.tsrx',
       'packages/ripple/src/show/audio-player/index.tsrx',
+      'packages/ripple/src/show/video-player/index.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',
