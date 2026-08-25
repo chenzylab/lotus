@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -434,6 +434,12 @@ export function App() @{
     let aiDialogueApi: AiChatDialogueApi | undefined;
     let aiStreamState: any = null;
     let &[aiStreamingLog] = track<string>('');
+    let aiInputApi: AiChatInputApi | undefined;
+    let &[aiInputSentLog] = track<string>('');
+    let &[aiInputGenerating] = track<boolean>(false);
+    let &[aiInputReferences] = track<Array<{ id: string; name?: string; content?: string }>>([
+        { id: 'ref-1', name: 'design-doc.md', content: '设计文档引用片段' },
+    ]);
     let &[userGuideCurrent] = track<number>(0);
     let &[userGuideLog] = track<string>('');
     let &[userGuideModalVisible] = track<boolean>(false);
@@ -3854,6 +3860,44 @@ export function App() @{
             <Button onClick={() => aiDialogueApi?.scrollToTop()}>滚动到顶部</Button>
             <Button onClick={() => aiDialogueApi?.scrollToBottom()}>滚动到底部</Button>
             <span class="demo-ai-streaming-log">{aiStreamingLog}</span>
+        </div>
+
+        <Divider>AiChatInput：AI 输入框</Divider>
+
+        <div class="demo-ai-chat-input" style={{ maxWidth: '600px' }}>
+            <AiChatInput
+                placeholder="输入消息，或按 / 触发技能..."
+                skillHotKey="/"
+                skills={[
+                    { value: 'translate', label: '翻译', hasTemplate: true },
+                    { value: 'summarize', label: '总结' },
+                ]}
+                suggestions={['介绍一下 lotus 组件库', '帮我写一段 TypeScript 代码']}
+                onSuggestClick={(s) => aiInputApi?.setContent(typeof s === 'string' ? s : s.content)}
+                references={aiInputReferences}
+                onReferenceDelete={(r) => { aiInputReferences = aiInputReferences.filter((x) => x.id !== r.id); }}
+                showTemplateButton={true}
+                renderTemplate={(skill, onTemplateClick) => (
+                    <div style={{ padding: '8px' }}>
+                        <div style={{ marginBottom: '4px', fontSize: '12px', color: 'var(--lotus-color-text-2)' }}>{skill.label} 模版</div>
+                        <div
+                            style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '13px' }}
+                            onClick={() => onTemplateClick('帮我把这段翻译成英文：')}
+                        >翻译模版</div>
+                    </div>
+                )}
+                mcpOptions={[{ value: 'search', label: 'Web Search', active: true }, { value: 'calc', label: 'Calculator', active: false }]}
+                onMcpConfigureClick={() => console.log('mcp configure clicked')}
+                uploadProps={{ action: '/api/upload' }}
+                generating={aiInputGenerating}
+                onStopGenerate={() => { aiInputGenerating = false; }}
+                onMessageSend={(message: AiInputMessageContent) => {
+                    aiInputSentLog = JSON.stringify(message);
+                    aiInputGenerating = true;
+                }}
+                getAiChatInputApi={(api: AiChatInputApi) => { aiInputApi = api; }}
+            />
+            <div class="demo-ai-input-sent-log" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--lotus-color-text-2)', wordBreak: 'break-all' }}>{aiInputSentLog}</div>
         </div>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />

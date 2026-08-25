@@ -421,6 +421,24 @@ export {
     formatToolArguments,
 } from './show/ai-chat-dialogue/index.tsrx';
 export {
+    AiChatInput,
+    type AiChatInputProps,
+    type AiChatInputApi,
+    type AiInputAttachment,
+    type AiInputReference,
+    type AiInputMessageContent,
+    type AiInputSendHotKey,
+    type AiInputSuggestion,
+    type AiInputSkill,
+    type AiInputConfigureValue,
+    inputToMessage,
+    inputToChatCompletion,
+    resolveCanSend as aiInputResolveCanSend,
+    getAttachmentType,
+    isImageType as isAiInputImageType,
+    getContentType,
+} from './show/ai-chat-input/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

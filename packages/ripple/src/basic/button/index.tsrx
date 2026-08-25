@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { ButtonFoundation, type ButtonState } from '@lotus/foundation/basic/button';
+import { ButtonFoundation } from '@lotus/foundation/basic/button';
 
 export type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
 export type ButtonTheme = 'solid' | 'borderless' | 'light' | 'outline';
@@ -59,11 +59,9 @@ export function Button(&{
     style,
     class: className,
 }: ButtonProps) @{
-    let &[state] = track<ButtonState>({ disabled, loading });
-
     const foundation = new ButtonFoundation({
-        getState: () => state,
-        setState: (patch: Partial<ButtonState>) => { state = { ...state, ...patch }; },
+        getState: () => ({ disabled, loading }),
+        setState: () => {},
     });
 
     const isIconOnly = !!icon && !children;
