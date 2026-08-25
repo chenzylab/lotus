@@ -486,6 +486,17 @@ export function App() @{
             </Tag>
         </Space>
 
+        <Divider>Tag：colorful / gradient（AI 多彩风格）</Divider>
+
+        <Space wrap>
+            <Tag type="solid" colorful>solid colorful</Tag>
+            <Tag type="solid" colorful gradient>solid colorful gradient</Tag>
+            <Tag type="light" colorful>light colorful</Tag>
+            <Tag type="light" colorful gradient>light colorful gradient</Tag>
+            <Tag type="ghost" colorful>ghost colorful</Tag>
+            <Tag type="ghost" colorful gradient>ghost colorful gradient</Tag>
+        </Space>
+
         <Divider />
 
         <Tabs tabList={lineTabList()} type="line" onChange={(key) => console.log('line tab changed', key)} />
@@ -576,6 +587,16 @@ export function App() @{
         <div style={{ marginTop: '12px' }}>
             <Button theme="solid" block onClick={() => console.log('block button clicked')}>block 按钮</Button>
         </div>
+
+        <Divider>Button：colorful（AI 多彩风格）</Divider>
+
+        <Space>
+            <Button type="primary" theme="solid" colorful>primary solid colorful</Button>
+            <Button type="tertiary" theme="solid" colorful>tertiary solid colorful</Button>
+            <Button type="primary" theme="light" colorful>primary light colorful</Button>
+            <Button type="primary" theme="borderless" colorful>primary borderless colorful</Button>
+            <Button type="secondary" theme="solid" colorful>secondary colorful（应静默无效果）</Button>
+        </Space>
 
         <Divider>ButtonGroup</Divider>
 

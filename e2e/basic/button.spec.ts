@@ -45,9 +45,9 @@ test.describe('Button', () => {
   test('type × theme 组合正确渲染对应 class', async ({ page }) => {
     await page.goto('/');
 
-    const solidPrimary = page.locator('.lotus-button-primary.lotus-button-theme-solid', { hasText: 'primary solid' });
-    const lightDanger = page.locator('.lotus-button-danger.lotus-button-theme-light', { hasText: 'danger light' });
-    const outlineWarning = page.locator('.lotus-button-warning.lotus-button-theme-outline', { hasText: 'warning outline' });
+    const solidPrimary = page.getByRole('button', { name: 'primary solid', exact: true });
+    const lightDanger = page.getByRole('button', { name: 'danger light', exact: true });
+    const outlineWarning = page.getByRole('button', { name: 'warning outline', exact: true });
 
     await expect(solidPrimary).toBeVisible();
     await expect(lightDanger).toBeVisible();
@@ -67,5 +67,29 @@ test.describe('Button', () => {
 
     await expect(group).toBeVisible();
     await expect(group.getByRole('button')).toHaveCount(3);
+  });
+
+  test('colorful：primary/tertiary 生效，其余 type 静默无视觉效果', async ({ page }) => {
+    await page.goto('/');
+
+    const primarySolid = page.getByRole('button', { name: 'primary solid colorful' });
+    await expect(primarySolid).toHaveClass(/lotus-button-colorful/);
+    await expect(primarySolid).toHaveCSS('background-image', /gradient/);
+
+    const tertiarySolid = page.getByRole('button', { name: 'tertiary solid colorful' });
+    await expect(tertiarySolid).toHaveClass(/lotus-button-colorful/);
+
+    const secondary = page.getByRole('button', { name: 'secondary colorful（应静默无效果）' });
+    await expect(secondary).not.toHaveClass(/lotus-button-colorful/);
+  });
+
+  test('colorful：light/borderless 主题渲染渐变文字（background-clip:text）', async ({ page }) => {
+    await page.goto('/');
+
+    const light = page.getByRole('button', { name: 'primary light colorful' });
+    await expect(light).toHaveCSS('background-clip', 'text');
+
+    const borderless = page.getByRole('button', { name: 'primary borderless colorful' });
+    await expect(borderless).toHaveCSS('background-clip', 'text');
   });
 });

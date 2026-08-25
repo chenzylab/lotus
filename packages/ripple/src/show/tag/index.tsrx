@@ -14,6 +14,10 @@ export interface TagProps {
     type?: TagType;
     closable?: boolean;
     visible?: boolean;
+    /** AI 多彩风格（对齐 Semi `colorful`），生效时忽略 `color` 语义色，改用 AI 渐变色系。 */
+    colorful?: boolean;
+    /** 配合 `colorful` 使用：是否用渐变色而非纯色（对齐 Semi `gradient`），单独设置无效果。 */
+    gradient?: boolean;
     onClose?: (event: MouseEvent) => void;
     onClick?: (event: MouseEvent) => void;
     prefixIcon?: any;
@@ -30,6 +34,8 @@ export function Tag(&{
     type = 'light',
     closable = false,
     visible: visibleProp,
+    colorful = false,
+    gradient = false,
     onClose,
     onClick,
     prefixIcon,
@@ -47,7 +53,9 @@ export function Tag(&{
             'lotus-tag',
             `lotus-tag-${type}`,
             `lotus-tag-${size}`,
-            color === 'white' ? 'lotus-tag-white' : '',
+            color === 'white' && !colorful ? 'lotus-tag-white' : '',
+            colorful ? 'lotus-tag-colorful' : '',
+            colorful && gradient ? 'lotus-tag-colorful-gradient' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -66,7 +74,7 @@ export function Tag(&{
         @if (visible) {
             <div
                 class={classes}
-                style={{ ...style, '--lotus-tag-color': color === 'white' ? '' : `var(--lotus-color-tag-${kebabCase(color)})` }}
+                style={{ ...style, '--lotus-tag-color': colorful || color === 'white' ? '' : `var(--lotus-color-tag-${kebabCase(color)})` }}
                 onClick={onClick}
                 aria-label={ariaLabel}
             >
@@ -145,6 +153,47 @@ export function Tag(&{
                 background: var(--lotus-color-bg-1);
                 color: var(--lotus-color-text-0);
                 border: 1px solid var(--lotus-color-border);
+            }
+
+            /* ---- colorful：AI 多彩风格，忽略 color 语义色，solid 纯色/light 浅底+紫字/
+               ghost 白底描边+紫字；colorful-gradient 时三者均改用渐变 ---- */
+            .lotus-tag-colorful.lotus-tag-solid {
+                background: var(--lotus-color-ai-purple);
+                color: #ffffff;
+                font-weight: var(--lotus-font-weight-semibold);
+            }
+            .lotus-tag-colorful-gradient.lotus-tag-solid {
+                background: var(--lotus-color-ai-general);
+            }
+
+            .lotus-tag-colorful.lotus-tag-light {
+                background: var(--lotus-color-ai-background-top);
+                color: var(--lotus-color-ai-purple);
+                font-weight: var(--lotus-font-weight-semibold);
+            }
+            .lotus-tag-colorful-gradient.lotus-tag-light {
+                background: var(--lotus-color-ai-background-top);
+                background-image: var(--lotus-color-ai-general);
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .lotus-tag-colorful.lotus-tag-ghost {
+                background: var(--lotus-color-bg-1);
+                color: var(--lotus-color-ai-purple);
+                border-color: var(--lotus-color-ai-purple);
+                font-weight: var(--lotus-font-weight-semibold);
+            }
+            .lotus-tag-colorful-gradient.lotus-tag-ghost {
+                background: var(--lotus-color-bg-1);
+                background-image: var(--lotus-color-ai-general);
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                -webkit-text-fill-color: transparent;
+                border-color: var(--lotus-color-ai-purple);
             }
 
             .lotus-tag-prefix-icon,

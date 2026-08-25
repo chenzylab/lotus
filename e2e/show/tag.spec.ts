@@ -36,4 +36,31 @@ test.describe('Tag', () => {
     await expect(closableTag).not.toBeVisible();
     expect(consoleMessages).toContain('tag closed');
   });
+
+  test('colorful：solid/light/ghost 均忽略 color 语义色，改用 AI 渐变色系', async ({ page }) => {
+    await page.goto('/');
+
+    const solidColorful = page.locator('.lotus-tag-colorful.lotus-tag-solid', { hasText: 'solid colorful' }).first();
+    await expect(solidColorful).toBeVisible();
+    await expect(solidColorful).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+    const lightColorful = page.locator('.lotus-tag-colorful.lotus-tag-light', { hasText: 'light colorful' }).first();
+    await expect(lightColorful).toBeVisible();
+
+    const ghostColorful = page.locator('.lotus-tag-colorful.lotus-tag-ghost', { hasText: 'ghost colorful' }).first();
+    await expect(ghostColorful).toBeVisible();
+  });
+
+  test('colorful + gradient：三种 type 均改用渐变（solid 渐变背景，light/ghost 渐变文字裁切）', async ({ page }) => {
+    await page.goto('/');
+
+    const solidGradient = page.locator('.lotus-tag-colorful-gradient.lotus-tag-solid').first();
+    await expect(solidGradient).toHaveCSS('background-image', /gradient/);
+
+    const lightGradient = page.locator('.lotus-tag-colorful-gradient.lotus-tag-light').first();
+    await expect(lightGradient).toHaveCSS('background-clip', 'text');
+
+    const ghostGradient = page.locator('.lotus-tag-colorful-gradient.lotus-tag-ghost').first();
+    await expect(ghostGradient).toHaveCSS('background-clip', 'text');
+  });
 });

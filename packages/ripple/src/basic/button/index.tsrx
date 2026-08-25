@@ -17,6 +17,8 @@ export interface ButtonProps {
     block?: boolean;
     disabled?: boolean;
     loading?: boolean;
+    /** AI 多彩风格（对齐 Semi `colorful`），仅 type=primary/tertiary 有对应样式，其余 type 静默无视觉效果。 */
+    colorful?: boolean;
     htmlType?: ButtonHtmlType;
     onClick?: (event: MouseEvent) => void;
     'aria-label'?: string;
@@ -53,6 +55,7 @@ export function Button(&{
     block = false,
     disabled = false,
     loading = false,
+    colorful = false,
     htmlType = 'button',
     onClick,
     'aria-label': ariaLabel,
@@ -81,6 +84,7 @@ export function Button(&{
             isIconOnly ? 'lotus-button-icon-only' : '',
             loading ? 'lotus-button-loading' : '',
             disabled ? 'lotus-button-disabled' : '',
+            colorful && (type === 'primary' || type === 'tertiary') ? 'lotus-button-colorful' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -295,6 +299,32 @@ export function Button(&{
             .lotus-button-theme-outline:disabled {
                 background: transparent;
                 border-color: var(--lotus-color-disabled-border);
+            }
+
+            /* ---- colorful：AI 多彩风格，仅 primary/tertiary 生效（class 已在 JS 侧过滤），
+               solid 走渐变背景，light/borderless 走渐变文字（background-clip:text） ---- */
+            .lotus-button-theme-solid.lotus-button-colorful {
+                background: var(--lotus-color-ai-general);
+                color: #ffffff;
+            }
+            .lotus-button-theme-solid.lotus-button-colorful:hover:not(:disabled) {
+                background: var(--lotus-color-ai-general-hover);
+            }
+            .lotus-button-theme-solid.lotus-button-colorful:active:not(:disabled) {
+                background: var(--lotus-color-ai-general-active);
+            }
+
+            .lotus-button-theme-light.lotus-button-colorful,
+            .lotus-button-theme-borderless.lotus-button-colorful {
+                background-image: var(--lotus-color-ai-general);
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                -webkit-text-fill-color: transparent;
+            }
+            .lotus-button-theme-light.lotus-button-colorful :global(svg),
+            .lotus-button-theme-borderless.lotus-button-colorful :global(svg) {
+                color: var(--lotus-color-ai-purple);
             }
 
             .lotus-button-loading {
