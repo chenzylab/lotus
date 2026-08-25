@@ -92,4 +92,35 @@ test.describe('Form', () => {
     await usernameLabel.click();
     await expect(targetInput).toBeFocused();
   });
+
+  test('异步 validator 校验期间字段展示 loading 态（validating，Semi 自身没有这个状态，lotus 主动新增），完成后正确显示错误', async ({ page }) => {
+    await page.goto('/');
+    const usernameInput = page.getByLabel('用户名', { exact: true });
+    const usernameField = page.locator('.lotus-form-field', { hasText: '用户名' });
+
+    await usernameInput.fill('admin');
+    await usernameInput.blur();
+
+    // 异步 validator（600ms 延迟）执行期间应该显示 loading 图标（suffix）。
+    await expect(usernameField.locator('svg')).toBeVisible();
+
+    // 完成后错误信息出现，loading 图标消失。
+    await expect(page.getByText('用户名已被占用')).toBeVisible({ timeout: 2000 });
+    await expect(usernameField.locator('svg')).not.toBeVisible();
+  });
+
+  test('字段联动：Semi 无专门联动 API，监听 Form.onValueChange + formApi.setValue 驱动关联字段（选择性别后备注自动填充）', async ({ page }) => {
+    await page.goto('/');
+    const sexSelect = page.getByLabel('性别', { exact: true });
+    const noteInput = page.getByLabel('备注', { exact: true });
+
+    await expect(noteInput).toHaveValue('');
+    await sexSelect.click();
+    await page.getByRole('option', { name: '男' }).click();
+    await expect(noteInput).toHaveValue('Hi male');
+
+    await sexSelect.click();
+    await page.getByRole('option', { name: '女' }).click();
+    await expect(noteInput).toHaveValue('Hi female!');
+  });
 });

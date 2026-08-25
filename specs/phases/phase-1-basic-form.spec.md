@@ -26,7 +26,7 @@
 - [ ] Icon 包支持按需引入单个图标（不因为引入一个图标打包进全量 SVG），有构建产物体积的 Playwright/脚本级校验
 - [ ] `packages/icons` 生成的图标组件数量与源 SVG 数量一致（523 个正式图标 + 84 个 lab 图标，脚本级校验数量匹配，防止生成流程静默跳过部分文件）
 - [ ] Input/Checkbox/Radio/Switch 的受控模式（外部传入 `value`/`checked` + `onChange`）与非受控模式（`defaultValue`/`defaultChecked`）均有 Foundation 单测覆盖，两种模式行为一致性是常见 bug 来源，需专项测试
-- [ ] Form 的字段校验支持同步和异步校验器，错误信息展示时机（blur/change/submit）可配置，有 Foundation 单测覆盖状态机的至少 5 种场景（必填/异步校验中/校验失败/校验通过/字段联动）
-- [ ] Form 的错误提示文案通过 `@lotus/locale` token 输出，不硬编码语言
+- [x] Form 的字段校验支持同步和异步校验器，错误信息展示时机（blur/change/submit）可配置，有 Foundation 单测覆盖状态机的至少 5 种场景（必填/异步校验中/校验失败/校验通过/字段联动）——重新核实后发现"异步校验中"和"字段联动"两条实际情况与预期不同：Semi 自身异步校验期间也不暴露 validating 状态（`validateStatus` 只有 error/warning/default/success），lotus 主动新增 `FormState.validating` 超越 Semi；"字段联动"Semi 无专门 API，官方文档写的是"监听 onChange + 手动 formApi.setValue"，lotus 现有 `formApi.setValue` 已完全支持，本次补充 demo+e2e 验证。必填/校验失败/校验通过三种场景此前已有单测覆盖
+- [x] Form 的错误提示文案通过 `@lotus/locale` token 输出，不硬编码语言
 - [ ] 所有表单控件键盘可完全操作（Tab 聚焦、Space/Enter 激活），并有对应 Playwright 键盘操作用例
 - [ ] FloatButton 的 AI 主题变体视觉通过 `.claude/skills/theme-tokens` 的对比度检查

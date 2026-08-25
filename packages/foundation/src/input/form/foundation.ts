@@ -14,10 +14,19 @@ export interface FormTouched {
   [field: string]: boolean | undefined;
 }
 
+export interface FormValidating {
+  [field: string]: boolean | undefined;
+}
+
 export interface FormState {
   values: FormValues;
   errors: FormErrors;
   touched: FormTouched;
+  /** 字段是否正在异步校验中（对齐 rules 里含 `validator` 的场景）。Semi 自身没有
+   * 暴露这个状态给 UI 层——这是 lotus 主动新增的能力，让消费方能在异步校验期间
+   * 给输入框展示 loading 态，同步规则（required/pattern/min/max）校验是瞬时完成的
+   * 纯函数调用，不会产生用户能感知到的"进行中"时间窗口，因此不标记 validating。 */
+  validating: FormValidating;
 }
 
 /** 单条校验规则，风格对齐 Semi 的 rules（async-validator 的极简子集，不引入外部依赖）。 */
@@ -135,15 +144,23 @@ export class FormFoundation extends Foundation<FormState> {
   async validateField(field: string, messages: FormMessages = DEFAULT_MESSAGES): Promise<string | undefined> {
     const config = this.fields.get(field);
     const rules = config?.rules;
+    const hasAsyncValidator = rules?.some((rule) => rule.validator) ?? false;
+    if (hasAsyncValidator) {
+      const { validating } = this.getState();
+      this.setState({ validating: { ...validating, [field]: true } });
+    }
     const { values } = this.getState();
     const error = rules ? await validateRules(values[field], values, rules, messages) : undefined;
     // 并发校验多个字段时（validateAll 用 Promise.all），每个字段的规则校验都
     // 可能经过至少一次微任务让出（validateRules 对 validator 规则用了
-    // await）。写回时必须重新读取当前最新的 errors 再 merge，而不是复用函数
-    // 开始时的旧快照——否则后完成的字段会用旧快照覆盖掉先完成字段刚写入的
+    // await）。写回时必须重新读取当前最新的 errors/validating 再 merge，而不是
+    // 复用函数开始时的旧快照——否则后完成的字段会用旧快照覆盖掉先完成字段刚写入的
     // error，最终只有最后一个完成的字段错误被保留（并发写竞态）。
-    const { errors } = this.getState();
-    this.setState({ errors: { ...errors, [field]: error } });
+    const { errors, validating } = this.getState();
+    this.setState({
+      errors: { ...errors, [field]: error },
+      validating: hasAsyncValidator ? { ...validating, [field]: false } : validating,
+    });
     return error;
   }
 
@@ -175,7 +192,7 @@ export class FormFoundation extends Foundation<FormState> {
   }
 
   reset(onReset?: () => void): void {
-    this.setState({ values: { ...this.initValues }, errors: {}, touched: {} });
+    this.setState({ values: { ...this.initValues }, errors: {}, touched: {}, validating: {} });
     onReset?.();
   }
 }

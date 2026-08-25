@@ -59,7 +59,7 @@ export function Form(&{
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
     let &[messages] = track<FormMessages>(() => locale.Form);
 
-    let &[state] = track<FormState>({ values: { ...initValues }, errors: {}, touched: {} });
+    let &[state] = track<FormState>({ values: { ...initValues }, errors: {}, touched: {}, validating: {} });
 
     const foundation = new FormFoundation({
         getState: () => untrack(() => state),

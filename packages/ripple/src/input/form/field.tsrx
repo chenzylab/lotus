@@ -9,6 +9,10 @@ export interface FieldRenderProps {
     id: string;
     value: any;
     disabled: boolean;
+    /** 该字段的异步 validator 规则是否正在校验中（Semi 自身没有这个状态，
+     * lotus 主动新增），桥接函数可选择性地用它给具体控件传 loading 态。
+     * 只有 rules 里含 `validator` 时才会变 true，同步规则不会产生这个状态。 */
+    validating: boolean;
     onChange: (value: any) => void;
     onBlur: () => void;
     'aria-label': string;
@@ -69,6 +73,7 @@ export function Field(&{
 
     let &[value] = track(() => contextTracked?.value.state.values[field]);
     let &[error] = track(() => contextTracked?.value.state.errors[field]);
+    let &[validating] = track<boolean>(() => contextTracked?.value.state.validating[field] ?? false);
     let &[disabled] = track(() => contextTracked?.value.disabled ?? false);
     let &[resolvedLabelPosition] = track(() => labelPosition ?? contextTracked?.value.labelPosition ?? 'top');
     let &[resolvedLabelWidth] = track(() => labelWidth ?? contextTracked?.value.labelWidth);
@@ -111,6 +116,7 @@ export function Field(&{
                 id={field}
                 value={value}
                 disabled={disabled}
+                validating={validating}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 aria-label={resolvedLabel}

@@ -2,7 +2,7 @@ import { track } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
-import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
+import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
 
@@ -69,6 +69,11 @@ const businessLineOptions: SelectOption[] = [
     { value: 'ulikecam', label: '轻颜相机' },
     { value: 'jianying', label: '剪映', disabled: true },
     { value: 'xigua', label: '西瓜视频' },
+];
+
+const genderOptions: SelectOption[] = [
+    { value: 'male', label: '男' },
+    { value: 'female', label: '女' },
 ];
 
 function lineTabList(): TabItem[] {
@@ -171,12 +176,13 @@ function mockUploadRequest(args: CustomRequestArgs) {
 // Field 的 Comp 收到统一的 { value, disabled, onChange, onBlur, 'aria-label' }，
 // 由这几个桥接组件把它接到具体输入组件各自的 props 形状上（Input 是
 // onChange(value, event)，InputNumber/Select 是 onChange(value)）。
-function FormUsernameInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+function FormUsernameInput(&{ id, value, disabled, validating, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
     return (
         <Input
             id={id}
             value={value ?? ''}
             disabled={disabled}
+            suffix={validating ? <IconLoading /> : undefined}
             onChange={(v) => onChange(v)}
             onBlur={onBlur}
             aria-label={ariaLabel}
@@ -209,6 +215,38 @@ function FormBusinessLineSelect(&{ value, disabled, onChange, onBlur, 'aria-labe
             onBlur={onBlur}
             aria-label={ariaLabel}
             placeholder="请选择业务线"
+        />
+    );
+}
+
+// 表单联动 demo：Semi 官方模式是"监听 Field 的 onChange，用 formApi.setValue 改另一个
+// 字段"（Semi 没有专门的联动 API），此处用 Form 级别的 onValueChange 回调实现（在
+// App 组件内部，能访问 formApi 闭包），比在具体 Field 桥接组件里访问闭包更符合
+// Field 桥接函数应保持"纯粹转发 FieldRenderProps"的既有设计。
+function FormGenderSelect(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Select
+            optionList={genderOptions}
+            value={value}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="请选择性别"
+        />
+    );
+}
+
+function FormNoteInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Input
+            id={id}
+            value={value ?? ''}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="选择性别后自动填充"
         />
     );
 }
@@ -401,6 +439,13 @@ export function App() @{
 
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
+    let linkageFormApiRef: FormApi | undefined;
+
+    function handleLinkageValueChange(_values: Record<string, unknown>, changed: Record<string, unknown>) {
+        if ('sex' in changed) {
+            linkageFormApiRef?.setValue('note', changed.sex === 'male' ? 'Hi male' : 'Hi female!');
+        }
+    }
     let &[localeIsEnglish] = track<boolean>(false);
     let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
     let &[cropperResultUrl] = track<string>('');
@@ -3585,7 +3630,15 @@ export function App() @{
                 <Field
                     field="username"
                     label="用户名"
-                    rules={[{ required: true, message: '用户名不能为空' }]}
+                    rules={[
+                        { required: true, message: '用户名不能为空' },
+                        {
+                            validator: (value) =>
+                                new Promise<string | undefined>((resolve) => {
+                                    setTimeout(() => resolve(value === 'admin' ? '用户名已被占用' : undefined), 600);
+                                }),
+                        },
+                    ]}
                     Comp={FormUsernameInput}
                 />
                 <Field
@@ -3615,6 +3668,19 @@ export function App() @{
             @if (formSubmitResult) {
                 <div style={{ marginTop: '12px' }}>{formSubmitResult}</div>
             }
+        </div>
+
+        <Divider>Form：字段联动（Semi 无专门联动 API，监听 onValueChange + formApi.setValue 驱动关联字段）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Form
+                initValues={{ sex: undefined, note: '' }}
+                getFormApi={(api) => { linkageFormApiRef = api; }}
+                onValueChange={handleLinkageValueChange}
+            >
+                <Field field="sex" label="性别" Comp={FormGenderSelect} />
+                <Field field="note" label="备注" Comp={FormNoteInput} />
+            </Form>
         </div>
 
         <Divider>ConfigProvider：切换 locale 后文案实时更新（不重新挂载）</Divider>

@@ -30,7 +30,7 @@
 - [x] Checkbox 多选框
 - [x] Radio 单选框
 - [x] Switch 开关
-- [x] Form 表单
+- [x] Form 表单（全面验收审计后补充记录：`FormFoundation` 管理 values/errors/touched/validating 四张 map；新增 `validating` 状态——字段的异步 `validator` 规则执行期间标记为 true，完成后恢复 false，同步规则（required/pattern/min/max）是瞬时完成不产生用户能感知的"进行中"窗口，不标记；这是 lotus 主动新增的能力，调研确认 Semi 自身的 `validateStatus` 只有 `error/warning/default/success` 四种，异步校验期间不改变这个值，Semi 本身没有暴露 validating 给 UI 层。`Field` 组件把 `validating` 传给 `FieldRenderProps`，桥接函数可选择性用它给具体控件展示 loading 态（playground demo 用 `Input` 的 `suffix` 展示 `IconLoading`）；"字段联动"调研确认 Semi 官方文档明确写的是"监听 Field 的 onChange，用 formApi 手动 setValue 另一个字段"，没有专门的联动 API，lotus 现有的 `formApi.setValue` 已完全支持这个模式，playground 补充了性别选择联动备注文案的 demo 加以验证；`Field` 的 `<label for={field}>` 此前指向不存在的 id（只靠 `aria-label` 兜底），Input/TextArea/InputNumber 新增 `id` prop 后建立真实语义关联；e2e 覆盖 `e2e/input/form.spec.ts`，8 用例 40/40（`--repeat-each=5`）全过）
 
 ## Phase 2 — 导航 + 反馈 (Navigation + Feedback)
 
