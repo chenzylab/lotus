@@ -18,6 +18,12 @@
     "@lotus/illustrations": "workspace:*",
     "@lotus/locale": "workspace:*",
     "@lotus/tokens": "workspace:*",
+    "@tiptap/core": "^3.30.3",
+    "@tiptap/extension-image": "^3.30.3",
+    "@tiptap/extension-text-align": "^3.30.3",
+    "@tiptap/extension-text-style": "^3.30.3",
+    "@tiptap/extensions": "^3.30.3",
+    "@tiptap/starter-kit": "^3.30.3",
     "lottie-web": "^5.13.0",
     "prismjs": "^1.30.0",
     "ripple": "catalog:"

@@ -34,6 +34,11 @@ export default [
       'packages/ripple/src/show/chat/index.tsrx',
       'packages/ripple/src/show/audio-player/index.tsrx',
       'packages/ripple/src/show/video-player/index.tsrx',
+      'packages/ripple/src/show/sidebar/annotation.tsrx',
+      'packages/ripple/src/show/sidebar/code-content.tsrx',
+      'packages/ripple/src/show/sidebar/file-content.tsrx',
+      'packages/ripple/src/show/sidebar/image-upload-node.ts',
+      'packages/ripple/src/show/sidebar/mcp-configure.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',

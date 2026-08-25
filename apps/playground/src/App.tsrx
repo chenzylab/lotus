@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -413,6 +413,11 @@ export function App() @{
     let &[userGuideVisible] = track<boolean>(false);
     let lottieInstance: AnimationItem | null = null;
     let &[hotKeyTriggerCount] = track<number>(0);
+    let &[sidebarVisible] = track<boolean>(false);
+    let &[sidebarMode] = track<'main' | 'code' | 'file'>('main');
+    let &[sidebarBackWardLog] = track<string>('');
+    const sidebarCodeDetail = { key: 'code-1', name: 'demo.json', isJson: true, content: JSON.stringify({ hello: 'world', count: 3 }, null, 2) };
+    const sidebarFileDetail = { key: 'file-1', name: 'readme.txt', content: '<p>这是一段可编辑的富文本内容。</p>' };
     let &[userGuideCurrent] = track<number>(0);
     let &[userGuideLog] = track<string>('');
     let &[userGuideModalVisible] = track<boolean>(false);
@@ -3737,6 +3742,55 @@ export function App() @{
                 onHotKey={() => { hotKeyTriggerCount = hotKeyTriggerCount + 1; }}
             />
             <span class="demo-hotkeys-count">触发次数：{hotKeyTriggerCount}</span>
+        </div>
+
+        <Divider>Sidebar：AI 侧边信息栏</Divider>
+
+        <div class="demo-sidebar">
+            <Space>
+                <Button onClick={() => { sidebarMode = 'main'; sidebarVisible = true; }}>打开主视图</Button>
+                <Button onClick={() => { sidebarMode = 'code'; sidebarVisible = true; }}>打开代码详情</Button>
+                <Button onClick={() => { sidebarMode = 'file'; sidebarVisible = true; }}>打开文件详情</Button>
+            </Space>
+            <div class="demo-sidebar-backward-log">{sidebarBackWardLog}</div>
+
+            <Sidebar
+                visible={sidebarVisible}
+                mode={sidebarMode}
+                title="AI 助手"
+                detailContent={sidebarMode === 'code' ? sidebarCodeDetail : sidebarMode === 'file' ? sidebarFileDetail : undefined}
+                options={[
+                    { key: 'mcp', name: 'MCP 工具配置' },
+                    { key: 'annotation', name: '引用溯源' },
+                ]}
+                renderMainContent={() => (
+                    <div class="demo-sidebar-main">
+                        <SidebarMCPConfigure
+                            options={[
+                                { value: 'web-search', label: 'Web Search', desc: '联网搜索工具', active: true, disabled: true, configure: true } as SidebarMCPOption,
+                                { value: 'calculator', label: 'Calculator', desc: '数值计算工具', active: false },
+                            ]}
+                            customOptions={[{ value: 'my-tool', label: '我的自定义工具', active: false, configure: true } as SidebarMCPOption]}
+                        />
+                        <SidebarAnnotation
+                            info={[
+                                {
+                                    key: 'group-1',
+                                    header: '参考资料',
+                                    annotations: [
+                                        { type: 'text', title: 'lotus 组件库文档', detail: '对齐 Semi Design 的 tsrx 组件库', siteName: 'lotus docs', order: 1 },
+                                    ],
+                                } as SidebarAnnotationGroup,
+                            ]}
+                        />
+                    </div>
+                )}
+                onCancel={() => { sidebarVisible = false; }}
+                onBackWard={() => {
+                    sidebarBackWardLog = `返回触发：${sidebarMode}`;
+                    sidebarMode = 'main';
+                }}
+            />
         </div>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />
