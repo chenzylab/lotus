@@ -86,4 +86,22 @@ test.describe('Modal', () => {
     await modal.getByRole('button', { name: '取消' }).click();
     await expect(modal).toBeHidden();
   });
+
+  test('无障碍：打开后焦点移入对话框，Tab 键在内部循环，关闭后焦点归还触发按钮', async ({ page }) => {
+    await page.goto('/');
+    const openBtn = page.getByRole('button', { name: '打开基础 Modal' });
+    await openBtn.focus();
+    await openBtn.click();
+
+    const modal = page.getByLabel('基础 Modal');
+    await expect(modal).toBeVisible();
+    await expect(modal.evaluate((el) => el.contains(document.activeElement))).resolves.toBe(true);
+
+    for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+    await expect(modal.evaluate((el) => el.contains(document.activeElement))).resolves.toBe(true);
+
+    await modal.getByRole('button', { name: '确定' }).click();
+    await expect(modal).toBeHidden();
+    await expect(openBtn).toBeFocused();
+  });
 });

@@ -7,6 +7,8 @@ import { LocaleContext } from '../../other/config-provider/locale-context.js';
 export type InputNumberSize = 'large' | 'default' | 'small';
 
 export interface InputNumberProps {
+    /** 原生 input 元素的 id，配合 Form.Field 渲染的 `<label for={field}>` 建立真正的语义关联。 */
+    id?: string;
     value?: number;
     defaultValue?: number;
     min?: number;
@@ -29,6 +31,7 @@ export interface InputNumberProps {
 }
 
 export function InputNumber(&{
+    id,
     value,
     defaultValue,
     min = -Infinity,
@@ -136,6 +139,7 @@ export function InputNumber(&{
                 <span class="lotus-input-number-prefix">{prefix}</span>
             }
             <input
+                id={id}
                 type="text"
                 inputMode="decimal"
                 class="lotus-input-number-native"

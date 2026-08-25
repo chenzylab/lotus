@@ -59,4 +59,23 @@ test.describe('Popconfirm', () => {
     // 600ms 后 Promise resolve，浮层关闭
     await expect(popover).not.toBeVisible({ timeout: 2000 });
   });
+
+  test('无障碍：确认/取消关闭后焦点均归还触发按钮（对齐 Semi 全路径归还的设计，不同于 Popover/Dropdown 只在 Esc 归还）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: '删除（同步回调）' });
+    const popover = page.locator('.lotus-popconfirm-popover');
+
+    await trigger.focus();
+    await trigger.click();
+    await expect(popover).toBeVisible();
+    await popover.getByRole('button', { name: '确定' }).click();
+    await expect(popover).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    await expect(popover).toBeVisible();
+    await popover.getByRole('button', { name: '取消' }).click();
+    await expect(popover).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
 });

@@ -1,5 +1,6 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { SideSheetFoundation, initialSideSheetState, type SideSheetState } from '@lotus/foundation/show/side-sheet';
+import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
 import { IconClose } from '@lotus/icons';
 
 export type SideSheetPlacement = 'top' | 'right' | 'bottom' | 'left';
@@ -100,6 +101,9 @@ export function SideSheet(&{
         setState: (patch: Partial<SideSheetState>) => { state = { ...untrack(() => state), ...patch }; },
     });
 
+    let &[contentNode] = track<HTMLDivElement | null>(null);
+    let prevFocusElement: HTMLElement | null = null;
+
     effect(() => {
         if (visible) {
             untrack(() => foundation.handleShow());
@@ -114,9 +118,33 @@ export function SideSheet(&{
         }
     });
 
+    // 焦点管理对齐 Modal 的处理水平（Semi 自身在 SideSheet 上未实现，本次主动补齐）：
+    // 打开时记录触发前焦点并把焦点移入面板，Tab 键在面板内循环，关闭动画结束后归还焦点。
+    effect(() => {
+        const container = contentNode;
+        if (!visible || !container) return;
+        prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
+        if (prevFocusElement && container.contains(prevFocusElement)) return;
+        const focusable = getFocusableElements(container);
+        (focusable[0] ?? container).focus({ preventScroll: true });
+    });
+
+    function handleContentKeyDown(event: KeyboardEvent) {
+        if (event.key !== 'Tab') return;
+        const container = contentNode;
+        if (!container) return;
+        const focusable = getFocusableElements(container);
+        const target = resolveTabWrapTarget(focusable, document.activeElement, event.shiftKey);
+        if (target) {
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+        }
+    }
+
     function handleContentTransitionEnd() {
         if (!visible) {
             foundation.handleAnimationEnd(false);
+            prevFocusElement?.focus({ preventScroll: true });
             afterVisibleChange?.(false);
         }
     }
@@ -181,10 +209,13 @@ export function SideSheet(&{
                     class={contentClasses}
                     style={{ zIndex: zIndex + 1, ...contentStyle }}
                     role="dialog"
+                    aria-modal="true"
                     tabIndex={-1}
                     aria-label={ariaLabel}
                     onClick={(e: MouseEvent) => e.stopPropagation()}
                     onTransitionEnd={handleContentTransitionEnd}
+                    onKeyDown={handleContentKeyDown}
+                    ref={(node: HTMLDivElement | null) => { contentNode = node; }}
                 >
                     @if (title !== undefined) {
                         <div class="lotus-side-sheet-header" style={headerStyle} role="heading" aria-level={1}>

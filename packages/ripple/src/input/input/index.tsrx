@@ -9,6 +9,8 @@ export type InputValidateStatus = 'default' | 'warning' | 'error';
 export type InputMode = 'text' | 'password';
 
 export interface InputProps {
+    /** 原生 input 元素的 id，配合 Form.Field 渲染的 `<label for={field}>` 建立真正的语义关联。 */
+    id?: string;
     value?: string;
     defaultValue?: string;
     disabled?: boolean;
@@ -41,6 +43,7 @@ export interface InputProps {
 }
 
 export function Input(&{
+    id,
     value,
     defaultValue = '',
     disabled = false,
@@ -157,6 +160,7 @@ export function Input(&{
                     <span class="lotus-input-prefix">{prefix}</span>
                 }
                 <input
+                    id={id}
                     type={resolvedType}
                     class="lotus-input-native"
                     value={displayValue}

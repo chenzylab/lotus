@@ -226,6 +226,8 @@ export function GlobalTokens() @{
               --lotus-font-label-line-height: 16px;
               --lotus-font-label-weight: 400;
               --lotus-color-ai-general: linear-gradient(90deg, #5C4CFF 0%, #A64EFF 50%, #FF57C6 100%);
+              --lotus-color-ai-general-hover: linear-gradient(90deg, #4B3ACC 0%, #8A3ECC 50%, #CC4599 100%);
+              --lotus-color-ai-general-active: linear-gradient(90deg, #3A2D9E 0%, #6E30A3 50%, #A3357A 100%);
               --lotus-color-ai-purple: rgba(166, 71, 255, 1);
               --lotus-color-ai-purple-hover: rgba(166, 71, 255, 0.85);
               --lotus-color-ai-purple-active: rgba(166, 71, 255, 0.7);
@@ -404,6 +406,8 @@ export function GlobalTokens() @{
               --lotus-color-highlight: #ffffff;
               --lotus-shadow-elevated: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 14px rgba(0, 0, 0, 0.25);
               --lotus-color-ai-general: linear-gradient(90deg, #5C4CFF 0%, #A64EFF 50%, #FF57C6 100%);
+              --lotus-color-ai-general-hover: linear-gradient(90deg, #4B3ACC 0%, #8A3ECC 50%, #CC4599 100%);
+              --lotus-color-ai-general-active: linear-gradient(90deg, #3A2D9E 0%, #6E30A3 50%, #A3357A 100%);
               --lotus-color-ai-purple: rgba(195, 117, 255, 1);
               --lotus-color-ai-purple-hover: rgba(195, 117, 255, 0.85);
               --lotus-color-ai-purple-active: rgba(195, 117, 255, 0.7);

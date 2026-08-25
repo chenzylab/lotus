@@ -78,4 +78,18 @@ test.describe('Form', () => {
     await externalButton.click();
     await expect(usernameInput).toHaveValue('预填用户名');
   });
+
+  test('无障碍：label 的 for 真正关联到控件的原生 id（非仅靠 aria-label 兜底），点击 label 能聚焦控件', async ({ page }) => {
+    await page.goto('/');
+    const usernameLabel = page.locator('.lotus-form-field-label', { hasText: 'username' });
+    const forAttr = await usernameLabel.getAttribute('for');
+    expect(forAttr).toBeTruthy();
+
+    const targetInput = page.locator(`#${forAttr}`);
+    await expect(targetInput).toHaveCount(1);
+    await expect(targetInput).toHaveJSProperty('tagName', 'INPUT');
+
+    await usernameLabel.click();
+    await expect(targetInput).toBeFocused();
+  });
 });

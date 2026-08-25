@@ -6,6 +6,8 @@ import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface TextAreaProps {
+    /** 原生 textarea 元素的 id，配合 Form.Field 渲染的 `<label for={field}>` 建立真正的语义关联。 */
+    id?: string;
     value?: string;
     defaultValue?: string;
     disabled?: boolean;
@@ -37,6 +39,7 @@ export interface TextAreaProps {
 }
 
 export function TextArea(&{
+    id,
     value,
     defaultValue = '',
     disabled = false,
@@ -155,6 +158,7 @@ export function TextArea(&{
             onMouseLeave={() => foundation.handleMouseLeave()}
         >
             <textarea
+                id={id}
                 class="lotus-textarea-native"
                 value={displayValue}
                 placeholder={placeholder}

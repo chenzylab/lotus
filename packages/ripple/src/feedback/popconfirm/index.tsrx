@@ -1,4 +1,4 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { PopconfirmFoundation, type PopconfirmState } from '@lotus/foundation/feedback/popconfirm';
 import { Popover, type PopoverProps } from '../../show/popover/index.tsrx';
 import { Button, type ButtonType, type ButtonProps } from '../../basic/button/index.tsrx';
@@ -62,6 +62,20 @@ export function Popconfirm(&{
     });
 
     let &[displayVisible] = track<boolean>(() => (isControlled ? !!visibleProp : state.visible));
+    let prevFocusElement: HTMLElement | null = null;
+
+    // 焦点归还对齐 Semi PopconfirmFoundation.handleVisibleChange(false) 的设计——在所有
+    // 关闭路径统一归还（确认/取消/点击外部/Esc），是 Tooltip 系组件里唯一全路径都归还的，
+    // 不像 Popover/Dropdown 只在 Esc 路径归还。这里监听 displayVisible 本身而非包一层
+    // setVisible，因为 handleConfirm/handleCancel 在非受控模式下直接改 Foundation state、
+    // 不经过 setVisible，只有监听 displayVisible 才能覆盖全部关闭路径。
+    effect(() => {
+        if (displayVisible) {
+            prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
+        } else {
+            untrack(() => prevFocusElement)?.focus({ preventScroll: true });
+        }
+    });
 
     function setVisible(next: boolean) {
         if (!isControlled) state = { ...untrack(() => state), visible: next };

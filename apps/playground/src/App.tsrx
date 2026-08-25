@@ -171,9 +171,10 @@ function mockUploadRequest(args: CustomRequestArgs) {
 // Field 的 Comp 收到统一的 { value, disabled, onChange, onBlur, 'aria-label' }，
 // 由这几个桥接组件把它接到具体输入组件各自的 props 形状上（Input 是
 // onChange(value, event)，InputNumber/Select 是 onChange(value)）。
-function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+function FormUsernameInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
     return (
         <Input
+            id={id}
             value={value ?? ''}
             disabled={disabled}
             onChange={(v) => onChange(v)}
@@ -184,9 +185,10 @@ function FormUsernameInput(&{ value, disabled, onChange, onBlur, 'aria-label': a
     );
 }
 
-function FormAgeInput(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+function FormAgeInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
     return (
         <InputNumber
+            id={id}
             value={value}
             disabled={disabled}
             onChange={(v) => onChange(v)}

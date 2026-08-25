@@ -2,6 +2,7 @@ import { track, effect, untrack, Portal } from 'ripple';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { ModalFoundation, initialModalState, type ModalState } from '@lotus/foundation/show/modal';
+import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
 import { Button, type ButtonType } from '../../basic/button/index.tsrx';
 import { IconClose } from '@lotus/icons';
 
@@ -85,15 +86,47 @@ export function Modal(&{
         setState: (patch: Partial<ModalState>) => { state = { ...untrack(() => state), ...patch }; },
     });
 
+    let &[contentNode] = track<HTMLDivElement | null>(null);
+    let prevFocusElement: HTMLElement | null = null;
+
     effect(() => {
         if (visible) {
             untrack(() => foundation.handleShow());
         }
     });
 
+    // 打开时记录触发前的焦点元素并把焦点移入对话框（对齐 Semi ModalContent.componentDidMount：
+    // 已在对话框内则不动，否则聚焦第一个可聚焦元素，都没有则聚焦对话框容器本身）。
+    // 依赖响应式的 contentNode（而非 visible）触发：@if(shouldRender) 分支渲染出真实 DOM、
+    // ref 回调写入 contentNode 是在 visible 变 true 之后的下一步，用 visible 做依赖会在
+    // container 还是 null 时就跑完这个 effect，永远聚焦不到内容。
+    effect(() => {
+        const container = contentNode;
+        if (!visible || !container) return;
+        prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
+        if (prevFocusElement && container.contains(prevFocusElement)) return;
+        const focusable = getFocusableElements(container);
+        (focusable[0] ?? container).focus({ preventScroll: true });
+    });
+
+    function handleContentKeyDown(event: KeyboardEvent) {
+        if (event.key !== 'Tab') return;
+        const container = contentNode;
+        if (!container) return;
+        const focusable = getFocusableElements(container);
+        const target = resolveTabWrapTarget(focusable, document.activeElement, event.shiftKey);
+        if (target) {
+            event.preventDefault();
+            target.focus({ preventScroll: true });
+        }
+    }
+
     function handleContentTransitionEnd() {
         if (!visible) {
             foundation.handleAnimationEnd(false);
+            // 焦点归还发生在动画结束、真正从 DOM 卸载（shouldRender 变 false）之前，
+            // 对齐 Semi ModalContentFoundation.destroy 在组件卸载时归还焦点的时机。
+            prevFocusElement?.focus({ preventScroll: true });
             afterClose?.();
         }
     }
@@ -165,8 +198,11 @@ export function Modal(&{
                         role="dialog"
                         aria-modal="true"
                         aria-label={ariaLabel}
+                        tabIndex={-1}
                         onClick={(e: MouseEvent) => e.stopPropagation()}
                         onTransitionEnd={handleContentTransitionEnd}
+                        onKeyDown={handleContentKeyDown}
+                        ref={(node: HTMLDivElement | null) => { contentNode = node; }}
                     >
                         @if (hasHeader && header !== undefined) {
                             <div class="lotus-modal-header">{header}</div>

@@ -93,4 +93,22 @@ test.describe('SideSheet', () => {
     await sheet.getByRole('button', { name: '关闭' }).click();
     await expect(sheet).toBeHidden();
   });
+
+  test('无障碍：打开后焦点移入面板，Tab 键在内部循环，关闭后焦点归还触发按钮（Semi 自身未实现，本次主动补齐对齐 Modal 水平）', async ({ page }) => {
+    await page.goto('/');
+    const openBtn = page.getByRole('button', { name: '打开右侧 SideSheet' });
+    await openBtn.focus();
+    await openBtn.click();
+
+    const sheet = page.getByLabel('右侧 SideSheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.evaluate((el) => el.contains(document.activeElement))).resolves.toBe(true);
+
+    for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+    await expect(sheet.evaluate((el) => el.contains(document.activeElement))).resolves.toBe(true);
+
+    await sheet.getByRole('button', { name: '确定' }).click();
+    await expect(sheet).toBeHidden();
+    await expect(openBtn).toBeFocused();
+  });
 });

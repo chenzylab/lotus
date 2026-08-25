@@ -3,6 +3,10 @@ import type { FormRule } from '@lotus/foundation/input/form';
 import { FormContext, type LabelPosition } from './form-context.js';
 
 export interface FieldRenderProps {
+    /** 与 Field 渲染的 `<label for={field}>` 对应，桥接函数需要把它透传给具体控件的
+     * 原生 id（如 Input/TextArea/InputNumber 已支持的 `id` prop）才能建立真正的语义关联；
+     * 若具体控件没有可设置 id 的原生元素（如浮层触发型组件），可以不使用这个值。 */
+    id: string;
     value: any;
     disabled: boolean;
     onChange: (value: any) => void;
@@ -104,6 +108,7 @@ export function Field(&{
         }
         <div class="lotus-form-field-control">
             <Comp
+                id={field}
                 value={value}
                 disabled={disabled}
                 onChange={handleChange}
