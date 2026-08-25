@@ -1,6 +1,7 @@
 import { track, untrack, effect } from 'ripple';
 import { SelectFoundation, type SelectState, type SelectValue } from '@lotus/foundation/input/select';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { IconChevronDown, IconClear, IconTick } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -13,6 +14,16 @@ export interface SelectOption {
     value: SelectValue;
     label?: any;
     disabled?: boolean;
+}
+
+/** 大数据量场景下开启固定行高虚拟滚动（对齐 Transfer 组件已验证的实现模式，
+ * 复用同一份 `base/virtual-list.ts` 纯算法），仅在 `optionList.length` 较大
+ * 时才需要传入；不传则按普通 `@for` 全量渲染。 */
+export interface SelectVirtualizeConfig {
+    /** 下拉面板的固定高度（px），默认 280。 */
+    height?: number;
+    /** 每个选项行的固定高度（px），必填——虚拟滚动要求固定行高。 */
+    itemSize: number;
 }
 
 export interface SelectProps {
@@ -29,6 +40,7 @@ export interface SelectProps {
     prefix?: any;
     suffix?: any;
     position?: FloatingPosition;
+    virtualize?: SelectVirtualizeConfig;
     'aria-label'?: string;
     onChange?: (value: SelectValue | SelectValue[] | undefined) => void;
     onClear?: () => void;
@@ -37,6 +49,29 @@ export interface SelectProps {
     onDropdownVisibleChange?: (visible: boolean) => void;
     style?: Record<string, any>;
     class?: string;
+}
+
+interface SelectOptionItemProps {
+    option: SelectOption;
+    selected: boolean;
+    onSelect: (option: SelectOption) => void;
+}
+
+/** 单个选项 `<li>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，
+ * 避免重复维护同一份 class/aria 拼装逻辑。 */
+function SelectOptionItem(&{ option, selected, onSelect }: SelectOptionItemProps) @{
+    <li
+        role="option"
+        aria-selected={selected}
+        aria-disabled={option.disabled}
+        class={['lotus-select-option', selected ? 'lotus-select-option-selected' : '', option.disabled ? 'lotus-select-option-disabled' : ''].filter(Boolean).join(' ')}
+        onClick={() => onSelect(option)}
+    >
+        <span class="lotus-select-option-label">{option.label ?? String(option.value)}</span>
+        @if (selected) {
+            <span class="lotus-select-option-tick"><IconTick /></span>
+        }
+    </li>
 }
 
 export function Select(&{
@@ -52,6 +87,7 @@ export function Select(&{
     showClear = false,
     prefix,
     suffix,
+    virtualize,
     position = 'bottomLeft',
     'aria-label': ariaLabel,
     onChange,
@@ -74,6 +110,31 @@ export function Select(&{
     let &[isOpen] = track<boolean>(false);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    let &[scrollTop] = track<number>(0);
+
+    function handleVirtualScroll(event: Event) {
+        untrack(() => { scrollTop = (event.target as HTMLElement).scrollTop; });
+    }
+
+    let &[virtualRange] = track(() => {
+        if (!virtualize) return null;
+        return calcVirtualRange({
+            itemCount: optionList.length,
+            itemHeight: virtualize.itemSize,
+            containerHeight: virtualize.height ?? 280,
+            scrollTop,
+        });
+    });
+
+    let &[virtualVisibleOptions] = track<Array<{ option: SelectOption; index: number }>>(() => {
+        if (!virtualRange) return [];
+        const result: Array<{ option: SelectOption; index: number }> = [];
+        for (let i = virtualRange.startIndex; i <= virtualRange.endIndex; i++) {
+            const option = optionList[i];
+            if (option) result.push({ option, index: i });
+        }
+        return result;
+    });
 
     const foundation = new SelectFoundation({
         getState: () => untrack(() => state),
@@ -199,28 +260,35 @@ export function Select(&{
                 closeOnEsc={true}
                 content={
                     <ul
-                        class="lotus-select-list"
+                        class={['lotus-select-list', virtualize ? 'lotus-select-list-virtual' : ''].filter(Boolean).join(' ')}
                         role="listbox"
                         aria-multiselectable={multiple}
+                        style={virtualize ? { height: `${virtualize.height ?? 280}px` } : undefined}
+                        onScroll={virtualize ? handleVirtualScroll : undefined}
                         ref={(node: HTMLElement) => { listNode = node; }}
                     >
-                        @for (const option of optionList; key option.value) {
-                            <li
-                                role="option"
-                                aria-selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)}
-                                aria-disabled={option.disabled}
-                                class={[
-                                    'lotus-select-option',
-                                    (multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)) ? 'lotus-select-option-selected' : '',
-                                    option.disabled ? 'lotus-select-option-disabled' : '',
-                                ].filter(Boolean).join(' ')}
-                                onClick={() => handleOptionClick(option)}
-                            >
-                                <span class="lotus-select-option-label">{option.label ?? String(option.value)}</span>
-                                @if (multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)) {
-                                    <span class="lotus-select-option-tick"><IconTick /></span>
-                                }
-                            </li>
+                        @if (virtualize) {
+                            <div style={{ height: `${virtualRange?.totalHeight ?? 0}px` }}>
+                                <div style={{ transform: `translateY(${virtualRange?.offsetY ?? 0}px)` }}>
+                                    @for (const entry of virtualVisibleOptions; index vi; key entry.option.value) {
+                                        <div style={{ height: `${virtualize.itemSize}px` }}>
+                                            <SelectOptionItem
+                                                option={entry.option}
+                                                selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, entry.option.value) : SelectFoundation.isSingleChecked(displayValue, entry.option.value)}
+                                                onSelect={handleOptionClick}
+                                            />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        } @else {
+                            @for (const option of optionList; key option.value) {
+                                <SelectOptionItem
+                                    option={option}
+                                    selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)}
+                                    onSelect={handleOptionClick}
+                                />
+                            }
                         }
                     </ul>
                 }
@@ -429,6 +497,10 @@ export function Select(&{
                 max-height: 270px;
                 overflow-y: auto;
                 min-width: 120px;
+            }
+
+            .lotus-select-list-virtual {
+                max-height: none;
             }
 
             .lotus-select-option {

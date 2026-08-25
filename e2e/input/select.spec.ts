@@ -98,4 +98,27 @@ test.describe('Select', () => {
     await toggleButton.click();
     await expect(trigger).toHaveText('抖音');
   });
+
+  test('virtualize：1万条选项只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 虚拟滚动示例');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const list = page.locator('.lotus-select-list-virtual');
+    await expect(list).toBeVisible();
+
+    const options = list.locator('li[role="option"]');
+    const renderedCount = await options.count();
+    expect(renderedCount).toBeLessThan(30);
+    expect(renderedCount).toBeGreaterThan(0);
+
+    await expect(options.first()).toHaveText('选项 0');
+
+    await list.evaluate((el) => { el.scrollTop = 5000; });
+    await expect(options.first()).not.toHaveText('选项 0');
+
+    await options.first().click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
 });

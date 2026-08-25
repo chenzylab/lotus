@@ -80,7 +80,7 @@
 
 > 这批组件大多存在非平凡状态机和/或大数据虚拟化需求，Foundation 层价值最高，同时是 `perf-baseline` skill 的主要适用对象。
 
-- [x] Select 选择器（提前于 Phase 1 随核心表单一并交付）
+- [x] Select 选择器（提前于 Phase 1 随核心表单一并交付。全面验收审计后补充：新增 `virtualize?: { height?, itemSize }` 配置对象 prop，开启后复用 `base/virtual-list.ts`（Transfer 组件已验证的同一份纯算法）做固定行高虚拟滚动——审计发现此前 Select/Cascader/TreeSelect 完全没有声明虚拟化能力、且 Table 声明的 `virtualized` prop 从未真正消费是个死 prop，Phase 4 spec 要求这四个组件复用同一虚拟化实现的验收标准此前从未满足；本次先落地 Select，选项渲染抽出 `SelectOptionItem` 子组件供虚拟化/非虚拟化两条路径共用；e2e 覆盖 `e2e/input/select.spec.ts` 新增 1 用例验证 1 万条选项只渲染可见区间+滚动动态切换+点击选中，9/9 全过；Cascader/TreeSelect/Table 三者虚拟化改造复杂度明显更高（多列联动/树形动态展开/固定列+树形+行选择等既有特性共存），留作后续任务分别处理）
 - [x] Cascader 级联选择（单个 Popover + 内部横向 flex 多列面板，对齐 Semi 架构不做多浮层依次定位；多选三态级联直接复用 Tree 的 check-cascade 算法，Semi 源码本身也是同一份算法；`autoMergeValue`/`leafOnly`/`checkRelation` 选中态折叠层为 Cascader 特有；搜索用路径打平匹配，模型与 Tree 的"展开祖先链"不同；支持 loadData 异步懒加载）
 - [x] TreeSelect 树形选择（"Select 式触发器外壳 + Tree 渲染逻辑内联进浮层"，算法层 100% 复用 Tree 的 tree-data/check-cascade/expand/search 四个纯函数模块零改动，不重新实现；不直接嵌入整个 Tree 组件避免双重搜索框/状态同步问题；新增 `checkRelation='unRelated'` 独立勾选分支与 `maxTagCount` 多选标签折叠——lotus 目前唯一支持标签折叠的选择器类组件）
 - [x] AutoComplete 自动补全（增强型 Input 而非选择器：允许自由文本，无内置候选项过滤/匹配算法，`data` 展示什么完全由消费方在 `onSearch` 回调里自行决定；复用 Cascader 已验证的 Popover(trigger="custom") + document mousedown 双 contains 判断浮层开关模式，但触发器点击语义改为"仅关闭态点击才打开，已打开时点击输入框内部不关闭"——因为触发器本身是可编辑文本框，不能像 Cascader/TreeSelect 那样无条件 toggle；键盘导航含循环回绕、跳过 disabled 项）

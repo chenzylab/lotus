@@ -76,6 +76,11 @@ const genderOptions: SelectOption[] = [
     { value: 'female', label: '女' },
 ];
 
+const largeSelectOptionList: SelectOption[] = Array.from({ length: 10000 }, (_, i) => ({
+    value: `option-${i}`,
+    label: `选项 ${i}`,
+}));
+
 function lineTabList(): TabItem[] {
     return [
         { itemKey: '1', tab: '标签一', render: () => <div>内容一</div> },
@@ -2716,6 +2721,17 @@ export function App() @{
                 <Select optionList={businessLineOptions} showClear defaultValue="douyin" aria-label="Select 可清除示例" />
             </div>
         </Space>
+
+        <Divider>Select：virtualize（1万条选项虚拟滚动，对齐 Transfer 已验证的 base/virtual-list.ts 实现模式）</Divider>
+
+        <div style={{ width: '200px' }}>
+            <Select
+                optionList={largeSelectOptionList}
+                virtualize={{ height: 240, itemSize: 32 }}
+                placeholder="1万条选项"
+                aria-label="Select 虚拟滚动示例"
+            />
+        </div>
 
         <Divider>Select：多选</Divider>
 
