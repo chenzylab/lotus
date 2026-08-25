@@ -13,6 +13,7 @@ import {
     type CascaderFilterTreeNode,
 } from '@lotus/foundation/input/cascader';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { IconChevronDown, IconChevronRight, IconClear, IconSearch } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -56,6 +57,10 @@ export interface CascaderProps {
     searchPlaceholder?: any;
     /** 路径展示分隔符，默认 ' / '。 */
     separator?: string;
+    /** 大数据量场景下开启单列固定行高虚拟滚动（对齐 Select 已验证的实现模式，
+     * 复用同一份 `base/virtual-list.ts` 纯算法）——每一级列各自独立虚拟化，
+     * 因为 Cascader 是多列联动、每列的选项数量可能都很大。 */
+    virtualize?: { height?: number; itemSize: number };
     /** 异步加载子节点：约定回调里外部自行更新 treeData 对应节点的 children，
      * Cascader 监听 treeData 引用变化重新渲染（对齐 Semi loadData 的 Promise<void> 约定）。 */
     loadData?: (entity: { value: string | number; label: any; valuePath: ValuePath }) => Promise<void>;
@@ -73,6 +78,58 @@ export interface CascaderProps {
 
 function isMultiValue(v: ValuePath | ValuePath[] | undefined): v is ValuePath[] {
     return Array.isArray(v) && (v.length === 0 || Array.isArray(v[0]));
+}
+
+interface CascaderColumnItemProps {
+    entity: CascaderEntity;
+    multiple: boolean;
+    active: boolean;
+    checked: boolean;
+    halfChecked: boolean;
+    disabled: boolean;
+    loading: boolean;
+    isLeaf: boolean;
+    onItemClick: (entity: CascaderEntity) => void;
+    onItemHover: (entity: CascaderEntity) => void;
+    onItemCheck: (entity: CascaderEntity) => void;
+}
+
+/** 单个级联项 `<li>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用
+ * （对齐 Select 组件 `SelectOptionItem` 已验证的同一模式）。 */
+function CascaderColumnItem(&{
+    entity,
+    multiple,
+    active,
+    checked,
+    halfChecked,
+    disabled,
+    loading,
+    isLeaf,
+    onItemClick,
+    onItemHover,
+    onItemCheck,
+}: CascaderColumnItemProps) @{
+    <li
+        role="menuitem"
+        aria-expanded={!isLeaf ? active : undefined}
+        aria-disabled={disabled}
+        class={['lotus-cascader-item', active ? 'lotus-cascader-item-active' : '', disabled ? 'lotus-cascader-item-disabled' : ''].filter(Boolean).join(' ')}
+        onClick={() => onItemClick(entity)}
+        onMouseEnter={() => onItemHover(entity)}
+    >
+        @if (multiple) {
+            <span class="lotus-cascader-item-checkbox" onClick={(event: MouseEvent) => event.stopPropagation()}>
+                <Checkbox checked={checked} indeterminate={halfChecked} disabled={disabled} onChange={() => onItemCheck(entity)} />
+            </span>
+        }
+        <span class="lotus-cascader-item-label">{entity.data.label}</span>
+        @if (loading) {
+            <Spin size="small" />
+        }
+        @if (!isLeaf && !loading) {
+            <span class="lotus-cascader-item-arrow"><IconChevronRight /></span>
+        }
+    </li>
 }
 
 /**
@@ -103,6 +160,7 @@ export function Cascader(&{
     filterLeafOnly = true,
     searchPlaceholder,
     separator = ' / ',
+    virtualize,
     loadData,
     onChange,
     onClear,
@@ -192,6 +250,34 @@ export function Cascader(&{
     // track() 派生值只在挂载时计算一次、之后 activeKeys 变化不会重新求值——
     // 对齐 Tree 组件 flatNodes 直接读 state.expandedKeys 传给纯函数的模式）。
     let &[columns] = track<CascaderEntity[][]>(() => computeColumns(treeData, state.activeKeys, entities));
+
+    // 每一列各自独立的虚拟滚动位置（colIndex -> scrollTop），因为 Cascader
+    // 是多列联动、每列的选项数量可能都很大，不能只对某一列做虚拟化。
+    let &[columnScrollTops] = track<Record<number, number>>({});
+
+    function handleColumnScroll(colIndex: number, event: Event) {
+        const scrollTop = (event.target as HTMLElement).scrollTop;
+        untrack(() => { columnScrollTops = { ...columnScrollTops, [colIndex]: scrollTop }; });
+    }
+
+    let &[virtualColumns] = track(() => {
+        if (!virtualize) return null;
+        return columns.map((column, colIndex) => {
+            const scrollTop = columnScrollTops[colIndex] ?? 0;
+            const range = calcVirtualRange({
+                itemCount: column.length,
+                itemHeight: virtualize.itemSize,
+                containerHeight: virtualize.height ?? 280,
+                scrollTop,
+            });
+            const visible: Array<{ entity: CascaderEntity; index: number }> = [];
+            for (let i = range.startIndex; i <= range.endIndex; i++) {
+                const entity = column[i];
+                if (entity) visible.push({ entity, index: i });
+            }
+            return { range, visible };
+        });
+    });
 
     // 同理：直接读 state.searchInput 建立响应式依赖，不经过 foundation 方法。
     let &[searchResults] = track(() => computeCascaderSearchResult(state.searchInput, entities, filterTreeNode, { separator, filterLeafOnly }));
@@ -409,41 +495,57 @@ export function Cascader(&{
                             </ul>
                         } @else {
                             <div class="lotus-cascader-columns">
-                                @for (const column of columns; index colIndex) {
-                                    <ul class="lotus-cascader-column" role="menu">
-                                        @for (const entity of column; key entity.key) {
-                                            <li
-                                                role="menuitem"
-                                                aria-expanded={!isLeafEntity(entity) ? state.activeKeys.has(entity.key) : undefined}
-                                                aria-disabled={entity.data.disabled}
-                                                class={[
-                                                    'lotus-cascader-item',
-                                                    state.activeKeys.has(entity.key) ? 'lotus-cascader-item-active' : '',
-                                                    entity.data.disabled ? 'lotus-cascader-item-disabled' : '',
-                                                ].filter(Boolean).join(' ')}
-                                                onClick={() => handleColumnItemClick(entity)}
-                                                onMouseEnter={() => handleColumnItemHover(entity)}
-                                            >
-                                                @if (multiple) {
-                                                    <span class="lotus-cascader-item-checkbox" onClick={(event: MouseEvent) => event.stopPropagation()}>
-                                                        <Checkbox
-                                                            checked={state.checkedKeys.has(entity.key)}
-                                                            indeterminate={state.halfCheckedKeys.has(entity.key)}
-                                                            disabled={entity.data.disabled}
-                                                            onChange={() => handleItemSelect(entity)}
-                                                        />
-                                                    </span>
-                                                }
-                                                <span class="lotus-cascader-item-label">{entity.data.label}</span>
-                                                @if (state.loadingKeys.has(entity.key)) {
-                                                    <Spin size="small" />
-                                                }
-                                                @if (!isLeafEntity(entity) && !state.loadingKeys.has(entity.key)) {
-                                                    <span class="lotus-cascader-item-arrow"><IconChevronRight /></span>
-                                                }
-                                            </li>
-                                        }
-                                    </ul>
+                                @if (virtualize) {
+                                    @for (const column of columns; index colIndex) {
+                                        <ul
+                                            class="lotus-cascader-column lotus-cascader-column-virtual"
+                                            role="menu"
+                                            style={{ height: `${virtualize.height ?? 280}px` }}
+                                            onScroll={(event: Event) => handleColumnScroll(colIndex, event)}
+                                        >
+                                            <div style={{ height: `${virtualColumns?.[colIndex]?.range.totalHeight ?? 0}px` }}>
+                                                <div style={{ transform: `translateY(${virtualColumns?.[colIndex]?.range.offsetY ?? 0}px)` }}>
+                                                    @for (const entry of (virtualColumns?.[colIndex]?.visible ?? []); key entry.entity.key) {
+                                                        <div style={{ height: `${virtualize.itemSize}px` }}>
+                                                            <CascaderColumnItem
+                                                                entity={entry.entity}
+                                                                multiple={multiple}
+                                                                active={state.activeKeys.has(entry.entity.key)}
+                                                                checked={state.checkedKeys.has(entry.entity.key)}
+                                                                halfChecked={state.halfCheckedKeys.has(entry.entity.key)}
+                                                                disabled={!!entry.entity.data.disabled}
+                                                                loading={state.loadingKeys.has(entry.entity.key)}
+                                                                isLeaf={isLeafEntity(entry.entity)}
+                                                                onItemClick={handleColumnItemClick}
+                                                                onItemHover={handleColumnItemHover}
+                                                                onItemCheck={handleItemSelect}
+                                                            />
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </ul>
+                                    }
+                                } @else {
+                                    @for (const column of columns; index colIndex) {
+                                        <ul class="lotus-cascader-column" role="menu">
+                                            @for (const entity of column; key entity.key) {
+                                                <CascaderColumnItem
+                                                    entity={entity}
+                                                    multiple={multiple}
+                                                    active={state.activeKeys.has(entity.key)}
+                                                    checked={state.checkedKeys.has(entity.key)}
+                                                    halfChecked={state.halfCheckedKeys.has(entity.key)}
+                                                    disabled={!!entity.data.disabled}
+                                                    loading={state.loadingKeys.has(entity.key)}
+                                                    isLeaf={isLeafEntity(entity)}
+                                                    onItemClick={handleColumnItemClick}
+                                                    onItemHover={handleColumnItemHover}
+                                                    onItemCheck={handleItemSelect}
+                                                />
+                                            }
+                                        </ul>
+                                    }
                                 }
                             </div>
                         }
@@ -653,6 +755,10 @@ export function Cascader(&{
 
             .lotus-cascader-column + .lotus-cascader-column {
                 border-left: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-cascader-column-virtual {
+                max-height: none;
             }
 
             .lotus-cascader-item {

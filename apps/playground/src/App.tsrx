@@ -35,6 +35,14 @@ const cascaderRegionData: CascaderNodeData[] = [
     { value: 'shanghai', label: '上海', disabled: true, children: [{ value: 'pudong', label: '浦东新区' }] },
 ];
 
+const cascaderVirtualizeData: CascaderNodeData[] = [
+    {
+        value: 'province-1',
+        label: '省份 1（1000 个子节点）',
+        children: Array.from({ length: 1000 }, (_, i) => ({ value: `city-${i}`, label: `城市 ${i}` })),
+    },
+];
+
 const cascaderLazyData: CascaderNodeData[] = [
     { value: 'fruit', label: '水果', isLeaf: false },
     { value: 'vegetable', label: '蔬菜', isLeaf: false },
@@ -2796,6 +2804,17 @@ export function App() @{
                 searchPlaceholder="搜索地区"
                 placeholder="请选择省市区"
                 aria-label="Cascader 搜索"
+            />
+        </div>
+
+        <Divider>Cascader：virtualize（单列 1000 个子节点虚拟滚动，对齐 Select 已验证的实现模式）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderVirtualizeData}
+                virtualize={{ height: 240, itemSize: 32 }}
+                placeholder="请选择"
+                aria-label="Cascader 虚拟滚动示例"
             />
         </div>
 
