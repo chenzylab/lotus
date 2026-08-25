@@ -25,7 +25,7 @@
 ## 验收标准
 
 - [ ] 清单文件中 Phase 5 全部条目勾选，满足 DoD
-- [ ] ConfigProvider 切换主题色后，抽查的 5 个既有组件（建议覆盖 Button/Input/Select/Modal/Table 各一次）在不刷新页面的前提下视觉即时更新，Playwright 用例验证
+- [x] ConfigProvider 切换主题色后，抽查的 5 个既有组件（建议覆盖 Button/Input/Select/Modal/Table 各一次）在不刷新页面的前提下视觉即时更新，Playwright 用例验证——重新核实后发现 Semi 的 ConfigProvider 本身不承载主题能力（暗色模式是脱离 ConfigProvider 的全局属性操作），这条标准描述的是 lotus 自己想要的能力而非照搬 Semi，本次新增 `ConfigProvider.mode` prop 实现并验证
 - [ ] ConfigProvider 切换语言后，Form 校验文案、DatePicker 月份名称等此前依赖 `@lotus/locale` 的组件同步更新
 - [ ] DragMove/HotKeys 的 Foundation 层可独立于任何具体组件单测（验证其「纯交互能力」定位是否真正做到框架/组件无关）
 - [ ] AudioPlayer/VideoPlayer 的播放状态机有 Foundation 单测，覆盖切换播放源时旧的定时器/事件监听被正确清理

@@ -448,6 +448,8 @@ export function App() @{
     }
     let &[localeIsEnglish] = track<boolean>(false);
     let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
+    let &[configProviderThemeMode] = track<'light' | 'dark' | undefined>(undefined);
+    let &[configProviderModalVisible] = track<boolean>(false);
     let &[cropperResultUrl] = track<string>('');
     let &[cropperZoom] = track<number>(1);
     let &[chatMessages] = track<ChatMessage[]>(() => [
@@ -3705,6 +3707,48 @@ export function App() @{
                 </Form>
                 <div style={{ width: '200px', marginTop: '12px' }}>
                     <Input showClear defaultValue="lotus" aria-label="ConfigProvider Input 示例" />
+                </div>
+            </div>
+        </ConfigProvider>
+
+        <Divider>ConfigProvider：mode 切换暗色主题（写入 document.documentElement 的 data-theme，全局生效，对齐 Semi 暗色模式的全局语义——但 Semi 的 ConfigProvider 本身并不承载主题能力，这是 lotus 自己 Phase 5 spec 承诺的能力）</Divider>
+
+        <ConfigProvider mode={configProviderThemeMode}>
+            <div style={{ padding: '16px', border: '1px solid var(--lotus-color-border)', borderRadius: 'var(--lotus-border-radius-medium)' }}>
+                <Space style={{ marginBottom: '12px' }}>
+                    <Button onClick={() => { configProviderThemeMode = configProviderThemeMode === 'dark' ? 'light' : 'dark'; }}>
+                        {configProviderThemeMode === 'dark' ? '切换到 light' : '切换到 dark'}
+                    </Button>
+                </Space>
+                <Space>
+                    <Button theme="solid" type="primary">Button</Button>
+                    <Input style={{ width: '160px' }} defaultValue="Input" aria-label="ConfigProvider mode 示例 Input" />
+                    <Select
+                        style={{ width: '160px' }}
+                        optionList={businessLineOptions}
+                        placeholder="Select"
+                        aria-label="ConfigProvider mode 示例 Select"
+                    />
+                    <Button onClick={() => { configProviderModalVisible = true; }}>打开 mode 示例 Modal</Button>
+                </Space>
+                <Modal
+                    visible={configProviderModalVisible}
+                    title="mode 示例 Modal"
+                    onOk={() => { configProviderModalVisible = false; }}
+                    onCancel={() => { configProviderModalVisible = false; }}
+                    aria-label="ConfigProvider mode 示例 Modal"
+                >
+                    这个 Modal 也会跟随 mode 切换
+                </Modal>
+                <div style={{ marginTop: '12px' }}>
+                    <Table
+                        dataSource={[{ key: '1', name: '张三', age: 28 }]}
+                        columns={[
+                            { title: '姓名', key: 'name', dataIndex: 'name' },
+                            { title: '年龄', key: 'age', dataIndex: 'age' },
+                        ]}
+                        aria-label="ConfigProvider mode 示例 Table"
+                    />
                 </div>
             </div>
         </ConfigProvider>

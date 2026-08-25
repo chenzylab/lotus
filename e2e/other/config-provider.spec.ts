@@ -45,4 +45,40 @@ test.describe('ConfigProvider', () => {
 
     await expect(page.getByText('该字段不能为空')).toBeVisible();
   });
+
+  test('mode 切换暗色主题：写入 document.documentElement 的 data-theme 属性，全局生效，Button/Input/Select/Modal/Table 视觉即时更新（不刷新页面）', async ({ page }) => {
+    // 回归防护：调研 Semi 源码确认其 ConfigProvider 本身不承载主题能力
+    // （Context 只有 locale/direction/timeZone 等字段），暗色模式是脱离
+    // ConfigProvider 的全局 DOM 属性操作；这是 lotus 自己
+    // specs/phases/phase-5-global-media-tools.spec.md 承诺、此前从未实现
+    // 的能力，此测试覆盖该验收标准点名的 5 个组件。
+    await page.goto('/');
+    const toggleBtn = page.getByRole('button', { name: /切换到 dark|切换到 light/ });
+    await toggleBtn.scrollIntoViewIfNeeded();
+
+    expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBeNull();
+
+    const primaryButton = page.locator('button.lotus-button-theme-solid.lotus-button-primary').first();
+    const lightBg = await primaryButton.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    await toggleBtn.click();
+    expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('dark');
+
+    // 不刷新页面的前提下，Button 的实际渲染背景色应该跟随暗色 token 变化。
+    const darkBg = await primaryButton.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(darkBg).not.toBe(lightBg);
+
+    // Input/Select/Modal/Table 均在同一个 ConfigProvider 子树内，仍然正常渲染
+    // （暗色模式是纯 CSS 变量切换，不影响组件结构本身）。
+    await expect(page.getByLabel('ConfigProvider mode 示例 Input')).toBeVisible();
+    await expect(page.getByLabel('ConfigProvider mode 示例 Select')).toBeVisible();
+    await expect(page.getByLabel('ConfigProvider mode 示例 Table')).toBeVisible();
+
+    await page.getByRole('button', { name: '打开 mode 示例 Modal' }).click();
+    await expect(page.getByLabel('ConfigProvider mode 示例 Modal')).toBeVisible();
+    await page.getByRole('button', { name: '确定' }).click();
+
+    await toggleBtn.click();
+    expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('light');
+  });
 });
