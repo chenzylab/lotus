@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo } from '@lotus/icons';
@@ -418,6 +418,22 @@ export function App() @{
     let &[sidebarBackWardLog] = track<string>('');
     const sidebarCodeDetail = { key: 'code-1', name: 'demo.json', isJson: true, content: JSON.stringify({ hello: 'world', count: 3 }, null, 2) };
     const sidebarFileDetail = { key: 'file-1', name: 'readme.txt', content: '<p>这是一段可编辑的富文本内容。</p>' };
+    let &[aiDialogueMessages] = track<AiDialogueMessage[]>(() => [
+        { id: 'ai-msg-1', role: 'user', content: '帮我查一下北京今天的天气' },
+        {
+            id: 'ai-msg-2',
+            role: 'assistant',
+            status: 'completed',
+            content: [
+                { type: 'reasoning', summary: ['用户想查询天气，需要调用天气工具获取北京的实时数据。'] },
+                { type: 'tool_call', call_id: 'call-1', name: 'get_weather', arguments: '{"city":"北京"}', status: 'completed', output: '{"temp":24,"condition":"晴"}' },
+                { type: 'output_text', text: '北京今天 **24°C**，晴朗，适合出行。' },
+            ],
+        },
+    ] as AiDialogueMessage[]);
+    let aiDialogueApi: AiChatDialogueApi | undefined;
+    let aiStreamState: any = null;
+    let &[aiStreamingLog] = track<string>('');
     let &[userGuideCurrent] = track<number>(0);
     let &[userGuideLog] = track<string>('');
     let &[userGuideModalVisible] = track<boolean>(false);
@@ -3791,6 +3807,53 @@ export function App() @{
                     sidebarMode = 'main';
                 }}
             />
+        </div>
+
+        <Divider>AiChatDialogue：AI 对话</Divider>
+
+        <div class="demo-ai-chat-dialogue" style={{ height: '360px', border: '1px solid var(--lotus-color-border)', borderRadius: '8px' }}>
+            <AiChatDialogue
+                chats={aiDialogueMessages}
+                roleConfig={{ user: { name: '我' }, assistant: { name: 'Lotus AI' } }}
+                hints={['介绍一下 lotus 组件库', '帮我写一段 TypeScript 代码']}
+                showReset={true}
+                onChatsChange={(next: AiDialogueMessage[]) => { aiDialogueMessages = next; }}
+                onMessageGoodFeedback={() => console.log('good feedback')}
+                onMessageBadFeedback={() => console.log('bad feedback')}
+                getAiChatDialogueApi={(api: AiChatDialogueApi) => { aiDialogueApi = api; }}
+            />
+        </div>
+        <div class="demo-ai-chat-dialogue-controls" style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <Button
+                onClick={() => {
+                    const chunks = [
+                        { type: 'response.output_item.added', sequence_number: 0, output_index: 0, item: { type: 'message' } },
+                        { type: 'response.output_text.delta', sequence_number: 1, output_index: 0, content_index: 0, delta: '这是' },
+                    ];
+                    const result = streamingResponseToMessage(chunks, aiStreamState);
+                    aiStreamState = result?.nextState ?? null;
+                    const message = result?.message;
+                    if (message) {
+                        aiDialogueMessages = [...aiDialogueMessages, { ...message, id: 'ai-stream-demo' }];
+                        aiStreamingLog = '流式消息已开始';
+                    }
+                }}
+            >模拟流式回复开始</Button>
+            <Button
+                onClick={() => {
+                    const chunks = [{ type: 'response.output_text.delta', sequence_number: 2, output_index: 0, content_index: 0, delta: '流式增量文本，逐步追加。' }];
+                    const result = streamingResponseToMessage(chunks, aiStreamState);
+                    aiStreamState = result?.nextState ?? null;
+                    const message = result?.message;
+                    if (message) {
+                        aiDialogueMessages = aiDialogueMessages.map((m) => (m.id === 'ai-stream-demo' ? { ...message, id: 'ai-stream-demo' } : m));
+                        aiStreamingLog = '流式消息已追加增量';
+                    }
+                }}
+            >追加流式增量</Button>
+            <Button onClick={() => aiDialogueApi?.scrollToTop()}>滚动到顶部</Button>
+            <Button onClick={() => aiDialogueApi?.scrollToBottom()}>滚动到底部</Button>
+            <span class="demo-ai-streaming-log">{aiStreamingLog}</span>
         </div>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />

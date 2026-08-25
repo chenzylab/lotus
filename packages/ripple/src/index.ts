@@ -403,6 +403,24 @@ export {
     type FileItemProps as SidebarFileItemProps,
 } from './show/sidebar/index.tsrx';
 export {
+    AiChatDialogue,
+    type AiChatDialogueProps,
+    type AiChatDialogueApi,
+    type AiChatMessage,
+    type AiContentItem,
+    type AiMessageStatus,
+    type DialogueRoleConfig,
+    nextAiMessageId,
+    normalizeAiContent,
+    extractPlainText,
+    responseToMessage,
+    chatCompletionToMessage,
+    streamingResponseToMessage,
+    streamingChatCompletionToMessage,
+    formatFileSize,
+    formatToolArguments,
+} from './show/ai-chat-dialogue/index.tsrx';
+export {
     Avatar,
     type AvatarProps,
     type AvatarShape,

@@ -39,6 +39,8 @@ export default [
       'packages/ripple/src/show/sidebar/file-content.tsrx',
       'packages/ripple/src/show/sidebar/image-upload-node.ts',
       'packages/ripple/src/show/sidebar/mcp-configure.tsrx',
+      'packages/ripple/src/show/ai-chat-dialogue/dialogue-box.tsrx',
+      'packages/ripple/src/show/ai-chat-dialogue/message-editor.tsrx',
     ],
     rules: {
       'ripple/prefer-oninput': 'off',

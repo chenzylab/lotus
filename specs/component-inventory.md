@@ -114,7 +114,7 @@
 
 > 依赖 `specs/references/semi-design-articles.md` 中「AI」一节的五大设计原则与四阶段交互模型。此阶段组件需要 Token 层先行提供 AI 专属渐变色变量。
 
-- [ ] AiChatDialogue AI 对话
+- [x] AiChatDialogue AI 对话（Semi 真实存在的组件，正式名 `AIChatDialogue`，属于 AI 分类；Message 格式对齐 OpenAI Response Object/Chat Completion 语义（`content: string | ContentItem[]`，多块类型覆盖文本/图片/文件/reasoning思考/工具调用/MCP调用/引用注释），与 lotus 已有的纯文本 Chat 组件是两套完全独立的数据模型和 Foundation，不做继承/复用——Semi 自身也是两个不相干的 Foundation 类；Foundation 是轻量状态机（select/deselect、like/dislike互斥、delete、reset、editing切换、hint点击追加消息），streaming/reasoning 归约完全下沉到组件生命周期之外的纯函数（`streamingResponseToMessage`/`streamingChatCompletionToMessage`，按 sequence_number 顺序处理+无序缓冲+MAX_GAP容错跳过丢失块，全功能移植自 chenzy.design 已验证实现，覆盖 reasoning/tool_call/mcp_call/code_interpreter等全部事件类型），供 SSE 事件处理器在组件外部增量调用；一次性做到 chenzy.design 的 P1 水平——含 streaming 增量适配器、消息编辑（`editing`+`onMessageEdit`+`messageEditRender`覆盖点）、工具调用/MCP 交互块完整实现（状态图标+折叠+JSON格式化参数输出+call_id+MCP server标签，复用 CodeHighlight 做 JSON 高亮，对齐 chenzy.design"超越 Semi 基础展示"方案）；消息内容渲染直接复用已有 MarkdownRender（其 pre>code→CodeHighlight 自动转发机制已经覆盖了 Semi `components` 覆写 prop 想解决的问题，调研阶段以为存在的 gap 实际不存在，不需要额外扩展）；Reasoning 折叠块复用 Collapse，默认展开条件对齐 Semi `status !== 'completed'`；命令式 API（selectAll/deselectAll/scrollToBottom/scrollToTop）通过 `getAiChatDialogueApi` 回调交出，对齐 Cropper 的 `getCropperApi` 既有模式；不含输入框——Semi 把输入框拆成独立的 AIChatInput 组件，两者配对但互相独立，本组件只负责渲染 `chats`；e2e 覆盖 `e2e/show/ai-chat-dialogue.spec.ts`，10 用例 50/50（`--repeat-each=5`）全过）
 - [ ] AiChatInput AI 输入框
 - [ ] AiComponent AI 组件（过程感知/结果控制类通用组件）
 
