@@ -53,6 +53,14 @@ const treeSelectLazyData: TreeNodeData[] = [
     { key: 'vegetable', label: '蔬菜', isLeaf: false },
 ];
 
+const treeSelectVirtualizeData: TreeNodeData[] = [
+    {
+        key: 'root',
+        label: '根节点（1000 个子节点）',
+        children: Array.from({ length: 1000 }, (_, i) => ({ key: `node-${i}`, label: `节点 ${i}` })),
+    },
+];
+
 const autoCompleteAllCities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '苏州'];
 
 // Cropper 演示用同源 SVG data URI：跨域图片会污染 canvas，getImageData/toDataURL 会被浏览器拒绝
@@ -2903,6 +2911,18 @@ export function App() @{
                 showClear
                 placeholder="请选择（不联动父子）"
                 aria-label="TreeSelect unRelated"
+            />
+        </div>
+
+        <Divider>TreeSelect：virtualize（1000 个子节点虚拟滚动，对齐 Select/Cascader 已验证的实现模式）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeSelectVirtualizeData}
+                virtualize={{ height: 240, itemSize: 32 }}
+                defaultExpandedKeys={['root']}
+                placeholder="请选择"
+                aria-label="TreeSelect 虚拟滚动示例"
             />
         </div>
 

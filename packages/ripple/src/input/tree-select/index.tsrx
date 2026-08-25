@@ -17,6 +17,7 @@ import {
     type FlatTreeNode,
 } from '@lotus/foundation/input/tree-select';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { IconChevronDown, IconChevronRight, IconClear, IconLoading, IconSearch } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -61,6 +62,11 @@ export interface TreeSelectProps {
     onLoad?: (loadedKeys: string[], node: TreeNodeData) => void;
     onLoadError?: (node: TreeNodeData, error: unknown) => void;
     renderLabel?: (label: any, node: TreeNodeData) => any;
+    /** 大数据量场景下开启固定行高虚拟滚动（对齐 Select/Cascader 已验证的实现
+     * 模式，复用同一份 `base/virtual-list.ts` 纯算法）——`flatNodes` 已经是
+     * "展开路径上可见节点"的扁平数组，天然固定行高（不因层级/展开状态变化），
+     * 直接对这个一维数组做虚拟化即可，不需要像 Cascader 那样按列拆分。 */
+    virtualize?: { height?: number; itemSize: number };
     onChange?: (value: string | string[] | undefined) => void;
     onSelect?: (selectedKey: string | null, selected: boolean, node: TreeNodeData) => void;
     onClear?: () => void;
@@ -75,6 +81,155 @@ export interface TreeSelectProps {
 function toKeyArray(value: string | string[] | undefined): string[] {
     if (value === undefined) return [];
     return Array.isArray(value) ? value : [value];
+}
+
+interface TreeSelectNodeItemProps {
+    node: FlatTreeNode;
+    multiple: boolean;
+    selected: boolean;
+    checked: boolean;
+    halfChecked: boolean;
+    expanded: boolean;
+    loading: boolean;
+    loadData: boolean;
+    disabled: boolean;
+    renderLabel?: (label: any, node: TreeNodeData) => any;
+    onToggleExpand: (key: string, data: TreeNodeData, hasChildren: boolean) => void;
+    onSelectNode: (key: string, data: TreeNodeData) => void;
+}
+
+/** 单个树节点行的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用
+ * （对齐 Select/Cascader 已验证的同一模式）。 */
+function TreeSelectNodeItem(&{
+    node,
+    multiple,
+    selected,
+    checked,
+    halfChecked,
+    expanded,
+    loading,
+    loadData,
+    disabled,
+    renderLabel,
+    onToggleExpand,
+    onSelectNode,
+}: TreeSelectNodeItemProps) @{
+    <>
+    <div
+        role="treeitem"
+        aria-selected={!multiple && selected}
+        aria-disabled={node.disabled}
+        aria-expanded={node.hasChildren ? expanded : undefined}
+        class={['lotus-tree-select-node', !multiple && selected ? 'lotus-tree-select-node-selected' : '', node.disabled ? 'lotus-tree-select-node-disabled' : ''].filter(Boolean).join(' ')}
+        style={{ paddingLeft: `${node.level * 20}px` }}
+    >
+        @if (!node.isLeaf || loadData) {
+            <span
+                class={['lotus-tree-select-switcher', expanded ? 'lotus-tree-select-switcher-expanded' : ''].filter(Boolean).join(' ')}
+                onClick={() => onToggleExpand(node.key, node.data, node.hasChildren)}
+            >
+                @if (loading) {
+                    <span class="lotus-tree-select-switcher-loading"><IconLoading /></span>
+                } @if (!loading) {
+                    <IconChevronRight />
+                }
+            </span>
+        } @if (node.isLeaf && !loadData) {
+            <span class="lotus-tree-select-switcher lotus-tree-select-switcher-placeholder" />
+        }
+
+        @if (multiple) {
+            <span class="lotus-tree-select-node-checkbox" onClick={(event: MouseEvent) => event.stopPropagation()}>
+                <Checkbox checked={checked} indeterminate={halfChecked} disabled={disabled || node.disabled} onChange={() => onSelectNode(node.key, node.data)} />
+            </span>
+        }
+
+        <span class="lotus-tree-select-node-content" onClick={() => onSelectNode(node.key, node.data)}>
+            @if (node.icon) {
+                <span class="lotus-tree-select-node-icon">{node.icon}</span>
+            }
+            <span class="lotus-tree-select-node-label">{renderLabel ? renderLabel(node.label, node.data) : node.label}</span>
+        </span>
+    </div>
+
+    <style>
+        .lotus-tree-select-node {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 32px;
+            border-radius: var(--lotus-border-radius-small);
+        }
+
+        .lotus-tree-select-node:hover:not(.lotus-tree-select-node-disabled) {
+            background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-tree-select-node-selected {
+            background: var(--lotus-color-fill-1);
+            color: var(--lotus-color-primary);
+        }
+
+        .lotus-tree-select-node-disabled {
+            color: var(--lotus-color-disabled-text);
+            cursor: not-allowed;
+        }
+
+        .lotus-tree-select-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            color: var(--lotus-color-text-2);
+            transition: transform 0.2s ease;
+        }
+
+        .lotus-tree-select-switcher-placeholder { cursor: default; }
+
+        .lotus-tree-select-switcher-expanded { transform: rotate(90deg); }
+
+        .lotus-tree-select-switcher-loading {
+            display: flex;
+            animation: lotus-tree-select-spin 1s linear infinite;
+        }
+
+        @keyframes lotus-tree-select-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .lotus-tree-select-node-checkbox {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .lotus-tree-select-node-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        .lotus-tree-select-node-icon {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .lotus-tree-select-node-label {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+    </>
 }
 
 /**
@@ -120,6 +275,7 @@ export function TreeSelect(&{
     onLoad,
     onLoadError,
     renderLabel,
+    virtualize,
     onChange,
     onSelect,
     onClear,
@@ -227,6 +383,33 @@ export function TreeSelect(&{
             showFilteredOnly && searchResult ? searchResult.filteredShownKeys : null,
         ),
     );
+
+    let &[virtualScrollTop] = track<number>(0);
+
+    function handleVirtualScroll(event: Event) {
+        const scrollTop = (event.target as HTMLElement).scrollTop;
+        untrack(() => { virtualScrollTop = scrollTop; });
+    }
+
+    let &[virtualRange] = track(() => {
+        if (!virtualize) return null;
+        return calcVirtualRange({
+            itemCount: flatNodes.length,
+            itemHeight: virtualize.itemSize,
+            containerHeight: virtualize.height ?? 280,
+            scrollTop: virtualScrollTop,
+        });
+    });
+
+    let &[virtualVisibleNodes] = track<Array<{ node: FlatTreeNode; index: number }>>(() => {
+        if (!virtualRange) return [];
+        const result: Array<{ node: FlatTreeNode; index: number }> = [];
+        for (let i = virtualRange.startIndex; i <= virtualRange.endIndex; i++) {
+            const node = flatNodes[i];
+            if (node) result.push({ node, index: i });
+        }
+        return result;
+    });
 
     function checkedKeysFor(): Set<string> {
         return checkRelation === 'unRelated' ? untrack(() => state).independentCheckedKeys : untrack(() => state).checkedKeys;
@@ -393,61 +576,57 @@ export function TreeSelect(&{
                         @if (flatNodes.length === 0) {
                             <div class="lotus-tree-select-empty">暂无数据</div>
                         }
-                        <div class="lotus-tree-select-tree" role="tree" aria-multiselectable={multiple}>
-                            @for (const node of flatNodes; index i; key node.key) {
-                                <div
-                                    role="treeitem"
-                                    aria-selected={!multiple && node.key === state.selectedKey}
-                                    aria-disabled={node.disabled}
-                                    aria-expanded={node.hasChildren ? state.expandedKeys.has(node.key) : undefined}
-                                    class={[
-                                        'lotus-tree-select-node',
-                                        !multiple && node.key === state.selectedKey ? 'lotus-tree-select-node-selected' : '',
-                                        node.disabled ? 'lotus-tree-select-node-disabled' : '',
-                                    ].filter(Boolean).join(' ')}
-                                    style={{ paddingLeft: `${node.level * 20}px` }}
-                                >
-                                    @if (!node.isLeaf || loadData) {
-                                        <span
-                                            class={[
-                                                'lotus-tree-select-switcher',
-                                                state.expandedKeys.has(node.key) ? 'lotus-tree-select-switcher-expanded' : '',
-                                            ].filter(Boolean).join(' ')}
-                                            onClick={() => handleToggleExpand(node.key, node.data, node.hasChildren)}
-                                        >
-                                            @if (state.loadingKeys.has(node.key)) {
-                                                <span class="lotus-tree-select-switcher-loading"><IconLoading /></span>
-                                            } @if (!state.loadingKeys.has(node.key)) {
-                                                <IconChevronRight />
-                                            }
-                                        </span>
-                                    } @if (node.isLeaf && !loadData) {
-                                        <span class="lotus-tree-select-switcher lotus-tree-select-switcher-placeholder" />
-                                    }
-
-                                    @if (multiple) {
-                                        <span class="lotus-tree-select-node-checkbox" onClick={(event: MouseEvent) => event.stopPropagation()}>
-                                            <Checkbox
-                                                checked={(checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys).has(node.key)}
-                                                indeterminate={checkRelation === 'related' && state.halfCheckedKeys.has(node.key)}
-                                                disabled={disabled || node.disabled}
-                                                onChange={() => handleSelectNode(node.key, node.data)}
-                                            />
-                                        </span>
-                                    }
-
-                                    <span
-                                        class="lotus-tree-select-node-content"
-                                        onClick={() => handleSelectNode(node.key, node.data)}
-                                    >
-                                        @if (node.icon) {
-                                            <span class="lotus-tree-select-node-icon">{node.icon}</span>
+                        @if (virtualize) {
+                            <div
+                                class="lotus-tree-select-tree lotus-tree-select-tree-virtual"
+                                role="tree"
+                                aria-multiselectable={multiple}
+                                style={{ height: `${virtualize.height ?? 280}px` }}
+                                onScroll={handleVirtualScroll}
+                            >
+                                <div style={{ height: `${virtualRange?.totalHeight ?? 0}px` }}>
+                                    <div style={{ transform: `translateY(${virtualRange?.offsetY ?? 0}px)` }}>
+                                        @for (const entry of virtualVisibleNodes; key entry.node.key) {
+                                            <div style={{ height: `${virtualize.itemSize}px` }}>
+                                                <TreeSelectNodeItem
+                                                    node={entry.node}
+                                                    multiple={multiple}
+                                                    selected={entry.node.key === state.selectedKey}
+                                                    checked={(checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys).has(entry.node.key)}
+                                                    halfChecked={checkRelation === 'related' && state.halfCheckedKeys.has(entry.node.key)}
+                                                    expanded={state.expandedKeys.has(entry.node.key)}
+                                                    loading={state.loadingKeys.has(entry.node.key)}
+                                                    loadData={!!loadData}
+                                                    disabled={disabled}
+                                                    renderLabel={renderLabel}
+                                                    onToggleExpand={handleToggleExpand}
+                                                    onSelectNode={handleSelectNode}
+                                                />
+                                            </div>
                                         }
-                                        <span class="lotus-tree-select-node-label">{renderLabel ? renderLabel(node.label, node.data) : node.label}</span>
-                                    </span>
+                                    </div>
                                 </div>
-                            }
-                        </div>
+                            </div>
+                        } @else {
+                            <div class="lotus-tree-select-tree" role="tree" aria-multiselectable={multiple}>
+                                @for (const node of flatNodes; index i; key node.key) {
+                                    <TreeSelectNodeItem
+                                        node={node}
+                                        multiple={multiple}
+                                        selected={node.key === state.selectedKey}
+                                        checked={(checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys).has(node.key)}
+                                        halfChecked={checkRelation === 'related' && state.halfCheckedKeys.has(node.key)}
+                                        expanded={state.expandedKeys.has(node.key)}
+                                        loading={state.loadingKeys.has(node.key)}
+                                        loadData={!!loadData}
+                                        disabled={disabled}
+                                        renderLabel={renderLabel}
+                                        onToggleExpand={handleToggleExpand}
+                                        onSelectNode={handleSelectNode}
+                                    />
+                                }
+                            </div>
+                        }
                     </div>
                 }
             >
@@ -654,80 +833,8 @@ export function TreeSelect(&{
                 padding: 4px;
             }
 
-            .lotus-tree-select-node {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                min-height: 32px;
-                border-radius: var(--lotus-border-radius-small);
-            }
-
-            .lotus-tree-select-node:hover:not(.lotus-tree-select-node-disabled) {
-                background: var(--lotus-color-fill-0);
-            }
-
-            .lotus-tree-select-node-selected {
-                background: var(--lotus-color-fill-1);
-                color: var(--lotus-color-primary);
-            }
-
-            .lotus-tree-select-node-disabled {
-                color: var(--lotus-color-disabled-text);
-                cursor: not-allowed;
-            }
-
-            .lotus-tree-select-switcher {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-                width: 20px;
-                height: 20px;
-                cursor: pointer;
-                color: var(--lotus-color-text-2);
-                transition: transform 0.2s ease;
-            }
-
-            .lotus-tree-select-switcher-placeholder { cursor: default; }
-
-            .lotus-tree-select-switcher-expanded { transform: rotate(90deg); }
-
-            .lotus-tree-select-switcher-loading {
-                display: flex;
-                animation: lotus-tree-select-spin 1s linear infinite;
-            }
-
-            @keyframes lotus-tree-select-spin {
-                to { transform: rotate(360deg); }
-            }
-
-            .lotus-tree-select-node-checkbox {
-                display: inline-flex;
-                align-items: center;
-                flex-shrink: 0;
-            }
-
-            .lotus-tree-select-node-content {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                flex: 1;
-                min-width: 0;
-                cursor: pointer;
-                padding: 2px 4px;
-            }
-
-            .lotus-tree-select-node-icon {
-                display: flex;
-                align-items: center;
-                flex-shrink: 0;
-            }
-
-            .lotus-tree-select-node-label {
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+            .lotus-tree-select-tree-virtual {
+                max-height: none;
             }
 
             .lotus-tree-select-empty {

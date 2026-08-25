@@ -109,6 +109,7 @@ function CascaderColumnItem(&{
     onItemHover,
     onItemCheck,
 }: CascaderColumnItemProps) @{
+    <>
     <li
         role="menuitem"
         aria-expanded={!isLeaf ? active : undefined}
@@ -130,6 +131,55 @@ function CascaderColumnItem(&{
             <span class="lotus-cascader-item-arrow"><IconChevronRight /></span>
         }
     </li>
+
+    <style>
+        .lotus-cascader-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: var(--lotus-border-radius-small);
+            cursor: pointer;
+            font-size: var(--lotus-font-body-size);
+            color: var(--lotus-color-text-0);
+            white-space: nowrap;
+        }
+
+        .lotus-cascader-item:hover { background: var(--lotus-color-fill-0); }
+
+        .lotus-cascader-item-active {
+            color: var(--lotus-color-primary);
+            background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-cascader-item-disabled {
+            color: var(--lotus-color-disabled-text);
+            cursor: not-allowed;
+        }
+
+        .lotus-cascader-item-disabled:hover { background: transparent; }
+
+        .lotus-cascader-item-checkbox {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .lotus-cascader-item-label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lotus-cascader-item-arrow {
+            display: inline-flex;
+            align-items: center;
+            color: var(--lotus-color-text-3);
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+    </style>
+    </>
 }
 
 /**
@@ -759,52 +809,6 @@ export function Cascader(&{
 
             .lotus-cascader-column-virtual {
                 max-height: none;
-            }
-
-            .lotus-cascader-item {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 8px;
-                border-radius: var(--lotus-border-radius-small);
-                cursor: pointer;
-                font-size: var(--lotus-font-body-size);
-                color: var(--lotus-color-text-0);
-                white-space: nowrap;
-            }
-
-            .lotus-cascader-item:hover { background: var(--lotus-color-fill-0); }
-
-            .lotus-cascader-item-active {
-                color: var(--lotus-color-primary);
-                background: var(--lotus-color-fill-0);
-            }
-
-            .lotus-cascader-item-disabled {
-                color: var(--lotus-color-disabled-text);
-                cursor: not-allowed;
-            }
-
-            .lotus-cascader-item-disabled:hover { background: transparent; }
-
-            .lotus-cascader-item-checkbox {
-                display: inline-flex;
-                align-items: center;
-                flex-shrink: 0;
-            }
-
-            .lotus-cascader-item-label {
-                flex: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .lotus-cascader-item-arrow {
-                display: inline-flex;
-                align-items: center;
-                color: var(--lotus-color-text-3);
-                font-size: 12px;
-                flex-shrink: 0;
             }
 
             .lotus-cascader-search-list {

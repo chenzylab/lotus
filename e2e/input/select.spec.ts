@@ -101,7 +101,7 @@ test.describe('Select', () => {
 
   test('virtualize：1万条选项只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
     await page.goto('/');
-    const trigger = page.getByLabel('Select 虚拟滚动示例');
+    const trigger = page.getByLabel('Select 虚拟滚动示例', { exact: true });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
 

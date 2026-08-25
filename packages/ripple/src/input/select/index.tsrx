@@ -60,6 +60,7 @@ interface SelectOptionItemProps {
 /** 单个选项 `<li>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，
  * 避免重复维护同一份 class/aria 拼装逻辑。 */
 function SelectOptionItem(&{ option, selected, onSelect }: SelectOptionItemProps) @{
+    <>
     <li
         role="option"
         aria-selected={selected}
@@ -72,6 +73,52 @@ function SelectOptionItem(&{ option, selected, onSelect }: SelectOptionItemProps
             <span class="lotus-select-option-tick"><IconTick /></span>
         }
     </li>
+
+    <style>
+        .lotus-select-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: var(--lotus-border-radius-small);
+            cursor: pointer;
+            font-size: var(--lotus-font-body-size);
+            color: var(--lotus-color-text-0);
+        }
+
+        .lotus-select-option:hover {
+            background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-select-option-selected {
+            color: var(--lotus-color-primary);
+            font-weight: var(--lotus-font-weight-semibold);
+        }
+
+        .lotus-select-option-disabled {
+            color: var(--lotus-color-disabled-text);
+            cursor: not-allowed;
+        }
+
+        .lotus-select-option-disabled:hover {
+            background: transparent;
+        }
+
+        .lotus-select-option-tick {
+            display: inline-flex;
+            align-items: center;
+            color: var(--lotus-color-primary);
+            font-size: 12px;
+        }
+
+        .lotus-select-option-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+    </>
 }
 
 export function Select(&{
@@ -503,48 +550,6 @@ export function Select(&{
                 max-height: none;
             }
 
-            .lotus-select-option {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                padding: 6px 8px;
-                border-radius: var(--lotus-border-radius-small);
-                cursor: pointer;
-                font-size: var(--lotus-font-body-size);
-                color: var(--lotus-color-text-0);
-            }
-
-            .lotus-select-option:hover {
-                background: var(--lotus-color-fill-0);
-            }
-
-            .lotus-select-option-selected {
-                color: var(--lotus-color-primary);
-                font-weight: var(--lotus-font-weight-semibold);
-            }
-
-            .lotus-select-option-disabled {
-                color: var(--lotus-color-disabled-text);
-                cursor: not-allowed;
-            }
-
-            .lotus-select-option-disabled:hover {
-                background: transparent;
-            }
-
-            .lotus-select-option-tick {
-                display: inline-flex;
-                align-items: center;
-                color: var(--lotus-color-primary);
-                font-size: 12px;
-            }
-
-            .lotus-select-option-label {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
         </style>
     </>
 }

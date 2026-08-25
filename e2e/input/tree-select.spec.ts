@@ -177,4 +177,27 @@ test.describe('TreeSelect', () => {
     await page.locator('body').click({ position: { x: 10, y: 10 } });
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('virtualize：1000 个子节点只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('TreeSelect 虚拟滚动示例');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const tree = page.locator('.lotus-tree-select-tree-virtual');
+    await expect(tree).toBeVisible();
+
+    const items = tree.locator('[role="treeitem"]');
+    const renderedCount = await items.count();
+    expect(renderedCount).toBeLessThan(30);
+    expect(renderedCount).toBeGreaterThan(0);
+
+    await expect(items.first()).toContainText('根节点');
+
+    await tree.evaluate((el) => { el.scrollTop = 10000; });
+    await expect(items.first()).not.toContainText('根节点');
+
+    await items.first().click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
 });
