@@ -70,8 +70,7 @@ export interface TableProps<T = any> {
     empty?: any;
     title?: () => any;
     footer?: () => any;
-    virtualized?: boolean;
-    rowHeight?: number;
+    virtualize?: { itemSize: number };
     style?: Record<string, any>;
     class?: string;
     'aria-label'?: string;
@@ -119,12 +118,180 @@ function SortIcon(&{ order }: { order: SortOrder }) @{
     </span>
 }
 
+interface TableRowProps<T = any> {
+    flat: FlatRow<T>;
+    leafColumns: ColumnDef<T>[];
+    rowSelection: TableRowSelection<T> | undefined;
+    showExpandColumn: boolean;
+    hasExpandedRowRender: boolean;
+    rowExpandable: ((record: T) => boolean) | undefined;
+    expandedRowRender: ((record: T, index: number) => any) | undefined;
+    expandRowByClick: boolean;
+    selected: boolean;
+    halfSelected: boolean;
+    disabled: boolean;
+    expanded: boolean;
+    onRow: ((record: T, index: number) => Record<string, any>) | undefined;
+    onRowToggle: (record: T, index: number, checked: boolean) => void;
+    onExpandToggle: (key: string, record: T) => void;
+}
+
+/** 单行 `<tr>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，避免
+ * 重复维护 selection/expand/普通列三段拼装逻辑。 */
+function TableRow<T = any>(&{
+    flat,
+    leafColumns,
+    rowSelection,
+    showExpandColumn,
+    hasExpandedRowRender,
+    rowExpandable,
+    expandedRowRender,
+    expandRowByClick,
+    selected,
+    halfSelected,
+    disabled,
+    expanded,
+    onRow,
+    onRowToggle,
+    onExpandToggle,
+}: TableRowProps<T>) @{
+    <>
+    @if (flat.isExpandedContent) {
+        <tr class="lotus-table-expanded-row" role="row">
+            <td
+                class="lotus-table-cell lotus-table-expanded-cell"
+                colSpan={leafColumns.length + (rowSelection ? 1 : 0) + (showExpandColumn ? 1 : 0)}
+            >
+                {expandedRowRender?.(flat.record, 0)}
+            </td>
+        </tr>
+    } @else {
+        <tr
+            class={['lotus-table-row', flat.level > 0 ? 'lotus-table-row-child' : ''].filter(Boolean).join(' ')}
+            role="row"
+            {...(onRow ? onRow(flat.record, 0) : {})}
+        >
+            @if (rowSelection) {
+                <td class="lotus-table-cell lotus-table-selection-cell">
+                    @if (!disabled) {
+                        <Checkbox
+                            checked={selected}
+                            indeterminate={halfSelected}
+                            onChange={(checked: boolean) => onRowToggle(flat.record, 0, checked)}
+                            aria-label="选择行"
+                        />
+                    }
+                </td>
+            }
+            @if (showExpandColumn) {
+                <td class="lotus-table-cell lotus-table-expand-cell" style={flat.level > 0 ? { paddingLeft: `${flat.level * 20}px` } : undefined}>
+                    @if (flat.hasChildren || (hasExpandedRowRender && (!rowExpandable || rowExpandable(flat.record)))) {
+                        <span
+                            class={['lotus-table-expand-btn', expanded ? 'lotus-table-expand-btn-open' : ''].filter(Boolean).join(' ')}
+                            tabIndex={0}
+                            role="button"
+                            onClick={() => onExpandToggle(flat.key, flat.record)}
+                            onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onExpandToggle(flat.key, flat.record); } }}
+                        >
+                            <IconChevronRight />
+                        </span>
+                    }
+                </td>
+            }
+            @for (const col of leafColumns) {
+                <td
+                    class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? ''].filter(Boolean).join(' ')}
+                    role="gridcell"
+                    onClick={() => { if (expandRowByClick && (flat.hasChildren || hasExpandedRowRender)) onExpandToggle(flat.key, flat.record); }}
+                >
+                    {col.render ? col.render(getCellValue(flat.record, col.dataIndex), flat.record, 0) : getCellValue(flat.record, col.dataIndex)}
+                </td>
+            }
+        </tr>
+    }
+
+    <style>
+        .lotus-table-cell {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--lotus-color-border);
+            box-sizing: border-box;
+        }
+
+        .lotus-table-size-middle .lotus-table-cell {
+            padding: 8px 16px;
+        }
+
+        .lotus-table-size-small .lotus-table-cell {
+            padding: 4px 12px;
+        }
+
+        .lotus-table-bordered .lotus-table-cell {
+            border-right: 1px solid var(--lotus-color-border);
+        }
+
+        .lotus-table-bordered .lotus-table-cell:last-child {
+            border-right: none;
+        }
+
+        .lotus-table-align-left { text-align: left; }
+        .lotus-table-align-center { text-align: center; }
+        .lotus-table-align-right { text-align: right; }
+
+        .lotus-table-row:hover .lotus-table-cell {
+            background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-table-selection-cell,
+        .lotus-table-expand-cell {
+            width: 1%;
+            white-space: nowrap;
+        }
+
+        .lotus-table-expand-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            color: var(--lotus-color-text-2);
+        }
+
+        .lotus-table-expand-btn-open {
+            transform: rotate(90deg);
+        }
+
+        .lotus-table-row-child .lotus-table-cell:first-of-type {
+            color: var(--lotus-color-text-1);
+        }
+
+        .lotus-table-expanded-row .lotus-table-expanded-cell {
+            background: var(--lotus-color-fill-0);
+        }
+    </style>
+    </>
+}
+
 /**
- * Table：单 table 架构（本期不含固定表头/固定列的双 table 架构、虚拟滚动、
- * 列宽调整——这些在后续迭代中叠加）。数据管线（排序 → 筛选 → 分页）与
- * 行选择/展开/树形三态级联全部委托给 TableFoundation，组件层只做 DOM
+ * Table：单 table 架构（本期不含固定表头/固定列的双 table 架构、列宽
+ * 调整——这些在后续迭代中叠加）。数据管线（排序 → 筛选 → 分页）与行
+ * 选择/展开/树形三态级联全部委托给 TableFoundation，组件层只做 DOM
  * 渲染与事件转发。多级表头用 buildHeaderRows 摊平成行×格网格再渲染，
  * 叶子列的 rowSpan 补齐到表头总行数（对齐 Semi 的分组表头渲染）。
+ * 全面验收审计后补充：新增 `virtualize?: { itemSize }` prop，仅在同时声明
+ * `scroll.y`（固定容器高度）且没有 `expandedRowRender`（展开行内容任意
+ * 高度，与固定行高假设冲突）时生效——`flatRows` 已经是 Foundation 层把
+ * 树形展开态摊平好的定长数组（与 TreeSelect 的 flatNodes 同一模式），直接
+ * 复用 `base/virtual-list.ts` 做区间截取；HTML `<table>` 不能像 Select/
+ * TreeSelect 那样在容器内嵌一层 `translateY` 的 div 包裹可见区间（`<tbody>`
+ * 只能直接包含 `<tr>`），改用两个高度分别为 offsetY / 剩余总高度的占位
+ * `<tr>` 撑开滚动条长度，模拟"可见区间之外的行仍占据布局空间"的效果；
+ * 调研 Semi 源码确认其虚拟滚动用 react-window 的 VariableSizeList 整体
+ * 替换 tbody，固定列（若声明）靠 CSS position:sticky 与滚动内容同属
+ * 一行 `<tr>` 天然对齐、不需要独立同步机制——但 lotus 当前 Table 的
+ * `fixed` 列配置本身也是从未实现的死 prop，本次不需要处理固定列共存。
  */
 export function Table<T = any>(&{
     columns,
@@ -150,6 +317,7 @@ export function Table<T = any>(&{
     empty,
     title,
     footer,
+    virtualize,
     style,
     class: className,
     'aria-label': ariaLabel,
@@ -222,6 +390,28 @@ export function Table<T = any>(&{
             hasExpandedRowRender,
         }),
     );
+
+    // 虚拟滚动仅在声明了固定高度（scroll.y）且没有展开行内容（expandedRowRender 渲染任意
+    // 高度内容，与固定行高假设冲突）时生效，对齐 Semi 用 scroll.y 驱动虚拟滚动容器高度的设计。
+    const isVirtualized = !!virtualize && scroll?.y !== undefined && !hasExpandedRowRender;
+    let &[virtualScrollTop] = track<number>(0);
+    function handleVirtualScroll(event: Event) {
+        const scrollTop = (event.target as HTMLElement).scrollTop;
+        untrack(() => { virtualScrollTop = scrollTop; });
+    }
+    let &[virtualRange] = track(() => {
+        if (!isVirtualized) return null;
+        return calcVirtualRange({
+            itemCount: flatRows.length,
+            itemHeight: virtualize!.itemSize,
+            containerHeight: typeof scroll!.y === 'number' ? scroll!.y : parseFloat(String(scroll!.y)),
+            scrollTop: virtualScrollTop,
+        });
+    });
+    let &[visibleFlatRows] = track<FlatRow<T>[]>(() => {
+        if (!virtualRange) return flatRows;
+        return flatRows.slice(virtualRange.startIndex, virtualRange.endIndex + 1);
+    });
 
     let &[disabledKeys] = track<Set<string>>(() => {
         if (!rowSelection?.getCheckboxProps) return new Set<string>();
@@ -356,9 +546,18 @@ export function Table<T = any>(&{
             </div>
         }
 
-        <div class="lotus-table-scroll" style={scroll?.x ? { overflowX: 'auto' } : undefined}>
+        <div
+            class="lotus-table-scroll"
+            style={{
+                ...(scroll?.x ? { overflowX: 'auto' } : {}),
+                ...(scroll?.y !== undefined
+                    ? { overflowY: 'auto', maxHeight: typeof scroll.y === 'number' ? `${scroll.y}px` : scroll.y }
+                    : {}),
+            }}
+            onScroll={isVirtualized ? handleVirtualScroll : undefined}
+        >
             <table class="lotus-table" role="grid" style={scroll?.x ? { minWidth: typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x } : undefined}>
-                <thead class="lotus-table-thead">
+                <thead class="lotus-table-thead" style={scroll?.y !== undefined ? { position: 'sticky', top: 0, zIndex: 1 } : undefined}>
                     @for (const row of headerRows) {
                         <tr role="row">
                             @if (rowSelection && row === headerRows[0]) {
@@ -453,60 +652,34 @@ export function Table<T = any>(&{
                                 </td>
                             </tr>
                         }
-                        @for (const flat of flatRows; key flat.key) {
-                            @if (flat.isExpandedContent) {
-                                <tr class="lotus-table-expanded-row" role="row">
-                                    <td
-                                        class="lotus-table-cell lotus-table-expanded-cell"
-                                        colSpan={leafColumns.length + (rowSelection ? 1 : 0) + (!hideExpandedColumn ? 1 : 0)}
-                                    >
-                                        {expandedRowRender?.(flat.record, 0)}
-                                    </td>
-                                </tr>
-                            } @else {
-                                <tr
-                                    class={['lotus-table-row', flat.level > 0 ? 'lotus-table-row-child' : ''].filter(Boolean).join(' ')}
-                                    role="row"
-                                    {...(onRow ? onRow(flat.record, 0) : {})}
-                                >
-                                    @if (rowSelection) {
-                                        <td class="lotus-table-cell lotus-table-selection-cell">
-                                            @if (!disabledKeys.has(flat.key)) {
-                                                <Checkbox
-                                                    checked={state.selectedRowKeys.has(flat.key)}
-                                                    indeterminate={state.halfSelectedRowKeys.has(flat.key)}
-                                                    onChange={(checked: boolean) => handleRowToggle(flat.record, 0, checked)}
-                                                    aria-label="选择行"
-                                                />
-                                            }
-                                        </td>
-                                    }
-                                    @if ((expandedRowRender || rowExpandable) && !hideExpandedColumn) {
-                                        <td class="lotus-table-cell lotus-table-expand-cell" style={flat.level > 0 ? { paddingLeft: `${flat.level * 20}px` } : undefined}>
-                                            @if (flat.hasChildren || (hasExpandedRowRender && (!rowExpandable || rowExpandable(flat.record)))) {
-                                                <span
-                                                    class={['lotus-table-expand-btn', state.expandedRowKeys.has(flat.key) ? 'lotus-table-expand-btn-open' : ''].filter(Boolean).join(' ')}
-                                                    tabIndex={0}
-                                                    role="button"
-                                                    onClick={() => handleExpandToggle(flat.key, flat.record)}
-                                                    onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleExpandToggle(flat.key, flat.record); } }}
-                                                >
-                                                    <IconChevronRight />
-                                                </span>
-                                            }
-                                        </td>
-                                    }
-                                    @for (const col of leafColumns) {
-                                        <td
-                                            class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? ''].filter(Boolean).join(' ')}
-                                            role="gridcell"
-                                            onClick={() => { if (expandRowByClick && (flat.hasChildren || hasExpandedRowRender)) handleExpandToggle(flat.key, flat.record); }}
-                                        >
-                                            {col.render ? col.render(getCellValue(flat.record, col.dataIndex), flat.record, 0) : getCellValue(flat.record, col.dataIndex)}
-                                        </td>
-                                    }
-                                </tr>
-                            }
+                        @if (virtualRange && virtualRange.offsetY > 0) {
+                            <tr class="lotus-table-virtual-spacer" aria-hidden="true" style={{ height: `${virtualRange.offsetY}px` }}><td colSpan={leafColumns.length + (rowSelection ? 1 : 0) + ((expandedRowRender || rowExpandable) && !hideExpandedColumn ? 1 : 0)} /></tr>
+                        }
+                        @for (const flat of visibleFlatRows; key flat.key) {
+                            <TableRow
+                                flat={flat}
+                                leafColumns={leafColumns}
+                                rowSelection={rowSelection}
+                                showExpandColumn={!!((expandedRowRender || rowExpandable) && !hideExpandedColumn)}
+                                hasExpandedRowRender={hasExpandedRowRender}
+                                rowExpandable={rowExpandable}
+                                expandedRowRender={expandedRowRender}
+                                expandRowByClick={expandRowByClick}
+                                selected={state.selectedRowKeys.has(flat.key)}
+                                halfSelected={state.halfSelectedRowKeys.has(flat.key)}
+                                disabled={disabledKeys.has(flat.key)}
+                                expanded={state.expandedRowKeys.has(flat.key)}
+                                onRow={onRow}
+                                onRowToggle={handleRowToggle}
+                                onExpandToggle={handleExpandToggle}
+                            />
+                        }
+                        @if (virtualRange && (virtualRange.totalHeight - virtualRange.offsetY - (virtualRange.endIndex - virtualRange.startIndex + 1) * virtualize!.itemSize) > 0) {
+                            <tr
+                                class="lotus-table-virtual-spacer"
+                                aria-hidden="true"
+                                style={{ height: `${virtualRange.totalHeight - virtualRange.offsetY - (virtualRange.endIndex - virtualRange.startIndex + 1) * virtualize!.itemSize}px` }}
+                            ><td colSpan={leafColumns.length + (rowSelection ? 1 : 0) + ((expandedRowRender || rowExpandable) && !hideExpandedColumn ? 1 : 0)} /></tr>
                         }
                         </>
                     }
@@ -625,37 +798,15 @@ export function Table<T = any>(&{
                 color: var(--lotus-color-primary);
             }
 
-            .lotus-table-row:hover .lotus-table-cell {
-                background: var(--lotus-color-fill-0);
+            .lotus-table-virtual-spacer > td {
+                padding: 0;
+                border: none;
             }
 
             .lotus-table-selection-cell,
             .lotus-table-expand-cell {
                 width: 1%;
                 white-space: nowrap;
-            }
-
-            .lotus-table-expand-btn {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-                transition: transform 0.2s ease;
-                color: var(--lotus-color-text-2);
-            }
-
-            .lotus-table-expand-btn-open {
-                transform: rotate(90deg);
-            }
-
-            .lotus-table-row-child .lotus-table-cell:first-of-type {
-                color: var(--lotus-color-text-1);
-            }
-
-            .lotus-table-expanded-row .lotus-table-expanded-cell {
-                background: var(--lotus-color-fill-0);
             }
 
             .lotus-table-loading-cell,

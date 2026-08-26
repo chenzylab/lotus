@@ -406,6 +406,15 @@ export function App() @{
     let &[tableChangeLog] = track<string>('');
     let &[tableSelectedKeys] = track<Array<string | number>>([]);
 
+    const tableVirtualizeData: TablePerson[] = Array.from({ length: 10000 }, (_, i) => ({
+        key: String(i),
+        name: `用户 ${i}`,
+        age: 20 + (i % 40),
+        city: ['北京', '上海', '深圳'][i % 3]!,
+        dept: '研发',
+    }));
+    let &[tableVirtualizeSelectedKeys] = track<Array<string | number>>([]);
+
     const tablePageColumns: ColumnDef<TablePerson>[] = [
         { title: '姓名', dataIndex: 'name', key: 'name' },
         { title: '年龄', dataIndex: 'age', key: 'age', sorter: (a, b) => a.age - b.age },
@@ -3658,6 +3667,24 @@ export function App() @{
                 scroll={{ x: 700 }}
                 aria-label="Table 固定列"
             />
+        </div>
+
+        <Divider>Table：virtualize（1万行数据 + scroll.y 固定高度虚拟滚动，对齐 Select/Cascader/TreeSelect 已验证的实现模式；叠加行选择验证勾选态不受虚拟化裁剪影响）</Divider>
+
+        <div>
+            <Table
+                columns={tableBasicColumns}
+                dataSource={tableVirtualizeData}
+                pagination={false}
+                scroll={{ y: 240 }}
+                virtualize={{ itemSize: 44 }}
+                rowSelection={{
+                    selectedRowKeys: tableVirtualizeSelectedKeys,
+                    onChange: (keys) => { tableVirtualizeSelectedKeys = keys; },
+                }}
+                aria-label="Table 虚拟滚动示例"
+            />
+            <TypographyText type="secondary" aria-label="Table 虚拟滚动选中日志">{`已选：${tableVirtualizeSelectedKeys.length} 条`}</TypographyText>
         </div>
 
         <Divider>Table：loading / bordered / size</Divider>

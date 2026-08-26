@@ -103,4 +103,30 @@ test.describe('Table', () => {
     const root = page.getByLabel('Table loading', { exact: true });
     await expect(root.locator('.lotus-table-loading-cell')).toBeVisible();
   });
+
+  test('virtualize：1万行数据只渲染可见区间，滚动后动态切换渲染内容，勾选状态不受虚拟化裁剪影响', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table 虚拟滚动示例');
+    await root.scrollIntoViewIfNeeded();
+
+    const rows = root.locator('tbody tr.lotus-table-row');
+    const renderedCount = await rows.count();
+    expect(renderedCount).toBeLessThan(30);
+    expect(renderedCount).toBeGreaterThan(0);
+
+    await expect(rows.first().locator('td').nth(1)).toContainText('用户 0');
+
+    const firstRowCheckbox = rows.first().locator('input[type="checkbox"]');
+    await firstRowCheckbox.locator('xpath=..').click();
+    await expect(page.getByLabel('Table 虚拟滚动选中日志')).toHaveText('已选：1 条');
+
+    const scrollDiv = root.locator('.lotus-table-scroll');
+    await scrollDiv.evaluate((el) => { el.scrollTop = 5000; });
+    await expect(rows.first().locator('td').nth(1)).not.toContainText('用户 0');
+
+    await scrollDiv.evaluate((el) => { el.scrollTop = 0; });
+    await expect(rows.first().locator('td').nth(1)).toContainText('用户 0');
+    await expect(rows.first().locator('input[type="checkbox"]')).toBeChecked();
+    await expect(page.getByLabel('Table 虚拟滚动选中日志')).toHaveText('已选：1 条');
+  });
 });
