@@ -218,7 +218,7 @@ function TableRow<T = any>(&{
     <style>
         .lotus-table-cell {
             padding: 12px 16px;
-            text-align: left;
+            text-align: start;
             border-bottom: 1px solid var(--lotus-color-border);
             box-sizing: border-box;
         }
@@ -232,11 +232,11 @@ function TableRow<T = any>(&{
         }
 
         .lotus-table-bordered .lotus-table-cell {
-            border-right: 1px solid var(--lotus-color-border);
+            border-inline-end: 1px solid var(--lotus-color-border);
         }
 
         .lotus-table-bordered .lotus-table-cell:last-child {
-            border-right: none;
+            border-inline-end: none;
         }
 
         .lotus-table-align-left { text-align: left; }
@@ -737,7 +737,7 @@ export function Table<T = any>(&{
 
             .lotus-table-cell {
                 padding: 12px 16px;
-                text-align: left;
+                text-align: start;
                 border-bottom: 1px solid var(--lotus-color-border);
                 box-sizing: border-box;
             }
@@ -751,11 +751,11 @@ export function Table<T = any>(&{
             }
 
             .lotus-table-bordered .lotus-table-cell {
-                border-right: 1px solid var(--lotus-color-border);
+                border-inline-end: 1px solid var(--lotus-color-border);
             }
 
             .lotus-table-bordered .lotus-table-cell:last-child {
-                border-right: none;
+                border-inline-end: none;
             }
 
             .lotus-table-header-cell {
@@ -781,7 +781,7 @@ export function Table<T = any>(&{
                 display: inline-flex;
                 flex-direction: column;
                 line-height: 0;
-                margin-left: 2px;
+                margin-inline-start: 2px;
             }
 
             .lotus-table-sort-icon,
@@ -797,7 +797,7 @@ export function Table<T = any>(&{
             .lotus-table-filter-trigger {
                 display: inline-flex;
                 align-items: center;
-                margin-left: 6px;
+                margin-inline-start: 6px;
                 cursor: pointer;
                 color: var(--lotus-color-text-3);
             }

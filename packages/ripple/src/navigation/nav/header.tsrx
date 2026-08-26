@@ -72,7 +72,7 @@ export function NavHeader(&{ children, logo, text, link, linkOptions, style, cla
             }
 
             .lotus-nav-header-text {
-                margin-left: 8px;
+                margin-inline-start: 8px;
                 font-size: var(--lotus-font-heading-size, 16px);
                 font-weight: var(--lotus-font-weight-semibold);
                 color: var(--lotus-color-text-0);

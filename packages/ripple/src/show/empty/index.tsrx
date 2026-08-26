@@ -80,7 +80,7 @@ export function Empty(&{
             }
 
             .lotus-empty-horizontal .lotus-empty-content {
-                margin-left: var(--lotus-spacing-extra-loose);
+                margin-inline-start: var(--lotus-spacing-extra-loose);
             }
 
             .lotus-empty-description {

@@ -75,14 +75,14 @@ export function MarkdownRender(&{
             .lotus-markdown-render :global(td) {
                 border: 1px solid var(--lotus-color-border);
                 padding: 6px 12px;
-                text-align: left;
+                text-align: start;
             }
 
             .lotus-markdown-render :global(blockquote) {
                 margin: 0;
                 padding: 0 1em;
                 color: var(--lotus-color-text-2);
-                border-left: 4px solid var(--lotus-color-border);
+                border-inline-start: 4px solid var(--lotus-color-border);
             }
 
             .lotus-markdown-render :global(img) {

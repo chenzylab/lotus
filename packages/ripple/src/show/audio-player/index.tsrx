@@ -348,7 +348,7 @@ export function AudioPlayer(&{
                 border: none;
                 background: transparent;
                 color: inherit;
-                text-align: left;
+                text-align: start;
                 padding: 4px 8px;
                 cursor: pointer;
                 border-radius: var(--lotus-border-radius-small);

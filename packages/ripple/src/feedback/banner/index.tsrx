@@ -170,7 +170,7 @@ export function Banner(&{
             }
 
             .lotus-banner-extra {
-                padding-left: calc(20px + var(--lotus-spacing-tight));
+                padding-inline-start: calc(20px + var(--lotus-spacing-tight));
             }
 
             .lotus-banner-info {

@@ -152,7 +152,7 @@ export function TimelineItem(&{
             .lotus-timeline-item-content {
                 flex: 1;
                 min-width: 0;
-                margin-left: var(--lotus-spacing-tight);
+                margin-inline-start: var(--lotus-spacing-tight);
             }
 
             .lotus-timeline-item-children {

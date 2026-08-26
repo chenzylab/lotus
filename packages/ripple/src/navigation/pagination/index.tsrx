@@ -238,7 +238,7 @@ export function Pagination(&{
             .lotus-pagination-total {
                 font-size: var(--lotus-font-body-size);
                 color: var(--lotus-color-text-1);
-                margin-right: var(--lotus-spacing-tight);
+                margin-inline-end: var(--lotus-spacing-tight);
             }
 
             .lotus-pagination-item {

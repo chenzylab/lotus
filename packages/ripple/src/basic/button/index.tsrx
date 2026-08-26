@@ -377,23 +377,23 @@ export function ButtonGroup(&{ children, 'aria-label': ariaLabel, style, class: 
             }
 
             .lotus-button-group :global(.lotus-button:not(:last-child)) {
-                border-right-width: 0;
+                border-inline-end-width: 0;
             }
 
             .lotus-button-group :global(.lotus-button-theme-outline:not(:last-child)) {
-                margin-right: -1px;
-                border-right-width: var(--lotus-border-width-control);
+                margin-inline-end: -1px;
+                border-inline-end-width: var(--lotus-border-width-control);
             }
 
             .lotus-button-group :global(.lotus-button:first-child) {
-                border-top-left-radius: var(--lotus-border-radius-small);
-                border-bottom-left-radius: var(--lotus-border-radius-small);
+                border-start-start-radius: var(--lotus-border-radius-small);
+                border-end-start-radius: var(--lotus-border-radius-small);
             }
 
             .lotus-button-group :global(.lotus-button:last-child) {
-                border-top-right-radius: var(--lotus-border-radius-small);
-                border-bottom-right-radius: var(--lotus-border-radius-small);
-                border-right-width: var(--lotus-border-width-control);
+                border-start-end-radius: var(--lotus-border-radius-small);
+                border-end-end-radius: var(--lotus-border-radius-small);
+                border-inline-end-width: var(--lotus-border-width-control);
             }
         </style>
     </>

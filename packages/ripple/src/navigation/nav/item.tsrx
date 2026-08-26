@@ -194,7 +194,7 @@ export function NavItem(&{
             }
 
             .lotus-nav-item-text {
-                margin-left: 12px;
+                margin-inline-start: 12px;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }

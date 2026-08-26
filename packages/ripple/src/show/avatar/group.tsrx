@@ -75,7 +75,7 @@ export function AvatarGroup(&{
             }
 
             .lotus-avatar-group > span:not(:first-child) {
-                margin-left: -12px;
+                margin-inline-start: -12px;
             }
 
             .lotus-avatar-group :global(.lotus-avatar-group-more) {

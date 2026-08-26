@@ -56,8 +56,8 @@ export function ReasoningBlock(&{ item, messageStatus }: ReasoningBlockProps) @{
             .lotus-ai-reasoning-content {
                 color: var(--lotus-color-text-2);
                 font-size: 13px;
-                padding-left: 4px;
-                border-left: 2px solid var(--lotus-color-border);
+                padding-inline-start: 4px;
+                border-inline-start: 2px solid var(--lotus-color-border);
             }
         </style>
     </>

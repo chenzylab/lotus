@@ -294,7 +294,7 @@ function CalendarWeekView(&{
                 box-sizing: border-box;
                 border-top: 1px solid var(--lotus-color-border);
                 padding: 2px 4px 0 0;
-                text-align: right;
+                text-align: end;
                 font-size: var(--lotus-font-caption-size);
                 color: var(--lotus-color-text-2);
             }
@@ -302,7 +302,7 @@ function CalendarWeekView(&{
             .lotus-calendar-day-col {
                 position: relative;
                 flex: 1;
-                border-left: 1px solid var(--lotus-color-border);
+                border-inline-start: 1px solid var(--lotus-color-border);
             }
 
             .lotus-calendar-day-col-cell {
@@ -533,7 +533,7 @@ function CalendarMonthWeekRow(&{ week, monthAnchor, events, markWeekend, onDayCl
             .lotus-calendar-month-cell {
                 flex: 1;
                 box-sizing: border-box;
-                border-left: 1px solid var(--lotus-color-border);
+                border-inline-start: 1px solid var(--lotus-color-border);
                 padding: var(--lotus-spacing-tight);
                 cursor: pointer;
             }

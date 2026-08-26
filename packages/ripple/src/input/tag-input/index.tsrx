@@ -478,7 +478,7 @@ export function TagInput(&{
                 align-items: center;
                 cursor: grab;
                 color: var(--lotus-color-text-2);
-                margin-right: 2px;
+                margin-inline-end: 2px;
             }
 
             .lotus-tag-input-rest {

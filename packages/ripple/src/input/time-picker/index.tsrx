@@ -535,7 +535,7 @@ export function TimePicker(&{
             }
 
             .lotus-time-picker-list-left {
-                border-right: 1px solid var(--lotus-color-border);
+                border-inline-end: 1px solid var(--lotus-color-border);
             }
         </style>
     </>

@@ -100,23 +100,24 @@ export function Descriptions(&{
             .lotus-descriptions-item-th,
             .lotus-descriptions-item-td {
                 padding: var(--lotus-spacing-tight) 0;
-                text-align: left;
+                text-align: start;
                 vertical-align: top;
             }
 
             .lotus-descriptions-item-th {
-                padding-right: var(--lotus-spacing-base);
+                padding-inline-end: var(--lotus-spacing-base);
                 width: 1px;
             }
 
             .lotus-descriptions-item-plain {
-                padding: var(--lotus-spacing-tight) var(--lotus-spacing-base) var(--lotus-spacing-tight) 0;
+                padding-block: var(--lotus-spacing-tight);
+                padding-inline-end: var(--lotus-spacing-base);
                 vertical-align: top;
             }
 
             .lotus-descriptions-item-plain .lotus-descriptions-key {
                 display: inline-block;
-                margin-right: var(--lotus-spacing-extra-tight);
+                margin-inline-end: var(--lotus-spacing-extra-tight);
             }
 
             .lotus-descriptions-item-plain .lotus-descriptions-value {
@@ -140,7 +141,7 @@ export function Descriptions(&{
             .lotus-descriptions-double .lotus-descriptions-row {
                 display: flex;
                 flex-direction: column;
-                margin-right: var(--lotus-spacing-extra-loose);
+                margin-inline-end: var(--lotus-spacing-extra-loose);
                 margin-bottom: var(--lotus-spacing-tight);
             }
 

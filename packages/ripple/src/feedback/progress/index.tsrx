@@ -232,7 +232,7 @@ export function Progress(&{
                 font-size: var(--lotus-font-label-size);
                 color: var(--lotus-color-text-1);
                 min-width: 2.5em;
-                text-align: right;
+                text-align: end;
             }
 
             .lotus-progress-circle {

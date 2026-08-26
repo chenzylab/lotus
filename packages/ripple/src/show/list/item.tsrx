@@ -97,7 +97,7 @@ export function ListItem(&{
 
             .lotus-list-item-extra {
                 flex: 0 0 auto;
-                margin-left: var(--lotus-spacing-base);
+                margin-inline-start: var(--lotus-spacing-base);
             }
         </style>
     </>

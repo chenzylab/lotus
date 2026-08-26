@@ -128,7 +128,7 @@ export function TypographyTitle(&{
             .lotus-typography-icon {
                 display: inline-flex;
                 align-items: center;
-                margin-right: 6px;
+                margin-inline-end: 6px;
             }
 
             .lotus-typography-copy {
@@ -138,7 +138,7 @@ export function TypographyTitle(&{
                 border: none;
                 background: transparent;
                 padding: 0;
-                margin-left: 6px;
+                margin-inline-start: 6px;
                 color: var(--lotus-color-text-2);
                 cursor: pointer;
                 vertical-align: middle;

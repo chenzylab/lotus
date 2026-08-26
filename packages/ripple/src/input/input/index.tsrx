@@ -232,17 +232,20 @@ export function Input(&{
             }
 
             .lotus-input-addon-before {
-                border-right: none;
-                border-radius: var(--lotus-border-radius-small) 0 0 var(--lotus-border-radius-small);
+                border-inline-end: none;
+                border-start-start-radius: var(--lotus-border-radius-small);
+                border-end-start-radius: var(--lotus-border-radius-small);
             }
 
             .lotus-input-addon-after {
-                border-left: none;
-                border-radius: 0 var(--lotus-border-radius-small) var(--lotus-border-radius-small) 0;
+                border-inline-start: none;
+                border-start-end-radius: var(--lotus-border-radius-small);
+                border-end-end-radius: var(--lotus-border-radius-small);
             }
 
             .lotus-input-group .lotus-input-addon-before + .lotus-input-wrapper {
-                border-radius: 0 var(--lotus-border-radius-small) var(--lotus-border-radius-small) 0;
+                border-start-end-radius: var(--lotus-border-radius-small);
+                border-end-end-radius: var(--lotus-border-radius-small);
             }
 
             .lotus-input-wrapper {

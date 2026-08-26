@@ -115,11 +115,11 @@ export function JsonViewer(&{
             .lotus-json-viewer :global(.lotus-json-viewer-children) {
                 list-style: none;
                 margin: 0;
-                padding-left: 1.4em;
+                padding-inline-start: 1.4em;
             }
 
             .lotus-json-viewer :global(.lotus-json-viewer-root) {
-                padding-left: 0;
+                padding-inline-start: 0;
             }
 
             .lotus-json-viewer :global(.lotus-json-viewer-node) {
@@ -132,7 +132,7 @@ export function JsonViewer(&{
                 justify-content: center;
                 width: 1em;
                 height: 1em;
-                margin-right: 2px;
+                margin-inline-end: 2px;
                 cursor: pointer;
                 transition: transform 0.15s;
                 color: var(--lotus-color-text-2);
@@ -152,7 +152,7 @@ export function JsonViewer(&{
             }
 
             .lotus-json-viewer :global(.lotus-json-viewer-colon) {
-                margin-right: 0.4em;
+                margin-inline-end: 0.4em;
                 color: var(--lotus-color-text-2);
             }
 

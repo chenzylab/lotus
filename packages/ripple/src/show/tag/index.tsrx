@@ -214,7 +214,7 @@ export function Tag(&{
                 border: none;
                 background: transparent;
                 padding: 0;
-                margin-left: 2px;
+                margin-inline-start: 2px;
                 color: currentColor;
                 opacity: 0.6;
                 cursor: pointer;

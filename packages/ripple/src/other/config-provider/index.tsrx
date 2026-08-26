@@ -22,10 +22,20 @@ export interface ConfigProviderProps {
      * 实现的能力，架构上选择让 ConfigProvider 承接这个副作用只是因为
      * "全局配置容器"这个定位与它已有的 locale 职责一致，非照搬 Semi。 */
     mode?: ConfigProviderThemeMode;
+    /** 文字方向。未传时跟随 `locale.dir`（每个语言包自带默认方向，比如
+     * 阿拉伯语 locale 会是 `dir: 'rtl'`），显式传入时覆盖 locale 自带的
+     * 方向。写入原生 `dir` 属性到 `document.documentElement`（对齐 `mode`
+     * 已有的"全局写在 documentElement 上"模式，不像 Semi 那样包一层
+     * `<div class="semi-rtl">` 局部子树——调研 Semi 源码确认其 RTL 实现
+     * 完全不依赖 CSS 逻辑属性，而是给每个组件写一份独立的 `rtl.scss`，
+     * 用 `.semi-rtl .semi-xxx` 选择器对物理属性做显式镜像；lotus 对齐这
+     * 个物理属性镜像的思路，但选择器用原生 `:root[dir="rtl"] .lotus-xxx`
+     * 而非自定义 class，浏览器原生支持 `dir` 属性继承，语义更标准）。 */
+    direction?: 'ltr' | 'rtl';
     children?: any;
 }
 
-export function ConfigProvider(&{ locale = zhCN, mode, children }: ConfigProviderProps) @{
+export function ConfigProvider(&{ locale = zhCN, mode, direction, children }: ConfigProviderProps) @{
     let &[, localeTracked] = track<LocaleShape>(() => locale);
     LocaleContext.set(localeTracked);
 
@@ -34,6 +44,13 @@ export function ConfigProvider(&{ locale = zhCN, mode, children }: ConfigProvide
         if (mode === undefined) return;
         document.documentElement.setAttribute('data-theme', mode);
         return () => document.documentElement.removeAttribute('data-theme');
+    });
+
+    effect(() => {
+        if (typeof document === 'undefined') return;
+        const resolvedDirection = direction ?? locale.dir;
+        document.documentElement.setAttribute('dir', resolvedDirection);
+        return () => document.documentElement.removeAttribute('dir');
     });
 
     <>{children}</>

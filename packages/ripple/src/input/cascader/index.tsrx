@@ -804,7 +804,7 @@ export function Cascader(&{
             }
 
             .lotus-cascader-column + .lotus-cascader-column {
-                border-left: 1px solid var(--lotus-color-border);
+                border-inline-start: 1px solid var(--lotus-color-border);
             }
 
             .lotus-cascader-column-virtual {

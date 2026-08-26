@@ -216,9 +216,9 @@ export function Tabs(&{
 
             .lotus-tabs-left .lotus-tabs-bar {
                 flex-direction: column;
-                border-right: 1px solid var(--lotus-color-border);
-                padding-right: var(--lotus-spacing-base);
-                margin-right: var(--lotus-spacing-base);
+                border-inline-end: 1px solid var(--lotus-color-border);
+                padding-inline-end: var(--lotus-spacing-base);
+                margin-inline-end: var(--lotus-spacing-base);
             }
 
             .lotus-tabs-tab {
@@ -287,7 +287,7 @@ export function Tabs(&{
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                margin-left: 2px;
+                margin-inline-start: 2px;
                 opacity: 0.6;
                 line-height: 1;
             }

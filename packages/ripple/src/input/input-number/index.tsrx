@@ -226,7 +226,7 @@ export function InputNumber(&{
                 font-family: var(--lotus-font-family);
                 font-size: inherit;
                 padding: 0 var(--lotus-spacing-tight);
-                text-align: left;
+                text-align: start;
             }
 
             .lotus-input-number-native:disabled {
@@ -254,7 +254,7 @@ export function InputNumber(&{
                 border: none;
                 background: transparent;
                 padding: 0;
-                margin-right: var(--lotus-spacing-tight);
+                margin-inline-end: var(--lotus-spacing-tight);
                 color: var(--lotus-color-text-2);
                 cursor: pointer;
                 flex-shrink: 0;
@@ -268,7 +268,7 @@ export function InputNumber(&{
                 display: flex;
                 flex-direction: column;
                 flex-shrink: 0;
-                border-left: var(--lotus-border-width-control) solid var(--lotus-color-border);
+                border-inline-start: var(--lotus-border-width-control) solid var(--lotus-color-border);
             }
 
             .lotus-input-number-button {

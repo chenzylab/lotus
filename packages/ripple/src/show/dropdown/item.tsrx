@@ -85,7 +85,7 @@ export function DropdownItem(&{
             .lotus-dropdown-item-icon {
                 display: inline-flex;
                 align-items: center;
-                margin-right: 8px;
+                margin-inline-end: 8px;
             }
 
             .lotus-dropdown-item-active {

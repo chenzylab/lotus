@@ -177,7 +177,7 @@ export function List(&{
 
             .lotus-list-horizontal.lotus-list-split .lotus-list-items > .lotus-list-item-wrapper:not(:last-child) {
                 border-bottom: none;
-                border-right: 1px solid var(--lotus-color-border);
+                border-inline-end: 1px solid var(--lotus-color-border);
             }
 
             .lotus-list-small .lotus-list-item-wrapper {

@@ -340,13 +340,13 @@ function MonthGrid(&{
             }
 
             .lotus-date-picker-day-selected-start {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
+                border-start-end-radius: 0;
+                border-end-end-radius: 0;
             }
 
             .lotus-date-picker-day-selected-end {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
+                border-start-start-radius: 0;
+                border-end-start-radius: 0;
             }
 
             .lotus-date-picker-day-offset-start,
@@ -1038,7 +1038,7 @@ export function DatePicker(&{
             }
 
             .lotus-date-picker-single-panel + .lotus-date-picker-single-panel {
-                border-left: 1px solid var(--lotus-color-border);
+                border-inline-start: 1px solid var(--lotus-color-border);
             }
 
             .lotus-date-picker-presets {
@@ -1052,7 +1052,7 @@ export function DatePicker(&{
             .lotus-date-picker-presets-side {
                 flex-direction: column;
                 border-top: none;
-                border-right: 1px solid var(--lotus-color-border);
+                border-inline-end: 1px solid var(--lotus-color-border);
                 min-width: 100px;
             }
 

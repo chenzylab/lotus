@@ -126,7 +126,7 @@ export function Anchor(&{
             .lotus-anchor {
                 display: flex;
                 flex-direction: column;
-                border-left: 2px solid var(--lotus-color-border);
+                border-inline-start: 2px solid var(--lotus-color-border);
             }
 
             .lotus-anchor-link {
@@ -139,12 +139,12 @@ export function Anchor(&{
             }
 
             .lotus-anchor-link-level-1 {
-                padding-left: 32px;
+                padding-inline-start: 32px;
                 font-size: var(--lotus-font-label-size);
             }
 
             .lotus-anchor-link-level-2 {
-                padding-left: 48px;
+                padding-inline-start: 48px;
                 font-size: var(--lotus-font-label-size);
             }
 
