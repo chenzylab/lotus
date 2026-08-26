@@ -13,6 +13,8 @@ import {
 import { Popover } from '../../show/popover/index.tsrx';
 import { IconButton } from '../../basic/icon-button/index.tsrx';
 import { IconEyedropper, IconChevronUpDown } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ColorFormat, ColorValue, HsvaColor };
 
@@ -71,6 +73,9 @@ function ColorPickerPanel(&{
     onHsvaChannelInput,
     onFormatToggle,
 }: ColorPickerPanelProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     <div class="lotus-color-picker-panel" style={{ width: `${width}px` }} ref={(node: HTMLElement) => onPanelNode(node)}>
         <div
@@ -86,7 +91,7 @@ function ColorPickerPanel(&{
                 style={{ left: `${svHandlePos.x}px`, top: `${svHandlePos.y}px` }}
                 role="slider"
                 tabIndex={0}
-                aria-label="饱和度与明度"
+                aria-label={locale.ColorPicker.saturationValue}
                 aria-valuenow={state.value.hsva.v}
                 onKeyDown={onSvKeyDown}
             />
@@ -105,7 +110,7 @@ function ColorPickerPanel(&{
                         style={{ left: `${huePos}px` }}
                         role="slider"
                         tabIndex={0}
-                        aria-label="色相"
+                        aria-label={locale.ColorPicker.hue}
                         aria-valuemin={0}
                         aria-valuemax={360}
                         aria-valuenow={state.value.hsva.h}
@@ -125,7 +130,7 @@ function ColorPickerPanel(&{
                             style={{ left: `${alphaPos}px` }}
                             role="slider"
                             tabIndex={0}
-                            aria-label="透明度"
+                            aria-label={locale.ColorPicker.alpha}
                             aria-valuemin={0}
                             aria-valuemax={1}
                             aria-valuenow={state.value.hsva.a}
@@ -139,7 +144,7 @@ function ColorPickerPanel(&{
                     icon={<IconEyedropper />}
                     theme="borderless"
                     type="tertiary"
-                    aria-label="取色器"
+                    aria-label={locale.ColorPicker.picker}
                     onClick={onEyeDropper}
                     class="lotus-color-picker-eyedropper"
                 />
@@ -155,25 +160,25 @@ function ColorPickerPanel(&{
                 <input
                     class="lotus-color-picker-input lotus-color-picker-input-hex"
                     value={state.value.hex}
-                    aria-label="十六进制颜色值"
+                    aria-label={locale.ColorPicker.hex}
                     onInput={onHexInput}
                 />
             } @else if (state.format === 'rgba') {
                 <div class="lotus-color-picker-channels">
-                    <input class="lotus-color-picker-input" value={state.value.rgba.r} aria-label="红" onInput={(e: Event) => onRgbaChannelInput('r', e)} />
-                    <input class="lotus-color-picker-input" value={state.value.rgba.g} aria-label="绿" onInput={(e: Event) => onRgbaChannelInput('g', e)} />
-                    <input class="lotus-color-picker-input" value={state.value.rgba.b} aria-label="蓝" onInput={(e: Event) => onRgbaChannelInput('b', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.rgba.r} aria-label={locale.ColorPicker.red} onInput={(e: Event) => onRgbaChannelInput('r', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.rgba.g} aria-label={locale.ColorPicker.green} onInput={(e: Event) => onRgbaChannelInput('g', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.rgba.b} aria-label={locale.ColorPicker.blue} onInput={(e: Event) => onRgbaChannelInput('b', e)} />
                     @if (alpha) {
-                        <input class="lotus-color-picker-input" value={state.value.rgba.a} aria-label="透明度" onInput={(e: Event) => onRgbaChannelInput('a', e)} />
+                        <input class="lotus-color-picker-input" value={state.value.rgba.a} aria-label={locale.ColorPicker.alpha} onInput={(e: Event) => onRgbaChannelInput('a', e)} />
                     }
                 </div>
             } @else {
                 <div class="lotus-color-picker-channels">
-                    <input class="lotus-color-picker-input" value={state.value.hsva.h} aria-label="色相" onInput={(e: Event) => onHsvaChannelInput('h', e)} />
-                    <input class="lotus-color-picker-input" value={state.value.hsva.s} aria-label="饱和度" onInput={(e: Event) => onHsvaChannelInput('s', e)} />
-                    <input class="lotus-color-picker-input" value={state.value.hsva.v} aria-label="明度" onInput={(e: Event) => onHsvaChannelInput('v', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.hsva.h} aria-label={locale.ColorPicker.hue} onInput={(e: Event) => onHsvaChannelInput('h', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.hsva.s} aria-label={locale.ColorPicker.saturation} onInput={(e: Event) => onHsvaChannelInput('s', e)} />
+                    <input class="lotus-color-picker-input" value={state.value.hsva.v} aria-label={locale.ColorPicker.value} onInput={(e: Event) => onHsvaChannelInput('v', e)} />
                     @if (alpha) {
-                        <input class="lotus-color-picker-input" value={state.value.hsva.a} aria-label="透明度" onInput={(e: Event) => onHsvaChannelInput('a', e)} />
+                        <input class="lotus-color-picker-input" value={state.value.hsva.a} aria-label={locale.ColorPicker.alpha} onInput={(e: Event) => onHsvaChannelInput('a', e)} />
                     }
                 </div>
             }
@@ -181,7 +186,7 @@ function ColorPickerPanel(&{
                 icon={<IconChevronUpDown />}
                 theme="borderless"
                 type="tertiary"
-                aria-label="切换颜色格式"
+                aria-label={locale.ColorPicker.toggleFormat}
                 onClick={onFormatToggle}
             />
         </div>
@@ -391,12 +396,15 @@ interface ColorPickerTriggerProps {
  * （复现后改用独立顶层组件规避，未继续深挖编译器内部原因）。
  */
 function ColorPickerTrigger(&{ triggerChildren, rgba, ariaLabel, onClick }: ColorPickerTriggerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     <div onClick={onClick} class="lotus-color-picker-trigger">
         {triggerChildren ?? <div
             class="lotus-color-picker-swatch lotus-color-picker-swatch-trigger"
             style={{ background: `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})` }}
-            aria-label={ariaLabel ?? '选择颜色'}
+            aria-label={ariaLabel ?? locale.ColorPicker.defaultLabel}
         />}
     </div>
 

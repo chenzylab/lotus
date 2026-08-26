@@ -1,6 +1,8 @@
 import { track, untrack } from 'ripple';
 import { NavContext } from './nav-context.js';
 import { IconSidebar } from '@lotus/icons';
+import { zhCN, type LocaleShape } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface NavFooterProps {
     children?: any;
@@ -26,9 +28,9 @@ export interface NavFooterProps {
  * 正常，两侧行为不一致直接暴露了这个 client/server 编译路径不对称的 bug。详见
  * specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #20。
  */
-function DefaultCollapseButton(&{ isCollapsed, collapseText, onToggle }: { isCollapsed: boolean; collapseText?: (collapsed: boolean) => any; onToggle: () => void }) @{
+function DefaultCollapseButton(&{ isCollapsed, collapseText, onToggle, locale }: { isCollapsed: boolean; collapseText?: (collapsed: boolean) => any; onToggle: () => void; locale: LocaleShape }) @{
     const hasCollapseText = typeof collapseText === 'function';
-    <button type="button" class="lotus-nav-footer-collapse-btn" aria-label={isCollapsed ? '展开导航' : '收起导航'} onClick={onToggle}>
+    <button type="button" class="lotus-nav-footer-collapse-btn" aria-label={isCollapsed ? locale.Nav.expandNav : locale.Nav.collapseNav} onClick={onToggle}>
         <IconSidebar />
         @if (hasCollapseText) {
             <span class="lotus-nav-footer-collapse-text">{collapseText?.(isCollapsed)}</span>
@@ -37,6 +39,9 @@ function DefaultCollapseButton(&{ isCollapsed, collapseText, onToggle }: { isCol
 }
 
 export function NavFooter(&{ children, collapseButton = false, collapseText, onClick, style, class: className }: NavFooterProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const contextTracked = NavContext.get();
 
     let &[isCollapsed] = track(() => contextTracked?.value.isCollapsed ?? false);
@@ -62,7 +67,7 @@ export function NavFooter(&{ children, collapseButton = false, collapseText, onC
                 {children}
             } @else {
                 @if (showDefaultCollapseButton) {
-                    <DefaultCollapseButton isCollapsed={isCollapsed} collapseText={collapseText} onToggle={handleToggle} />
+                    <DefaultCollapseButton isCollapsed={isCollapsed} collapseText={collapseText} onToggle={handleToggle} locale={locale} />
                 }
             }
         </div>

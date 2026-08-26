@@ -20,6 +20,8 @@ import { Empty } from '../../show/empty/index.tsrx';
 import { Pagination } from '../../navigation/pagination/index.tsrx';
 import { Tree, type TreeNodeData } from '../../navigation/tree/index.tsrx';
 import { IconSearch, IconClose, IconHandle } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { TransferType, TransferDataSource, TransferFilter };
 
@@ -166,6 +168,9 @@ function SelectedItem(&{
     renderSelectedItem,
     itemRef,
 }: SelectedItemProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     <div
         class={['lotus-transfer-selected-item', dragging ? 'lotus-transfer-selected-item-dragging' : ''].filter(Boolean).join(' ')}
@@ -181,7 +186,7 @@ function SelectedItem(&{
                     <span
                         class="lotus-transfer-drag-handle"
                         role="button"
-                        aria-label="拖拽排序"
+                        aria-label={locale.Transfer.dragHandle}
                         onMouseDown={onDragStart}
                     >
                         <IconHandle />
@@ -191,7 +196,7 @@ function SelectedItem(&{
                 <span
                     class="lotus-transfer-selected-item-remove"
                     role="button"
-                    aria-label={`移除 ${itemLabel(item)}`}
+                    aria-label={locale.Transfer.remove(itemLabel(item))}
                     onClick={() => onRemove(item)}
                 >
                     <IconClose />
@@ -284,6 +289,9 @@ export function Transfer(&{
     style,
     class: className,
 }: TransferProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = value !== undefined;
     const effectiveDraggable = draggable && !virtualize;
     const effectiveVirtualize = virtualize && !draggable;
@@ -481,10 +489,10 @@ export function Transfer(&{
         <div class={classes} style={style} aria-label={ariaLabel}>
             <div class="lotus-transfer-panel lotus-transfer-panel-left">
                 <div class="lotus-transfer-header">
-                    <span class="lotus-transfer-header-title">{visibleData.length} 项</span>
+                    <span class="lotus-transfer-header-title">{locale.Transfer.itemCount(visibleData.length)}</span>
                     @if (selectAllStatus.showButton && type !== 'treeList') {
                         <Button theme="borderless" type="tertiary" size="small" onClick={handleAllClick} disabled={disabled}>
-                            {selectAllStatus.allChecked ? '清空所选' : '全选'}
+                            {selectAllStatus.allChecked ? locale.Transfer.clearAll : locale.Transfer.selectAll}
                         </Button>
                     }
                 </div>
@@ -493,7 +501,7 @@ export function Transfer(&{
                         <Input
                             prefix={<IconSearch />}
                             showClear
-                            placeholder="搜索"
+                            placeholder={locale.Transfer.searchPlaceholder}
                             value={state.inputValue}
                             disabled={disabled}
                             onChange={handleSearchInput}
@@ -505,7 +513,7 @@ export function Transfer(&{
                         <div class="lotus-transfer-loading"><Spin /></div>
                     } @else if (type === 'treeList') {
                         @if (treeNodes.length === 0) {
-                            <Empty description={emptyContent.left ?? '暂无数据'} aria-label="empty" />
+                            <Empty description={emptyContent.left ?? locale.Transfer.emptyLeft} aria-label="empty" />
                         } @else {
                             <Tree
                                 treeData={treeNodes}
@@ -517,7 +525,7 @@ export function Transfer(&{
                             />
                         }
                     } @else if (pagedVisibleData.length === 0) {
-                        <Empty description={state.inputValue ? (emptyContent.search ?? '无搜索结果') : (emptyContent.left ?? '暂无数据')} aria-label="empty" />
+                        <Empty description={state.inputValue ? (emptyContent.search ?? locale.Transfer.emptySearch) : (emptyContent.left ?? locale.Transfer.emptyLeft)} aria-label="empty" />
                     } @else {
                         <div class="lotus-transfer-list" role="list" aria-label="Option list">
                             @for (const row of groupedRows; index ri) {
@@ -551,16 +559,16 @@ export function Transfer(&{
 
             <div class="lotus-transfer-panel lotus-transfer-panel-right">
                 <div class="lotus-transfer-header">
-                    <span class="lotus-transfer-header-title">{selectedList.length} 项已选</span>
+                    <span class="lotus-transfer-header-title">{locale.Transfer.itemCountSelected(selectedList.length)}</span>
                     @if (selectedList.length > 0) {
                         <Button theme="borderless" type="tertiary" size="small" disabled={disabled} onClick={() => { const result = foundation.handleAll(false, isControlled); emitChange(result); }}>
-                            清空
+                            {locale.Transfer.clear}
                         </Button>
                     }
                 </div>
                 <div class="lotus-transfer-body">
                     @if (selectedList.length === 0) {
-                        <Empty description={emptyContent.right ?? '暂无已选'} aria-label="empty" />
+                        <Empty description={emptyContent.right ?? locale.Transfer.emptyRight} aria-label="empty" />
                     } @else if (effectiveVirtualize) {
                         <div
                             class="lotus-transfer-list lotus-transfer-list-virtual"

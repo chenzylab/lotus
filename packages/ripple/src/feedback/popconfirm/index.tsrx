@@ -3,6 +3,8 @@ import { PopconfirmFoundation, type PopconfirmState } from '@lotus/foundation/fe
 import { Popover, type PopoverProps } from '../../show/popover/index.tsrx';
 import { Button, type ButtonType, type ButtonProps } from '../../basic/button/index.tsrx';
 import { IconAlertTriangle } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface PopconfirmProps extends Omit<PopoverProps, 'content' | 'trigger' | 'visible'> {
     children?: any;
@@ -34,8 +36,8 @@ export function Popconfirm(&{
     title,
     description,
     icon,
-    okText = '确定',
-    cancelText = '取消',
+    okText,
+    cancelText,
     okType = 'primary',
     cancelType = 'tertiary',
     okButtonProps = {},
@@ -49,6 +51,9 @@ export function Popconfirm(&{
     position = 'top',
     ...popoverProps
 }: PopconfirmProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = visibleProp !== undefined;
     let &[state] = track<PopconfirmState>({
         visible: isControlled ? !!visibleProp : defaultVisible,
@@ -125,7 +130,7 @@ export function Popconfirm(&{
                     onClick={handleCancel}
                     {...cancelButtonProps}
                 >
-                    {cancelText}
+                    {cancelText ?? locale.Popconfirm.cancel}
                 </Button>
                 <Button
                     theme="solid"
@@ -135,7 +140,7 @@ export function Popconfirm(&{
                     onClick={handleConfirm}
                     {...okButtonProps}
                 >
-                    {okText}
+                    {okText ?? locale.Popconfirm.confirm}
                 </Button>
             </div>
         </div>

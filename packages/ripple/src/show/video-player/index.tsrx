@@ -17,6 +17,8 @@ import {
     IconMaximize2,
 } from '@lotus/icons';
 import { AudioSlider } from '../audio-player/audio-slider.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { PlaybackRateOption };
 
@@ -79,6 +81,9 @@ export function VideoPlayer(&{
     onRateChange,
     onVolumeChange,
 }: VideoPlayerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<VideoPlayerState>(() => ({
         ...DEFAULT_VIDEO_PLAYER_STATE,
         isPlaying: autoPlay,
@@ -257,7 +262,7 @@ export function VideoPlayer(&{
             />
 
             @if (state.isError) {
-                <div class="lotus-video-player-error" role="alert">加载失败</div>
+                <div class="lotus-video-player-error" role="alert">{locale.VideoPlayer.loadError}</div>
             }
 
             @if (state.showNotification) {
@@ -265,17 +270,17 @@ export function VideoPlayer(&{
             }
 
             @if (!state.isPlaying) {
-                <button type="button" class="lotus-video-player-center-play" aria-label="播放" onClick={handlePlayPause}>
+                <button type="button" class="lotus-video-player-center-play" aria-label={locale.VideoPlayer.play} onClick={handlePlayPause}>
                     <IconPlay />
                 </button>
             }
 
             <div class={['lotus-video-player-controls', state.showControls ? 'lotus-video-player-controls-visible' : ''].filter(Boolean).join(' ')}>
                 <div class="lotus-video-player-progress">
-                    <AudioSlider value={state.currentTime} max={state.totalTime} aria-label="播放进度" onChange={handleSeek} />
+                    <AudioSlider value={state.currentTime} max={state.totalTime} aria-label={locale.VideoPlayer.progress} onChange={handleSeek} />
                 </div>
                 <div class="lotus-video-player-toolbar">
-                    <button type="button" class="lotus-video-player-btn" aria-label={state.isPlaying ? '暂停' : '播放'} onClick={handlePlayPause}>
+                    <button type="button" class="lotus-video-player-btn" aria-label={state.isPlaying ? locale.VideoPlayer.pause : locale.VideoPlayer.play} onClick={handlePlayPause}>
                         @if (state.isPlaying) {
                             <IconPause />
                         } @else {
@@ -283,7 +288,7 @@ export function VideoPlayer(&{
                         }
                     </button>
 
-                    <button type="button" class="lotus-video-player-btn" aria-label={state.muted ? '取消静音' : '静音'} onClick={handleToggleMute}>
+                    <button type="button" class="lotus-video-player-btn" aria-label={state.muted ? locale.VideoPlayer.unmute : locale.VideoPlayer.mute} onClick={handleToggleMute}>
                         @if (state.muted) {
                             <IconMute />
                         } @else {
@@ -291,7 +296,7 @@ export function VideoPlayer(&{
                         }
                     </button>
                     <div class="lotus-video-player-volume">
-                        <AudioSlider value={state.muted ? 0 : state.volume} max={100} aria-label="音量" onChange={handleVolumeChange} />
+                        <AudioSlider value={state.muted ? 0 : state.volume} max={100} aria-label={locale.VideoPlayer.volume} onChange={handleVolumeChange} />
                     </div>
 
                     <span class="lotus-video-player-time">
@@ -301,7 +306,7 @@ export function VideoPlayer(&{
                     <div class="lotus-video-player-spacer" />
 
                     <div class="lotus-video-player-rate-wrap">
-                        <button type="button" class="lotus-video-player-btn lotus-video-player-rate-btn" aria-label="播放速度" onClick={() => { showRateMenu = !showRateMenu; }}>
+                        <button type="button" class="lotus-video-player-btn lotus-video-player-rate-btn" aria-label={locale.VideoPlayer.rate} onClick={() => { showRateMenu = !showRateMenu; }}>
                             {state.playbackRate}x
                         </button>
                         @if (showRateMenu) {
@@ -318,12 +323,12 @@ export function VideoPlayer(&{
                     </div>
 
                     @if (showPictureInPicture) {
-                        <button type="button" class="lotus-video-player-btn" aria-label="画中画" onClick={handleTogglePictureInPicture}>
+                        <button type="button" class="lotus-video-player-btn" aria-label={locale.VideoPlayer.pictureInPicture} onClick={handleTogglePictureInPicture}>
                             <IconMaximize2 />
                         </button>
                     }
 
-                    <button type="button" class="lotus-video-player-btn" aria-label={state.isFullscreen ? '退出全屏' : '全屏'} onClick={handleToggleFullscreen}>
+                    <button type="button" class="lotus-video-player-btn" aria-label={state.isFullscreen ? locale.VideoPlayer.exitFullscreen : locale.VideoPlayer.fullscreen} onClick={handleToggleFullscreen}>
                         @if (state.isFullscreen) {
                             <IconShrinkScreenStroked />
                         } @else {

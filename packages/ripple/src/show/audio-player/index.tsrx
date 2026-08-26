@@ -10,6 +10,8 @@ import {
 import { IconPlay, IconPause, IconChevronLeft, IconChevronRight, IconRefresh, IconVolume2, IconVolumeSilentStroked } from '@lotus/icons';
 import { Popover } from '../popover/index.tsrx';
 import { AudioSlider } from './audio-slider.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { AudioUrl, PlaybackRate };
 
@@ -32,6 +34,9 @@ export function AudioPlayer(&{
     class: className,
     style,
 }: AudioPlayerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<AudioPlayerState>(() => ({
         isPlaying: autoPlay,
         currentTime: 0,
@@ -164,24 +169,24 @@ export function AudioPlayer(&{
             }
 
             @if (state.isError) {
-                <div class="lotus-audio-player-error" role="alert">加载失败</div>
+                <div class="lotus-audio-player-error" role="alert">{locale.AudioPlayer.loadError}</div>
             }
 
             <div class="lotus-audio-player-progress">
                 <span class="lotus-audio-player-time">{formatTime(state.currentTime)}</span>
-                <AudioSlider value={state.currentTime} max={state.totalTime} aria-label="播放进度" onChange={handleSeek} />
+                <AudioSlider value={state.currentTime} max={state.totalTime} aria-label={locale.AudioPlayer.progress} onChange={handleSeek} />
                 <span class="lotus-audio-player-time">{formatTime(state.totalTime)}</span>
             </div>
 
             @if (showToolbar) {
                 <div class="lotus-audio-player-toolbar">
                     @if (isMultiTrack) {
-                        <button type="button" class="lotus-audio-player-btn" aria-label="上一曲" onClick={() => handleTrackChange('prev')}>
+                        <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.prev} onClick={() => handleTrackChange('prev')}>
                             <IconChevronLeft />
                         </button>
                     }
 
-                    <button type="button" class="lotus-audio-player-btn lotus-audio-player-btn-play" aria-label={state.isPlaying ? '暂停' : '播放'} onClick={handlePlayPause}>
+                    <button type="button" class="lotus-audio-player-btn lotus-audio-player-btn-play" aria-label={state.isPlaying ? locale.AudioPlayer.pause : locale.AudioPlayer.play} onClick={handlePlayPause}>
                         @if (state.isPlaying) {
                             <IconPause />
                         } @else {
@@ -190,19 +195,19 @@ export function AudioPlayer(&{
                     </button>
 
                     @if (isMultiTrack) {
-                        <button type="button" class="lotus-audio-player-btn" aria-label="下一曲" onClick={() => handleTrackChange('next')}>
+                        <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.next} onClick={() => handleTrackChange('next')}>
                             <IconChevronRight />
                         </button>
                     }
 
-                    <button type="button" class="lotus-audio-player-btn" aria-label="快退" onClick={() => handleSkip(-1)}>«</button>
-                    <button type="button" class="lotus-audio-player-btn" aria-label="快进" onClick={() => handleSkip(1)}>»</button>
-                    <button type="button" class="lotus-audio-player-btn" aria-label="重播" onClick={handleRefresh}>
+                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.rewind} onClick={() => handleSkip(-1)}>«</button>
+                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.forward} onClick={() => handleSkip(1)}>»</button>
+                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.replay} onClick={handleRefresh}>
                         <IconRefresh />
                     </button>
 
                     <div class="lotus-audio-player-rate-wrap">
-                        <button type="button" class="lotus-audio-player-btn lotus-audio-player-rate-btn" aria-label="播放速度" onClick={() => { showRateMenu = !showRateMenu; }}>
+                        <button type="button" class="lotus-audio-player-btn lotus-audio-player-rate-btn" aria-label={locale.AudioPlayer.rate} onClick={() => { showRateMenu = !showRateMenu; }}>
                             {state.playbackRate.label}
                         </button>
                         @if (showRateMenu) {
@@ -222,11 +227,11 @@ export function AudioPlayer(&{
                         trigger="click"
                         content={
                             <div class="lotus-audio-player-volume-popover">
-                                <AudioSlider value={state.volume} max={100} vertical={true} aria-label="音量" onChange={handleVolumeChange} />
+                                <AudioSlider value={state.volume} max={100} vertical={true} aria-label={locale.AudioPlayer.volume} onChange={handleVolumeChange} />
                             </div>
                         }
                     >
-                        <button type="button" class="lotus-audio-player-btn" aria-label="音量">
+                        <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.volume}>
                             @if (state.volume === 0) {
                                 <IconVolumeSilentStroked />
                             } @else {

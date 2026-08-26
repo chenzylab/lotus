@@ -2,6 +2,8 @@ import { track, effect, untrack } from 'ripple';
 import { BackTopFoundation, type BackTopState } from '@lotus/foundation/navigation/back-top';
 import { animateValue, throttle } from '@lotus/foundation/base/animate-value';
 import { IconChevronUp } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface BackTopProps {
     children?: any;
@@ -42,8 +44,11 @@ export function BackTop(&{
     onClick,
     style,
     class: className,
-    'aria-label': ariaLabel = '回到顶部',
+    'aria-label': ariaLabel,
 }: BackTopProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<BackTopState>({ visible: false });
 
     const foundation = new BackTopFoundation({
@@ -88,7 +93,7 @@ export function BackTop(&{
 
     <>
         @if (state.visible) {
-            <button type="button" class={classes} style={style} aria-label={ariaLabel} onClick={handleClick}>
+            <button type="button" class={classes} style={style} aria-label={ariaLabel ?? locale.BackTop.label} onClick={handleClick}>
                 @if (children != null) {
                     {children}
                 } @if (children == null) {

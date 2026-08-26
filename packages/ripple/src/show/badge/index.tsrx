@@ -1,5 +1,7 @@
 import { track } from 'ripple';
 import { shouldShowBadge, isCustomContent, formatCount } from '@lotus/foundation/show/badge';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type BadgeType = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'warning' | 'success';
 export type BadgeTheme = 'solid' | 'light' | 'inverted';
@@ -40,6 +42,9 @@ export function Badge(&{
     onMouseLeave,
     'aria-label': ariaLabel,
 }: BadgeProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const hasChildren = children !== undefined && children !== null;
 
     let &[visible] = track<boolean>(() => shouldShowBadge(count, dot));
@@ -64,7 +69,7 @@ export function Badge(&{
 
     let &[countStyleValue] = track<Record<string, any> | undefined>(() => style ?? countStyle);
 
-    const countAriaLabel = dot ? '有未读消息' : typeof count === 'string' || typeof count === 'number' ? String(count) : undefined;
+    const countAriaLabel = dot ? locale.Badge.unreadMessage : typeof count === 'string' || typeof count === 'number' ? String(count) : undefined;
 
     let &[displayContent] = track<any>(() => (dot ? '' : custom ? count : text));
 

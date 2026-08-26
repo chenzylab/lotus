@@ -23,6 +23,8 @@ import {
     type CropperCornerDir,
     type CropperInteractionMode,
 } from '@lotus/foundation/show/cropper';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { CropperCornerDir, CropperInteractionMode };
 export type CropperShape = 'rect' | 'round' | 'roundRect';
@@ -81,6 +83,9 @@ export function Cropper(&{
     class: className,
     'aria-label': ariaLabel,
 }: CropperProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isZoomControlled = zoomProp !== undefined;
 
     let &[loaded] = track<boolean>(false);
@@ -363,7 +368,7 @@ export function Cropper(&{
                         class="lotus-cropper-box"
                         style={boxStyle}
                         role="group"
-                        aria-label="裁切框"
+                        aria-label={locale.Cropper.cropBox}
                         tabIndex={0}
                         onMouseDown={handleBoxMouseDown}
                         onKeyDown={handleBoxKeyDown}

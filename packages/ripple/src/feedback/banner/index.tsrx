@@ -2,6 +2,8 @@ import { track, untrack } from 'ripple';
 import { BannerFoundation, type BannerState, type BannerType } from '@lotus/foundation/feedback/banner';
 import { IconButton } from '../../basic/icon-button/index.tsrx';
 import { IconClose, IconAlertTriangle, IconTickCircle, IconInfoCircle, IconAlertCircle } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { BannerType };
 
@@ -43,6 +45,9 @@ export function Banner(&{
     class: className,
     onClose,
 }: BannerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<BannerState>({ visible: true });
 
     const foundation = new BannerFoundation({
@@ -92,7 +97,7 @@ export function Banner(&{
                             theme="borderless"
                             size="small"
                             type="tertiary"
-                            aria-label="关闭"
+                            aria-label={locale.Banner.close}
                             onClick={handleClose}
                         />
                     }

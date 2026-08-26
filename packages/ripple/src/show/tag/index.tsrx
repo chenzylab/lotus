@@ -1,5 +1,7 @@
 import { track } from 'ripple';
 import { IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type TagColor =
     | 'amber' | 'blue' | 'cyan' | 'green' | 'grey' | 'indigo' | 'lightBlue' | 'lightGreen'
@@ -44,6 +46,9 @@ export function Tag(&{
     class: className,
     'aria-label': ariaLabel,
 }: TagProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlledVisible = visibleProp !== undefined;
     let &[internalVisible] = track<boolean>(true);
     let &[visible] = track<boolean>(() => (isControlledVisible ? !!visibleProp : internalVisible));
@@ -93,7 +98,7 @@ export function Tag(&{
                     <button
                         type="button"
                         class="lotus-tag-close"
-                        aria-label="关闭标签"
+                        aria-label={locale.Tag.close}
                         onClick={handleClose}
                     >
                         <IconClose />

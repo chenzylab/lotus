@@ -1,6 +1,8 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { PreviewFoundation, initialPreviewState, type PreviewState } from '@lotus/foundation/show/image';
 import { IconClose, IconPlus, IconMinus, IconRotate, IconDownload, IconChevronLeft, IconChevronRight } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface PreviewProps {
     srcList: string[];
@@ -31,6 +33,9 @@ export function Preview(&{
     infinite = true,
     zIndex = 1050,
 }: PreviewProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<PreviewState>(() => ({ ...initialPreviewState(currentIndex) }));
     let &[containerNode] = track<HTMLElement | null>(null);
     let &[isDragging] = track<boolean>(false);
@@ -173,30 +178,30 @@ export function Preview(&{
                     </div>
 
                     @if (hasMultiple) {
-                        <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-left" aria-label="上一张" onClick={(e: MouseEvent) => { e.stopPropagation(); handlePrev(); }}>
+                        <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-left" aria-label={locale.ImagePreview.prev} onClick={(e: MouseEvent) => { e.stopPropagation(); handlePrev(); }}>
                             <IconChevronLeft />
                         </button>
                     }
                     @if (hasMultiple) {
-                        <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-right" aria-label="下一张" onClick={(e: MouseEvent) => { e.stopPropagation(); handleNext(); }}>
+                        <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-right" aria-label={locale.ImagePreview.next} onClick={(e: MouseEvent) => { e.stopPropagation(); handleNext(); }}>
                             <IconChevronRight />
                         </button>
                     }
 
                     <div class="lotus-image-preview-toolbar" onClick={(e: MouseEvent) => e.stopPropagation()}>
-                        <button type="button" class="lotus-image-preview-tool-btn" aria-label="放大" onClick={() => foundation.zoomIn()}>
+                        <button type="button" class="lotus-image-preview-tool-btn" aria-label={locale.ImagePreview.zoomIn} onClick={() => foundation.zoomIn()}>
                             <IconPlus />
                         </button>
-                        <button type="button" class="lotus-image-preview-tool-btn" aria-label="缩小" onClick={() => foundation.zoomOut()}>
+                        <button type="button" class="lotus-image-preview-tool-btn" aria-label={locale.ImagePreview.zoomOut} onClick={() => foundation.zoomOut()}>
                             <IconMinus />
                         </button>
-                        <button type="button" class="lotus-image-preview-tool-btn" aria-label="旋转" onClick={() => foundation.rotateRight()}>
+                        <button type="button" class="lotus-image-preview-tool-btn" aria-label={locale.ImagePreview.rotate} onClick={() => foundation.rotateRight()}>
                             <IconRotate />
                         </button>
-                        <button type="button" class="lotus-image-preview-tool-btn" aria-label="下载" onClick={handleDownload}>
+                        <button type="button" class="lotus-image-preview-tool-btn" aria-label={locale.ImagePreview.download} onClick={handleDownload}>
                             <IconDownload />
                         </button>
-                        <button type="button" class="lotus-image-preview-tool-btn" aria-label="关闭" onClick={() => onClose?.()}>
+                        <button type="button" class="lotus-image-preview-tool-btn" aria-label={locale.ImagePreview.close} onClick={() => onClose?.()}>
                             <IconClose />
                         </button>
                     </div>

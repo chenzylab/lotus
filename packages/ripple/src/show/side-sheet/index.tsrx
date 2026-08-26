@@ -2,6 +2,8 @@ import { track, effect, untrack, Portal } from 'ripple';
 import { SideSheetFoundation, initialSideSheetState, type SideSheetState } from '@lotus/foundation/show/side-sheet';
 import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
 import { IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type SideSheetPlacement = 'top' | 'right' | 'bottom' | 'left';
 export type SideSheetSize = 'small' | 'medium' | 'large';
@@ -94,6 +96,9 @@ export function SideSheet(&{
     class: className,
     'aria-label': ariaLabel,
 }: SideSheetProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<SideSheetState>(initialSideSheetState(untrack(() => visible)));
 
     const foundation = new SideSheetFoundation({
@@ -223,7 +228,7 @@ export function SideSheet(&{
                         </div>
                     }
                     @if (closable) {
-                        <button type="button" class="lotus-side-sheet-close" aria-label="关闭" onClick={handleCancel}>
+                        <button type="button" class="lotus-side-sheet-close" aria-label={locale.SideSheet.close} onClick={handleCancel}>
                             <IconClose />
                         </button>
                     }

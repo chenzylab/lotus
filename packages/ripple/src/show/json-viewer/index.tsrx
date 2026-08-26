@@ -9,6 +9,8 @@ import {
 } from '@lotus/foundation/show/json-viewer';
 import { CopyableAction } from '../../basic/typography/shared.tsrx';
 import { JsonNodeView } from './json-node-view.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface JsonViewerProps {
     /** 待展示的 JSON 数据：可以是已解析的对象/数组/原始值，也可以是 JSON 字符串。 */
@@ -28,6 +30,9 @@ export function JsonViewer(&{
     class: className,
     style,
 }: JsonViewerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[root] = track<JsonNode | null>(() => parseToJsonTree(value));
     let &[state] = track<JsonViewerState>(() => ({
         expandedPaths: root ? calcDefaultExpandedPaths(root, defaultExpandDepth) : new Set<string>(),
@@ -57,8 +62,8 @@ export function JsonViewer(&{
     <>
         <div class={['lotus-json-viewer', className ?? ''].filter(Boolean).join(' ')} style={style}>
             <div class="lotus-json-viewer-toolbar">
-                <button type="button" class="lotus-json-viewer-toolbar-btn" onClick={handleExpandAll}>全部展开</button>
-                <button type="button" class="lotus-json-viewer-toolbar-btn" onClick={handleCollapseAll}>全部折叠</button>
+                <button type="button" class="lotus-json-viewer-toolbar-btn" onClick={handleExpandAll}>{locale.JsonViewer.expandAll}</button>
+                <button type="button" class="lotus-json-viewer-toolbar-btn" onClick={handleCollapseAll}>{locale.JsonViewer.collapseAll}</button>
                 @if (showCopy) {
                     <CopyableAction config={{}} textContent={copyText} />
                 }
@@ -68,7 +73,7 @@ export function JsonViewer(&{
                     <JsonNodeView node={root} expandedPaths={state.expandedPaths} onToggleExpand={handleToggleExpand} isLast={true} />
                 </ul>
             } @else {
-                <div class="lotus-json-viewer-invalid">无效的 JSON 数据</div>
+                <div class="lotus-json-viewer-invalid">{locale.JsonViewer.invalidData}</div>
             }
         </div>
 

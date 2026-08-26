@@ -1,6 +1,8 @@
 import { track } from 'ripple';
 import { IconChevronRight } from '@lotus/icons';
 import type { JsonNode } from '@lotus/foundation/show/json-viewer';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface JsonNodeViewProps {
     node: JsonNode;
@@ -26,6 +28,9 @@ function formatLeafValue(node: JsonNode): string {
  * 用 li/span 结构，只是 class 名按类型变化）。
  */
 export function JsonNodeView(&{ node, expandedPaths, onToggleExpand, isLast }: JsonNodeViewProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isContainer = node.type === 'object' || node.type === 'array';
     const bracketOpen = node.type === 'object' ? '{' : '[';
     const bracketClose = node.type === 'object' ? '}' : ']';
@@ -43,7 +48,7 @@ export function JsonNodeView(&{ node, expandedPaths, onToggleExpand, isLast }: J
                     role="button"
                     tabIndex={0}
                     aria-expanded={expanded}
-                    aria-label={expanded ? '折叠节点' : '展开节点'}
+                    aria-label={expanded ? locale.JsonViewer.collapseNode : locale.JsonViewer.expandNode}
                     onClick={() => onToggleExpand(node.path)}
                     onKeyDown={(e: KeyboardEvent) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -64,7 +69,7 @@ export function JsonNodeView(&{ node, expandedPaths, onToggleExpand, isLast }: J
                 @if (!expanded) {
                     <>
                         <span class="lotus-json-viewer-collapsed-summary">
-                            {node.type === 'object' ? `${node.children.length} 个属性` : `${node.children.length} 项`}
+                            {node.type === 'object' ? locale.JsonViewer.propertyCount(node.children.length) : locale.JsonViewer.itemCount(node.children.length)}
                         </span>
                         <span class="lotus-json-viewer-bracket">{bracketClose}</span>
                     </>

@@ -2,6 +2,8 @@ import { track } from 'ripple';
 import { Row, Col, type Gutter } from '../../basic/grid/index.tsrx';
 import { Spin } from '../../feedback/spin/index.tsrx';
 import { ListContext, type ListContextValue } from './list-context.js';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type ListLayout = 'vertical' | 'horizontal';
 export type ListSize = 'small' | 'default' | 'large';
@@ -48,7 +50,7 @@ export function List(&{
     layout = 'vertical',
     size = 'default',
     split = true,
-    emptyContent = '暂无数据',
+    emptyContent,
     grid,
     loading = false,
     loadMore,
@@ -58,6 +60,8 @@ export function List(&{
     class: className,
     'aria-label': ariaLabel,
 }: ListProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
     let &[dataItems] = track<any[]>(() => (dataSource && dataSource.length && renderItem ? dataSource : []));
     let &[isEmpty] = track<boolean>(() => dataItems.length === 0 && children === undefined);
     const isGrid = grid !== undefined;
@@ -88,7 +92,7 @@ export function List(&{
 
             <Spin spinning={loading} size="large">
                 @if (isEmpty) {
-                    <div class="lotus-list-empty">{emptyContent}</div>
+                    <div class="lotus-list-empty">{emptyContent ?? locale.List.emptyContent}</div>
                 }
                 @if (!isEmpty && isGrid) {
                     <Row gutter={grid!.gutter} class="lotus-list-items-grid" style={{}}>

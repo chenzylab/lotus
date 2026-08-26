@@ -1,5 +1,7 @@
 import { track } from 'ripple';
 import { TabsFoundation, type TabsState, type TabItemMeta } from '@lotus/foundation/navigation/tabs';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type TabsType = 'line' | 'card' | 'button';
 export type TabsPosition = 'top' | 'left';
@@ -52,6 +54,9 @@ export function Tabs(&{
     style,
     class: className,
 }: TabsProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = activeKeyProp !== undefined;
     const initialActiveKey = isControlled
         ? activeKeyProp!
@@ -150,7 +155,7 @@ export function Tabs(&{
                         @if (item.closable) {
                             <span
                                 class="lotus-tabs-tab-close"
-                                aria-label="关闭标签页"
+                                aria-label={locale.Tabs.closeTab}
                                 onClick={(event: MouseEvent) => handleTabClose(item.itemKey, event)}
                             >
                                 ×

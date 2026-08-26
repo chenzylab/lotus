@@ -1,6 +1,8 @@
 import { mount, track } from 'ripple';
 import { NotificationListFoundation, groupByPosition, type NotificationItem, type NotificationType, type NotificationPosition } from '@lotus/foundation/feedback/notification';
 import { IconTickCircle, IconAlertTriangle, IconAlertCircle, IconInfoCircle, IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { NotificationType, NotificationItem, NotificationPosition };
 
@@ -42,6 +44,9 @@ interface NotificationListRootProps {
  * 是按 6 个 position 分组渲染，每个 position 一个独立定位容器。
  */
 export function NotificationListRoot(&{ registerController }: NotificationListRootProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[list] = track<Array<NotificationItem>>([]);
     registerController((next: NotificationItem[]) => { list = next; });
 
@@ -67,7 +72,7 @@ export function NotificationListRoot(&{ registerController }: NotificationListRo
                                 }
                             </div>
                             @if (item.showClose) {
-                                <button type="button" class="lotus-notification-close" aria-label="关闭" onClick={() => handleClose(item.id)}>
+                                <button type="button" class="lotus-notification-close" aria-label={locale.Notification.close} onClick={() => handleClose(item.id)}>
                                     <IconClose />
                                 </button>
                             }

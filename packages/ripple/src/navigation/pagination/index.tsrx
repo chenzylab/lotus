@@ -8,6 +8,8 @@ import {
 } from '@lotus/foundation/navigation/pagination';
 import { Select } from '../../input/select/index.tsrx';
 import { IconChevronLeft, IconChevronRight } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type PaginationSize = 'default' | 'small';
 
@@ -57,6 +59,9 @@ export function Pagination(&{
     class: className,
     'aria-label': ariaLabel,
 }: PaginationProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = currentPageProp !== undefined;
     let &[pageSize] = track<number>(pageSizeProp ?? pageSizeOpts[0] ?? 10);
     let &[state] = track<number>(defaultCurrentPage);
@@ -139,7 +144,7 @@ export function Pagination(&{
         const start = (displayCurrentPage - 1) * pageSize + 1;
         const end = Math.min(displayCurrentPage * pageSize, total);
         if (typeof showTotal === 'function') return showTotal(total, [start, end]);
-        return `共 ${total} 条`;
+        return locale.Pagination.total(total);
     });
 
     <>
@@ -152,7 +157,7 @@ export function Pagination(&{
                 type="button"
                 class="lotus-pagination-item lotus-pagination-prev"
                 disabled={disabled || displayCurrentPage <= 1}
-                aria-label="上一页"
+                aria-label={locale.Pagination.prevPage}
                 onClick={goPrev}
             >
                 <IconChevronLeft />
@@ -168,7 +173,7 @@ export function Pagination(&{
                             class={item === displayCurrentPage ? 'lotus-pagination-item lotus-pagination-item-active' : 'lotus-pagination-item'}
                             disabled={disabled}
                             aria-current={item === displayCurrentPage ? 'page' : undefined}
-                            aria-label={`第 ${item} 页`}
+                            aria-label={locale.Pagination.pageLabel(item)}
                             onClick={() => goPage(item)}
                         >
                             {item}
@@ -181,7 +186,7 @@ export function Pagination(&{
                 type="button"
                 class="lotus-pagination-item lotus-pagination-next"
                 disabled={disabled || displayCurrentPage >= totalPageNum}
-                aria-label="下一页"
+                aria-label={locale.Pagination.nextPage}
                 onClick={goNext}
             >
                 <IconChevronRight />
@@ -193,26 +198,26 @@ export function Pagination(&{
                     size={size === 'small' ? 'small' : 'default'}
                     value={pageSize}
                     disabled={disabled}
-                    optionList={pageSizeOpts.map((opt) => ({ value: opt, label: `${opt} 条/页` }))}
+                    optionList={pageSizeOpts.map((opt) => ({ value: opt, label: locale.Pagination.perPage(opt) }))}
                     onChange={handlePageSizeChange}
-                    aria-label="每页条数"
+                    aria-label={locale.Pagination.pageSizeLabel}
                 />
             }
 
             @if (showQuickJumper) {
                 <div class="lotus-pagination-quick-jumper">
-                    <span>跳至</span>
+                    <span>{locale.Pagination.jumpTo}</span>
                     <input
                         type="text"
                         inputmode="numeric"
                         class="lotus-pagination-quick-jumper-input"
                         disabled={disabled}
                         value={jumpInputValue}
-                        aria-label="跳转到指定页码"
+                        aria-label={locale.Pagination.jumpToPageLabel}
                         onInput={(event: Event) => { jumpInputValue = (event.target as HTMLInputElement).value; }}
                         onKeyDown={handleJumpKeyDown}
                     />
-                    <span>页</span>
+                    <span>{locale.Pagination.page}</span>
                 </div>
             }
         </div>

@@ -2,6 +2,8 @@ import { track, untrack } from 'ripple';
 import { BreadcrumbFoundation, type BreadcrumbState, type BreadcrumbRoute, type NormalizedRoute } from '@lotus/foundation/navigation/breadcrumb';
 import { Popover } from '../../show/popover/index.tsrx';
 import { Tooltip } from '../../show/tooltip/index.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { BreadcrumbRoute, NormalizedRoute } from '@lotus/foundation/navigation/breadcrumb';
 export type BreadcrumbMoreType = 'default' | 'popover';
@@ -85,6 +87,9 @@ export function Breadcrumb(&{
     class: className,
     onClick,
 }: BreadcrumbProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<BreadcrumbState>({ collapseExpanded: false });
 
     const foundation = new BreadcrumbFoundation({
@@ -113,7 +118,7 @@ export function Breadcrumb(&{
     }
 
     <>
-        <nav class={classes} style={style} aria-label={ariaLabel ?? '面包屑导航'}>
+        <nav class={classes} style={style} aria-label={ariaLabel ?? locale.Breadcrumb.navLabel}>
             <ol class="lotus-breadcrumb-list">
                 @for (const item of displayItems; key item.type === 'more' ? 'collapse-more' : `item-${item.index}`) {
                     @if (item.type === 'more') {
@@ -136,7 +141,7 @@ export function Breadcrumb(&{
                                         <span
                                             role="button"
                                             tabIndex={0}
-                                            aria-label="展开面包屑省略项"
+                                            aria-label={locale.Breadcrumb.expandEllipsis}
                                             class="lotus-breadcrumb-item lotus-breadcrumb-item-more"
                                         >
                                             •••
@@ -146,7 +151,7 @@ export function Breadcrumb(&{
                                     <span
                                         role="button"
                                         tabIndex={0}
-                                        aria-label="展开面包屑省略项"
+                                        aria-label={locale.Breadcrumb.expandEllipsis}
                                         class="lotus-breadcrumb-item lotus-breadcrumb-item-more"
                                         onClick={() => foundation.toggleExpand()}
                                         onKeyDown={(event: KeyboardEvent) => { if (event.key === 'Enter') foundation.toggleExpand(); }}

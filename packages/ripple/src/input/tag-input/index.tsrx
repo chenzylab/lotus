@@ -13,6 +13,8 @@ import {
 import { Tag } from '../../show/tag/index.tsrx';
 import { Popover } from '../../show/popover/index.tsrx';
 import { IconClear, IconHandle } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type TagInputSize = 'small' | 'default' | 'large';
 export type TagInputValidateStatus = 'default' | 'error' | 'warning';
@@ -104,6 +106,9 @@ export function TagInput(&{
     style,
     class: className,
 }: TagInputProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = value !== undefined;
     const isInputControlled = inputValueProp !== undefined;
 
@@ -317,7 +322,7 @@ export function TagInput(&{
                             <span
                                 class="lotus-tag-input-drag-handle"
                                 role="button"
-                                aria-label={`拖拽排序 ${item}`}
+                                aria-label={locale.TagInput.dragHandle(item)}
                                 onMouseDown={(e: MouseEvent) => handleDragStart(ti, e)}
                             >
                                 <IconHandle />
@@ -329,7 +334,7 @@ export function TagInput(&{
                             size={size === 'large' ? 'default' : size}
                             closable={!disabled}
                             onClose={() => handleRemoveTag(ti)}
-                            aria-label={`${!disabled ? '可关闭标签' : '标签'}: ${item}`}
+                            aria-label={!disabled ? locale.TagInput.closableTag(item) : locale.TagInput.plainTag(item)}
                         >
                             {item}
                         </Tag>
@@ -351,7 +356,7 @@ export function TagInput(&{
                                 class="lotus-tag-input-rest"
                                 role="button"
                                 tabIndex={0}
-                                aria-label={`还有 ${foldResult.restCount} 个标签，展开查看`}
+                                aria-label={locale.TagInput.moreTagsExpand(foldResult.restCount)}
                                 onClick={toggleRestExpanded}
                                 onKeyDown={handleRestKeyDown}
                             >
@@ -363,7 +368,7 @@ export function TagInput(&{
                             class="lotus-tag-input-rest"
                             role="button"
                             tabIndex={0}
-                            aria-label={`还有 ${foldResult.restCount} 个标签，展开查看`}
+                            aria-label={locale.TagInput.moreTagsExpand(foldResult.restCount)}
                             onClick={toggleRestExpanded}
                             onKeyDown={handleRestKeyDown}
                         >
@@ -378,7 +383,7 @@ export function TagInput(&{
                     placeholder={state.tagsArray.length === 0 ? placeholder : undefined}
                     disabled={disabled}
                     autofocus={autoFocus}
-                    aria-label="标签输入框"
+                    aria-label={locale.TagInput.inputLabel}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
@@ -390,7 +395,7 @@ export function TagInput(&{
                     class="lotus-tag-input-clear"
                     role="button"
                     tabIndex={0}
-                    aria-label="清除全部标签"
+                    aria-label={locale.TagInput.clearAll}
                     onClick={handleClear}
                     onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClear(); } }}
                 >

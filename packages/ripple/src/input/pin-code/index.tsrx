@@ -4,6 +4,8 @@ import {
     type PinCodeState,
     type PinCodeFormat,
 } from '@lotus/foundation/input/pin-code';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type PinCodeSize = 'small' | 'default' | 'large';
 export type PinCodeValidateStatus = 'default' | 'error' | 'warning';
@@ -70,6 +72,9 @@ export function PinCode(&{
     style,
     class: className,
 }: PinCodeProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = value !== undefined;
 
     let &[state] = track<PinCodeState>({
@@ -203,7 +208,7 @@ export function PinCode(&{
                     value={cell}
                     disabled={disabled}
                     maxlength={1}
-                    aria-label={`第 ${ci + 1} 位，共 ${count} 位`}
+                    aria-label={locale.PinCode.digitLabel(ci + 1, count)}
                     aria-invalid={validateStatus === 'error'}
                     onInput={(e: Event) => handleCellInput(ci, e)}
                     onKeyDown={(e: KeyboardEvent) => handleCellKeyDown(ci, e)}

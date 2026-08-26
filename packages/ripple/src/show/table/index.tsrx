@@ -22,6 +22,8 @@ import { Empty } from '../empty/index.tsrx';
 import { Pagination, type PaginationProps } from '../../navigation/pagination/index.tsrx';
 import { Popover } from '../popover/index.tsrx';
 import { IconCaretup, IconCaretdown, IconFilter, IconChevronRight } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ColumnDef, SortOrder };
 
@@ -155,6 +157,9 @@ function TableRow<T = any>(&{
     onRowToggle,
     onExpandToggle,
 }: TableRowProps<T>) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     @if (flat.isExpandedContent) {
         <tr class="lotus-table-expanded-row" role="row">
@@ -178,7 +183,7 @@ function TableRow<T = any>(&{
                             checked={selected}
                             indeterminate={halfSelected}
                             onChange={(checked: boolean) => onRowToggle(flat.record, 0, checked)}
-                            aria-label="选择行"
+                            aria-label={locale.Table.selectRow}
                         />
                     }
                 </td>
@@ -322,6 +327,9 @@ export function Table<T = any>(&{
     class: className,
     'aria-label': ariaLabel,
 }: TableProps<T>) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isSelectionControlled = rowSelection?.selectedRowKeys !== undefined;
     const isExpandControlled = expandedRowKeysProp !== undefined;
     const hasExpandedRowRender = expandedRowRender !== undefined;
@@ -567,7 +575,7 @@ export function Table<T = any>(&{
                                             checked={allSelectedStatus.allChecked}
                                             indeterminate={!allSelectedStatus.allChecked && state.selectedRowKeys.size > 0}
                                             onChange={handleToggleAll}
-                                            aria-label="全选"
+                                            aria-label={locale.Table.selectAll}
                                         />
                                     }
                                 </th>
@@ -614,8 +622,8 @@ export function Table<T = any>(&{
                                                         }
                                                     </ul>
                                                     <div class="lotus-table-filter-footer">
-                                                        <button type="button" class="lotus-table-filter-btn" onClick={() => resetFilter(getColumnKey(cell.column, leafColumns.indexOf(cell.column)))}>重置</button>
-                                                        <button type="button" class="lotus-table-filter-btn lotus-table-filter-btn-primary" onClick={() => confirmFilter(getColumnKey(cell.column, leafColumns.indexOf(cell.column)))}>确定</button>
+                                                        <button type="button" class="lotus-table-filter-btn" onClick={() => resetFilter(getColumnKey(cell.column, leafColumns.indexOf(cell.column)))}>{locale.Table.filterReset}</button>
+                                                        <button type="button" class="lotus-table-filter-btn lotus-table-filter-btn-primary" onClick={() => confirmFilter(getColumnKey(cell.column, leafColumns.indexOf(cell.column)))}>{locale.Table.filterConfirm}</button>
                                                     </div>
                                                 </div>
                                             }
@@ -624,7 +632,7 @@ export function Table<T = any>(&{
                                                 class="lotus-table-filter-trigger"
                                                 tabIndex={0}
                                                 role="button"
-                                                aria-label="筛选"
+                                                aria-label={locale.Table.filterLabel}
                                                 onClick={() => openFilter(getColumnKey(cell.column, leafColumns.indexOf(cell.column)), cell.column)}
                                             >
                                                 <IconFilter />
@@ -648,7 +656,7 @@ export function Table<T = any>(&{
                         @if (flatRows.length === 0) {
                             <tr>
                                 <td class="lotus-table-empty-cell" colSpan={leafColumns.length + (rowSelection ? 1 : 0) + ((expandedRowRender || rowExpandable) && !hideExpandedColumn ? 1 : 0)}>
-                                    {empty ?? <Empty title="暂无数据" />}
+                                    {empty ?? <Empty title={locale.Table.emptyTitle} />}
                                 </td>
                             </tr>
                         }

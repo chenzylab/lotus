@@ -6,6 +6,8 @@ import {
     sharedClasses, weightStyle, CopyableAction, resolveEllipsisConfig, resolveCopyableConfig, resolveLinkConfig,
     type TypographySharedProps, type TypographySize, type TypographyWeight,
 } from './shared.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface TypographyTextProps extends TypographySharedProps {
     children?: any;
@@ -42,6 +44,9 @@ export function TypographyText(&{
     class: className,
     'aria-label': ariaLabel,
 }: TypographyTextProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const linkConfig = resolveLinkConfig(link);
     const copyableConfig = resolveCopyableConfig(copyable);
     const isPlainText = typeof children === 'string';
@@ -127,7 +132,7 @@ export function TypographyText(&{
                                 ellipsisConfig?.onExpand?.(expanded, event);
                             }}
                         >
-                            {expanded ? (ellipsisConfig.collapseText ?? '收起') : (ellipsisConfig.expandText ?? '展开')}
+                            {expanded ? (ellipsisConfig.collapseText ?? locale.Typography.collapseText) : (ellipsisConfig.expandText ?? locale.Typography.expandText)}
                         </button>
                     }
                     @if (copyableConfig) {
@@ -158,7 +163,7 @@ export function TypographyText(&{
                             ellipsisConfig?.onExpand?.(expanded, event);
                         }}
                     >
-                        {expanded ? (ellipsisConfig.collapseText ?? '收起') : (ellipsisConfig.expandText ?? '展开')}
+                        {expanded ? (ellipsisConfig.collapseText ?? locale.Typography.collapseText) : (ellipsisConfig.expandText ?? locale.Typography.expandText)}
                     </button>
                 }
                 @if (copyableConfig) {

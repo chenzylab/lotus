@@ -1,6 +1,8 @@
 import { track, effect, untrack } from 'ripple';
 import { IconChevronLeft, IconChevronRight } from '@lotus/icons';
 import { CarouselFoundation, type CarouselState } from '@lotus/foundation/show/carousel';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type CarouselAnimation = 'slide' | 'fade';
 export type CarouselTheme = 'primary' | 'light' | 'dark';
@@ -60,6 +62,9 @@ export function Carousel(&{
     class: className,
     'aria-label': ariaLabel,
 }: CarouselProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = activeIndexProp !== undefined;
 
     let &[state] = track<CarouselState>({
@@ -169,7 +174,7 @@ export function Carousel(&{
                 <button
                     type="button"
                     class={['lotus-carousel-arrow', 'lotus-carousel-arrow-left', arrowType === 'hover' ? 'lotus-carousel-arrow-hover' : ''].filter(Boolean).join(' ')}
-                    aria-label="上一张"
+                    aria-label={locale.Carousel.prev}
                     onClick={handlePrev}
                 >
                     <IconChevronLeft />
@@ -179,7 +184,7 @@ export function Carousel(&{
                 <button
                     type="button"
                     class={['lotus-carousel-arrow', 'lotus-carousel-arrow-right', arrowType === 'hover' ? 'lotus-carousel-arrow-hover' : ''].filter(Boolean).join(' ')}
-                    aria-label="下一张"
+                    aria-label={locale.Carousel.next}
                     onClick={handleNext}
                 >
                     <IconChevronRight />

@@ -1,6 +1,8 @@
 import { mount, track } from 'ripple';
 import { ToastListFoundation, type ToastItem, type ToastType } from '@lotus/foundation/feedback/toast';
 import { IconTickCircle, IconAlertTriangle, IconAlertCircle, IconInfoCircle, IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ToastType, ToastItem };
 
@@ -44,6 +46,9 @@ let toastFoundation: ToastListFoundation | null = null;
  * （见 specs/cross-cutting/foundation-adapter-pattern.md 的验证记录）。
  */
 export function ToastListRoot(&{ registerController }: ToastListRootProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[list] = track<Array<ToastItem>>([]);
     let &[stackHovered] = track<boolean>(false);
     registerController((next: ToastItem[]) => { list = next; });
@@ -76,7 +81,7 @@ export function ToastListRoot(&{ registerController }: ToastListRootProps) @{
                     <span class="lotus-toast-icon">{item.icon ?? DEFAULT_ICONS[item.type]}</span>
                     <div class="lotus-toast-content">{item.content}</div>
                     @if (item.showClose) {
-                        <button type="button" class="lotus-toast-close" aria-label="关闭" onClick={() => handleClose(item.id)}>
+                        <button type="button" class="lotus-toast-close" aria-label={locale.Toast.close} onClick={() => handleClose(item.id)}>
                             <IconClose />
                         </button>
                     }

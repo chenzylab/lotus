@@ -14,6 +14,8 @@ import {
 } from '@lotus/foundation/navigation/tree';
 import { Checkbox } from '../../input/checkbox/index.tsrx';
 import { IconChevronRight, IconLoading, IconSearch, IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { TreeNodeData, FilterTreeNode };
 
@@ -71,7 +73,7 @@ export function Tree(&{
     disabled = false,
     filterTreeNode = false,
     showFilteredOnly = false,
-    searchPlaceholder = '搜索',
+    searchPlaceholder,
     onSearch,
     loadData,
     onLoad,
@@ -82,6 +84,9 @@ export function Tree(&{
     class: className,
     'aria-label': ariaLabel,
 }: TreeProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isValueControlled = valueProp !== undefined;
     const isExpandControlled = expandedKeysProp !== undefined;
 
@@ -225,7 +230,7 @@ export function Tree(&{
                     <input
                         type="text"
                         class="lotus-tree-search-input"
-                        placeholder={searchPlaceholder}
+                        placeholder={searchPlaceholder ?? locale.Tree.searchPlaceholder}
                         value={state.searchInput}
                         onInput={handleSearchInput}
                     />
@@ -233,7 +238,7 @@ export function Tree(&{
                         <button
                             type="button"
                             class="lotus-tree-search-clear"
-                            aria-label="清除搜索"
+                            aria-label={locale.Tree.clearSearch}
                             onClick={() => foundation.handleSearch('', entities, filterTreeNode)}
                         >
                             <IconClose />
@@ -243,7 +248,7 @@ export function Tree(&{
             }
 
             @if (flatNodes.length === 0) {
-                <div class="lotus-tree-empty">{emptyContent ?? '暂无数据'}</div>
+                <div class="lotus-tree-empty">{emptyContent ?? locale.Tree.emptyContent}</div>
             }
 
             @for (const node of flatNodes; index i; key node.key) {

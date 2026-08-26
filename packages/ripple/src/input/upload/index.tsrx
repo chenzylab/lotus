@@ -11,6 +11,8 @@ import {
 import { Progress } from '../../feedback/progress/index.tsrx';
 import { IconButton } from '../../basic/icon-button/index.tsrx';
 import { IconUpload, IconUploadError, IconClose, IconFile, IconRefresh } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ListType, UploadTrigger, FileItem };
 
@@ -81,7 +83,7 @@ function resolveData(data: UploadProps['data'], item: FileItem): Record<string, 
 }
 
 /** 内置 XHR 上传：FormData 拼装 + headers 设置 + onprogress/onload/onerror 监听。 */
-function xhrUpload(args: CustomRequestArgs) {
+function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').LocaleShape) {
     const formData = new FormData();
     if (args.data) {
         for (const key of Object.keys(args.data)) {
@@ -108,10 +110,10 @@ function xhrUpload(args: CustomRequestArgs) {
             try { response = JSON.parse(xhr.responseText); } catch { /* 非 JSON 响应，原样返回文本 */ }
             args.onSuccess(response);
         } else {
-            args.onError(`上传失败：HTTP ${xhr.status}`);
+            args.onError(locale.Upload.uploadFail(xhr.status));
         }
     };
-    xhr.onerror = () => args.onError('网络错误');
+    xhr.onerror = () => args.onError(locale.Upload.networkError);
     xhr.send(formData);
 }
 
@@ -126,15 +128,18 @@ interface FileCardProps {
     onReplaceClick: (item: FileItem) => void;
 }
 
-function statusLabel(status: FileItem['status']): string {
-    if (status === 'uploadFail') return '上传失败';
-    if (status === 'validateFail') return '校验失败';
-    if (status === 'success') return '上传成功';
-    if (status === 'uploading') return '上传中';
-    return '等待上传';
+function statusLabel(status: FileItem['status'], locale: import('@lotus/locale').LocaleShape): string {
+    if (status === 'uploadFail') return locale.Upload.statusUploadFail;
+    if (status === 'validateFail') return locale.Upload.statusValidateFail;
+    if (status === 'success') return locale.Upload.statusSuccess;
+    if (status === 'uploading') return locale.Upload.statusUploading;
+    return locale.Upload.statusWaiting;
 }
 
 function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove, onRetryClick, onReplaceClick }: FileCardProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     <div class={['lotus-upload-file-card', `lotus-upload-file-card-${listType}`, `lotus-upload-file-card-${item.status}`].join(' ')} role="listitem">
         <div class="lotus-upload-file-thumbnail">
@@ -156,7 +161,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
             <div class="lotus-upload-file-meta">
                 <span class="lotus-upload-file-size">{formatFileSize(item.size)}</span>
                 @if (item.status === 'uploadFail' || item.status === 'validateFail') {
-                    <span class="lotus-upload-file-error-msg">{item.validateMessage ?? statusLabel(item.status)}</span>
+                    <span class="lotus-upload-file-error-msg">{item.validateMessage ?? statusLabel(item.status, locale)}</span>
                 }
             </div>
             @if (item.status === 'uploading') {
@@ -164,7 +169,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
                     percent={item.percent}
                     type={listType === 'picture' ? 'circle' : 'line'}
                     size="small"
-                    aria-label={`${item.name} 上传进度`}
+                    aria-label={locale.Upload.progress(item.name)}
                 />
             }
         </div>
@@ -176,7 +181,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
                     type="tertiary"
                     size="small"
                     disabled={disabled}
-                    aria-label={`重试 ${item.name}`}
+                    aria-label={locale.Upload.retry(item.name)}
                     onClick={() => onRetryClick(item)}
                 />
             }
@@ -187,7 +192,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
                     type="tertiary"
                     size="small"
                     disabled={disabled}
-                    aria-label={`替换 ${item.name}`}
+                    aria-label={locale.Upload.replace(item.name)}
                     onClick={() => onReplaceClick(item)}
                 />
             }
@@ -197,7 +202,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
                 type="tertiary"
                 size="small"
                 disabled={disabled}
-                aria-label={`移除 ${item.name}`}
+                aria-label={locale.Upload.remove(item.name)}
                 onClick={() => onRemove(item)}
             />
         </div>
@@ -314,7 +319,7 @@ export function Upload(&{
     listType = 'list',
     uploadTrigger = 'auto',
     draggable = false,
-    dragMainText = '点击上传文件，或将文件拖拽到此区域',
+    dragMainText,
     dragSubText,
     showRetry = true,
     showReplace = false,
@@ -333,6 +338,9 @@ export function Upload(&{
     style,
     class: className,
 }: UploadProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = fileListProp !== undefined;
 
     let &[state] = track<UploadState>({
@@ -387,7 +395,7 @@ export function Upload(&{
             },
         };
         if (customRequest) customRequest(args);
-        else xhrUpload(args);
+        else xhrUpload(args, locale);
     }
 
     async function maybeStartUpload(item: FileItem) {
@@ -522,7 +530,7 @@ export function Upload(&{
                     class={dragAreaClasses}
                     role="button"
                     tabIndex={disabled ? -1 : 0}
-                    aria-label={ariaLabel ?? '拖拽或点击上传文件'}
+                    aria-label={ariaLabel ?? locale.Upload.dragAreaLabel}
                     aria-disabled={disabled}
                     onClick={openFileDialog}
                     onKeyDown={handleTriggerKeyDown}
@@ -532,7 +540,7 @@ export function Upload(&{
                     onDrop={handleDrop}
                 >
                     <div class="lotus-upload-drag-icon"><IconUpload /></div>
-                    <div class="lotus-upload-drag-main-text">{dragMainText}</div>
+                    <div class="lotus-upload-drag-main-text">{dragMainText ?? locale.Upload.dragMainText}</div>
                     @if (dragSubText) {
                         <div class="lotus-upload-drag-sub-text">{dragSubText}</div>
                     }
@@ -542,18 +550,18 @@ export function Upload(&{
                     class="lotus-upload-trigger"
                     role="button"
                     tabIndex={disabled ? -1 : 0}
-                    aria-label={ariaLabel ?? '上传文件'}
+                    aria-label={ariaLabel ?? locale.Upload.uploadButton}
                     aria-disabled={disabled}
                     onClick={openFileDialog}
                     onKeyDown={handleTriggerKeyDown}
                 >
                     <IconUpload />
-                    <span>上传文件</span>
+                    <span>{locale.Upload.uploadButton}</span>
                 </div>
             }
 
             @if (listType !== 'none' && state.fileList.length > 0) {
-                <div class={['lotus-upload-file-list', `lotus-upload-file-list-${listType}`].join(' ')} role="list" aria-label="已上传文件">
+                <div class={['lotus-upload-file-list', `lotus-upload-file-list-${listType}`].join(' ')} role="list" aria-label={locale.Upload.fileListLabel}>
                     @for (const item of state.fileList; index fi; key item.uid) {
                         <FileCard
                             item={item}
