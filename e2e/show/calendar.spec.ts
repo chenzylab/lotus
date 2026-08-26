@@ -30,7 +30,7 @@ test.describe('Calendar', () => {
 
     const lefts = new Set<string>();
     for (let i = 0; i < count; i++) {
-      const left = await events.nth(i).evaluate((el) => (el as HTMLElement).style.left);
+      const left = await events.nth(i).evaluate((el) => getComputedStyle(el).left);
       lefts.add(left);
     }
     // 并排事件（e1/e2）应该产生至少两种不同的 left 值（0% 和 50%）

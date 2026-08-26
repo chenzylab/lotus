@@ -396,8 +396,7 @@ export function VideoPlayer(&{
 
             .lotus-video-player-controls {
                 position: absolute;
-                left: 0;
-                right: 0;
+                inset-inline: 0;
                 bottom: 0;
                 padding: 8px 12px;
                 background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
@@ -467,7 +466,7 @@ export function VideoPlayer(&{
             .lotus-video-player-rate-menu {
                 position: absolute;
                 bottom: 100%;
-                right: 0;
+                inset-inline-end: 0;
                 margin: 0 0 4px;
                 padding: 4px;
                 list-style: none;

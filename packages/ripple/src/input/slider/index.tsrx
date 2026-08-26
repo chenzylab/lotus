@@ -8,6 +8,8 @@ import {
     type RailRect,
 } from '@lotus/foundation/input/slider';
 import { Tooltip } from '../../show/tooltip/index.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface SliderProps {
     min?: number;
@@ -65,6 +67,9 @@ export function Slider(&{
     style,
     class: className,
 }: SliderProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = value !== undefined;
 
     let &[state] = track<SliderState>({
@@ -73,7 +78,17 @@ export function Slider(&{
         focusPos: false,
     });
 
-    const foundationOpts: SliderFoundationOptions = { min, max, step, range, vertical, verticalReverse };
+    const foundationOpts: SliderFoundationOptions = { min, max, step, range, vertical, verticalReverse, isRtl: untrack(() => locale).dir === 'rtl' };
+
+    // min/max/step 等其它配置项对齐全代码库既定架构，都是挂载时固化、不响应
+    // 后续 prop 变化——但方向是运行时可能切换的全局状态（ConfigProvider.direction
+    // 或 locale 切换），Slider 若一直固化挂载时的方向会导致"切换语言方向后，
+    // 已经渲染在页面上的 Slider 拖拽方向和视觉位置不再对应"这个真实可用性问题，
+    // 所以这一项需要显式保持同步（复用同一个 opts 对象引用，Foundation 内部
+    // 读的是 this.opts，不需要重新构造 Foundation 实例）。
+    effect(() => {
+        foundationOpts.isRtl = locale.dir === 'rtl';
+    });
 
     const foundation = new SliderFoundation(
         {
@@ -170,14 +185,14 @@ export function Slider(&{
                 ? { top: `${startPercent}%`, height: `${endPercent - startPercent}%` }
                 : { bottom: `${startPercent}%`, height: `${endPercent - startPercent}%` };
         }
-        return { left: `${startPercent}%`, width: `${endPercent - startPercent}%` };
+        return { insetInlineStart: `${startPercent}%`, width: `${endPercent - startPercent}%` };
     });
 
     function handlePositionStyle(percent: number): Record<string, any> {
         if (vertical) {
             return verticalReverse ? { top: `${percent}%` } : { bottom: `${percent}%` };
         }
-        return { left: `${percent}%` };
+        return { insetInlineStart: `${percent}%` };
     }
 
     function formatTip(v: number): any {
@@ -339,7 +354,7 @@ export function Slider(&{
                 top: 50%;
                 width: 14px;
                 height: 14px;
-                margin-left: -7px;
+                margin-inline-start: -7px;
                 margin-top: -7px;
                 border-radius: 50%;
                 background: var(--lotus-color-bg-1);
@@ -368,10 +383,7 @@ export function Slider(&{
 
             .lotus-slider-dots {
                 position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
             }
 
             .lotus-slider-dot {
@@ -379,7 +391,7 @@ export function Slider(&{
                 top: 50%;
                 width: 6px;
                 height: 6px;
-                margin-left: -3px;
+                margin-inline-start: -3px;
                 margin-top: -3px;
                 border-radius: 50%;
                 background: var(--lotus-color-bg-1);
@@ -406,7 +418,7 @@ export function Slider(&{
 
             .lotus-slider-vertical .lotus-slider-marks {
                 position: absolute;
-                left: 16px;
+                inset-inline-start: 16px;
                 top: 0;
                 bottom: 0;
                 width: auto;

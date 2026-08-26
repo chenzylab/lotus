@@ -196,8 +196,7 @@ export function ScrollItem(&{
 
             .lotus-scroll-item-selector {
                 position: absolute;
-                left: 0;
-                right: 0;
+                inset-inline: 0;
                 top: 50%;
                 transform: translateY(-50%);
                 border-top: 1px solid var(--lotus-color-border);

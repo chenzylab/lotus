@@ -480,6 +480,8 @@ export function App() @{
     let &[localeFormApiRef] = track<FormApi | undefined>(undefined);
     let &[configProviderThemeMode] = track<'light' | 'dark' | undefined>(undefined);
     let &[configProviderModalVisible] = track<boolean>(false);
+    let &[configProviderDirection] = track<'ltr' | 'rtl'>('ltr');
+    let &[rtlSidebarVisible] = track<boolean>(false);
     let &[cropperResultUrl] = track<string>('');
     let &[cropperZoom] = track<number>(1);
     let &[chatMessages] = track<ChatMessage[]>(() => [
@@ -3832,6 +3834,34 @@ export function App() @{
                         aria-label="ConfigProvider mode 示例 Table"
                     />
                 </div>
+            </div>
+        </ConfigProvider>
+
+        <Divider>ConfigProvider：direction 切换 RTL（写入原生 dir 属性到 document.documentElement，Tag/Slider 等组件的 CSS 逻辑属性与 JS 拖拽方向随之镜像）</Divider>
+
+        <ConfigProvider direction={configProviderDirection}>
+            <div style={{ padding: '16px', border: '1px solid var(--lotus-color-border)', borderRadius: 'var(--lotus-border-radius-medium)' }}>
+                <Space style={{ marginBottom: '12px' }}>
+                    <Button onClick={() => { configProviderDirection = configProviderDirection === 'rtl' ? 'ltr' : 'rtl'; }}>
+                        {configProviderDirection === 'rtl' ? '切换到 ltr' : '切换到 rtl'}
+                    </Button>
+                    <Button onClick={() => { rtlSidebarVisible = true; }}>打开 RTL 示例 Sidebar</Button>
+                </Space>
+                <div style={{ marginBottom: '12px' }}>
+                    <Tag closable aria-label="ConfigProvider direction 示例 Tag">RTL 示例标签</Tag>
+                </div>
+                <div style={{ width: '320px' }}>
+                    <Slider defaultValue={30} aria-label="ConfigProvider direction 示例 Slider" />
+                </div>
+                <Sidebar
+                    visible={rtlSidebarVisible}
+                    title="RTL 示例 Sidebar"
+                    onCancel={() => { rtlSidebarVisible = false; }}
+                    resizable
+                    aria-label="ConfigProvider direction 示例 Sidebar"
+                >
+                    RTL 模式下应贴视口左侧，resize 手柄在其右边缘。
+                </Sidebar>
             </div>
         </ConfigProvider>
 

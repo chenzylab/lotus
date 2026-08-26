@@ -248,7 +248,7 @@ export function MCPConfigure(&{
                 content: '';
                 position: absolute;
                 top: 2px;
-                left: 2px;
+                inset-inline-start: 2px;
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
@@ -262,6 +262,12 @@ export function MCPConfigure(&{
 
             .lotus-sidebar-mcp-configure-switch-active::after {
                 transform: translateX(12px);
+            }
+
+            /* 伪元素的 transform 拿不到 JS 内联 style，只能用方向选择器显式镜像——
+               激活态圆点向"逻辑末尾"滑动，RTL 下末尾在左侧，位移方向要取反。 */
+            :root[dir="rtl"] .lotus-sidebar-mcp-configure-switch-active::after {
+                transform: translateX(-12px);
             }
 
             .lotus-sidebar-mcp-configure-switch-disabled {

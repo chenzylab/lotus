@@ -36,7 +36,11 @@ export interface ConfigProviderProps {
 }
 
 export function ConfigProvider(&{ locale = zhCN, mode, direction, children }: ConfigProviderProps) @{
-    let &[, localeTracked] = track<LocaleShape>(() => locale);
+    // LocaleContext 下发的 dir 字段永远是"最终生效方向"（direction prop 优先于
+    // locale 自带的默认方向），组件只需要读 `LocaleContext.get().value.dir`
+    // 就能拿到权威当前方向，不需要关心 direction prop 是否单独覆盖过、也不需要
+    // 再引入一个独立的 DirectionContext。
+    let &[, localeTracked] = track<LocaleShape>(() => ({ ...locale, dir: direction ?? locale.dir }));
     LocaleContext.set(localeTracked);
 
     effect(() => {

@@ -70,7 +70,12 @@ export function Container(&{
 
     function handleResizeHandleDown(event: MouseEvent) {
         event.preventDefault();
-        resizeFoundation.onResizeStart('left', event.clientX, event.clientY);
+        // 容器贴视口的"逻辑末尾"（LTR 下是右边，RTL 下镜像到左边），resize 手柄
+        // 贴容器的"逻辑起始"边缘（LTR 下手柄在容器左边缘，RTL 下镜像到容器右边缘）。
+        // ResizableFoundation 的 'left'/'right' 是物理方向常量，往哪边拖动增大宽度
+        // 完全取决于手柄相对容器的物理位置，必须跟随 dir 镜像传参，否则 RTL 下拖拽
+        // 方向会和视觉手柄位置对不上（拖不动或者反向变化）。
+        resizeFoundation.onResizeStart(locale.dir === 'rtl' ? 'right' : 'left', event.clientX, event.clientY);
     }
 
     effect(() => {
@@ -129,7 +134,17 @@ export function Container(&{
         ].filter(Boolean).join(' '),
     );
 
-    let &[contentStyle] = track<Record<string, any>>(() => ({ ...style, width: `${resizeState.width}px` }));
+    // translateX 无法用 CSS 逻辑属性表达方向，必须显式按 locale.dir 取反——
+    // LTR 下面板贴视口右侧、从右侧滑入用 translateX(100%)；RTL 下面板贴视口
+    // 左侧（inset-inline-end 会自动镜像成 left:0），滑入方向也要跟着镜像成
+    // translateX(-100%)，否则会出现"面板位置已经镜像到左边，但打开动画却从
+    // 右边滑入"的方向不一致。
+    let &[hiddenTransform] = track<string>(() => (locale.dir === 'rtl' ? 'translateX(-100%)' : 'translateX(100%)'));
+    let &[contentStyle] = track<Record<string, any>>(() => ({
+        ...style,
+        width: `${resizeState.width}px`,
+        ...(visible ? {} : { transform: hiddenTransform }),
+    }));
 
     let &[hasHeader] = track<boolean>(() => header !== undefined);
 
@@ -173,12 +188,11 @@ export function Container(&{
             .lotus-sidebar-container {
                 position: absolute;
                 top: 0;
-                right: 0;
+                inset-inline-end: 0;
                 height: 100%;
                 pointer-events: auto;
                 background: var(--lotus-color-bg-1);
                 box-shadow: var(--lotus-shadow-elevated);
-                transform: translateX(100%);
                 opacity: 0;
                 transition: transform 0.25s ease, opacity 0.25s ease;
             }
@@ -196,7 +210,7 @@ export function Container(&{
             .lotus-sidebar-container-resize-handle {
                 position: absolute;
                 top: 0;
-                left: -3px;
+                inset-inline-start: -3px;
                 width: 6px;
                 height: 100%;
                 cursor: ew-resize;

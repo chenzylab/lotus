@@ -135,7 +135,7 @@ export function Annotation(&{ info, activeKey, onChange, onClick, renderItem, cl
 
             .lotus-sidebar-annotation-duration {
                 position: absolute;
-                right: 4px;
+                inset-inline-end: 4px;
                 bottom: 4px;
                 background: rgba(0, 0, 0, 0.7);
                 color: #fff;

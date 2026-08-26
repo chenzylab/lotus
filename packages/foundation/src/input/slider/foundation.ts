@@ -25,6 +25,10 @@ export interface SliderFoundationOptions {
   range: boolean;
   vertical: boolean;
   verticalReverse: boolean;
+  /** 水平模式下是否按 RTL 镜像数值增长方向（对齐 Semi Slider 的 isRTL
+   * 语义：垂直模式恒定从下往上增大，不受文字方向影响，只有水平模式需要
+   * 判断——RTL 下往右拖动应该减小值而不是增大）。 */
+  isRtl?: boolean;
 }
 
 function decimalsOf(n: number): number {
@@ -72,9 +76,10 @@ export class SliderFoundation extends Foundation<SliderState> {
     return roundToPrecision(clamp(stepped, min, max), step);
   }
 
-  /** 像素坐标 → 原始数值（未对齐步长）。vertical/verticalReverse 时坐标轴与百分比方向镜像。 */
+  /** 像素坐标 → 原始数值（未对齐步长）。vertical/verticalReverse 时坐标轴与百分比方向镜像；
+   * 水平模式下 isRtl 时同样镜像（对齐 Semi Slider 在 RTL 下往右拖动减小值的行为）。 */
   posToRawValue(clientX: number, clientY: number, rect: RailRect): number {
-    const { min, max, vertical, verticalReverse } = this.opts;
+    const { min, max, vertical, verticalReverse, isRtl } = this.opts;
     let percent: number;
     if (vertical) {
       const offset = clamp(clientY - rect.top, 0, rect.height);
@@ -83,6 +88,7 @@ export class SliderFoundation extends Foundation<SliderState> {
     } else {
       const offset = clamp(clientX - rect.left, 0, rect.width);
       percent = rect.width === 0 ? 0 : offset / rect.width;
+      if (isRtl) percent = 1 - percent;
     }
     return min + percent * (max - min);
   }

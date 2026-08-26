@@ -210,7 +210,7 @@ export function Progress(&{
 
             .lotus-progress-track-inner {
                 position: absolute;
-                left: 0;
+                inset-inline-start: 0;
                 bottom: 0;
                 background: var(--lotus-color-success);
                 border-radius: var(--lotus-border-radius-full);

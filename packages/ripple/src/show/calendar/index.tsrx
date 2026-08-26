@@ -180,7 +180,7 @@ function CalendarWeekView(&{
                         <div
                             class="lotus-calendar-event lotus-calendar-event-allday"
                             style={{
-                                left: `${item.leftPos * 100}%`,
+                                insetInlineStart: `${item.leftPos * 100}%`,
                                 width: `${item.width * 100}%`,
                                 top: `${item.topInd * 1.75}em`,
                             }}
@@ -359,7 +359,7 @@ function CalendarDayEvents(&{ date, events, minEventHeight, renderEvent }: DayEv
                 style={{
                     top: `${item.top * 100}%`,
                     height: `max(${minEventHeight}px, ${item.height * 100}%)`,
-                    left: `${item.left * 100}%`,
+                    insetInlineStart: `${item.left * 100}%`,
                     width: `${item.width * 100}%`,
                 }}
             >
@@ -507,7 +507,7 @@ function CalendarMonthWeekRow(&{ week, monthAnchor, events, markWeekend, onDayCl
                 <div
                     class="lotus-calendar-event lotus-calendar-event-month"
                     style={{
-                        left: `${item.leftPos * 100}%`,
+                        insetInlineStart: `${item.leftPos * 100}%`,
                         width: `${item.width * 100}%`,
                         top: `${item.topInd * 1.5}em`,
                     }}
@@ -564,8 +564,7 @@ function CalendarMonthWeekRow(&{ week, monthAnchor, events, markWeekend, onDayCl
 
             .lotus-calendar-month-week-events {
                 position: absolute;
-                left: 0;
-                right: 0;
+                inset-inline: 0;
                 top: 28px;
                 bottom: 0;
                 pointer-events: none;

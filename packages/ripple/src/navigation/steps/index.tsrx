@@ -138,8 +138,8 @@ export function Steps(&{
                 content: '';
                 position: absolute;
                 top: 12px;
-                left: calc(24px + var(--lotus-spacing-tight));
-                right: calc(-1 * (24px + var(--lotus-spacing-tight)) + 24px);
+                inset-inline-start: calc(24px + var(--lotus-spacing-tight));
+                inset-inline-end: calc(-1 * (24px + var(--lotus-spacing-tight)) + 24px);
                 height: 1px;
                 background: var(--lotus-color-border);
             }
@@ -160,7 +160,7 @@ export function Steps(&{
                 content: '';
                 position: absolute;
                 top: 24px;
-                left: 12px;
+                inset-inline-start: 12px;
                 bottom: 0;
                 width: 1px;
                 background: var(--lotus-color-border);

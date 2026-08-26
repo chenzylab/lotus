@@ -331,7 +331,7 @@ export function AudioPlayer(&{
             .lotus-audio-player-rate-menu {
                 position: absolute;
                 bottom: 100%;
-                left: 0;
+                inset-inline-start: 0;
                 margin: 0 0 4px;
                 padding: 4px;
                 list-style: none;

@@ -1,4 +1,6 @@
 import { track, effect, untrack } from 'ripple';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface AudioSliderProps {
     value: number;
@@ -16,6 +18,9 @@ export interface AudioSliderProps {
  * 复杂度。支持点击轨道任意位置直接跳转、按住拖拽跟手。
  */
 export function AudioSlider(&{ value, max, vertical = false, 'aria-label': ariaLabel, onChange }: AudioSliderProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let trackEl: HTMLElement | null = null;
     let dragging = false;
 
@@ -23,9 +28,16 @@ export function AudioSlider(&{ value, max, vertical = false, 'aria-label': ariaL
         const el = untrack(() => trackEl);
         if (!el) return 0;
         const rect = el.getBoundingClientRect();
+        // 水平模式下，值增大的方向要跟随内容流方向镜像（对齐 Semi Slider 在
+        // RTL 下的真实实现——isRTL 时交换起止锚点，往右拖动变成减小而非增大）；
+        // 垂直模式跟文字水平方向无关，永远从下往上增大，不受 dir 影响。
+        const isRtlHorizontal = !vertical && untrack(() => locale).dir === 'rtl';
+        const horizontalRatio = isRtlHorizontal
+            ? 1 - (event.clientX - rect.left) / rect.width
+            : (event.clientX - rect.left) / rect.width;
         const ratio = vertical
             ? 1 - (event.clientY - rect.top) / rect.height
-            : (event.clientX - rect.left) / rect.width;
+            : horizontalRatio;
         return Math.min(1, Math.max(0, ratio));
     }
 
@@ -115,7 +127,7 @@ export function AudioSlider(&{ value, max, vertical = false, 'aria-label': ariaL
         }
 
         .lotus-audio-slider-horizontal .lotus-audio-slider-fill {
-            left: 0;
+            inset-inline-start: 0;
             top: 0;
             height: 100%;
         }

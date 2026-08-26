@@ -288,7 +288,7 @@ export function AiChatDialogue(&{
 
             .lotus-ai-chat-dialogue-back-bottom {
                 position: absolute;
-                right: 16px;
+                inset-inline-end: 16px;
                 bottom: 64px;
                 width: 32px;
                 height: 32px;
