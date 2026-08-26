@@ -2,6 +2,8 @@ import { track, untrack } from 'ripple';
 import { extractPlainText, type AiChatMessage } from '@lotus/foundation/show/ai-chat-dialogue';
 import { TextArea } from '../../input/text-area/index.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface MessageEditorProps {
     message: AiChatMessage;
@@ -15,6 +17,9 @@ export interface MessageEditorProps {
  * 未传时的默认回退实现。
  */
 export function MessageEditor(&{ message, onSave, onCancel }: MessageEditorProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[draft] = track<string>(() => extractPlainText(message.content));
 
     function handleSave() {
@@ -25,8 +30,8 @@ export function MessageEditor(&{ message, onSave, onCancel }: MessageEditorProps
         <div class="lotus-ai-message-editor">
             <TextArea value={draft} autosize={true} onChange={(value: string) => { draft = value; }} />
             <div class="lotus-ai-message-editor-actions">
-                <Button theme="light" size="small" onClick={onCancel}>取消</Button>
-                <Button theme="solid" size="small" onClick={handleSave}>保存</Button>
+                <Button theme="light" size="small" onClick={onCancel}>{locale.AiChatDialogue.cancel}</Button>
+                <Button theme="solid" size="small" onClick={handleSave}>{locale.AiChatDialogue.save}</Button>
             </div>
         </div>
 

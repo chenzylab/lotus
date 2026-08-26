@@ -5,6 +5,8 @@ import { Checkbox } from '../../input/checkbox/index.tsrx';
 import { ContentItemRenderer } from './content-item-renderer.tsrx';
 import { MessageEditor } from './message-editor.tsrx';
 import { IconCopy, IconLikeThumb, IconDislikeThumb, IconDelete, IconRefresh, IconEdit, IconShareStroked } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface DialogueRoleMeta {
     name?: string;
@@ -77,6 +79,9 @@ export function DialogueBox(&{
     onAnnotationClick,
     disabledFileItemClick = false,
 }: DialogueBoxProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const meta = roleMeta(message.role, roleConfig);
     const isUser = message.role === 'user';
     const onRight = align === 'leftRight' && isUser;
@@ -95,7 +100,7 @@ export function DialogueBox(&{
             data-message-id={message.id}
         >
             @if (selecting) {
-                <Checkbox checked={selected} onChange={() => onSelectToggle(message.id)} aria-label="选中该消息" />
+                <Checkbox checked={selected} onChange={() => onSelectToggle(message.id)} aria-label={locale.AiChatDialogue.selectMessage} />
             }
             <Avatar class="lotus-ai-dialogue-avatar" size="small" src={meta.avatar} isText={!meta.avatar}>
                 {meta.name ?? message.role}
@@ -126,33 +131,33 @@ export function DialogueBox(&{
                 }
                 @if (!message.editing) {
                     <div class="lotus-ai-dialogue-actions">
-                        <button type="button" class="lotus-ai-dialogue-action" aria-label="复制" onClick={handleCopy}><IconCopy /></button>
+                        <button type="button" class="lotus-ai-dialogue-action" aria-label={locale.AiChatDialogue.copy} onClick={handleCopy}><IconCopy /></button>
                         @if (isUser) {
-                            <button type="button" class="lotus-ai-dialogue-action" aria-label="编辑" onClick={() => onEditToggle(message)}><IconEdit /></button>
+                            <button type="button" class="lotus-ai-dialogue-action" aria-label={locale.AiChatDialogue.edit} onClick={() => onEditToggle(message)}><IconEdit /></button>
                         }
                         @if (!isUser) {
                             <>
                                 <button
                                     type="button"
                                     class={['lotus-ai-dialogue-action', message.like ? 'lotus-ai-dialogue-action-active' : ''].filter(Boolean).join(' ')}
-                                    aria-label="点赞"
+                                    aria-label={locale.AiChatDialogue.like}
                                     onClick={() => onLike(message)}
                                 ><IconLikeThumb /></button>
                                 <button
                                     type="button"
                                     class={['lotus-ai-dialogue-action', message.dislike ? 'lotus-ai-dialogue-action-active' : ''].filter(Boolean).join(' ')}
-                                    aria-label="点踩"
+                                    aria-label={locale.AiChatDialogue.dislike}
                                     onClick={() => onDislike(message)}
                                 ><IconDislikeThumb /></button>
                                 @if (showReset) {
-                                    <button type="button" class="lotus-ai-dialogue-action" aria-label="重新生成" onClick={() => onReset(message)}><IconRefresh /></button>
+                                    <button type="button" class="lotus-ai-dialogue-action" aria-label={locale.AiChatDialogue.regenerate} onClick={() => onReset(message)}><IconRefresh /></button>
                                 }
                             </>
                         }
                         @if (showReference) {
-                            <button type="button" class="lotus-ai-dialogue-action" aria-label="引用" onClick={() => onReference(message)}><IconShareStroked /></button>
+                            <button type="button" class="lotus-ai-dialogue-action" aria-label={locale.AiChatDialogue.reference} onClick={() => onReference(message)}><IconShareStroked /></button>
                         }
-                        <button type="button" class="lotus-ai-dialogue-action" aria-label="删除" onClick={() => onDelete(message)}><IconDelete /></button>
+                        <button type="button" class="lotus-ai-dialogue-action" aria-label={locale.AiChatDialogue.delete} onClick={() => onDelete(message)}><IconDelete /></button>
                     </div>
                 }
             </div>

@@ -7,6 +7,8 @@ import {
     type AiContentItem,
 } from '@lotus/foundation/show/ai-chat-dialogue';
 import { DialogueBox, type DialogueRoleConfig } from './dialogue-box.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { DialogueRoleConfig };
 export * from '@lotus/foundation/show/ai-chat-dialogue';
@@ -92,6 +94,9 @@ export function AiChatDialogue(&{
     class: className,
     'aria-label': ariaLabel,
 }: AiChatDialogueProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = chatsProp !== undefined;
 
     let &[state] = track<AiChatDialogueState>(() => ({
@@ -209,7 +214,7 @@ export function AiChatDialogue(&{
                 class="lotus-ai-chat-dialogue-list"
                 role="log"
                 aria-live="polite"
-                aria-label={ariaLabel ?? 'AI 对话消息列表'}
+                aria-label={ariaLabel ?? locale.AiChatDialogue.messageListLabel}
                 ref={(node: HTMLElement | null) => { listEl = node; }}
                 onScroll={handleScroll}
             >
@@ -242,11 +247,11 @@ export function AiChatDialogue(&{
             </ul>
 
             @if (showBackToBottom) {
-                <button type="button" class="lotus-ai-chat-dialogue-back-bottom" aria-label="回到底部" onClick={scrollToBottom}>↓</button>
+                <button type="button" class="lotus-ai-chat-dialogue-back-bottom" aria-label={locale.AiChatDialogue.backToBottom} onClick={scrollToBottom}>↓</button>
             }
 
             @if (hints.length > 0) {
-                <div class="lotus-ai-chat-dialogue-hints" role="group" aria-label="建议提示">
+                <div class="lotus-ai-chat-dialogue-hints" role="group" aria-label={locale.AiChatDialogue.suggestionHints}>
                     @for (const hint of hints; index i) {
                         @if (renderHintBox) {
                             <>{renderHintBox({ content: hint, index: i, onHintClick: () => handleHintClick(hint) })}</>

@@ -4,16 +4,20 @@ import { Collapse } from '../collapse/index.tsrx';
 import { CollapsePanel } from '../collapse/panel.tsrx';
 import { CodeHighlight } from '../code-highlight/index.tsrx';
 import { IconTickCircle, IconAlertCircle, IconSpin } from '@lotus/icons';
+import { zhCN, type LocaleShape } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface ToolCallBlockProps {
     item: AiToolCallContentItem | AiMCPContentItem;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-    in_progress: '调用中…',
-    completed: '调用完成',
-    failed: '调用失败',
-};
+function buildStatusLabel(locale: LocaleShape): Record<string, string> {
+    return {
+        in_progress: locale.AiToolCall.inProgress,
+        completed: locale.AiToolCall.completed,
+        failed: locale.AiToolCall.failed,
+    };
+}
 
 /**
  * 工具调用（function_call）/ MCP 调用交互块：状态图标 + 折叠展示 JSON 格式化后的
@@ -21,6 +25,10 @@ const STATUS_LABEL: Record<string, string> = {
  * 已验证的"超越 Semi 基础展示"方案——Semi 自身只做纯文本裸展示）。
  */
 export function ToolCallBlock(&{ item }: ToolCallBlockProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    let &[statusLabel] = track(() => buildStatusLabel(locale));
+
     let &[status] = track<string>(() => normalizeToolCallStatus(item.status));
     let &[formattedArgs] = track<string>(() => formatToolArguments(item.arguments));
     let &[formattedOutput] = track<string | undefined>(() => (item.output ? formatToolArguments(item.output) : undefined));
@@ -34,15 +42,15 @@ export function ToolCallBlock(&{ item }: ToolCallBlockProps) @{
                         {status === 'in_progress' ? <IconSpin /> : status === 'failed' ? <IconAlertCircle /> : <IconTickCircle />}
                         <span class="lotus-ai-tool-call-name">{item.name}</span>
                         {isMCP ? <span class="lotus-ai-tool-call-mcp-tag">{(item as AiMCPContentItem).server_label}</span> : null}
-                        <span class={`lotus-ai-tool-call-status lotus-ai-tool-call-status-${status}`}>{STATUS_LABEL[status]}</span>
+                        <span class={`lotus-ai-tool-call-status lotus-ai-tool-call-status-${status}`}>{statusLabel[status]}</span>
                     </span>
                 }>
                     <div class="lotus-ai-tool-call-body">
-                        <div class="lotus-ai-tool-call-section-title">参数</div>
+                        <div class="lotus-ai-tool-call-section-title">{locale.AiToolCall.params}</div>
                         <CodeHighlight code={formattedArgs} language="json" lineNumber={false} />
                         @if (formattedOutput !== undefined) {
                             <>
-                                <div class="lotus-ai-tool-call-section-title">输出</div>
+                                <div class="lotus-ai-tool-call-section-title">{locale.AiToolCall.output}</div>
                                 <CodeHighlight code={formattedOutput} language="json" lineNumber={false} />
                             </>
                         }

@@ -4,6 +4,8 @@ import { Collapse } from '../collapse/index.tsrx';
 import { CollapsePanel } from '../collapse/panel.tsrx';
 import { MarkdownRender } from '../markdown-render/index.tsrx';
 import { IconAiSearchLevel2, IconAiLoading } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface ReasoningBlockProps {
     item: AiReasoningContentItem;
@@ -16,6 +18,9 @@ export interface ReasoningBlockProps {
  * （对齐 Semi ReasoningWidget：默认展开条件是 `status !== 'completed'`）。
  */
 export function ReasoningBlock(&{ item, messageStatus }: ReasoningBlockProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[isThinking] = track<boolean>(() => messageStatus !== undefined && messageStatus !== 'completed');
     let &[text] = track<string>(() => (item.summary ?? item.content ?? []).join('\n\n'));
 
@@ -25,7 +30,7 @@ export function ReasoningBlock(&{ item, messageStatus }: ReasoningBlockProps) @{
                 <CollapsePanel itemKey="reasoning" header={
                     <span class="lotus-ai-reasoning-header">
                         {isThinking ? <IconAiLoading /> : <IconAiSearchLevel2 />}
-                        <span>{isThinking ? '思考中…' : '已完成思考'}</span>
+                        <span>{isThinking ? locale.AiChatDialogue.thinking : locale.AiChatDialogue.thoughtCompleted}</span>
                     </span>
                 }>
                     <div class="lotus-ai-reasoning-content">

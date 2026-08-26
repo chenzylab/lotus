@@ -25,6 +25,8 @@ import {
     IconLink,
     IconImage,
 } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface FileItemProps {
     content?: string;
@@ -66,6 +68,9 @@ export function FileItem(&{
     class: className,
     style,
 }: FileItemProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[containerEl] = track<HTMLDivElement | null>(null);
     let editor: Editor | null = null;
     let &[activeState] = track<MenuBarActiveState>(defaultMenuBarActiveState());
@@ -124,39 +129,39 @@ export function FileItem(&{
         <div class={['lotus-file-item', className ?? ''].filter(Boolean).join(' ')} style={style}>
             @if (editable) {
                 <div class="lotus-file-item-menubar" role="toolbar">
-                    <button type="button" disabled={!canUndo} onClick={() => editor?.chain().focus().undo().run()} aria-label="撤销"><IconUndo /></button>
-                    <button type="button" disabled={!canRedo} onClick={() => editor?.chain().focus().redo().run()} aria-label="重做"><IconRedo /></button>
+                    <button type="button" disabled={!canUndo} onClick={() => editor?.chain().focus().undo().run()} aria-label={locale.RichTextEditor.undo}><IconUndo /></button>
+                    <button type="button" disabled={!canRedo} onClick={() => editor?.chain().focus().redo().run()} aria-label={locale.RichTextEditor.redo}><IconRedo /></button>
                     <span class="lotus-file-item-menubar-divider" />
-                    <button type="button" class={activeState.heading1 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} aria-label="标题1"><IconH1 /></button>
-                    <button type="button" class={activeState.heading2 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} aria-label="标题2"><IconH2 /></button>
-                    <button type="button" class={activeState.heading3 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} aria-label="标题3"><IconH3 /></button>
+                    <button type="button" class={activeState.heading1 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} aria-label={locale.RichTextEditor.heading1}><IconH1 /></button>
+                    <button type="button" class={activeState.heading2 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} aria-label={locale.RichTextEditor.heading2}><IconH2 /></button>
+                    <button type="button" class={activeState.heading3 ? 'active' : ''} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()} aria-label={locale.RichTextEditor.heading3}><IconH3 /></button>
                     <span class="lotus-file-item-menubar-divider" />
-                    <button type="button" class={activeState.bulletList ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBulletList().run()} aria-label="无序列表"><IconList /></button>
-                    <button type="button" class={activeState.orderedList ? 'active' : ''} onClick={() => editor?.chain().focus().toggleOrderedList().run()} aria-label="有序列表"><IconOrderedList /></button>
-                    <button type="button" class={activeState.blockquote ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBlockquote().run()} aria-label="引用"><IconQuote /></button>
-                    <button type="button" class={activeState.codeBlock ? 'active' : ''} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} aria-label="代码块"><IconCode /></button>
+                    <button type="button" class={activeState.bulletList ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBulletList().run()} aria-label={locale.RichTextEditor.bulletList}><IconList /></button>
+                    <button type="button" class={activeState.orderedList ? 'active' : ''} onClick={() => editor?.chain().focus().toggleOrderedList().run()} aria-label={locale.RichTextEditor.orderedList}><IconOrderedList /></button>
+                    <button type="button" class={activeState.blockquote ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBlockquote().run()} aria-label={locale.RichTextEditor.blockquote}><IconQuote /></button>
+                    <button type="button" class={activeState.codeBlock ? 'active' : ''} onClick={() => editor?.chain().focus().toggleCodeBlock().run()} aria-label={locale.RichTextEditor.codeBlock}><IconCode /></button>
                     <span class="lotus-file-item-menubar-divider" />
-                    <button type="button" class={activeState.alignLeft ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('left').run()} aria-label="左对齐"><IconAlignLeft /></button>
-                    <button type="button" class={activeState.alignCenter ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('center').run()} aria-label="居中"><IconAlignCenter /></button>
-                    <button type="button" class={activeState.alignRight ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('right').run()} aria-label="右对齐"><IconAlignRight /></button>
+                    <button type="button" class={activeState.alignLeft ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('left').run()} aria-label={locale.RichTextEditor.alignLeft}><IconAlignLeft /></button>
+                    <button type="button" class={activeState.alignCenter ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('center').run()} aria-label={locale.RichTextEditor.alignCenter}><IconAlignCenter /></button>
+                    <button type="button" class={activeState.alignRight ? 'active' : ''} onClick={() => editor?.chain().focus().setTextAlign('right').run()} aria-label={locale.RichTextEditor.alignRight}><IconAlignRight /></button>
                     <span class="lotus-file-item-menubar-divider" />
-                    <button type="button" class={activeState.bold ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBold().run()} aria-label="加粗"><IconBold /></button>
-                    <button type="button" class={activeState.italic ? 'active' : ''} onClick={() => editor?.chain().focus().toggleItalic().run()} aria-label="斜体"><IconItalic /></button>
-                    <button type="button" class={activeState.strike ? 'active' : ''} onClick={() => editor?.chain().focus().toggleStrike().run()} aria-label="删除线"><IconStrikeThrough /></button>
-                    <button type="button" class={activeState.code ? 'active' : ''} onClick={() => editor?.chain().focus().toggleCode().run()} aria-label="行内代码"><IconCode /></button>
+                    <button type="button" class={activeState.bold ? 'active' : ''} onClick={() => editor?.chain().focus().toggleBold().run()} aria-label={locale.RichTextEditor.bold}><IconBold /></button>
+                    <button type="button" class={activeState.italic ? 'active' : ''} onClick={() => editor?.chain().focus().toggleItalic().run()} aria-label={locale.RichTextEditor.italic}><IconItalic /></button>
+                    <button type="button" class={activeState.strike ? 'active' : ''} onClick={() => editor?.chain().focus().toggleStrike().run()} aria-label={locale.RichTextEditor.strike}><IconStrikeThrough /></button>
+                    <button type="button" class={activeState.code ? 'active' : ''} onClick={() => editor?.chain().focus().toggleCode().run()} aria-label={locale.RichTextEditor.inlineCode}><IconCode /></button>
                     <span class="lotus-file-item-menubar-divider" />
                     <button
                         type="button"
                         onClick={() => {
-                            const url = window.prompt('输入链接地址');
+                            const url = window.prompt(locale.RichTextEditor.linkUrlPrompt);
                             if (url) editor?.chain().focus().setLink({ href: url }).run();
                         }}
-                        aria-label="插入链接"
+                        aria-label={locale.RichTextEditor.insertLink}
                     ><IconLink /></button>
                     <button
                         type="button"
                         onClick={() => editor?.chain().focus().insertContent({ type: 'imageUpload' }).run()}
-                        aria-label="插入图片"
+                        aria-label={locale.RichTextEditor.insertImage}
                     ><IconImage /></button>
                 </div>
             }

@@ -1,5 +1,8 @@
+import { track } from 'ripple';
 import { referenceLabel, isImageReference, type AiInputReference } from '@lotus/foundation/show/ai-chat-input';
 import { IconClose, IconFile } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface ReferenceBarProps {
     references: AiInputReference[];
@@ -10,8 +13,11 @@ export interface ReferenceBarProps {
 
 /** 引用条：展示在编辑区上方，每项可点击/删除。图片引用显示缩略图，其余显示文件图标+文本。 */
 export function ReferenceBar(&{ references, renderReference, onReferenceDelete, onReferenceClick }: ReferenceBarProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
-        <div class="lotus-ai-input-reference-bar" role="list" aria-label="引用列表">
+        <div class="lotus-ai-input-reference-bar" role="list" aria-label={locale.AiChatInput.referenceList}>
             @for (const reference of references; key reference.id) {
                 @if (renderReference) {
                     <>{renderReference(reference)}</>
@@ -26,7 +32,7 @@ export function ReferenceBar(&{ references, renderReference, onReferenceDelete, 
                         <button
                             type="button"
                             class="lotus-ai-input-reference-remove"
-                            aria-label="删除引用"
+                            aria-label={locale.AiChatInput.removeReference}
                             onClick={(event: MouseEvent) => { event.stopPropagation(); onReferenceDelete?.(reference); }}
                         ><IconClose /></button>
                     </div>

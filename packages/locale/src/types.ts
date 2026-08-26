@@ -281,6 +281,106 @@ export interface PinCodeLocale {
   digitLabel: (index: number, count: number) => string;
 }
 
+export interface RichTextEditorLocale {
+  undo: string;
+  redo: string;
+  heading1: string;
+  heading2: string;
+  heading3: string;
+  bulletList: string;
+  orderedList: string;
+  blockquote: string;
+  codeBlock: string;
+  alignLeft: string;
+  alignCenter: string;
+  alignRight: string;
+  bold: string;
+  italic: string;
+  strike: string;
+  inlineCode: string;
+  linkUrlPrompt: string;
+  insertLink: string;
+  insertImage: string;
+}
+
+export interface AiChatDialogueLocale {
+  selectMessage: string;
+  copy: string;
+  edit: string;
+  like: string;
+  dislike: string;
+  regenerate: string;
+  reference: string;
+  delete: string;
+  messageListLabel: string;
+  backToBottom: string;
+  suggestionHints: string;
+  cancel: string;
+  save: string;
+  thinking: string;
+  thoughtCompleted: string;
+}
+
+export interface AiToolCallLocale {
+  inProgress: string;
+  completed: string;
+  failed: string;
+  params: string;
+  output: string;
+}
+
+export interface ChatLocale {
+  placeholder: string;
+  messageList: string;
+  quickHints: string;
+  inputLabel: string;
+  sendLabel: string;
+  sendButton: string;
+}
+
+export interface ChatMessageLocale {
+  contextDivider: string;
+  generating: string;
+  copy: string;
+  like: string;
+  dislike: string;
+  delete: string;
+}
+
+export interface AiChatInputLocale {
+  placeholder: string;
+  template: string;
+  stopGenerate: string;
+  send: string;
+  referenceList: string;
+  removeReference: string;
+  attachmentList: string;
+  removeAttachment: string;
+  suggestionLabel: string;
+  skillListLabel: string;
+}
+
+export interface SidebarLocale {
+  back: string;
+  close: string;
+}
+
+export interface McpConfigureLocale {
+  innerTools: string;
+  customTools: string;
+  searchPlaceholder: string;
+  emptyCustom: string;
+  emptyAvailable: string;
+  addTool: string;
+  edit: string;
+  configure: string;
+  alwaysEnabledTip: string;
+}
+
+export interface ConfigureMcpLocale {
+  configure: string;
+}
+
 export interface LocaleShape {
   code: string;
   dir: 'ltr' | 'rtl';
@@ -321,4 +421,13 @@ export interface LocaleShape {
   ImagePreview: ImagePreviewLocale;
   Nav: NavLocale;
   PinCode: PinCodeLocale;
+  RichTextEditor: RichTextEditorLocale;
+  AiChatDialogue: AiChatDialogueLocale;
+  AiToolCall: AiToolCallLocale;
+  Chat: ChatLocale;
+  ChatMessage: ChatMessageLocale;
+  AiChatInput: AiChatInputLocale;
+  Sidebar: SidebarLocale;
+  McpConfigure: McpConfigureLocale;
+  ConfigureMcp: ConfigureMcpLocale;
 }

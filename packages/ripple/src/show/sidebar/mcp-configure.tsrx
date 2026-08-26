@@ -10,6 +10,8 @@ import { RadioGroup } from '../../input/radio/group.tsrx';
 import { Empty } from '../empty/index.tsrx';
 import { Tooltip } from '../tooltip/index.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
+import { zhCN, type LocaleShape } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { MCPOption, MCPMode };
 
@@ -27,10 +29,12 @@ export interface MCPConfigureProps {
     style?: Record<string, any>;
 }
 
-const MODE_OPTIONS = [
-    { value: 'inner', label: '内置工具' },
-    { value: 'custom', label: '自定义工具' },
-];
+function buildModeOptions(locale: LocaleShape) {
+    return [
+        { value: 'inner', label: locale.McpConfigure.innerTools },
+        { value: 'custom', label: locale.McpConfigure.customTools },
+    ];
+}
 
 /**
  * Sidebar.MCPConfigure：内置/自定义两组 MCP 工具的 Radio 二选一切换 + 300ms
@@ -41,7 +45,7 @@ export function MCPConfigure(&{
     options,
     customOptions,
     filter,
-    placeholder = '搜索 MCP 工具',
+    placeholder,
     onStatusChange,
     onAddClick,
     onConfigureClick,
@@ -50,6 +54,10 @@ export function MCPConfigure(&{
     class: className,
     style,
 }: MCPConfigureProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    let &[modeOptions] = track(() => buildModeOptions(locale));
+
     let &[state] = track<MCPConfigureState>({ mode: 'inner', inputValue: '', showOptions: options ?? [] });
 
     const foundation = new MCPConfigureFoundation(
@@ -90,11 +98,11 @@ export function MCPConfigure(&{
 
     <>
         <div class={['lotus-sidebar-mcp-configure', className ?? ''].filter(Boolean).join(' ')} style={style}>
-            <RadioGroup options={MODE_OPTIONS} value={state.mode} onChange={handleModeChange} />
+            <RadioGroup options={modeOptions} value={state.mode} onChange={handleModeChange} />
 
             <Input
                 value={state.inputValue}
-                placeholder={placeholder}
+                placeholder={placeholder ?? locale.McpConfigure.searchPlaceholder}
                 showClear={true}
                 onChange={handleSearch}
                 style={{ marginTop: '8px', marginBottom: '8px' }}
@@ -102,9 +110,9 @@ export function MCPConfigure(&{
 
             @if (showOptions.length === 0) {
                 <div class="lotus-sidebar-mcp-configure-empty">
-                    <Empty title={isCustomMode ? '暂无自定义工具' : '暂无可用工具'} />
+                    <Empty title={isCustomMode ? locale.McpConfigure.emptyCustom : locale.McpConfigure.emptyAvailable} />
                     @if (isCustomMode) {
-                        <Button theme="light" onClick={() => onAddClick?.()}>添加工具</Button>
+                        <Button theme="light" onClick={() => onAddClick?.()}>{locale.McpConfigure.addTool}</Button>
                     }
                 </div>
             } @else {
@@ -129,11 +137,11 @@ export function MCPConfigure(&{
                                         class="lotus-sidebar-mcp-configure-item-action"
                                         onClick={() => (isCustomMode ? onEditClick?.(option) : onConfigureClick?.(option))}
                                     >
-                                        {isCustomMode ? '编辑' : '配置'}
+                                        {isCustomMode ? locale.McpConfigure.edit : locale.McpConfigure.configure}
                                     </button>
                                 }
                                 @if (option.disabled) {
-                                    <Tooltip content="该工具已默认启用，不可关闭">
+                                    <Tooltip content={locale.McpConfigure.alwaysEnabledTip}>
                                         <span
                                             role="switch"
                                             aria-checked={true}

@@ -2,6 +2,8 @@ import { track, effect, untrack, Portal } from 'ripple';
 import { ContainerFoundation, initialContainerState, type ContainerState } from '@lotus/foundation/show/sidebar';
 import { ResizableFoundation, type ResizableState, type ResizableConstraints } from '@lotus/foundation/basic/resizable';
 import { IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface ContainerProps {
     title?: any;
@@ -43,6 +45,9 @@ export function Container(&{
     class: className,
     style,
 }: ContainerProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<ContainerState>(initialContainerState(untrack(() => visible)));
 
     const foundation = new ContainerFoundation({
@@ -142,7 +147,7 @@ export function Container(&{
                                 <div class="lotus-sidebar-container-header">
                                     <div class="lotus-sidebar-container-title">{title}</div>
                                     @if (showClose) {
-                                        <button type="button" class="lotus-sidebar-container-close" aria-label="关闭" onClick={handleCancel}>
+                                        <button type="button" class="lotus-sidebar-container-close" aria-label={locale.Sidebar.close} onClick={handleCancel}>
                                             <IconClose />
                                         </button>
                                     }

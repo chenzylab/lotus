@@ -26,6 +26,8 @@ import { ConfigureMcp } from './configure-mcp.tsrx';
 import { Upload, type UploadProps, type FileItem } from '../../input/upload/index.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
 import { IconSend, IconStop } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export * from '@lotus/foundation/show/ai-chat-input';
 export type { UploadProps };
@@ -89,7 +91,7 @@ function fileItemToAttachment(file: FileItem, uid: string): AiInputAttachment {
  * MCPOption 类型）。命令式 API 通过 getAiChatInputApi 回调交出。
  */
 export function AiChatInput(&{
-    placeholder = '输入消息...',
+    placeholder,
     sendHotKey = 'enter',
     canSend: canSendProp,
     generating = false,
@@ -121,6 +123,9 @@ export function AiChatInput(&{
     class: className,
     style,
 }: AiChatInputProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[state] = track<AiChatInputState>(() => initialAiChatInputState());
 
     const foundation = new AiChatInputFoundation({
@@ -218,7 +223,7 @@ export function AiChatInput(&{
                     <SkillPanel skills={skills} renderSkillItem={renderSkillItem} onSkillClick={handleSkillClick} />
                 }>
                     <AiInputEditor
-                        placeholder={placeholder}
+                        placeholder={placeholder ?? locale.AiChatInput.placeholder}
                         sendHotKey={sendHotKey}
                         skillHotKey={skillHotKey}
                         skillCount={skills.length}
@@ -238,7 +243,7 @@ export function AiChatInput(&{
                     <TemplatePanel skill={state.currentSkill} renderTemplate={renderTemplate} onTemplateClick={handleTemplateClick} />
                 }>
                     <button type="button" class="lotus-ai-chat-input-template-trigger" onClick={() => foundation.setTemplateVisible(!state.templateVisible)}>
-                        模版
+                        {locale.AiChatInput.template}
                     </button>
                 </Popover>
             }
@@ -257,9 +262,9 @@ export function AiChatInput(&{
                 </div>
                 <div class="lotus-ai-chat-input-actions">
                     @if (generating) {
-                        <Button theme="light" icon={<IconStop />} onClick={() => onStopGenerate?.()}>停止生成</Button>
+                        <Button theme="light" icon={<IconStop />} onClick={() => onStopGenerate?.()}>{locale.AiChatInput.stopGenerate}</Button>
                     } @else {
-                        <Button theme="solid" icon={<IconSend />} disabled={!canSendComputed} onClick={handleSend} aria-label="发送">发送</Button>
+                        <Button theme="solid" icon={<IconSend />} disabled={!canSendComputed} onClick={handleSend} aria-label={locale.AiChatInput.send}>{locale.AiChatInput.send}</Button>
                     }
                 </div>
             </div>

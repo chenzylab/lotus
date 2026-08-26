@@ -9,6 +9,8 @@ import { MCPConfigure, type MCPConfigureProps, type MCPOption, type MCPMode } fr
 import { FileContent, type FileContentItem, type FileContentProps } from './file-content.tsrx';
 import { FileItem, type FileItemProps } from './file-item.tsrx';
 import { IconArrowLeft, IconClose } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface SidebarHeaderProps {
     isMainMode: boolean;
@@ -26,10 +28,13 @@ export interface SidebarHeaderProps {
  * 否则 `showClose` 语义在自定义 header 场景下会静默失效（真机验证阶段发现）。
  */
 function SidebarHeader(&{ isMainMode, title, detailHeader, showClose, onBack, onCancel }: SidebarHeaderProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
     <div class="lotus-sidebar-header">
         @if (!isMainMode) {
-            <button type="button" class="lotus-sidebar-back" aria-label="返回" onClick={onBack}>
+            <button type="button" class="lotus-sidebar-back" aria-label={locale.Sidebar.back} onClick={onBack}>
                 <IconArrowLeft />
             </button>
         }
@@ -39,7 +44,7 @@ function SidebarHeader(&{ isMainMode, title, detailHeader, showClose, onBack, on
             <div class="lotus-sidebar-title">{title}</div>
         }
         @if (showClose) {
-            <button type="button" class="lotus-sidebar-close" aria-label="关闭" onClick={onCancel}>
+            <button type="button" class="lotus-sidebar-close" aria-label={locale.Sidebar.close} onClick={onCancel}>
                 <IconClose />
             </button>
         }
@@ -114,6 +119,9 @@ export function Sidebar(&{
     class: className,
     style,
 }: SidebarProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     let &[copyState] = track<CopyableState>({ copied: false });
     const copyFoundation = new CopyableFoundation({
         getState: () => untrack(() => copyState),
@@ -164,7 +172,7 @@ export function Sidebar(&{
                 <>
                     <CodeContent codes={detailContent ? [detailContent as CodeItem] : []} />
                     <button type="button" class="lotus-sidebar-copy" onClick={handleDetailCopy}>
-                        {copyState.copied ? '已复制' : '复制'}
+                        {copyState.copied ? locale.Typography.copied : locale.Typography.copy}
                     </button>
                 </>
             } @else if (mode === 'file') {

@@ -1,4 +1,7 @@
+import { track } from 'ripple';
 import { suggestionContent, type AiInputSuggestion } from '@lotus/foundation/show/ai-chat-input';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface SuggestionPanelProps {
     suggestions: AiInputSuggestion[];
@@ -9,8 +12,11 @@ export interface SuggestionPanelProps {
 
 /** 建议提示面板内容：列表逐项渲染，activeIndex 高亮当前键盘导航位置。 */
 export function SuggestionPanel(&{ suggestions, activeIndex, renderSuggestionItem, onSuggestClick }: SuggestionPanelProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
-        <div class="lotus-ai-input-suggestion-panel" role="listbox" aria-label="输入建议">
+        <div class="lotus-ai-input-suggestion-panel" role="listbox" aria-label={locale.AiChatInput.suggestionLabel}>
             @for (const suggestion of suggestions; index i) {
                 @if (renderSuggestionItem) {
                     <>{renderSuggestionItem({ suggestion, index: i, active: i === activeIndex })}</>

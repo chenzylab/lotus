@@ -1,8 +1,11 @@
+import { track } from 'ripple';
 import { mcpConfigureLabel, type MCPOption } from '@lotus/foundation/show/ai-chat-input';
 import { Dropdown } from '../dropdown/index.tsrx';
 import { DropdownMenu } from '../dropdown/menu.tsrx';
 import { DropdownItem } from '../dropdown/item.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface ConfigureMcpProps {
     options: MCPOption[];
@@ -20,6 +23,9 @@ export interface ConfigureMcpProps {
  * 两者共享 `MCPOption` 类型，不重复定义。
  */
 export function ConfigureMcp(&{ options, showConfigure = true, onConfigureButtonClick, class: className, style }: ConfigureMcpProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
         <Dropdown
             class={['lotus-ai-input-configure-mcp', className ?? ''].filter(Boolean).join(' ')}
@@ -30,7 +36,7 @@ export function ConfigureMcp(&{ options, showConfigure = true, onConfigureButton
                     <div class="lotus-ai-input-configure-mcp-header">
                         <span class="lotus-ai-input-configure-mcp-header-title">{mcpConfigureLabel(options)}</span>
                         @if (showConfigure) {
-                            <Button theme="outline" size="small" onClick={() => onConfigureButtonClick?.()}>配置</Button>
+                            <Button theme="outline" size="small" onClick={() => onConfigureButtonClick?.()}>{locale.ConfigureMcp.configure}</Button>
                         }
                     </div>
                     <DropdownMenu>

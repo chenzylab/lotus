@@ -1,4 +1,7 @@
+import { track } from 'ripple';
 import { skillLabel, type AiInputSkill } from '@lotus/foundation/show/ai-chat-input';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface SkillPanelProps {
     skills: AiInputSkill[];
@@ -8,8 +11,11 @@ export interface SkillPanelProps {
 
 /** 技能选择面板：空输入时按 skillHotKey 触发，列表逐项渲染，点击选中技能。 */
 export function SkillPanel(&{ skills, renderSkillItem, onSkillClick }: SkillPanelProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
-        <div class="lotus-ai-input-skill-panel" role="listbox" aria-label="技能列表">
+        <div class="lotus-ai-input-skill-panel" role="listbox" aria-label={locale.AiChatInput.skillListLabel}>
             @for (const skill of skills; index i) {
                 @if (renderSkillItem) {
                     <>{renderSkillItem({ skill, onClick: () => onSkillClick(skill) })}</>

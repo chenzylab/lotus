@@ -7,6 +7,8 @@ import {
 } from '@lotus/foundation/show/chat';
 import { TextArea } from '../../input/text-area/index.tsrx';
 import { ChatMessageItem, type ChatRoleConfig } from './chat-message-item.tsrx';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ChatMessage, ChatRoleConfig, SendHotKey };
 
@@ -39,7 +41,7 @@ export function Chat(&{
     roleConfig,
     align = 'leftRight',
     mode = 'bubble',
-    placeholder = '输入消息...',
+    placeholder,
     sendHotKey = 'enter',
     hints = [],
     canSend = true,
@@ -54,6 +56,9 @@ export function Chat(&{
     style,
     class: className,
 }: ChatProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = chatsProp !== undefined;
 
     let &[state] = track<ChatState>(() => ({
@@ -131,7 +136,7 @@ export function Chat(&{
 
     <>
         <div class={['lotus-chat', className ?? ''].filter(Boolean).join(' ')} style={style}>
-            <ul class="lotus-chat-list" role="log" aria-label="聊天消息列表" ref={(node: HTMLElement | null) => { listEl = node; }}>
+            <ul class="lotus-chat-list" role="log" aria-label={locale.Chat.messageList} ref={(node: HTMLElement | null) => { listEl = node; }}>
                 @for (const message of state.chats; key message.id) {
                     <ChatMessageItem
                         message={message}
@@ -147,7 +152,7 @@ export function Chat(&{
             </ul>
 
             @if (hints.length > 0) {
-                <div class="lotus-chat-hints" role="group" aria-label="快捷提示">
+                <div class="lotus-chat-hints" role="group" aria-label={locale.Chat.quickHints}>
                     @for (const hint of hints; key hint) {
                         <button type="button" class="lotus-chat-hint" onClick={() => handleHintClick(hint)}>
                             {hint}
@@ -159,20 +164,20 @@ export function Chat(&{
             <div class="lotus-chat-input">
                 <TextArea
                     value={state.inputValue}
-                    placeholder={placeholder}
+                    placeholder={placeholder ?? locale.Chat.placeholder}
                     autosize={true}
                     onChange={handleInputChange}
                     onEnterPress={handleEnterPress}
-                    aria-label="聊天输入框"
+                    aria-label={locale.Chat.inputLabel}
                 />
                 <button
                     type="button"
                     class="lotus-chat-send"
                     disabled={!canSend || !state.inputValue.trim()}
-                    aria-label="发送消息"
+                    aria-label={locale.Chat.sendLabel}
                     onClick={handleSend}
                 >
-                    发送
+                    {locale.Chat.sendButton}
                 </button>
             </div>
         </div>

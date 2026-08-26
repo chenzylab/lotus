@@ -1,5 +1,8 @@
+import { track } from 'ripple';
 import { getAttachmentType, getContentType, isImageType, type AiInputAttachment } from '@lotus/foundation/show/ai-chat-input';
 import { IconClose, IconFile, IconLoading } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export interface AttachmentListProps {
     attachments: AiInputAttachment[];
@@ -13,8 +16,11 @@ export interface AttachmentListProps {
  * 展示与删除，真实 XHR 上传流程完全交给 Upload 组件处理。
  */
 export function AttachmentList(&{ attachments, onRemove }: AttachmentListProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     <>
-        <div class="lotus-ai-input-attachment-list" role="list" aria-label="附件列表">
+        <div class="lotus-ai-input-attachment-list" role="list" aria-label={locale.AiChatInput.attachmentList}>
             @for (const attachment of attachments; key attachment.uid) {
                 <div class="lotus-ai-input-attachment-item" role="listitem">
                     @if (isImageType(attachment)) {
@@ -32,7 +38,7 @@ export function AttachmentList(&{ attachments, onRemove }: AttachmentListProps) 
                     <button
                         type="button"
                         class="lotus-ai-input-attachment-remove"
-                        aria-label="删除附件"
+                        aria-label={locale.AiChatInput.removeAttachment}
                         onClick={() => onRemove(attachment)}
                     ><IconClose /></button>
                 </div>
