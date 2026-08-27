@@ -861,6 +861,14 @@ export function App() @{
             >
                 <Button type="primary" theme="outline">提交（异步回调，600ms）</Button>
             </Popconfirm>
+            <Popconfirm
+                title="onVisibleChange 回归测试"
+                onConfirm={() => {}}
+                onCancel={() => {}}
+                onVisibleChange={(v) => console.log('popconfirm visible changed: ' + v)}
+            >
+                <Button theme="outline">带 onVisibleChange 日志</Button>
+            </Popconfirm>
         </Space>
 
         <Divider>Anchor</Divider>

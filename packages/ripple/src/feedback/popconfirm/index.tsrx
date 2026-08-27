@@ -71,9 +71,10 @@ export function Popconfirm(&{
 
     // 焦点归还对齐 Semi PopconfirmFoundation.handleVisibleChange(false) 的设计——在所有
     // 关闭路径统一归还（确认/取消/点击外部/Esc），是 Tooltip 系组件里唯一全路径都归还的，
-    // 不像 Popover/Dropdown 只在 Esc 路径归还。这里监听 displayVisible 本身而非包一层
-    // setVisible，因为 handleConfirm/handleCancel 在非受控模式下直接改 Foundation state、
-    // 不经过 setVisible，只有监听 displayVisible 才能覆盖全部关闭路径。
+    // 不像 Popover/Dropdown 只在 Esc 路径归还。监听 displayVisible 本身而非只监听
+    // setVisible 调用，是因为点击外部关闭这条路径走的是 Popover 自身的 onVisibleChange
+    // 转发（同样最终落到这里的 setVisible），displayVisible 是唯一能覆盖全部关闭路径
+    // 的信号源。
     effect(() => {
         if (displayVisible) {
             prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
@@ -92,17 +93,32 @@ export function Popconfirm(&{
         setVisible(!untrack(() => displayVisible));
     }
 
+    // Popconfirm 固定给内部 Popover 传 trigger="custom"，Popover 的 Esc 处理逻辑
+    // 里有 `!isControlled` 判断（trigger==="custom" 时 Popover 认为可见性真源在
+    // 外部、不该擅自处理 Esc），导致 Popconfirm 无论自己是否受控都完全没有路径
+    // 支持 Esc 关闭——这是踩坑记录过的已知缺口，在组件层自己补上，不依赖 Popover
+    // 内部对 "custom trigger" 的受控判断（那个判断服务的是 Dropdown/Select 这类
+    // 真正需要外部接管开关状态的场景，Popconfirm 只是借用 custom trigger 机制
+    // 自己维护开关状态，语义不同）。
+    effect(() => {
+        if (typeof window === 'undefined') return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            if (!untrack(() => displayVisible)) return;
+            setVisible(false);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    });
+
     function handleConfirm(event: MouseEvent) {
-        foundation.handleConfirm(() => onConfirm?.(event));
+        foundation.handleConfirm(() => onConfirm?.(event), () => setVisible(false));
     }
 
     function handleCancel(event: MouseEvent) {
-        foundation.handleCancel(() => onCancel?.(event));
+        foundation.handleCancel(() => onCancel?.(event), () => setVisible(false));
     }
 
-    // handleConfirm/handleCancel 内部通过 foundation.setState 把 visible 写回 state，
-    // 但 isControlled 模式下外部才是 visible 的真源；这里用 effect 风格的桥接：
-    // 非受控模式下 state.visible 变化直接生效；受控模式下仅同步通知，不覆盖 state。
     let &[confirmLoading] = track<boolean>(() => state.confirmLoading);
     let &[cancelLoading] = track<boolean>(() => state.cancelLoading);
 
