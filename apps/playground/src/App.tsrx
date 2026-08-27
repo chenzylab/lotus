@@ -525,6 +525,7 @@ export function App() @{
     let &[userGuideVisible] = track<boolean>(false);
     let lottieInstance: AnimationItem | null = null;
     let &[hotKeyTriggerCount] = track<number>(0);
+    let &[hotKeyClickLog] = track<string>('');
     let &[sidebarVisible] = track<boolean>(false);
     let &[sidebarMode] = track<'main' | 'code' | 'file'>('main');
     let &[sidebarBackWardLog] = track<string>('');
@@ -4156,6 +4157,17 @@ export function App() @{
                 onHotKey={() => { hotKeyTriggerCount = hotKeyTriggerCount + 1; }}
             />
             <span class="demo-hotkeys-count">触发次数：{hotKeyTriggerCount}</span>
+        </div>
+
+        <Divider>HotKeys：onClick 可点击提示徽标（回归防护：键盘用户应能用 Enter/Space 等效触发点击，Class C 补齐键盘无障碍）</Divider>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <HotKeys
+                hotKeys={['control', 'k']}
+                aria-label="HotKeys 可点击示例"
+                onClick={() => { hotKeyClickLog = '点击生效'; }}
+            />
+            <TypographyText type="secondary" aria-label="HotKeys 点击日志">{hotKeyClickLog}</TypographyText>
         </div>
 
         <Divider>Sidebar：AI 侧边信息栏</Divider>

@@ -116,6 +116,20 @@ export function InputNumber(&{
     const handleStepUp = () => foundation.handleStep(1, untrack(() => bounds), isControlled, disabled, handleChange);
     const handleStepDown = () => foundation.handleStep(-1, untrack(() => bounds), isControlled, disabled, handleChange);
 
+    // 无障碍键盘步进：ArrowUp/ArrowDown 等价于点击加减按钮，对齐原生
+    // <input type="number"> 的方向键行为（自定义控件必须自己实现，浏览器
+    // 不会对 type="text" 的 input 提供这个默认交互）。
+    function handleInputKeyDown(event: KeyboardEvent) {
+        if (disabled) return;
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            handleStepUp();
+        } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            handleStepDown();
+        }
+    }
+
     let &[stepUpDisabled] = track<boolean>(() => InputNumberFoundation.isStepDisabled(1, displayValue, bounds, disabled));
     let &[stepDownDisabled] = track<boolean>(() => InputNumberFoundation.isStepDisabled(-1, displayValue, bounds, disabled));
 
@@ -150,6 +164,7 @@ export function InputNumber(&{
                 onInput={handleInputEvent}
                 onFocus={handleFocusEvent}
                 onBlur={handleBlurEvent}
+                onKeyDown={handleInputKeyDown}
             />
             @if (allowClear) {
                 <button

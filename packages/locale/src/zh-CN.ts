@@ -250,6 +250,21 @@ const zhCN: LocaleShape = {
   PinCode: {
     digitLabel: (index, count) => `第 ${index} 位，共 ${count} 位`,
   },
+  Resizable: {
+    handleLabel: (direction) => {
+      const labels: Record<string, string> = {
+        top: '调整上边框大小',
+        right: '调整右边框大小',
+        bottom: '调整下边框大小',
+        left: '调整左边框大小',
+        topRight: '调整右上角大小',
+        bottomRight: '调整右下角大小',
+        bottomLeft: '调整左下角大小',
+        topLeft: '调整左上角大小',
+      };
+      return labels[direction] ?? '调整大小';
+    },
+  },
   RichTextEditor: {
     undo: '撤销',
     redo: '重做',

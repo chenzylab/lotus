@@ -63,6 +63,25 @@ test.describe('Resizable', () => {
     expect(box!.height).toBe(320);
   });
 
+  test('键盘：聚焦手柄后按方向键以固定步长调整尺寸（回归防护：手柄此前纯靠 onMouseDown 触发，键盘用户完全无法调整大小，Class C 补齐键盘无障碍）', async ({ page }) => {
+    await page.goto('/');
+    const resizable = page.locator('.lotus-resizable', { hasText: '拖拽边缘或角落调整大小' });
+    const handler = resizable.locator('.lotus-resizable-handler-bottomRight');
+    await handler.scrollIntoViewIfNeeded();
+
+    await expect(handler).toHaveAttribute('role', 'button');
+    await expect(handler).toHaveAttribute('aria-label', /.+/);
+
+    const before = (await resizable.boundingBox())!;
+    await handler.focus();
+    await handler.press('ArrowRight');
+    await handler.press('ArrowDown');
+
+    const after = await resizable.boundingBox();
+    expect(after!.width).toBe(before.width + 10);
+    expect(after!.height).toBe(before.height + 10);
+  });
+
   test('拖拽 left 手柄向外移动时宽度增加，高度不变', async ({ page }) => {
     await page.goto('/');
     const resizable = page.locator('.lotus-resizable', { hasText: '拖拽边缘或角落调整大小' });

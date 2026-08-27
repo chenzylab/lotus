@@ -18,6 +18,8 @@ export interface HotKeysProps {
     render?: (() => any) | any;
     /** 监听目标，默认 document.body（对齐 Semi）。 */
     getListenerTarget?: () => HTMLElement;
+    /** 传了 onClick 时这个提示徽标会带 role="button"，需要一个可访问名称。 */
+    'aria-label'?: string;
     class?: string;
     style?: Record<string, any>;
 }
@@ -38,6 +40,7 @@ export function HotKeys(&{
     mergeMetaCtrl = false,
     render,
     getListenerTarget,
+    'aria-label': ariaLabel,
     class: className,
     style,
 }: HotKeysProps) @{
@@ -63,9 +66,24 @@ export function HotKeys(&{
         return content ?? hotKeys;
     });
 
+    function handleContentKeyDown(event: KeyboardEvent) {
+        if (!onClick) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onClick();
+    }
+
     @if (renderedContent !== null) {
         <>
-        <div class={['lotus-hotkeys', className ?? ''].filter(Boolean).join(' ')} style={style} onClick={onClick}>
+        <div
+            class={['lotus-hotkeys', className ?? ''].filter(Boolean).join(' ')}
+            style={style}
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            aria-label={onClick ? ariaLabel : undefined}
+            onClick={onClick}
+            onKeyDown={handleContentKeyDown}
+        >
             @if (render !== undefined) {
                 {renderedContent[0]}
             } @else {

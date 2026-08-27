@@ -5,6 +5,8 @@ import {
     type ResizableConstraints,
     type ResizeDirection,
 } from '@lotus/foundation/basic/resizable';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type { ResizeDirection };
 
@@ -63,6 +65,9 @@ export function Resizable(&{
     class: className,
     'aria-label': ariaLabel,
 }: ResizableProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = widthProp !== undefined && heightProp !== undefined;
     let &[state] = track<ResizableState>({
         width: widthProp ?? defaultWidth,
@@ -124,6 +129,49 @@ export function Resizable(&{
         };
     });
 
+    const KEYBOARD_STEP = 10;
+    const HORIZONTAL_LEFT: ResizeDirection[] = ['left', 'topLeft', 'bottomLeft'];
+    const HORIZONTAL_RIGHT: ResizeDirection[] = ['right', 'topRight', 'bottomRight'];
+    const VERTICAL_TOP: ResizeDirection[] = ['top', 'topLeft', 'topRight'];
+    const VERTICAL_BOTTOM: ResizeDirection[] = ['bottom', 'bottomLeft', 'bottomRight'];
+
+    // 键盘无障碍：聚焦某个方向手柄后按方向键，以固定步长调整尺寸——没有连续
+    // 指针坐标可用，符号需要按手柄方向换算（如 left 手柄按 ArrowLeft 意味着
+    // 手柄往外移，容器变宽，对应 deltaWidth 为正）。
+    function handleHandleKeyDown(direction: ResizeDirection, event: KeyboardEvent) {
+        let deltaWidth = 0;
+        let deltaHeight = 0;
+        switch (event.key) {
+            case 'ArrowLeft':
+                if (HORIZONTAL_LEFT.includes(direction)) deltaWidth = KEYBOARD_STEP;
+                else if (HORIZONTAL_RIGHT.includes(direction)) deltaWidth = -KEYBOARD_STEP;
+                else return;
+                break;
+            case 'ArrowRight':
+                if (HORIZONTAL_RIGHT.includes(direction)) deltaWidth = KEYBOARD_STEP;
+                else if (HORIZONTAL_LEFT.includes(direction)) deltaWidth = -KEYBOARD_STEP;
+                else return;
+                break;
+            case 'ArrowUp':
+                if (VERTICAL_TOP.includes(direction)) deltaHeight = KEYBOARD_STEP;
+                else if (VERTICAL_BOTTOM.includes(direction)) deltaHeight = -KEYBOARD_STEP;
+                else return;
+                break;
+            case 'ArrowDown':
+                if (VERTICAL_BOTTOM.includes(direction)) deltaHeight = KEYBOARD_STEP;
+                else if (VERTICAL_TOP.includes(direction)) deltaHeight = -KEYBOARD_STEP;
+                else return;
+                break;
+            default:
+                return;
+        }
+        event.preventDefault();
+        const constraints: ResizableConstraints = { minWidth, minHeight, maxWidth, maxHeight, lockAspectRatio };
+        const size = foundation.resizeByStep(deltaWidth, deltaHeight, constraints);
+        onChange?.(size, direction);
+        onResizeEnd?.(size, direction);
+    }
+
     let &[classes] = track<string>(() =>
         [
             'lotus-resizable',
@@ -147,10 +195,14 @@ export function Resizable(&{
             @for (const direction of enabledDirections; key direction) {
                 <div
                     class={`lotus-resizable-handler lotus-resizable-handler-${direction}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={locale.Resizable.handleLabel(direction)}
                     onMouseDown={(event: MouseEvent) => {
                         event.preventDefault();
                         startResize(direction, event.clientX, event.clientY);
                     }}
+                    onKeyDown={(event: KeyboardEvent) => handleHandleKeyDown(direction, event)}
                 />
             }
         </div>

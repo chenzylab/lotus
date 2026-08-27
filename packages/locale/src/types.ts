@@ -282,6 +282,10 @@ export interface PinCodeLocale {
   digitLabel: (index: number, count: number) => string;
 }
 
+export interface ResizableLocale {
+  handleLabel: (direction: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'bottomRight' | 'bottomLeft' | 'topLeft') => string;
+}
+
 export interface RichTextEditorLocale {
   undo: string;
   redo: string;
@@ -422,6 +426,7 @@ export interface LocaleShape {
   ImagePreview: ImagePreviewLocale;
   Nav: NavLocale;
   PinCode: PinCodeLocale;
+  Resizable: ResizableLocale;
   RichTextEditor: RichTextEditorLocale;
   AiChatDialogue: AiChatDialogueLocale;
   AiToolCall: AiToolCallLocale;

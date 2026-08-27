@@ -256,6 +256,21 @@ const enUS: LocaleShape = {
   PinCode: {
     digitLabel: (index, count) => `Digit ${index} of ${count}`,
   },
+  Resizable: {
+    handleLabel: (direction) => {
+      const labels: Record<string, string> = {
+        top: 'Resize from top',
+        right: 'Resize from right',
+        bottom: 'Resize from bottom',
+        left: 'Resize from left',
+        topRight: 'Resize from top right corner',
+        bottomRight: 'Resize from bottom right corner',
+        bottomLeft: 'Resize from bottom left corner',
+        topLeft: 'Resize from top left corner',
+      };
+      return labels[direction] ?? 'Resize';
+    },
+  },
   RichTextEditor: {
     undo: 'Undo',
     redo: 'Redo',

@@ -61,4 +61,17 @@ test.describe('HotKeys', () => {
     // 页面应仍停留在原地，未发生导航/崩溃。
     await expect(page.locator('.demo-hotkeys')).toBeVisible();
   });
+
+  test('传 onClick 时提示徽标带 role=button，键盘 Enter/Space 等效触发点击（回归防护：Class C 补齐键盘无障碍）', async ({ page }) => {
+    await page.goto('/');
+    const badge = page.getByLabel('HotKeys 可点击示例', { exact: true });
+    const log = page.getByLabel('HotKeys 点击日志', { exact: true });
+
+    await expect(badge).toHaveAttribute('role', 'button');
+    await expect(badge).toHaveAttribute('tabindex', '0');
+
+    await badge.focus();
+    await badge.press('Enter');
+    await expect(log).toHaveText('点击生效');
+  });
 });

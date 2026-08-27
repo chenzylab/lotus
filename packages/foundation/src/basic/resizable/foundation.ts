@@ -106,6 +106,31 @@ export class ResizableFoundation extends Foundation<ResizableState> {
     this.origin = null;
     this.setState({ isResizing: false, direction: null });
   }
+
+  /** 键盘无障碍：聚焦某个方向手柄后按方向键，以固定步长直接调整宽高
+   * （没有连续指针坐标可用，不能复用 onResize 的 delta 计算，直接基于当前
+   * state 的宽高做一次性加减）。deltaWidth/deltaHeight 由调用方根据按下的
+   * 方向键与手柄的 direction 换算好符号后传入（如 left 手柄按 ArrowLeft
+   * 应该是宽度增大，对应 deltaWidth 为正）。 */
+  resizeByStep(deltaWidth: number, deltaHeight: number, constraints: ResizableConstraints): ResizableSize {
+    const { width: currentWidth, height: currentHeight } = this.getState();
+    let width = clamp(currentWidth + deltaWidth, constraints.minWidth, constraints.maxWidth);
+    let height = clamp(currentHeight + deltaHeight, constraints.minHeight, constraints.maxHeight);
+
+    if (constraints.lockAspectRatio) {
+      const ratio = currentWidth / currentHeight;
+      if (deltaWidth !== 0) {
+        height = clamp(width / ratio, constraints.minHeight, constraints.maxHeight);
+        width = clamp(height * ratio, constraints.minWidth, constraints.maxWidth);
+      } else if (deltaHeight !== 0) {
+        width = clamp(height * ratio, constraints.minWidth, constraints.maxWidth);
+        height = clamp(width / ratio, constraints.minHeight, constraints.maxHeight);
+      }
+    }
+
+    this.setState({ width, height });
+    return { width, height };
+  }
 }
 
 function clamp(value: number, min: number, max: number): number {

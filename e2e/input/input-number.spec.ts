@@ -17,6 +17,20 @@ test.describe('InputNumber', () => {
     await expect(input).toHaveValue('1');
   });
 
+  test('键盘 ArrowUp/ArrowDown 等价于点击步进按钮（回归防护：自定义控件不像原生 <input type="number"> 自带方向键步进，Class C 补齐键盘无障碍）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('InputNumber 基本示例');
+
+    await expect(input).toHaveValue('0');
+    await input.focus();
+    await input.press('ArrowUp');
+    await expect(input).toHaveValue('1');
+    await input.press('ArrowUp');
+    await expect(input).toHaveValue('2');
+    await input.press('ArrowDown');
+    await expect(input).toHaveValue('1');
+  });
+
   test('边界：超出 max 的输入在失焦时被 clamp', async ({ page }) => {
     await page.goto('/');
     const input = page.getByLabel('InputNumber 边界示例');

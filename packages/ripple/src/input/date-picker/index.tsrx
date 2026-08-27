@@ -714,6 +714,19 @@ export function DatePicker(&{
         return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
+    // Esc 关闭面板（对齐 Popconfirm 已验证的模式）：面板打开时按 Esc 直接关闭，
+    // 不触发任何值提交，语义上等同于点击外部区域取消当前操作。
+    effect(() => {
+        if (typeof window === 'undefined') return;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            if (!untrack(() => state).visible) return;
+            closePanel();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    });
+
     let &[displayValue] = track<string>(() => {
         if (isRange) return '';
         const v = state.cachedValue ?? state.value;

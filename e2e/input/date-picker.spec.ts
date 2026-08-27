@@ -182,6 +182,16 @@ test.describe('DatePicker', () => {
     await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
   });
 
+  test('按 Esc 关闭面板（回归防护：对齐 Popconfirm 已验证的模式，Class C 补齐键盘无障碍）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker 基础', { exact: true });
+    await input.click();
+    await expect(page.locator('.lotus-date-picker-panel')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
+  });
+
   test('面板打开后再次点击输入框内部不应意外关闭面板', async ({ page }) => {
     await page.goto('/');
     const input = page.getByLabel('DatePicker 基础', { exact: true });
