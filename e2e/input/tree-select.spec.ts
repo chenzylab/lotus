@@ -33,6 +33,42 @@ test.describe('TreeSelect', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('键盘无障碍：ArrowDown 打开面板并移动高亮，ArrowRight 展开节点，Enter 选中，Escape 关闭不改变已选值（回归防护：combobox 此前完全没有键盘导航实现，Class C 补齐）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('TreeSelect 单选', { exact: true });
+
+    await trigger.focus();
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    let activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('研发部');
+
+    await trigger.press('ArrowRight');
+    await expect(page.getByRole('treeitem', { name: '前端组' })).toBeVisible();
+
+    await trigger.press('ArrowDown');
+    activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('前端组');
+
+    await trigger.press('ArrowRight');
+    await expect(page.getByRole('treeitem', { name: '张三' })).toBeVisible();
+
+    await trigger.press('ArrowDown');
+    activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('张三');
+
+    await trigger.press('Enter');
+    await expect(trigger).toHaveText('张三');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await trigger.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveText('张三');
+  });
+
   test('禁用节点不可勾选', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });

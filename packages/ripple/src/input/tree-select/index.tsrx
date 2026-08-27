@@ -90,6 +90,8 @@ interface TreeSelectNodeItemProps {
     checked: boolean;
     halfChecked: boolean;
     expanded: boolean;
+    active?: boolean;
+    id?: string;
     loading: boolean;
     loadData: boolean;
     disabled: boolean;
@@ -99,7 +101,9 @@ interface TreeSelectNodeItemProps {
 }
 
 /** 单个树节点行的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用
- * （对齐 Select/Cascader 已验证的同一模式）。 */
+ * （对齐 Select/Cascader 已验证的同一模式）。`active` 是键盘导航的虚拟
+ * 焦点（aria-activedescendant 模式），与 `selected`/`checked` 这类真正
+ * 的选中态是两回事。 */
 function TreeSelectNodeItem(&{
     node,
     multiple,
@@ -107,6 +111,8 @@ function TreeSelectNodeItem(&{
     checked,
     halfChecked,
     expanded,
+    active = false,
+    id,
     loading,
     loadData,
     disabled,
@@ -116,11 +122,12 @@ function TreeSelectNodeItem(&{
 }: TreeSelectNodeItemProps) @{
     <>
     <div
+        id={id}
         role="treeitem"
         aria-selected={!multiple && selected}
         aria-disabled={node.disabled}
         aria-expanded={node.hasChildren ? expanded : undefined}
-        class={['lotus-tree-select-node', !multiple && selected ? 'lotus-tree-select-node-selected' : '', node.disabled ? 'lotus-tree-select-node-disabled' : ''].filter(Boolean).join(' ')}
+        class={['lotus-tree-select-node', !multiple && selected ? 'lotus-tree-select-node-selected' : '', active ? 'lotus-tree-select-node-active' : '', node.disabled ? 'lotus-tree-select-node-disabled' : ''].filter(Boolean).join(' ')}
         style={{ paddingLeft: `${node.level * 20}px` }}
     >
         @if (!node.isLeaf || loadData) {
@@ -168,6 +175,10 @@ function TreeSelectNodeItem(&{
         .lotus-tree-select-node-selected {
             background: var(--lotus-color-fill-1);
             color: var(--lotus-color-primary);
+        }
+
+        .lotus-tree-select-node-active {
+            background: var(--lotus-color-fill-0);
         }
 
         .lotus-tree-select-node-disabled {
@@ -326,6 +337,15 @@ export function TreeSelect(&{
     let &[isOpen] = track<boolean>(false);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    // 键盘导航虚拟焦点（对齐 Select 已验证的 aria-activedescendant 模式）：
+    // DOM 焦点留在 trigger 上，activeIndex 指向 flatNodes（已按展开状态摊平
+    // 的可见节点数组）里第几项。
+    let &[activeIndex] = track<number>(-1);
+    const componentId = Math.random().toString(36).slice(2);
+
+    function nodeDomId(index: number): string {
+        return `lotus-tree-select-node-${componentId}-${index}`;
+    }
 
     const foundation = new TreeSelectFoundation({
         getState: () => untrack(() => state),
@@ -383,6 +403,20 @@ export function TreeSelect(&{
             showFilteredOnly && searchResult ? searchResult.filteredShownKeys : null,
         ),
     );
+
+    function firstEnabledNodeIndex(): number {
+        return flatNodes.findIndex((n) => !n.disabled);
+    }
+
+    function nextEnabledNodeIndex(from: number, step: 1 | -1): number {
+        if (flatNodes.length === 0) return -1;
+        let i = from;
+        for (let count = 0; count < flatNodes.length; count++) {
+            i = (i + step + flatNodes.length) % flatNodes.length;
+            if (!flatNodes[i]?.disabled) return i;
+        }
+        return -1;
+    }
 
     let &[virtualScrollTop] = track<number>(0);
 
@@ -487,6 +521,80 @@ export function TreeSelect(&{
         const next = !untrack(() => isOpen);
         isOpen = next;
         onDropdownVisibleChange?.(next);
+    }
+
+    function scrollActiveNodeIntoView() {
+        const list = untrack(() => listNode);
+        if (!list) return;
+        const el = list.querySelector(`#${nodeDomId(untrack(() => activeIndex))}`);
+        el?.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 键盘无障碍：DOM 焦点留在 trigger 上，ArrowDown/ArrowUp 打开面板并在
+     * flatNodes（已按展开状态摊平的可见节点）间移动虚拟高亮，ArrowRight/
+     * ArrowLeft 展开/收起当前高亮节点，Enter 选中/勾选，Escape 关闭——
+     * TreeSelect 用 Popover trigger="custom" 完全接管开关状态，Popover
+     * 内建的 closeOnEsc 只在非受控模式下生效（`!isControlled` 短路判断），
+     * 这里必须自己实现 Esc 处理（同 Select/Cascader）。 */
+    function handleTriggerKeyDown(event: KeyboardEvent) {
+        if (disabled) return;
+        const open = untrack(() => isOpen);
+        switch (event.key) {
+            case 'ArrowDown':
+            case 'ArrowUp': {
+                event.preventDefault();
+                if (!open) {
+                    isOpen = true;
+                    onDropdownVisibleChange?.(true);
+                    activeIndex = firstEnabledNodeIndex();
+                    scrollActiveNodeIntoView();
+                    return;
+                }
+                const current = untrack(() => activeIndex);
+                activeIndex = nextEnabledNodeIndex(current, event.key === 'ArrowDown' ? 1 : -1);
+                scrollActiveNodeIntoView();
+                return;
+            }
+            case 'ArrowRight': {
+                if (!open) return;
+                const currentActiveIndex = untrack(() => activeIndex);
+                const node = flatNodes[currentActiveIndex];
+                if (!node || node.isLeaf) return;
+                event.preventDefault();
+                if (!untrack(() => state).expandedKeys.has(node.key)) {
+                    handleToggleExpand(node.key, node.data, node.hasChildren);
+                }
+                return;
+            }
+            case 'ArrowLeft': {
+                if (!open) return;
+                const currentActiveIndex = untrack(() => activeIndex);
+                const node = flatNodes[currentActiveIndex];
+                if (!node) return;
+                event.preventDefault();
+                if (!node.isLeaf && untrack(() => state).expandedKeys.has(node.key)) {
+                    handleToggleExpand(node.key, node.data, node.hasChildren);
+                }
+                return;
+            }
+            case 'Enter': {
+                if (!open) return;
+                event.preventDefault();
+                const currentActiveIndex = untrack(() => activeIndex);
+                const node = flatNodes[currentActiveIndex];
+                if (node) handleSelectNode(node.key, node.data);
+                return;
+            }
+            case 'Escape': {
+                if (!open) return;
+                event.preventDefault();
+                isOpen = false;
+                onDropdownVisibleChange?.(false);
+                return;
+            }
+            default:
+                return;
+        }
     }
 
     function handleClear(event: MouseEvent) {
@@ -598,6 +706,8 @@ export function TreeSelect(&{
                                                     checked={(checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys).has(entry.node.key)}
                                                     halfChecked={checkRelation === 'related' && state.halfCheckedKeys.has(entry.node.key)}
                                                     expanded={state.expandedKeys.has(entry.node.key)}
+                                                    active={entry.index === activeIndex}
+                                                    id={nodeDomId(entry.index)}
                                                     loading={state.loadingKeys.has(entry.node.key)}
                                                     loadData={!!loadData}
                                                     disabled={disabled}
@@ -620,6 +730,8 @@ export function TreeSelect(&{
                                         checked={(checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys).has(node.key)}
                                         halfChecked={checkRelation === 'related' && state.halfCheckedKeys.has(node.key)}
                                         expanded={state.expandedKeys.has(node.key)}
+                                        active={i === activeIndex}
+                                        id={nodeDomId(i)}
                                         loading={state.loadingKeys.has(node.key)}
                                         loadData={!!loadData}
                                         disabled={disabled}
@@ -639,9 +751,11 @@ export function TreeSelect(&{
                     aria-haspopup="tree"
                     aria-label={ariaLabel}
                     aria-disabled={disabled}
+                    aria-activedescendant={isOpen && activeIndex >= 0 ? nodeDomId(activeIndex) : undefined}
                     tabIndex={disabled ? -1 : 0}
                     class="lotus-tree-select-trigger"
                     onClick={handleTriggerClick}
+                    onKeyDown={handleTriggerKeyDown}
                     onFocus={(event: FocusEvent) => onFocus?.(event)}
                     onBlur={(event: FocusEvent) => onBlur?.(event)}
                 >
