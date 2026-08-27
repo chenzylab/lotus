@@ -54,18 +54,23 @@ export interface SelectProps {
 interface SelectOptionItemProps {
     option: SelectOption;
     selected: boolean;
+    active?: boolean;
+    id?: string;
     onSelect: (option: SelectOption) => void;
 }
 
 /** 单个选项 `<li>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，
- * 避免重复维护同一份 class/aria 拼装逻辑。 */
-function SelectOptionItem(&{ option, selected, onSelect }: SelectOptionItemProps) @{
+ * 避免重复维护同一份 class/aria 拼装逻辑。`active` 是键盘导航的虚拟焦点
+ * （aria-activedescendant 模式——DOM 焦点始终留在 trigger 上，只用样式和
+ * aria 属性标记"当前高亮到哪一项"，不是浏览器原生的 :focus）。 */
+function SelectOptionItem(&{ option, selected, active = false, id, onSelect }: SelectOptionItemProps) @{
     <>
     <li
+        id={id}
         role="option"
         aria-selected={selected}
         aria-disabled={option.disabled}
-        class={['lotus-select-option', selected ? 'lotus-select-option-selected' : '', option.disabled ? 'lotus-select-option-disabled' : ''].filter(Boolean).join(' ')}
+        class={['lotus-select-option', selected ? 'lotus-select-option-selected' : '', active ? 'lotus-select-option-active' : '', option.disabled ? 'lotus-select-option-disabled' : ''].filter(Boolean).join(' ')}
         onClick={() => onSelect(option)}
     >
         <span class="lotus-select-option-label">{option.label ?? String(option.value)}</span>
@@ -99,6 +104,10 @@ function SelectOptionItem(&{ option, selected, onSelect }: SelectOptionItemProps
         .lotus-select-option-disabled {
             color: var(--lotus-color-disabled-text);
             cursor: not-allowed;
+        }
+
+        .lotus-select-option-active {
+            background: var(--lotus-color-fill-0);
         }
 
         .lotus-select-option-disabled:hover {
@@ -158,6 +167,29 @@ export function Select(&{
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
     let &[scrollTop] = track<number>(0);
+    // 键盘导航的虚拟焦点（aria-activedescendant 模式）：DOM 焦点始终留在
+    // trigger 上，activeIndex 只是"当前高亮到 optionList 里第几项"，通过
+    // aria-activedescendant 让屏幕阅读器感知，通过 CSS class 给出视觉反馈。
+    let &[activeIndex] = track<number>(-1);
+    const componentId = Math.random().toString(36).slice(2);
+
+    function optionDomId(index: number): string {
+        return `lotus-select-option-${componentId}-${index}`;
+    }
+
+    function firstEnabledIndex(): number {
+        return optionList.findIndex((o) => !o.disabled);
+    }
+
+    function nextEnabledIndex(from: number, step: 1 | -1): number {
+        if (optionList.length === 0) return -1;
+        let i = from;
+        for (let count = 0; count < optionList.length; count++) {
+            i = (i + step + optionList.length) % optionList.length;
+            if (!optionList[i]?.disabled) return i;
+        }
+        return -1;
+    }
 
     function handleVirtualScroll(event: Event) {
         untrack(() => { scrollTop = (event.target as HTMLElement).scrollTop; });
@@ -240,6 +272,57 @@ export function Select(&{
         foundation.clear(multiple, isControlled, handleSingleChange as (v: SelectValue | SelectValue[] | undefined) => void);
         onClear?.();
     };
+
+    function scrollActiveIntoView() {
+        const list = untrack(() => listNode);
+        if (!list) return;
+        const el = list.querySelector(`#${optionDomId(untrack(() => activeIndex))}`);
+        el?.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 键盘无障碍：DOM 焦点始终留在 trigger 上（aria-activedescendant 模式），
+     * ArrowDown/ArrowUp 打开面板并在可见选项间移动虚拟高亮，Enter 选中当前
+     * 高亮项，Escape 关闭面板——Select 用 Popover trigger="custom" 完全
+     * 接管开关状态，Popover 内建的 closeOnEsc 只在非受控模式下生效
+     * （`!isControlled` 短路判断），这里必须自己实现 Esc 处理。 */
+    function handleTriggerKeyDown(event: KeyboardEvent) {
+        if (disabled) return;
+        const open = untrack(() => isOpen);
+        switch (event.key) {
+            case 'ArrowDown':
+            case 'ArrowUp': {
+                event.preventDefault();
+                if (!open) {
+                    isOpen = true;
+                    onDropdownVisibleChange?.(true);
+                    activeIndex = firstEnabledIndex();
+                    scrollActiveIntoView();
+                    return;
+                }
+                const current = untrack(() => activeIndex);
+                activeIndex = nextEnabledIndex(current, event.key === 'ArrowDown' ? 1 : -1);
+                scrollActiveIntoView();
+                return;
+            }
+            case 'Enter': {
+                if (!open) return;
+                event.preventDefault();
+                const current = untrack(() => activeIndex);
+                const option = optionList[current];
+                if (option) handleOptionClick(option);
+                return;
+            }
+            case 'Escape': {
+                if (!open) return;
+                event.preventDefault();
+                isOpen = false;
+                onDropdownVisibleChange?.(false);
+                return;
+            }
+            default:
+                return;
+        }
+    }
 
     // 点击 Select 触发器/浮层以外的区域时收起下拉——Popover 本身只支持"再点一次触发器
     // 关闭"（trigger='click' 的 toggle 语义），选择器类组件还需要"点击选项后关闭"和
@@ -332,6 +415,8 @@ export function Select(&{
                                             <SelectOptionItem
                                                 option={entry.option}
                                                 selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, entry.option.value) : SelectFoundation.isSingleChecked(displayValue, entry.option.value)}
+                                                active={entry.index === activeIndex}
+                                                id={optionDomId(entry.index)}
                                                 onSelect={handleOptionClick}
                                             />
                                         </div>
@@ -339,10 +424,12 @@ export function Select(&{
                                 </div>
                             </div>
                         } @else {
-                            @for (const option of optionList; key option.value) {
+                            @for (const option of optionList; index oi; key option.value) {
                                 <SelectOptionItem
                                     option={option}
                                     selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)}
+                                    active={oi === activeIndex}
+                                    id={optionDomId(oi)}
                                     onSelect={handleOptionClick}
                                 />
                             }
@@ -356,9 +443,11 @@ export function Select(&{
                     aria-haspopup="listbox"
                     aria-label={ariaLabel}
                     aria-disabled={disabled}
+                    aria-activedescendant={isOpen && activeIndex >= 0 ? optionDomId(activeIndex) : undefined}
                     tabIndex={disabled ? -1 : 0}
                     class="lotus-select-trigger"
                     onClick={handleTriggerClick}
+                    onKeyDown={handleTriggerKeyDown}
                     onFocus={(event: FocusEvent) => onFocus?.(event)}
                     onBlur={(event: FocusEvent) => onBlur?.(event)}
                 >

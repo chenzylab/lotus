@@ -22,6 +22,36 @@ test.describe('Select', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('键盘无障碍：ArrowDown 打开面板并移动高亮（自动跳过 disabled 项），Enter 选中，Escape 关闭不改变已选值（回归防护：combobox 此前完全没有键盘导航实现，Class C 补齐）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 基本示例', { exact: true });
+
+    await trigger.focus();
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const activeId = await trigger.getAttribute('aria-activedescendant');
+    expect(activeId).toBeTruthy();
+    await expect(page.locator(`#${activeId}`)).toHaveText('抖音');
+    await expect(page.locator(`#${activeId}`)).toHaveClass(/lotus-select-option-active/);
+
+    // 连续两次 ArrowDown：抖音(0) → 轻颜相机(1) → 跳过禁用的剪映(2) → 西瓜视频(3)
+    await trigger.press('ArrowDown');
+    await trigger.press('ArrowDown');
+    const skippedActiveId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${skippedActiveId}`)).toHaveText('西瓜视频');
+
+    await trigger.press('Enter');
+    await expect(trigger).toHaveText('西瓜视频');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await trigger.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveText('西瓜视频');
+  });
+
   test('禁用项不可选中，disabled Select 整体不可点击', async ({ page }) => {
     await page.goto('/');
     const disabledTrigger = page.getByLabel('Select 禁用示例');
