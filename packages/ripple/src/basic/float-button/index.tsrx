@@ -13,7 +13,10 @@ export interface FloatButtonProps {
     href?: string;
     target?: string;
     onClick?: (event: MouseEvent) => void;
-    'aria-label'?: string;
+    /** 必填——FloatButton 是纯图标按钮（无文本插槽），图标本身对屏幕阅读器
+     * 是 aria-hidden，省略 aria-label 会让按钮对屏幕阅读器用户完全不可辨识
+     * （对齐 IconButton 同等的类型层强制，之前误设为可选是真实无障碍缺口）。 */
+    'aria-label': string;
     style?: Record<string, any>;
     class?: string;
 }

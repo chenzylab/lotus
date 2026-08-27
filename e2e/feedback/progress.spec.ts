@@ -47,4 +47,17 @@ test.describe('Progress', () => {
     const colorAt50 = await gradientTrack.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(colorAt50).not.toBe(colorAt30);
   });
+
+  test('自定义 format 文案跟随写入 aria-valuetext（回归防护：曾经只设置 aria-valuenow 原始百分比，自定义 format 文案不会被屏幕阅读器朗读）', async ({ page }) => {
+    await page.goto('/');
+    const custom = page.getByLabel('自定义 format 文案进度条（验证 aria-valuetext 跟随 format 而非原始百分比）');
+    await expect(custom).toHaveAttribute('aria-valuenow', '30');
+    await expect(custom).toHaveAttribute('aria-valuetext', '第 3 步，共 10 步');
+  });
+
+  test('默认 format 时 aria-valuetext 为百分比文案', async ({ page }) => {
+    await page.goto('/');
+    const line = page.getByLabel('line 基础进度条');
+    await expect(line).toHaveAttribute('aria-valuetext', '30%');
+  });
 });

@@ -769,6 +769,7 @@ export function App() @{
                 aria-label="多段渐变进度条（受控，按钮驱动）"
             />
             <Button onClick={() => { progressPercent = progressPercent >= 100 ? 0 : progressPercent + 20; }}>切换 Progress 百分比</Button>
+            <Progress percent={30} showInfo format={(p) => `第 ${Math.round(p / 10)} 步，共 10 步`} aria-label="自定义 format 文案进度条（验证 aria-valuetext 跟随 format 而非原始百分比）" />
         </Space>
 
         <Divider>Spin</Divider>

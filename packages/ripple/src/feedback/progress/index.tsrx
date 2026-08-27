@@ -103,6 +103,15 @@ export function Progress(&{
     const resolvedWidth = width ?? (size === 'small' ? 24 : 72);
     let &[geometry] = track(() => calcCircleGeometry(resolvedWidth, strokeWidth, displayPercent));
     let &[text] = track(() => format(displayPercent));
+    // aria-valuetext 只接受纯文本，format 可以返回任意 JSX（Progress 展示层不限制
+    // 自定义内容的复杂度）——只在 format 的返回值恰好是字符串/数字这类可以安全转
+    // 成文本的场景才设置，复杂 JSX 场景保持不设置，退化为屏幕阅读器读原始百分比
+    // 数值而非报错或读出 "[object Object]" 这类无意义内容。不设置时不能传空字符串
+    // 占位——空字符串会被部分屏幕阅读器当成"显式覆盖为空白"而不是"未设置"，效果
+    // 反而比不设置更差，所以用 undefined 让浏览器彻底忽略这个属性。
+    let &[ariaValueText] = track<string | undefined>(() =>
+        typeof text === 'string' || typeof text === 'number' ? String(text) : undefined,
+    );
 
     <>
         @if (type === 'line') {
@@ -113,6 +122,7 @@ export function Progress(&{
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={displayPercent}
+                aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
             >
                 <div class="lotus-progress-track" style={orbitStroke ? { backgroundColor: orbitStroke } : {}} aria-hidden={true}>
@@ -137,6 +147,7 @@ export function Progress(&{
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={displayPercent}
+                aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
             >
                 <svg class="lotus-progress-circle-ring" height={resolvedWidth} width={resolvedWidth} aria-hidden={true}>
