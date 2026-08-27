@@ -5,9 +5,9 @@
 > 2. 本地文档目录 `~/i/semi-design/content/{basic,navigation,input,show,feedback,other,plus,ai}`（82 个文档目录）
 > 3. 本地源码目录 `~/i/semi-design/packages/semi-ui`（85 个组件目录，含无独立文档页的 `iconButton`）
 >
-> **修正记录**：初版清单误数为 76 个且漏收 Chart（图表）、IconButton，AI 分类下的 AIButton/AIIcon/AITag/AIFloatButton 经源码核实（`packages/semi-ui` 无对应独立目录）**不是独立组件**，而是 Button/Icon/Tag/FloatButton 的 AI 主题视觉变体（`theme`/`type` prop 层面的差异），已并入对应基础组件，不单列 DoD 条目，但会在对应组件的 SPEC 验收标准里要求支持该变体。Chart（Semi DV）经核实是"字节内部 VChart 的主题配置层封装"，非自研图表组件，故仍列入「待裁定」而非排期。
+> **修正记录**：初版清单误数为 76 个且漏收 Chart（图表）、IconButton，AI 分类下的 AIButton/AIIcon/AITag/AIFloatButton 经源码核实（`packages/semi-ui` 无对应独立目录）**不是独立组件**，而是 Button/Icon/Tag/FloatButton 的 AI 主题视觉变体（`theme`/`type` prop 层面的差异），已并入对应基础组件，不单列 DoD 条目，但会在对应组件的 SPEC 验收标准里要求支持该变体。Chart（Semi DV）经核实 Semi 官方没有独立组件源码（"Semi DV"是闭源 SaaS 平台生成的 VChart 主题包），lotus 走"包一层 VChart + 移植其主题层实现方式"路线，已交付并纳入 Phase 3 排期（见该 Phase 条目），不再是「待裁定」。
 >
-> **最终口径：实际统计各 Phase 清单条目共 83 个纳入 DoD 排期的自研组件/条目**（Phase 1: 16、Phase 2: 15、Phase 3: 23、Phase 4: 14、Phase 5: 12、Phase 6: 3；含 IconButton、Locale 这类非纯视觉条目）+ 4 项并入基础组件的 AI 主题变体要求（AIButton/AIIcon/AITag/AIFloatButton，不单列 DoD）+ Chart 1 项待裁定（见文末）。此数字大于源码目录数（85）是因为 IconButton 单列，小于「85 源码目录 + 4 官网 AI 变体名目」是因为 AI 变体不重复计数、`trigger`/`resizeObserver` 等内部基础设施不计入面向用户的组件清单。Phase 2 原清单误列的 Feedback（Result 结果页）经核实是 Ant Design 组件、Semi Design 无对标，已从清单移除。
+> **最终口径：实际统计各 Phase 清单条目共 84 个纳入 DoD 排期的自研组件/条目**（Phase 1: 16、Phase 2: 15、Phase 3: 24（含 Chart）、Phase 4: 14、Phase 5: 12、Phase 6: 3；含 IconButton、Locale 这类非纯视觉条目）+ 4 项并入基础组件的 AI 主题变体要求（AIButton/AIIcon/AITag/AIFloatButton，不单列 DoD）。此数字大于源码目录数（85）是因为 IconButton 单列、Chart 无对应源码目录仍单列，小于「85 源码目录 + 4 官网 AI 变体名目 + 1 Chart」是因为 AI 变体不重复计数、`trigger`/`resizeObserver` 等内部基础设施不计入面向用户的组件清单。Phase 2 原清单误列的 Feedback（Result 结果页）经核实是 Ant Design 组件、Semi Design 无对标，已从清单移除。
 >
 > 本文件是唯一进度看板：每个组件完成 DoD（见 AGENTS.md 第 3 节）后在此打勾，不要另建进度文档。
 
@@ -130,6 +130,6 @@
 
 ## 待裁定 / 观察项
 
-- **Chart 图表（官网称 "Semi DV"）**：核实 `~/i/semi-design/content/show/chart/index.md` 后确认——这不是自研图表组件，而是"基于字节内部开源可视化引擎 VChart（`@visactor/vchart`）的主题配置层封装"，本体逻辑在 VChart，Semi 只做主题 Token 适配。lotus 若要做同等能力，前提是先选定一个开源图表库（VChart 本身开源可用），再做 lotus Token → 图表主题的映射层，工作性质和"组件实现"完全不同。暂不排入 Phase，待明确图表需求后单独开 `specs/cross-cutting/chart-theming.spec.md`。
+- ~~Chart 图表（官网称 "Semi DV"）~~：已交付，见 Phase 3 条目。核实后确认 Semi 官方没有独立组件源码，走"包一层 VChart + 移植其主题层实现方式"路线，不是自研图表引擎。
 - **Icon 图标资产**：不是单一组件，而是 `packages/icons` 整包工程（SVG 源 + 生成的 tsrx 组件），随 Phase 1 启动但独立于组件 DoD 流程，规范见 `specs/cross-cutting/icons.spec.md`（如需要再补）。
 - **AI 主题变体的具体视觉规范**（渐变色、边框、hover 态）依赖 `specs/cross-cutting/theme-tokens.spec.md` 中 AI 专属变量先行落地，Phase 1/3 涉及 AI 变体的组件验收时一并检查，不等到 Phase 6 才补。
