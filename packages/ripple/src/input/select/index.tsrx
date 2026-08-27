@@ -282,6 +282,14 @@ export function Select(&{
         });
     });
 
+    // 单选场景专用：不在模板里对 selectedLabels 求两次值（一次在 @if 条件、一次在
+    // 分支体的 selectedLabels[0]）——derived 值的重新计算发生在每次访问时机，若
+    // 两次访问之间 optionList/displayValue 恰好变化，会读到两个不同时刻的快照，
+    // 曾经在并发跑多个 e2e 文件时命中过一次 Cannot read properties of undefined
+    // (reading 'label')。这里改成单个派生值，`@if` 判断和渲染内容引用同一个变量，
+    // 保证同一次求值结果只被计算一次、两处读到的是同一份数据。
+    let &[singleSelectedLabel] = track<any>(() => (selectedLabels.length > 0 ? selectedLabels[0]!.label : undefined));
+
     let &[classes] = track<string>(() =>
         [
             'lotus-select',
@@ -374,8 +382,8 @@ export function Select(&{
                             }
                         </div>
                     } @else {
-                        @if (selectedLabels.length > 0) {
-                            <span class="lotus-select-value">{selectedLabels[0]!.label}</span>
+                        @if (singleSelectedLabel !== undefined) {
+                            <span class="lotus-select-value">{singleSelectedLabel}</span>
                         } @else {
                             <span class="lotus-select-placeholder">{placeholder}</span>
                         }
