@@ -128,4 +128,20 @@ test.describe('TagInput', () => {
     await toggleButton.click();
     await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
   });
+
+  test('受控：onChange 拒绝更新时点击关闭按钮/退格都不会把 UI 带偏（回归防护：与 Cascader/TreeSelect/Upload/Rating 同一根因 bug 的排查对照组——TagInput Foundation 从一开始就正确门控了 isControlled，这里确认真的没有回归，详见 specs 踩坑 #100）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput 受控拒绝更新示例', { exact: true });
+    await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
+
+    await root.locator('.lotus-tag-close').first().click();
+    await page.waitForTimeout(300);
+    await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
+
+    const input = root.getByLabel('标签输入框', { exact: true });
+    await input.click();
+    await input.press('Backspace');
+    await page.waitForTimeout(300);
+    await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
+  });
 });

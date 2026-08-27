@@ -368,12 +368,12 @@ export function Cascader(&{
     function handleItemSelect(entity: CascaderEntity) {
         if (entity.data.disabled) return;
         if (multiple) {
-            foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation);
+            foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation, isControlled);
             notifyChange();
             triggerLoad(entity);
             return;
         }
-        const result = foundation.handleSingleSelect(entity.key, untrack(() => entities), changeOnSelect);
+        const result = foundation.handleSingleSelect(entity.key, untrack(() => entities), changeOnSelect, isControlled);
         if (result.selectedKey !== null) notifyChange();
         if (result.canClose) {
             isOpen = false;
@@ -425,9 +425,11 @@ export function Cascader(&{
 
     function handleClear(event: MouseEvent) {
         event.stopPropagation();
-        untrack(() => {
-            state = { ...state, selectedKey: null, checkedKeys: new Set(), halfCheckedKeys: new Set(), activeKeys: new Set() };
-        });
+        if (!isControlled) {
+            untrack(() => {
+                state = { ...state, selectedKey: null, checkedKeys: new Set(), halfCheckedKeys: new Set(), activeKeys: new Set() };
+            });
+        }
         onChange?.(multiple ? [] : undefined);
         onClear?.();
     }
@@ -490,7 +492,7 @@ export function Cascader(&{
 
     function handleRemoveTag(entity: CascaderEntity, event: MouseEvent) {
         event.stopPropagation();
-        foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation);
+        foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation, isControlled);
         notifyChange();
     }
 

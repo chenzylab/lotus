@@ -54,7 +54,7 @@ describe('handleSingleSelect', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation, getState } = makeFoundation();
     const key = joinValuePath(['zhejiang', 'hangzhou']);
-    const result = foundation.handleSingleSelect(key, entities, false);
+    const result = foundation.handleSingleSelect(key, entities, false, false);
     expect(result.selectedKey).toBeNull();
     expect(result.canClose).toBe(false);
     expect(getState().selectedKey).toBeNull();
@@ -65,7 +65,7 @@ describe('handleSingleSelect', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation, getState } = makeFoundation();
     const key = joinValuePath(['zhejiang', 'hangzhou']);
-    const result = foundation.handleSingleSelect(key, entities, true);
+    const result = foundation.handleSingleSelect(key, entities, true, false);
     expect(result.selectedKey).toBe(key);
     expect(result.canClose).toBe(false);
     expect(getState().selectedKey).toBe(key);
@@ -75,7 +75,7 @@ describe('handleSingleSelect', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation } = makeFoundation();
     const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
-    const result = foundation.handleSingleSelect(key, entities, false);
+    const result = foundation.handleSingleSelect(key, entities, false, false);
     expect(result.selectedKey).toBe(key);
     expect(result.canClose).toBe(true);
   });
@@ -83,8 +83,21 @@ describe('handleSingleSelect', () => {
   it('key 不存在时返回 null/false', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation } = makeFoundation();
-    const result = foundation.handleSingleSelect('not-exist', entities, false);
+    const result = foundation.handleSingleSelect('not-exist', entities, false, false);
     expect(result).toEqual({ selectedKey: null, canClose: false });
+  });
+
+  it('回归防护：isControlled=true 时不写 selectedKey，只返回本次点击结果供 onChange 使用', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
+    const result = foundation.handleSingleSelect(key, entities, false, true);
+    expect(result.selectedKey).toBe(key);
+    expect(result.canClose).toBe(true);
+    // state.selectedKey 必须保持原值不变——受控模式下只有 value prop 真正
+    // 变化（经由 resync effect）才能改变已选值，点击本身不能直接写 state，
+    // 否则父组件拒绝更新时 UI 会永久停留在这次点击产生的中间态。
+    expect(getState().selectedKey).toBeNull();
   });
 });
 
@@ -93,7 +106,7 @@ describe('handleMultipleCheck', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation } = makeFoundation();
     const key = joinValuePath(['zhejiang', 'hangzhou']);
-    const result = foundation.handleMultipleCheck(key, entities);
+    const result = foundation.handleMultipleCheck(key, entities, 'related', false);
     expect(result.checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(true);
     expect(result.checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'binjiang']))).toBe(true);
   });
@@ -102,9 +115,9 @@ describe('handleMultipleCheck', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation, getState } = makeFoundation();
     const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
-    foundation.handleMultipleCheck(key, entities);
+    foundation.handleMultipleCheck(key, entities, 'related', false);
     expect(getState().checkedKeys.has(key)).toBe(true);
-    foundation.handleMultipleCheck(key, entities);
+    foundation.handleMultipleCheck(key, entities, 'related', false);
     expect(getState().checkedKeys.has(key)).toBe(false);
   });
 
@@ -112,9 +125,19 @@ describe('handleMultipleCheck', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation, getState } = makeFoundation();
     const parentKey = joinValuePath(['zhejiang', 'hangzhou']);
-    foundation.handleMultipleCheck(parentKey, entities, 'unRelated');
+    foundation.handleMultipleCheck(parentKey, entities, 'unRelated', false);
     expect(getState().checkedKeys).toEqual(new Set([parentKey]));
     expect(getState().checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(false);
+  });
+
+  it('回归防护：isControlled=true 时不写 checkedKeys/halfCheckedKeys', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou']);
+    const result = foundation.handleMultipleCheck(key, entities, 'related', true);
+    expect(result.checkedKeys.has(joinValuePath(['zhejiang', 'hangzhou', 'xihu']))).toBe(true);
+    expect(getState().checkedKeys.size).toBe(0);
+    expect(getState().halfCheckedKeys.size).toBe(0);
   });
 });
 
@@ -140,7 +163,7 @@ describe('resolveValue', () => {
   it('基于当前 checkedKeys 折叠出对外 value（默认 autoMergeValue）', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation } = makeFoundation();
-    foundation.handleMultipleCheck(joinValuePath(['zhejiang', 'hangzhou']), entities);
+    foundation.handleMultipleCheck(joinValuePath(['zhejiang', 'hangzhou']), entities, 'related', false);
     const value = foundation.resolveValue(entities);
     expect(value).toEqual([['zhejiang', 'hangzhou']]);
   });

@@ -168,6 +168,24 @@ test.describe('TreeSelect', () => {
     await expect(trigger).toContainText('张三');
   });
 
+  test('受控：onChange 拒绝更新时点击叶子节点/清除按钮都不会把 UI 带偏（回归防护：曾经受控模式下点击直接写本地 state，父组件拒绝更新后 UI 永久停留在点击产生的中间态，同一根因 bug 已在 Cascader/Rating 组件真机验证过，详见 specs 踩坑 #100）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('TreeSelect 受控拒绝更新示例', { exact: true });
+    await expect(trigger).toContainText('张三');
+
+    await trigger.click();
+    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await page.getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
+    await page.getByRole('treeitem', { name: '李四' }).locator('.lotus-tree-select-node-content').click();
+
+    await page.waitForTimeout(300);
+    await expect(trigger).toContainText('张三');
+
+    await trigger.locator('.lotus-tree-select-clear').click({ force: true });
+    await page.waitForTimeout(300);
+    await expect(trigger).toContainText('张三');
+  });
+
   test('点击触发器/浮层以外区域时浮层自动收起', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('TreeSelect 单选', { exact: true });

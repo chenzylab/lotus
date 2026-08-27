@@ -47,21 +47,26 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
     return next;
   }
 
-  handleSelect(key: string): string | null {
+  /** `isControlled` 为 true 时不写 `selectedKey`——受控模式下已选值必须完全
+   * 来自外部 `value`，点击本身不能直接落地到 state，否则父组件拒绝更新时
+   * UI 会永久停留在点击产生的中间态（与 Cascader `handleSingleSelect`/
+   * Rating `handleClick` 同一根因，详见 specs 踩坑 #100）。 */
+  handleSelect(key: string, isControlled: boolean): string | null {
     const { selectedKey } = this.getState();
     const next = selectedKey === key ? null : key;
-    this.setState({ selectedKey: next });
+    if (!isControlled) this.setState({ selectedKey: next });
     return next;
   }
 
-  /** related 模式：三态级联。unRelated 模式：纯粹的 Set 增删，互不联动。 */
-  handleCheck(key: string, entities: KeyEntities, checkRelation: TreeSelectCheckRelation = 'related'): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
+  /** related 模式：三态级联。unRelated 模式：纯粹的 Set 增删，互不联动。
+   * `isControlled` 语义同 `handleSelect`。 */
+  handleCheck(key: string, entities: KeyEntities, checkRelation: TreeSelectCheckRelation, isControlled: boolean): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
     if (checkRelation === 'unRelated') {
       const { independentCheckedKeys } = this.getState();
       const next = new Set(independentCheckedKeys);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      this.setState({ independentCheckedKeys: next });
+      if (!isControlled) this.setState({ independentCheckedKeys: next });
       return { checkedKeys: next, halfCheckedKeys: new Set() };
     }
 
@@ -70,7 +75,7 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
     const result = isChecked
       ? calcCheckedKeysForUnchecked(key, entities, checkedKeys, halfCheckedKeys)
       : calcCheckedKeysForChecked(key, entities, checkedKeys, halfCheckedKeys);
-    this.setState(result);
+    if (!isControlled) this.setState(result);
     return result;
   }
 

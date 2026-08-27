@@ -43,6 +43,17 @@ test.describe('Upload', () => {
     await expect(root.locator('.lotus-upload-file-card')).toHaveCount(0);
   });
 
+  test('受控：onChange 拒绝更新时移除文件不会把 UI 带偏（回归防护：曾经受控模式下移除直接写本地 state，父组件拒绝更新后 UI 永久停留在操作产生的中间态，同一根因 bug 已在 Cascader/TreeSelect/Rating 组件真机验证过，详见 specs 踩坑 #100）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload 受控拒绝更新示例', { exact: true });
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(1);
+
+    await root.getByLabel('移除 locked.png', { exact: true }).click();
+    await page.waitForTimeout(300);
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(1);
+    await expect(root.locator('.lotus-upload-file-name')).toHaveText('locked.png');
+  });
+
   test('draggable：拖拽区域可见，role=button 且键盘可达', async ({ page }) => {
     await page.goto('/');
     const root = page.getByLabel('Upload 拖拽', { exact: true });

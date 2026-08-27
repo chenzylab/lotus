@@ -53,16 +53,23 @@ describe('handleExpand', () => {
 describe('handleSelect（单选）', () => {
   it('选中后再次点击同一 key 取消选中', () => {
     const { foundation, getState } = makeFoundation();
-    foundation.handleSelect('xihu');
+    foundation.handleSelect('xihu', false);
     expect(getState().selectedKey).toBe('xihu');
-    foundation.handleSelect('xihu');
+    foundation.handleSelect('xihu', false);
     expect(getState().selectedKey).toBeNull();
   });
 
   it('选中不同 key 直接替换', () => {
     const { foundation, getState } = makeFoundation({ selectedKey: 'xihu' });
-    foundation.handleSelect('nanjing');
+    foundation.handleSelect('nanjing', false);
     expect(getState().selectedKey).toBe('nanjing');
+  });
+
+  it('回归防护：isControlled=true 时不写 selectedKey，只返回本次点击结果供 onChange 使用', () => {
+    const { foundation, getState } = makeFoundation();
+    const next = foundation.handleSelect('xihu', true);
+    expect(next).toBe('xihu');
+    expect(getState().selectedKey).toBeNull();
   });
 });
 
@@ -70,7 +77,7 @@ describe('handleCheck（related，默认）', () => {
   it('勾选父节点级联选中全部子孙', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation } = makeFoundation();
-    const result = foundation.handleCheck('hangzhou', entities);
+    const result = foundation.handleCheck('hangzhou', entities, 'related', false);
     expect(result.checkedKeys.has('xihu')).toBe(true);
     expect(result.checkedKeys.has('binjiang')).toBe(true);
   });
@@ -78,10 +85,18 @@ describe('handleCheck（related，默认）', () => {
   it('再次点击已选中节点走取消勾选分支', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation, getState } = makeFoundation();
-    foundation.handleCheck('xihu', entities);
+    foundation.handleCheck('xihu', entities, 'related', false);
     expect(getState().checkedKeys.has('xihu')).toBe(true);
-    foundation.handleCheck('xihu', entities);
+    foundation.handleCheck('xihu', entities, 'related', false);
     expect(getState().checkedKeys.has('xihu')).toBe(false);
+  });
+
+  it('回归防护：isControlled=true 时不写 checkedKeys/halfCheckedKeys', () => {
+    const entities = buildKeyEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const result = foundation.handleCheck('hangzhou', entities, 'related', true);
+    expect(result.checkedKeys.has('xihu')).toBe(true);
+    expect(getState().checkedKeys.size).toBe(0);
   });
 });
 
@@ -89,7 +104,7 @@ describe('handleCheck（unRelated）', () => {
   it('勾选/取消只影响当前 key，不做三态级联传播', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation, getState } = makeFoundation();
-    foundation.handleCheck('hangzhou', entities, 'unRelated');
+    foundation.handleCheck('hangzhou', entities, 'unRelated', false);
     expect(getState().independentCheckedKeys).toEqual(new Set(['hangzhou']));
     expect(getState().independentCheckedKeys.has('xihu')).toBe(false);
     expect(getState().checkedKeys.size).toBe(0);
@@ -98,8 +113,8 @@ describe('handleCheck（unRelated）', () => {
   it('unRelated 模式下 checkedKeys/halfCheckedKeys 完全不受影响', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation, getState } = makeFoundation();
-    foundation.handleCheck('hangzhou', entities, 'unRelated');
-    foundation.handleCheck('xihu', entities, 'unRelated');
+    foundation.handleCheck('hangzhou', entities, 'unRelated', false);
+    foundation.handleCheck('xihu', entities, 'unRelated', false);
     expect(getState().independentCheckedKeys).toEqual(new Set(['hangzhou', 'xihu']));
     expect(getState().halfCheckedKeys.size).toBe(0);
   });
@@ -107,8 +122,16 @@ describe('handleCheck（unRelated）', () => {
   it('再次点击取消勾选', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation, getState } = makeFoundation();
-    foundation.handleCheck('hangzhou', entities, 'unRelated');
-    foundation.handleCheck('hangzhou', entities, 'unRelated');
+    foundation.handleCheck('hangzhou', entities, 'unRelated', false);
+    foundation.handleCheck('hangzhou', entities, 'unRelated', false);
+    expect(getState().independentCheckedKeys.size).toBe(0);
+  });
+
+  it('回归防护：isControlled=true 时不写 independentCheckedKeys', () => {
+    const entities = buildKeyEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const result = foundation.handleCheck('hangzhou', entities, 'unRelated', true);
+    expect(result.checkedKeys).toEqual(new Set(['hangzhou']));
     expect(getState().independentCheckedKeys.size).toBe(0);
   });
 });
@@ -143,14 +166,14 @@ describe('resolveValue', () => {
   it('related：基于当前 checkedKeys 折叠出对外 value（默认 autoMergeValue）', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation } = makeFoundation();
-    foundation.handleCheck('hangzhou', entities);
+    foundation.handleCheck('hangzhou', entities, 'related', false);
     expect(foundation.resolveValue(entities)).toEqual(['hangzhou']);
   });
 
   it('unRelated：直接返回 independentCheckedKeys，不经过折叠', () => {
     const entities = buildKeyEntities(DATA);
     const { foundation } = makeFoundation();
-    foundation.handleCheck('hangzhou', entities, 'unRelated');
+    foundation.handleCheck('hangzhou', entities, 'unRelated', false);
     expect(foundation.resolveValue(entities, 'unRelated')).toEqual(['hangzhou']);
   });
 });

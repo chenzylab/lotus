@@ -361,8 +361,12 @@ export function Upload(&{
         untrack(() => foundation.syncFileList(fileListProp!));
     });
 
-    function emitChange() {
-        onChange?.(untrack(() => state).fileList);
+    // 受控模式下 state.fileList 不再随本地操作更新（只由 fileListProp 同步过来），
+    // 因此 onChange 载荷必须显式传入本次操作算出的新列表，不能读 state——否则
+    // 受控模式下 onChange 会永远带着"操作之前"的旧值，父组件即使想接受这次变化
+    // 也拿不到正确的新列表。
+    function emitChange(fileList: FileItem[]) {
+        onChange?.(fileList);
     }
 
     let inputNode: HTMLInputElement | null = null;
@@ -379,19 +383,19 @@ export function Upload(&{
             action,
             withCredentials,
             onProgress: (percent) => {
-                foundation.handleProgress(item.uid, percent);
+                const result = foundation.handleProgress(item.uid, percent, isControlled);
                 onProgress?.(percent, item);
-                emitChange();
+                if (result) emitChange(result.fileList);
             },
             onSuccess: (response) => {
-                foundation.handleSuccess(item.uid, response);
+                const result = foundation.handleSuccess(item.uid, response, isControlled);
                 onSuccess?.(response, item);
-                emitChange();
+                if (result) emitChange(result.fileList);
             },
             onError: (message) => {
-                foundation.handleError(item.uid, message);
+                const result = foundation.handleError(item.uid, message, isControlled);
                 onError?.(message, item);
-                emitChange();
+                if (result) emitChange(result.fileList);
             },
         };
         if (customRequest) customRequest(args);
@@ -403,10 +407,10 @@ export function Upload(&{
         if (beforeUpload && item.fileInstance) {
             const raw = await beforeUpload(item.fileInstance, item);
             const result = foundation.resolveBeforeUploadResult(raw);
-            const applied = foundation.applyBeforeUploadResult(item.uid, result);
-            emitChange();
-            if (!applied || applied.status !== 'uploading') return;
-            startXhr(applied);
+            const applied = foundation.applyBeforeUploadResult(item.uid, result, isControlled);
+            if (applied) emitChange(applied.fileList);
+            if (!applied || applied.item.status !== 'uploading') return;
+            startXhr(applied.item);
             return;
         }
         startXhr(item);
@@ -417,9 +421,9 @@ export function Upload(&{
         const { matched, rejected } = foundation.filterByAccept(files);
         if (rejected.length > 0) onAcceptInvalid?.(rejected);
         if (matched.length === 0) return;
-        const result = foundation.addFiles(matched);
+        const result = foundation.addFiles(matched, isControlled);
         if (result.exceeded.length > 0) onExceed?.(files);
-        emitChange();
+        emitChange(result.fileList);
         for (const item of result.added) {
             if (item.status === 'uploading') maybeStartUpload(item);
         }
@@ -437,9 +441,9 @@ export function Upload(&{
         const file = input.files?.[0];
         input.value = '';
         if (!file || !replaceTargetUid) return;
-        const result = foundation.replace(replaceTargetUid, file);
+        const result = foundation.replace(replaceTargetUid, file, isControlled);
         replaceTargetUid = null;
-        emitChange();
+        if (result) emitChange(result.fileList);
         if (result && result.replaced.status === 'uploading') maybeStartUpload(result.replaced);
     }
 
@@ -478,15 +482,15 @@ export function Upload(&{
     }
 
     function handleRemove(item: FileItem) {
-        const nextList = foundation.remove(item.uid);
+        const nextList = foundation.remove(item.uid, isControlled);
         onRemove?.(item, nextList);
-        emitChange();
+        emitChange(nextList);
     }
 
     function handleRetryClick(item: FileItem) {
-        foundation.retry(item.uid);
+        const result = foundation.retry(item.uid, isControlled);
         onRetry?.(item);
-        emitChange();
+        if (result) emitChange(result.fileList);
         maybeStartUpload({ ...item, status: 'uploading', percent: 0 });
     }
 

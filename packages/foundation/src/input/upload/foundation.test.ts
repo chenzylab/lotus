@@ -33,7 +33,7 @@ describe('UploadFoundation', () => {
     it('新增文件进入 fileList，auto 触发时状态为 uploading', () => {
       const { foundation, getState } = createFoundation();
       const file = makeFile('a.png', 'image/png', 10);
-      const result = foundation.addFiles([file]);
+      const result = foundation.addFiles([file], false);
       expect(result.added).toHaveLength(1);
       expect(result.added[0]!.status).toBe('uploading');
       expect(getState().fileList).toHaveLength(1);
@@ -42,12 +42,21 @@ describe('UploadFoundation', () => {
     it('limit 裁剪：超出部分进 exceeded', () => {
       const { foundation } = createFoundation({ limit: 1 });
       const file1 = makeFile('a.png', 'image/png', 10);
-      foundation.addFiles([file1]);
+      foundation.addFiles([file1], false);
       const file2 = makeFile('b.png', 'image/png', 10);
-      const result = foundation.addFiles([file2]);
+      const result = foundation.addFiles([file2], false);
       expect(result.fileList).toHaveLength(1);
       expect(result.fileList[0]!.name).toBe('b.png');
       expect(result.exceeded).toHaveLength(1);
+    });
+
+    it('回归防护：isControlled=true 时不写 state.fileList，但返回值仍带完整新列表供 onChange 使用', () => {
+      const { foundation, getState } = createFoundation();
+      const file = makeFile('a.png', 'image/png', 10);
+      const result = foundation.addFiles([file], true);
+      expect(result.added).toHaveLength(1);
+      expect(result.fileList).toHaveLength(1);
+      expect(getState().fileList).toHaveLength(0);
     });
   });
 
@@ -79,30 +88,39 @@ describe('UploadFoundation', () => {
     it('shouldUpload=true：状态置为 uploading', () => {
       const item: FileItem = { uid: 'u1', name: 'a.png', size: 10, status: 'wait', percent: 0 };
       const { foundation, getState } = createFoundation({}, [item]);
-      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: true });
-      expect(next?.status).toBe('uploading');
+      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: true }, false);
+      expect(next?.item.status).toBe('uploading');
       expect(getState().fileList[0]!.status).toBe('uploading');
     });
 
     it('shouldUpload=false：状态置为指定 status（默认 validateFail）', () => {
       const item: FileItem = { uid: 'u1', name: 'a.png', size: 10, status: 'wait', percent: 0 };
       const { foundation } = createFoundation({}, [item]);
-      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: false });
-      expect(next?.status).toBe('validateFail');
+      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: false }, false);
+      expect(next?.item.status).toBe('validateFail');
     });
 
     it('fileInstance 替换：同步 name/size', () => {
       const item: FileItem = { uid: 'u1', name: 'old.png', size: 10, status: 'wait', percent: 0 };
       const { foundation } = createFoundation({}, [item]);
       const newFile = makeFile('new.png', 'image/png', 999);
-      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: true, fileInstance: newFile });
-      expect(next?.name).toBe('new.png');
-      expect(next?.size).toBe(999);
+      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: true, fileInstance: newFile }, false);
+      expect(next?.item.name).toBe('new.png');
+      expect(next?.item.size).toBe(999);
     });
 
     it('uid 不存在：返回 null', () => {
       const { foundation } = createFoundation();
-      expect(foundation.applyBeforeUploadResult('nonexistent', { shouldUpload: true })).toBeNull();
+      expect(foundation.applyBeforeUploadResult('nonexistent', { shouldUpload: true }, false)).toBeNull();
+    });
+
+    it('回归防护：isControlled=true 时不写 state，返回值仍带完整新列表', () => {
+      const item: FileItem = { uid: 'u1', name: 'a.png', size: 10, status: 'wait', percent: 0 };
+      const { foundation, getState } = createFoundation({}, [item]);
+      const next = foundation.applyBeforeUploadResult('u1', { shouldUpload: true }, true);
+      expect(next?.item.status).toBe('uploading');
+      expect(next?.fileList[0]!.status).toBe('uploading');
+      expect(getState().fileList[0]!.status).toBe('wait');
     });
   });
 
@@ -111,39 +129,50 @@ describe('UploadFoundation', () => {
 
     it('markUploading', () => {
       const { foundation } = createFoundation({}, [item]);
-      const next = foundation.markUploading('u1');
-      expect(next?.status).toBe('uploading');
-      expect(next?.percent).toBe(0);
+      const next = foundation.markUploading('u1', false);
+      expect(next?.item.status).toBe('uploading');
+      expect(next?.item.percent).toBe(0);
     });
 
     it('handleProgress：clamp 到 0-100', () => {
       const { foundation } = createFoundation({}, [item]);
-      expect(foundation.handleProgress('u1', 50)?.percent).toBe(50);
-      expect(foundation.handleProgress('u1', 150)?.percent).toBe(100);
-      expect(foundation.handleProgress('u1', -10)?.percent).toBe(0);
+      expect(foundation.handleProgress('u1', 50, false)?.item.percent).toBe(50);
+      expect(foundation.handleProgress('u1', 150, false)?.item.percent).toBe(100);
+      expect(foundation.handleProgress('u1', -10, false)?.item.percent).toBe(0);
     });
 
     it('handleSuccess：status=success, percent=100', () => {
       const { foundation } = createFoundation({}, [item]);
-      const next = foundation.handleSuccess('u1', { url: 'https://example.com/a.png' });
-      expect(next?.status).toBe('success');
-      expect(next?.percent).toBe(100);
-      expect(next?.response).toEqual({ url: 'https://example.com/a.png' });
+      const next = foundation.handleSuccess('u1', { url: 'https://example.com/a.png' }, false);
+      expect(next?.item.status).toBe('success');
+      expect(next?.item.percent).toBe(100);
+      expect(next?.item.response).toEqual({ url: 'https://example.com/a.png' });
     });
 
     it('handleError：status=uploadFail', () => {
       const { foundation } = createFoundation({}, [item]);
-      const next = foundation.handleError('u1', '网络错误');
-      expect(next?.status).toBe('uploadFail');
-      expect(next?.validateMessage).toBe('网络错误');
+      const next = foundation.handleError('u1', '网络错误', false);
+      expect(next?.item.status).toBe('uploadFail');
+      expect(next?.item.validateMessage).toBe('网络错误');
     });
 
     it('retry：不检查当前状态，直接重置为 uploading', () => {
       const failedItem: FileItem = { uid: 'u1', name: 'a.png', size: 10, status: 'success', percent: 100 };
       const { foundation } = createFoundation({}, [failedItem]);
-      const next = foundation.retry('u1');
-      expect(next?.status).toBe('uploading');
-      expect(next?.percent).toBe(0);
+      const next = foundation.retry('u1', false);
+      expect(next?.item.status).toBe('uploading');
+      expect(next?.item.percent).toBe(0);
+    });
+
+    it('回归防护：受控模式下 handleProgress/handleSuccess/handleError 都不写 state，只返回结果', () => {
+      const { foundation, getState } = createFoundation({}, [item]);
+      const progressResult = foundation.handleProgress('u1', 50, true);
+      expect(progressResult?.item.percent).toBe(50);
+      expect(getState().fileList[0]!.percent).toBe(0);
+
+      const successResult = foundation.handleSuccess('u1', { ok: true }, true);
+      expect(successResult?.item.status).toBe('success');
+      expect(getState().fileList[0]!.status).toBe('wait');
     });
   });
 
@@ -154,7 +183,7 @@ describe('UploadFoundation', () => {
         { uid: 'u2', name: 'b.png', size: 10, status: 'success', percent: 100 },
       ];
       const { foundation, getState } = createFoundation({}, items);
-      foundation.remove('u1');
+      foundation.remove('u1', false);
       expect(getState().fileList.map((i) => i.uid)).toEqual(['u2']);
     });
 
@@ -165,7 +194,7 @@ describe('UploadFoundation', () => {
       ];
       const { foundation, getState } = createFoundation({}, items);
       const newFile = makeFile('c.png', 'image/png', 20);
-      const result = foundation.replace('u1', newFile);
+      const result = foundation.replace('u1', newFile, false);
       expect(result?.fileList[0]!.name).toBe('c.png');
       expect(result?.fileList[1]!.uid).toBe('u2');
       expect(getState().fileList).toHaveLength(2);
@@ -174,8 +203,25 @@ describe('UploadFoundation', () => {
     it('clear：清空全部', () => {
       const items: FileItem[] = [{ uid: 'u1', name: 'a.png', size: 10, status: 'success', percent: 100 }];
       const { foundation, getState } = createFoundation({}, items);
-      foundation.clear();
+      foundation.clear(false);
       expect(getState().fileList).toEqual([]);
+    });
+
+    it('回归防护：isControlled=true 时 remove/replace/clear 都不写 state', () => {
+      const items: FileItem[] = [{ uid: 'u1', name: 'a.png', size: 10, status: 'success', percent: 100 }];
+      const { foundation, getState } = createFoundation({}, items);
+
+      const removed = foundation.remove('u1', true);
+      expect(removed).toEqual([]);
+      expect(getState().fileList).toHaveLength(1);
+
+      const newFile = makeFile('c.png', 'image/png', 20);
+      const replaced = foundation.replace('u1', newFile, true);
+      expect(replaced?.fileList[0]!.name).toBe('c.png');
+      expect(getState().fileList[0]!.name).toBe('a.png');
+
+      foundation.clear(true);
+      expect(getState().fileList).toHaveLength(1);
     });
   });
 

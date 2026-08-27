@@ -2894,6 +2894,18 @@ export function App() @{
             </Button>
         </Space>
 
+        <Divider>Cascader：受控拒绝更新（回归防护：onChange 拒绝更新时点击/清除不应污染 UI）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderRegionData}
+                value={['zhejiang', 'hangzhou', 'xihu']}
+                onChange={() => {}}
+                showClear
+                aria-label="Cascader 受控拒绝更新示例"
+            />
+        </div>
+
         <Divider>Cascader：懒加载（loadData 异步追加子节点）</Divider>
 
         <div style={{ width: '280px' }}>
@@ -3003,6 +3015,18 @@ export function App() @{
                 切换 TreeSelect
             </Button>
         </Space>
+
+        <Divider>TreeSelect：受控拒绝更新（回归防护：onChange 拒绝更新时点击/清除不应污染 UI）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                value="dept-1-1-1"
+                onChange={() => {}}
+                showClear
+                aria-label="TreeSelect 受控拒绝更新示例"
+            />
+        </div>
 
         <Divider>TreeSelect：懒加载（loadData 异步追加子节点）</Divider>
 
@@ -3513,6 +3537,18 @@ export function App() @{
             />
         </div>
 
+        <Divider>Upload：受控拒绝更新（回归防护：onChange 拒绝更新时移除文件不应污染 UI）</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                fileList={[{ uid: 'reject-1', name: 'locked.png', size: 2048, status: 'success', percent: 100 }]}
+                onChange={() => {}}
+                aria-label="Upload 受控拒绝更新示例"
+            />
+        </div>
+
         <Divider>Upload：disabled 禁用</Divider>
 
         <div>
@@ -3587,6 +3623,16 @@ export function App() @{
             <Button onClick={() => { tagInputControlledValue = tagInputControlledValue.length > 0 ? [] : ['a', 'b']; }}>
                 切换 TagInput 选中值
             </Button>
+        </div>
+
+        <Divider>TagInput：受控拒绝更新（回归防护：onChange 拒绝更新时退格/删除标签不应污染 UI）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                value={['locked-a', 'locked-b']}
+                onChange={() => {}}
+                aria-label="TagInput 受控拒绝更新示例"
+            />
         </div>
 
         <Divider>PinCode：基础用法（format=number，6 位）</Divider>

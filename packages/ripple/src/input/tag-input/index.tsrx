@@ -337,6 +337,7 @@ export function TagInput(&{
                             type="light"
                             size={size === 'large' ? 'default' : size}
                             closable={!disabled}
+                            visible={true}
                             onClose={() => handleRemoveTag(ti)}
                             aria-label={!disabled ? locale.TagInput.closableTag(item) : locale.TagInput.plainTag(item)}
                         >

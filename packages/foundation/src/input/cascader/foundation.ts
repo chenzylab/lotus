@@ -58,8 +58,16 @@ export class CascaderFoundation extends Foundation<CascaderState> {
   }
 
   /** 单选选中：非叶子节点默认不可选中（除非 changeOnSelect），叶子节点选中
-   * 后通常同时收起浮层（由 Adapter/组件层决定，Foundation 只更新状态）。 */
-  handleSingleSelect(key: string, entities: CascaderEntities, changeOnSelect = false): { selectedKey: string | null; canClose: boolean } {
+   * 后通常同时收起浮层（由 Adapter/组件层决定，Foundation 只更新状态）。
+   *
+   * `isControlled` 为 true 时不写 `selectedKey`（仍然正常展开 `activeKeys`
+   * ——展开路径是纯本地交互态，没有对应 prop，任何模式下都该正常响应点击）。
+   * 受控模式下 UI 的已选值必须完全来自外部 `value`，不能靠"先写本地 state、
+   * 再指望某个 effect 纠正回受控值"这种方式实现——那个纠正 effect 只在
+   * `value` prop 本身变化时才会被调度，若父组件的 onChange 拒绝更新，UI
+   * 会永久停留在点击产生的中间态（同一 bug 已在 Rating 组件真机验证过，
+   * 详见 specs 踩坑 #100）。 */
+  handleSingleSelect(key: string, entities: CascaderEntities, changeOnSelect: boolean, isControlled: boolean): { selectedKey: string | null; canClose: boolean } {
     const entity = entities[key];
     if (!entity) return { selectedKey: null, canClose: false };
     const isLeaf = isLeafEntity(entity);
@@ -67,16 +75,24 @@ export class CascaderFoundation extends Foundation<CascaderState> {
       this.handleActivate(key, entities);
       return { selectedKey: null, canClose: false };
     }
-    this.setState({ selectedKey: key, activeKeys: new Set(findAncestorKeys([key], entities, true)) });
+    const activeKeys = new Set(findAncestorKeys([key], entities, true));
+    if (isControlled) {
+      this.setState({ activeKeys });
+    } else {
+      this.setState({ selectedKey: key, activeKeys });
+    }
     return { selectedKey: key, canClose: isLeaf };
   }
 
   /** 多选勾选切换：三态级联计算 + 同步展开该节点路径（对齐 Semi 点击即联动展开下一级）。
-   * `checkRelation='unRelated'` 时绕开三态级联，只做当前 key 的单点增删。 */
+   * `checkRelation='unRelated'` 时绕开三态级联，只做当前 key 的单点增删。
+   * `isControlled` 语义同 `handleSingleSelect`——受控时不写 checkedKeys/halfCheckedKeys，
+   * 返回值仍然是"若这次操作被接受，结果会是什么"，供调用方传给 onChange。 */
   handleMultipleCheck(
     key: string,
     entities: CascaderEntities,
-    checkRelation: 'related' | 'unRelated' = 'related',
+    checkRelation: 'related' | 'unRelated',
+    isControlled: boolean,
   ): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
     const { checkedKeys, halfCheckedKeys } = this.getState();
     const isChecked = checkedKeys.has(key);
@@ -86,7 +102,7 @@ export class CascaderFoundation extends Foundation<CascaderState> {
       if (isChecked) nextChecked.delete(key);
       else nextChecked.add(key);
       const result = { checkedKeys: nextChecked, halfCheckedKeys: new Set(halfCheckedKeys) };
-      this.setState(result);
+      if (!isControlled) this.setState(result);
       return result;
     }
 
@@ -94,7 +110,7 @@ export class CascaderFoundation extends Foundation<CascaderState> {
     const result = isChecked
       ? calcCheckedKeysForUnchecked(key, keyEntities, checkedKeys, halfCheckedKeys)
       : calcCheckedKeysForChecked(key, keyEntities, checkedKeys, halfCheckedKeys);
-    this.setState(result);
+    if (!isControlled) this.setState(result);
     return result;
   }
 

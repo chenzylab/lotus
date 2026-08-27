@@ -463,11 +463,11 @@ export function TreeSelect(&{
     function handleSelectNode(key: string, node: TreeNodeData) {
         if (disabled || node.disabled) return;
         if (multiple) {
-            foundation.handleCheck(key, untrack(() => entities), checkRelation);
+            foundation.handleCheck(key, untrack(() => entities), checkRelation, isValueControlled);
             notifyChange();
             return;
         }
-        const next = foundation.handleSelect(key);
+        const next = foundation.handleSelect(key, isValueControlled);
         onSelect?.(next, next !== null, node);
         notifyChange();
         if (next !== null) {
@@ -491,9 +491,11 @@ export function TreeSelect(&{
 
     function handleClear(event: MouseEvent) {
         event.stopPropagation();
-        untrack(() => {
-            state = { ...state, selectedKey: null, checkedKeys: new Set(), halfCheckedKeys: new Set(), independentCheckedKeys: new Set() };
-        });
+        if (!isValueControlled) {
+            untrack(() => {
+                state = { ...state, selectedKey: null, checkedKeys: new Set(), halfCheckedKeys: new Set(), independentCheckedKeys: new Set() };
+            });
+        }
         onChange?.(multiple ? [] : undefined);
         onClear?.();
     }
@@ -530,7 +532,7 @@ export function TreeSelect(&{
 
     function handleRemoveTag(node: TreeNodeData, event: MouseEvent) {
         event.stopPropagation();
-        foundation.handleCheck(node.key, untrack(() => entities), checkRelation);
+        foundation.handleCheck(node.key, untrack(() => entities), checkRelation, isValueControlled);
         notifyChange();
     }
 
