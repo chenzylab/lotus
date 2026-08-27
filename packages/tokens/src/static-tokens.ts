@@ -241,6 +241,20 @@ export const tagDecorativeColor: Record<
   yellow: { light: '#fac800', dark: '#fdde43' },
 };
 
+/**
+ * 图表分类色板（20 色，供 Chart 组件的多系列/多分类数据着色使用）。
+ * 亮暗模式共用同一份取值——分类色板追求"系列间视觉可区分度"这一个客观属性，
+ * 不像语义色/装饰色那样需要跟随背景明暗调整对比度（对齐 VChart 官方
+ * `@visactor/vchart-semi-theme` 包的 `dark/color-scheme.js` 直接复用
+ * `common/data-scheme.js` 同一份颜色数组的既定做法，取值来源也是该包）。
+ */
+export const chartDataColor: string[] = [
+  '#5769ff', '#8ed4e7', '#f58700', '#dcb7fc', '#4a9cf7',
+  '#f3cc35', '#fe8090', '#8bd7d2', '#83b023', '#e9a5e5',
+  '#30a7ce', '#f9c064', '#b171f9', '#77b6f9', '#c88f02',
+  '#ffaab2', '#33b0ab', '#b6d781', '#d458d4', '#bcc6ff',
+];
+
 /** AI 专属渐变色变量（Phase 1 起被 Button/Icon/Tag/FloatButton 的 AI 主题变体消费）。 */
 export const aiColor = {
   general: 'linear-gradient(90deg, #5C4CFF 0%, #A64EFF 50%, #FF57C6 100%)',

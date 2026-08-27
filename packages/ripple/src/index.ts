@@ -367,6 +367,11 @@ export {
     type AnimationItem,
 } from './show/lottie/index.tsrx';
 export {
+    Chart,
+    type ChartProps,
+    type ChartType,
+} from './show/chart/index.tsrx';
+export {
     DragMove,
     type DragMoveProps,
     type DragPositionStrategy,

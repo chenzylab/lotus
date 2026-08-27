@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -165,6 +165,32 @@ const transferControlledData = [
     { key: 'c1', label: '选项 A' },
     { key: 'c2', label: '选项 B' },
     { key: 'c3', label: '选项 C' },
+];
+
+const chartCategoryData = [
+    { category: '一月', value: 38 },
+    { category: '二月', value: 52 },
+    { category: '三月', value: 61 },
+    { category: '四月', value: 45 },
+    { category: '五月', value: 70 },
+];
+
+const chartFunnelData = [
+    { category: '访问', value: 1000 },
+    { category: '注册', value: 620 },
+    { category: '下单', value: 280 },
+    { category: '支付', value: 120 },
+];
+
+const chartRadarData = [
+    { category: '速度', value: 80, series: 'A' },
+    { category: '力量', value: 65, series: 'A' },
+    { category: '防御', value: 70, series: 'A' },
+    { category: '敏捷', value: 90, series: 'A' },
+    { category: '速度', value: 60, series: 'B' },
+    { category: '力量', value: 85, series: 'B' },
+    { category: '防御', value: 55, series: 'B' },
+    { category: '敏捷', value: 70, series: 'B' },
 ];
 
 function loadTreeChildren(node: TreeNodeData): Promise<TreeNodeData[]> {
@@ -4143,6 +4169,71 @@ export function App() @{
                 getAiChatInputApi={(api: AiChatInputApi) => { aiInputApi = api; }}
             />
             <div class="demo-ai-input-sent-log" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--lotus-color-text-2)', wordBreak: 'break-all' }}>{aiInputSentLog}</div>
+        </div>
+
+        <Divider>Chart：图表（柱状/折线/面积/饼图/漏斗/雷达）</Divider>
+
+        <div class="demo-chart-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px' }}>
+            <div class="demo-chart-bar" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="bar"
+                    data={[{ id: 'bar', values: chartCategoryData }]}
+                    spec={{ xField: 'category', yField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 柱状图示例"
+                />
+            </div>
+            <div class="demo-chart-line" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="line"
+                    data={[{ id: 'line', values: chartCategoryData }]}
+                    spec={{ xField: 'category', yField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 折线图示例"
+                />
+            </div>
+            <div class="demo-chart-area" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="area"
+                    data={[{ id: 'area', values: chartCategoryData }]}
+                    spec={{ xField: 'category', yField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 面积图示例"
+                />
+            </div>
+            <div class="demo-chart-pie" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="pie"
+                    data={[{ id: 'pie', values: chartCategoryData }]}
+                    spec={{ categoryField: 'category', valueField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 饼图示例"
+                />
+            </div>
+            <div class="demo-chart-funnel" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="funnel"
+                    data={[{ id: 'funnel', values: chartFunnelData }]}
+                    spec={{ categoryField: 'category', valueField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 漏斗图示例"
+                />
+            </div>
+            <div class="demo-chart-radar" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="radar"
+                    data={[{ id: 'radar', values: chartRadarData }]}
+                    spec={{ categoryField: 'category', valueField: 'value', seriesField: 'series' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 雷达图示例"
+                />
+            </div>
         </div>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />
