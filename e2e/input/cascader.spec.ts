@@ -34,6 +34,42 @@ test.describe('Cascader', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('键盘无障碍：ArrowDown 打开面板并移动高亮，ArrowRight 展开进入下一列，ArrowLeft 回到上一列，Enter 选中，Escape 关闭不改变已选值（回归防护：combobox 此前完全没有键盘导航实现，Class C 补齐）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader 单选', { exact: true });
+
+    await trigger.focus();
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    let activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('浙江');
+
+    await trigger.press('ArrowRight');
+    activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('杭州');
+    await expect(page.locator('.lotus-cascader-column')).toHaveCount(2);
+
+    await trigger.press('ArrowRight');
+    activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('西湖区');
+
+    await trigger.press('ArrowLeft');
+    activeId = await trigger.getAttribute('aria-activedescendant');
+    await expect(page.locator(`#${activeId}`)).toHaveText('杭州');
+
+    await trigger.press('ArrowRight');
+    await trigger.press('Enter');
+    await expect(trigger).toContainText('浙江 / 杭州 / 西湖区');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await trigger.press('ArrowDown');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await trigger.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toContainText('浙江 / 杭州 / 西湖区');
+  });
+
   test('禁用节点不可点击展开/选中', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('Cascader 单选', { exact: true });

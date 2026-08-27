@@ -84,6 +84,10 @@ interface CascaderColumnItemProps {
     entity: CascaderEntity;
     multiple: boolean;
     active: boolean;
+    /** 键盘导航虚拟焦点（与 `active` 语义不同——`active` 表示这个 entity 在
+     * 当前展开路径上，`keyboardActive` 表示键盘当前聚焦在这一行）。 */
+    keyboardActive?: boolean;
+    id?: string;
     checked: boolean;
     halfChecked: boolean;
     disabled: boolean;
@@ -100,6 +104,8 @@ function CascaderColumnItem(&{
     entity,
     multiple,
     active,
+    keyboardActive = false,
+    id,
     checked,
     halfChecked,
     disabled,
@@ -111,10 +117,11 @@ function CascaderColumnItem(&{
 }: CascaderColumnItemProps) @{
     <>
     <li
+        id={id}
         role="menuitem"
         aria-expanded={!isLeaf ? active : undefined}
         aria-disabled={disabled}
-        class={['lotus-cascader-item', active ? 'lotus-cascader-item-active' : '', disabled ? 'lotus-cascader-item-disabled' : ''].filter(Boolean).join(' ')}
+        class={['lotus-cascader-item', active ? 'lotus-cascader-item-active' : '', keyboardActive ? 'lotus-cascader-item-keyboard-active' : '', disabled ? 'lotus-cascader-item-disabled' : ''].filter(Boolean).join(' ')}
         onClick={() => onItemClick(entity)}
         onMouseEnter={() => onItemHover(entity)}
     >
@@ -155,6 +162,10 @@ function CascaderColumnItem(&{
         .lotus-cascader-item-disabled {
             color: var(--lotus-color-disabled-text);
             cursor: not-allowed;
+        }
+
+        .lotus-cascader-item-keyboard-active {
+            background: var(--lotus-color-fill-0);
         }
 
         .lotus-cascader-item-disabled:hover { background: transparent; }
@@ -242,6 +253,15 @@ export function Cascader(&{
     let &[isOpen] = track<boolean>(false);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    // 键盘导航虚拟焦点：{col, row} 指向 columns[col][row]，与 state.activeKeys
+    // （鼠标 hover/点击展开出的"当前路径"，用来决定渲染几列）是完全不同的两个
+    // 概念——activeCoord 只是"键盘当前聚焦在哪一列哪一行"，不驱动列的展开。
+    let &[activeCoord] = track<{ col: number; row: number } | null>(null);
+    const componentId = Math.random().toString(36).slice(2);
+
+    function itemDomId(col: number, row: number): string {
+        return `lotus-cascader-item-${componentId}-${col}-${row}`;
+    }
 
     const foundation = new CascaderFoundation({
         getState: () => untrack(() => state),
@@ -300,6 +320,23 @@ export function Cascader(&{
     // track() 派生值只在挂载时计算一次、之后 activeKeys 变化不会重新求值——
     // 对齐 Tree 组件 flatNodes 直接读 state.expandedKeys 传给纯函数的模式）。
     let &[columns] = track<CascaderEntity[][]>(() => computeColumns(treeData, state.activeKeys, entities));
+
+    function firstEnabledRow(col: number): number {
+        const column = columns[col];
+        if (!column) return -1;
+        return column.findIndex((e) => !e.data.disabled);
+    }
+
+    function nextEnabledRow(col: number, from: number, step: 1 | -1): number {
+        const column = columns[col];
+        if (!column || column.length === 0) return -1;
+        let i = from;
+        for (let count = 0; count < column.length; count++) {
+            i = (i + step + column.length) % column.length;
+            if (!column[i]?.data.disabled) return i;
+        }
+        return -1;
+    }
 
     // 每一列各自独立的虚拟滚动位置（colIndex -> scrollTop），因为 Cascader
     // 是多列联动、每列的选项数量可能都很大，不能只对某一列做虚拟化。
@@ -421,6 +458,92 @@ export function Cascader(&{
         const next = !untrack(() => isOpen);
         isOpen = next;
         onDropdownVisibleChange?.(next);
+    }
+
+    function scrollActiveItemIntoView() {
+        const list = untrack(() => listNode);
+        const coord = untrack(() => activeCoord);
+        if (!list || !coord) return;
+        const el = list.querySelector(`#${itemDomId(coord.col, coord.row)}`);
+        el?.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 键盘无障碍：DOM 焦点留在 trigger 上，activeCoord={col,row} 指向多列
+     * 面板里"当前聚焦在第几列第几行"。ArrowDown/ArrowUp 在同一列内移动
+     * （自动跳过 disabled 行），ArrowRight 展开当前行进入下一列，ArrowLeft
+     * 回到上一列，Enter 等价于点击当前行（分派逻辑对齐 handleColumnItemClick：
+     * 叶子节点或 changeOnSelect 时选中，否则展开下一列），Escape 关闭面板——
+     * Cascader 用 Popover trigger="custom" 完全接管开关状态，Popover 内建的
+     * closeOnEsc 只在非受控模式下生效（`!isControlled` 短路判断），这里必须
+     * 自己实现 Esc 处理（同 Select/TreeSelect）。 */
+    function handleTriggerKeyDown(event: KeyboardEvent) {
+        if (disabled) return;
+        const open = untrack(() => isOpen);
+        switch (event.key) {
+            case 'ArrowDown':
+            case 'ArrowUp': {
+                event.preventDefault();
+                if (!open) {
+                    isOpen = true;
+                    onDropdownVisibleChange?.(true);
+                    const row = firstEnabledRow(0);
+                    activeCoord = row >= 0 ? { col: 0, row } : null;
+                    scrollActiveItemIntoView();
+                    return;
+                }
+                const coord = untrack(() => activeCoord);
+                const col = coord?.col ?? 0;
+                const fromRow = coord?.row ?? -1;
+                const nextRow = nextEnabledRow(col, fromRow, event.key === 'ArrowDown' ? 1 : -1);
+                activeCoord = nextRow >= 0 ? { col, row: nextRow } : null;
+                scrollActiveItemIntoView();
+                return;
+            }
+            case 'ArrowRight': {
+                if (!open) return;
+                const coord = untrack(() => activeCoord);
+                if (!coord) return;
+                const entity = columns[coord.col]?.[coord.row];
+                if (!entity || isLeafEntity(entity)) return;
+                event.preventDefault();
+                handleItemActivate(entity);
+                const nextCol = coord.col + 1;
+                const row = firstEnabledRow(nextCol);
+                if (row >= 0) {
+                    activeCoord = { col: nextCol, row };
+                    scrollActiveItemIntoView();
+                }
+                return;
+            }
+            case 'ArrowLeft': {
+                if (!open) return;
+                const coord = untrack(() => activeCoord);
+                if (!coord || coord.col === 0) return;
+                event.preventDefault();
+                activeCoord = { col: coord.col - 1, row: 0 };
+                scrollActiveItemIntoView();
+                return;
+            }
+            case 'Enter': {
+                if (!open) return;
+                const coord = untrack(() => activeCoord);
+                if (!coord) return;
+                const entity = columns[coord.col]?.[coord.row];
+                if (!entity) return;
+                event.preventDefault();
+                handleColumnItemClick(entity);
+                return;
+            }
+            case 'Escape': {
+                if (!open) return;
+                event.preventDefault();
+                isOpen = false;
+                onDropdownVisibleChange?.(false);
+                return;
+            }
+            default:
+                return;
+        }
     }
 
     function handleClear(event: MouseEvent) {
@@ -564,6 +687,8 @@ export function Cascader(&{
                                                                 entity={entry.entity}
                                                                 multiple={multiple}
                                                                 active={state.activeKeys.has(entry.entity.key)}
+                                                                keyboardActive={activeCoord?.col === colIndex && activeCoord?.row === entry.index}
+                                                                id={itemDomId(colIndex, entry.index)}
                                                                 checked={state.checkedKeys.has(entry.entity.key)}
                                                                 halfChecked={state.halfCheckedKeys.has(entry.entity.key)}
                                                                 disabled={!!entry.entity.data.disabled}
@@ -582,11 +707,13 @@ export function Cascader(&{
                                 } @else {
                                     @for (const column of columns; index colIndex) {
                                         <ul class="lotus-cascader-column" role="menu">
-                                            @for (const entity of column; key entity.key) {
+                                            @for (const entity of column; index rowIndex; key entity.key) {
                                                 <CascaderColumnItem
                                                     entity={entity}
                                                     multiple={multiple}
                                                     active={state.activeKeys.has(entity.key)}
+                                                    keyboardActive={activeCoord?.col === colIndex && activeCoord?.row === rowIndex}
+                                                    id={itemDomId(colIndex, rowIndex)}
                                                     checked={state.checkedKeys.has(entity.key)}
                                                     halfChecked={state.halfCheckedKeys.has(entity.key)}
                                                     disabled={!!entity.data.disabled}
@@ -611,9 +738,11 @@ export function Cascader(&{
                     aria-haspopup="listbox"
                     aria-label={ariaLabel}
                     aria-disabled={disabled}
+                    aria-activedescendant={isOpen && activeCoord ? itemDomId(activeCoord.col, activeCoord.row) : undefined}
                     tabIndex={disabled ? -1 : 0}
                     class="lotus-cascader-trigger"
                     onClick={handleTriggerClick}
+                    onKeyDown={handleTriggerKeyDown}
                     onFocus={(event: FocusEvent) => onFocus?.(event)}
                     onBlur={(event: FocusEvent) => onBlur?.(event)}
                 >
