@@ -2,7 +2,7 @@ import { track, untrack, effect } from 'ripple';
 import { PopconfirmFoundation, type PopconfirmState } from '@lotus/foundation/feedback/popconfirm';
 import { Popover, type PopoverProps } from '../../show/popover/index.tsrx';
 import { Button, type ButtonType, type ButtonProps } from '../../basic/button/index.tsrx';
-import { IconAlertTriangle } from '@lotus/icons';
+import { IconAlertTriangle, IconClose } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
@@ -42,6 +42,7 @@ export function Popconfirm(&{
     cancelType = 'tertiary',
     okButtonProps = {},
     cancelButtonProps = {},
+    showCloseIcon = true,
     disabled = false,
     visible: visibleProp,
     defaultVisible = false,
@@ -136,6 +137,17 @@ export function Popconfirm(&{
                         <div class="lotus-popconfirm-description">{description}</div>
                     }
                 </div>
+                @if (showCloseIcon) {
+                    <Button
+                        class="lotus-popconfirm-close"
+                        theme="borderless"
+                        type={cancelType}
+                        size="small"
+                        icon={<IconClose />}
+                        aria-label={locale.Popconfirm.close}
+                        onClick={handleCancel}
+                    />
+                }
             </div>
             <div class="lotus-popconfirm-footer">
                 <Button
@@ -196,6 +208,11 @@ export function Popconfirm(&{
             flex-shrink: 0;
             margin-top: 2px;
             color: var(--lotus-color-warning);
+        }
+
+        .lotus-popconfirm-close {
+            flex-shrink: 0;
+            margin-inline-start: auto;
         }
 
         .lotus-popconfirm-body {

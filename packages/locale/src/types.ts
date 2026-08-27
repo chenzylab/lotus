@@ -221,6 +221,7 @@ export interface ToastLocale {
 export interface PopconfirmLocale {
   confirm: string;
   cancel: string;
+  close: string;
 }
 
 export interface TypographyLocale {

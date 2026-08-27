@@ -82,6 +82,25 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
   }
 
   /**
+   * 清除按钮：与 `handleInput('', ...)` 语义不同，不能复用——`handleInput`
+   * 是给"用户正在打字，中间态可能是暂时无法解析的字符串"这个场景设计的，
+   * 空字符串解析结果恒为 `undefined`，`onChange` 只在能解析出合法数值时才
+   * 触发，导致复用它实现清除按钮时 `onChange` 永远不会被调用（真实 bug，
+   * 曾复现为"受控模式下点击清除按钮界面毫无反应，非受控模式下视觉清空但
+   * 外部完全不知情"）。清除是一个明确的"清空"意图，不是"打出了一个恰好
+   * 解析失败的字符串"，因此无条件触发 `onChange(undefined)`，不像
+   * `handleInput` 那样有"解析成功才通知外部"的前提。
+   */
+  handleClear(isControlled: boolean, onChange?: (value: number | undefined) => void): void {
+    if (!isControlled) {
+      this.setState({ inputValue: '', value: undefined });
+    } else {
+      this.setState({ inputValue: '' });
+    }
+    onChange?.(undefined);
+  }
+
+  /**
    * 步进器加/减：基于当前值（缺省时取 0）按 step/shiftStep clamp 后的新值，
    * disabled 时不响应。
    */

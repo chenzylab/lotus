@@ -118,4 +118,18 @@ test.describe('Popconfirm', () => {
     await expect(trigger).toBeFocused();
     expect(logs).toContain('popconfirm visible changed: false');
   });
+
+  test('showCloseIcon 默认渲染右上角关闭图标，点击可关闭浮层（回归防护：曾经声明了 showCloseIcon prop 但从未被解构/渲染，是一个死 prop）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: '删除（同步回调）' });
+    const popover = page.locator('.lotus-popconfirm-popover');
+
+    await trigger.click();
+    await expect(popover).toBeVisible();
+
+    const closeIcon = popover.locator('.lotus-popconfirm-close');
+    await expect(closeIcon).toBeVisible();
+    await closeIcon.click();
+    await expect(popover).not.toBeVisible();
+  });
 });

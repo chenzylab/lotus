@@ -100,6 +100,32 @@ describe('FormFoundation', () => {
     expect(await foundation.validateField('username')).toBe('用户名已被占用');
   });
 
+  it('validateField：异步 validator 校验期间字段被 unregisterField 卸载，resolve 后不写入 errors/validating（回归防护：曾无条件写入已卸载字段，若同名字段后续重新挂载会继承这个过期结果，踩坑记录）', async () => {
+    const { foundation, getState } = createFoundation({ values: { username: 'taken' }, errors: {}, touched: {}, validating: {} });
+    let resolveValidator!: (value: string | undefined) => void;
+    foundation.registerField('username', {
+      rules: [
+        {
+          validator: () =>
+            new Promise<string | undefined>((resolve) => {
+              resolveValidator = resolve;
+            }),
+        },
+      ],
+    });
+
+    const pending = foundation.validateField('username');
+    expect(getState().validating.username).toBe(true);
+
+    foundation.unregisterField('username');
+    resolveValidator('用户名已被占用');
+    const error = await pending;
+
+    expect(error).toBe('用户名已被占用');
+    expect(getState().errors.username).toBeUndefined();
+    expect(getState().validating.username).toBe(true);
+  });
+
   it('validateField：异步 validator 校验期间 validating 为 true，完成后恢复 false（Semi 自身没有这个状态，lotus 主动新增）', async () => {
     const { foundation, getState } = createFoundation({ values: { username: 'taken' }, errors: {}, touched: {}, validating: {} });
     let resolveValidator!: (value: string | undefined) => void;

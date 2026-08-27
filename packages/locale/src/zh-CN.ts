@@ -202,6 +202,7 @@ const zhCN: LocaleShape = {
   Popconfirm: {
     confirm: '确定',
     cancel: '取消',
+    close: '关闭',
   },
   Typography: {
     collapseText: '收起',

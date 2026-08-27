@@ -208,6 +208,7 @@ const enUS: LocaleShape = {
   Popconfirm: {
     confirm: 'OK',
     cancel: 'Cancel',
+    close: 'Close',
   },
   Typography: {
     collapseText: 'Collapse',

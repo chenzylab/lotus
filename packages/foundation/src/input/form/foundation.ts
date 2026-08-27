@@ -151,6 +151,13 @@ export class FormFoundation extends Foundation<FormState> {
     }
     const { values } = this.getState();
     const error = rules ? await validateRules(values[field], values, rules, messages) : undefined;
+    // 字段在异步校验（validator 规则的 await）挂起期间可能已经卸载
+    // （Field 组件的清理 effect 调用 unregisterField 从 this.fields 里删除）。
+    // 若不判断直接写回，一个过期的 Promise 会在字段早已不存在时把 error/
+    // validating 写进共享的 errors/validating map；若同一个 field 名后续被
+    // 重新挂载复用（表单向导切换步骤、动态字段数组复用 key），新挂载的字段
+    // 会在用户尚未产生任何交互前就"继承"这个过期的校验结果。
+    if (!this.fields.has(field)) return error;
     // 并发校验多个字段时（validateAll 用 Promise.all），每个字段的规则校验都
     // 可能经过至少一次微任务让出（validateRules 对 validator 规则用了
     // await）。写回时必须重新读取当前最新的 errors/validating 再 merge，而不是

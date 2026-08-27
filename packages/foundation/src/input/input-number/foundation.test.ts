@@ -87,6 +87,33 @@ describe('InputNumberFoundation.handleInput', () => {
   });
 });
 
+describe('InputNumberFoundation.handleClear', () => {
+  it('uncontrolled mode: clears inputValue/value and always calls onChange(undefined) (回归防护：曾复用 handleInput("") 实现，onChange 只在能解析出合法数值时才触发，空字符串恒解析失败导致清除按钮点击后 onChange 从未被调用)', () => {
+    const adapter = createMockAdapter({ inputValue: '42', value: 42, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+    const onChange = vi.fn();
+
+    foundation.handleClear(false, onChange);
+
+    expect(adapter._raw().inputValue).toBe('');
+    expect(adapter._raw().value).toBeUndefined();
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('controlled mode: only clears display inputValue, still calls onChange(undefined)', () => {
+    const adapter = createMockAdapter({ inputValue: '42', value: 42, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+    const onChange = vi.fn();
+
+    foundation.handleClear(true, onChange);
+
+    expect(adapter._raw().inputValue).toBe('');
+    expect(adapter._raw().value).toBe(42);
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
 describe('InputNumberFoundation.handleBlur', () => {
   it('clamps out-of-range value on blur and reports the clamped value', () => {
     const adapter = createMockAdapter({ inputValue: '20', value: 20, isFocus: true });

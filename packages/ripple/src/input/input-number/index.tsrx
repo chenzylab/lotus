@@ -157,7 +157,7 @@ export function InputNumber(&{
                     class="lotus-input-number-clear"
                     aria-label={locale.InputNumber.clear}
                     onMouseDown={(event: MouseEvent) => event.preventDefault()}
-                    onClick={() => { foundation.handleInput('', isControlled, handleChange); }}
+                    onClick={() => { foundation.handleClear(isControlled, handleChange); }}
                 >
                     <IconClear />
                 </button>

@@ -77,8 +77,8 @@ export function Divider(&{
                 border-bottom: 1px solid var(--lotus-color-border);
             }
 
-            .lotus-divider-with-text-dashed::before,
-            .lotus-divider-with-text-dashed::after {
+            .lotus-divider-with-text.lotus-divider-dashed::before,
+            .lotus-divider-with-text.lotus-divider-dashed::after {
                 border-bottom-style: dashed;
             }
 
