@@ -74,6 +74,7 @@ export function Preview(&{
             }
         };
         window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     });
 
     effect(() => {
@@ -89,6 +90,10 @@ export function Preview(&{
         };
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
     });
 
     effect(() => {

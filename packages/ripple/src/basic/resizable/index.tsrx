@@ -113,6 +113,10 @@ export function Resizable(&{
         };
         document.addEventListener('mousemove', handlePointerMove);
         document.addEventListener('mouseup', handlePointerUp);
+        return () => {
+            document.removeEventListener('mousemove', handlePointerMove);
+            document.removeEventListener('mouseup', handlePointerUp);
+        };
     });
 
     let &[classes] = track<string>(() =>

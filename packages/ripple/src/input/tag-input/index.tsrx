@@ -269,6 +269,10 @@ export function TagInput(&{
         };
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleUp);
+        };
     });
 
     let &[dragTransforms] = track<Array<{ x: number; y: number }>>(() => {

@@ -155,6 +155,10 @@ export function Slider(&{
         };
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleUp);
+        };
     });
 
     function handleKeyDown(event: KeyboardEvent, handler: SliderHandle) {

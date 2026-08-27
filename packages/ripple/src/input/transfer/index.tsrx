@@ -402,6 +402,10 @@ export function Transfer(&{
         };
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleUp);
+        };
     });
 
     // ===================== 虚拟化（仅右侧） =====================

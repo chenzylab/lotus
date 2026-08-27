@@ -244,10 +244,11 @@ export function Select(&{
     // 点击 Select 触发器/浮层以外的区域时收起下拉——Popover 本身只支持"再点一次触发器
     // 关闭"（trigger='click' 的 toggle 语义），选择器类组件还需要"点击选项后关闭"和
     // "点击页面任意其他地方关闭"，所以这里改用 Popover 的 trigger='custom' 完全自己
-    // 接管开关状态。Ripple 的 effect() 没有返回清理函数的机制（不同于 React
-    // useEffect 的 cleanup），故不在 effect 里装卸监听器，而是组件挂载时装一次
-    // 常驻的 document 级监听，回调内部实时读取 isOpen/rootNode 判断是否需要处理，
-    // 这与 Popover 内部处理 Portal 目标的"常驻而非按需装卸"思路一致。
+    // 接管开关状态。effect 返回清理函数在组件卸载时移除监听器（Ripple 的 effect()
+    // 完整支持这个机制，对齐 DragMove/Modal/HotKeys 等组件的既有用法——早期版本
+    // 这里遗漏过 cleanup，全面质量复查发现同一遗漏在 Cascader/TreeSelect/
+    // AutoComplete/DatePicker/TimePicker/ColorPicker/Slider/TagInput/Transfer
+    // 等 10 个组件里被复制传播，详见 specs 踩坑记录）。
     //
     // 必须同时检查 rootNode 和 listNode 两个节点——Popover 的浮层内容通过 Portal
     // 渲染到 document.body，脱离了 rootNode 所在的 DOM 子树。只判断 rootNode.
@@ -267,6 +268,7 @@ export function Select(&{
             onDropdownVisibleChange?.(false);
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
     let &[allowClear] = track<boolean>(() => {

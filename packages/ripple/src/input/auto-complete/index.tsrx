@@ -209,6 +209,7 @@ export function AutoComplete(&{
             onDropdownVisibleChange?.(false);
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
     let &[displayValue] = track<string>(() => String(state.inputValue ?? ''));

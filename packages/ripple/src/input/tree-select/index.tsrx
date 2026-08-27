@@ -511,6 +511,7 @@ export function TreeSelect(&{
             onDropdownVisibleChange?.(false);
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
     let &[singleSelectedLabel] = track<any>(() => {

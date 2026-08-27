@@ -305,6 +305,10 @@ export function Cropper(&{
 
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
     });
 
     function handleBoxKeyDown(event: KeyboardEvent) {

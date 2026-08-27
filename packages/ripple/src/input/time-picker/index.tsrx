@@ -384,6 +384,7 @@ export function TimePicker(&{
             closePanel();
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
     let &[displayValue] = track<string>(() => {

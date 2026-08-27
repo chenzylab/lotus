@@ -572,6 +572,10 @@ export function ColorPicker(&{
         };
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleUp);
+        };
     });
 
     // ===================== 键盘操作（Semi 空白，对齐 chenzy.design 增强） =====================
@@ -674,6 +678,7 @@ export function ColorPicker(&{
             untrack(() => { popoverVisible = false; });
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
     // ===================== 派生展示值 =====================
