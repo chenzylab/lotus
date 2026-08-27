@@ -40,8 +40,9 @@ const ALL_DIRECTIONS: ResizeDirection[] = ['top', 'right', 'bottom', 'left', 'to
  * Resizable：8 方向可调整大小容器。拖拽算法（方向-delta 计算、边界约束、宽高比锁定）
  * 完全在 `ResizableFoundation` 里自研实现，不依赖 re-resizable 等第三方库
  * （AGENTS.md 第 0 节"基础能力自研"硬性要求）。指针事件用 document 级常驻监听
- * （effect 无清理函数机制，与 Select 的点击外部关闭处理是同一模式），回调内部
- * 实时读取 isResizing 状态判断是否需要处理，避免每次 resize 周期反复装卸监听器。
+ * （与 Select 的点击外部关闭处理是同一模式，effect 只在挂载时执行一次，卸载
+ * 时用返回的清理函数移除监听），回调内部实时读取 isResizing 状态判断是否需要
+ * 处理，避免每次 resize 周期反复装卸监听器。
  */
 export function Resizable(&{
     children,
@@ -87,8 +88,6 @@ export function Resizable(&{
 
     const enabledDirections = enable ?? ALL_DIRECTIONS;
 
-    const constraints: ResizableConstraints = { minWidth, minHeight, maxWidth, maxHeight, lockAspectRatio };
-
     function startResize(direction: ResizeDirection, pointerX: number, pointerY: number) {
         foundation.onResizeStart(direction, pointerX, pointerY);
         onResizeStart?.(direction);
@@ -98,6 +97,12 @@ export function Resizable(&{
         const handlePointerMove = (event: MouseEvent) => {
             const current = untrack(() => state);
             if (!current.isResizing || !current.direction) return;
+            // 每次移动都实时读取约束 prop（而非挂载时固化的闭包变量）——这个
+            // document 级监听在 effect 首次执行时创建一次、之后不会重新调度，
+            // minWidth/maxWidth 等约束运行时变化后必须靠这里的实时读取才能
+            // 生效，不能依赖外层一次性 const 快照（对齐 Slider RTL opts 固化
+            // 踩坑 #98 的教训）。
+            const constraints: ResizableConstraints = { minWidth, minHeight, maxWidth, maxHeight, lockAspectRatio };
             const size = foundation.onResize(event.clientX, event.clientY, constraints);
             if (size) {
                 onChange?.(size, current.direction);

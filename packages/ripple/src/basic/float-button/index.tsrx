@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { FloatButtonFoundation, type FloatButtonState } from '@lotus/foundation/basic/float-button';
+import { FloatButtonFoundation } from '@lotus/foundation/basic/float-button';
 
 export type FloatButtonShape = 'square' | 'round';
 export type FloatButtonSize = 'small' | 'default' | 'large';
@@ -40,11 +40,12 @@ export function FloatButton(&{
     style,
     class: className,
 }: FloatButtonProps) @{
-    let &[state] = track<FloatButtonState>({ disabled });
-
+    // 直接实时读 prop（非函数字面量 track() 会在挂载时固化快照，disabled
+    // 运行时变化后 FloatButtonFoundation.handleClick 读到的判断依据会永远是
+    // 挂载时刻的旧值——同一根因已在 Button 组件排查确认，详见 specs 踩坑 #94）。
     const foundation = new FloatButtonFoundation({
-        getState: () => state,
-        setState: (patch: Partial<FloatButtonState>) => { state = { ...state, ...patch }; },
+        getState: () => ({ disabled }),
+        setState: () => {},
     });
 
     function handleClick(event: MouseEvent) {

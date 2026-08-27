@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { ButtonFoundation, type ButtonState } from '@lotus/foundation/basic/button';
+import { ButtonFoundation } from '@lotus/foundation/basic/button';
 import type { ButtonType, ButtonTheme, ButtonSize, ButtonHtmlType } from '../button/index.tsrx';
 
 export type { ButtonType as IconButtonType, ButtonTheme as IconButtonTheme, ButtonSize as IconButtonSize };
@@ -52,11 +52,12 @@ export function IconButton(&{
     style,
     class: className,
 }: IconButtonProps) @{
-    let &[state] = track<ButtonState>({ disabled, loading });
-
+    // 直接实时读 prop（非函数字面量 track() 会在挂载时固化快照，disabled/loading
+    // 运行时变化后 ButtonFoundation.handleClick 读到的判断依据会永远是挂载时刻
+    // 的旧值——同一根因已在 Button 组件排查确认，详见 specs 踩坑 #94）。
     const foundation = new ButtonFoundation({
-        getState: () => state,
-        setState: (patch: Partial<ButtonState>) => { state = { ...state, ...patch }; },
+        getState: () => ({ disabled, loading }),
+        setState: () => {},
     });
 
     let &[classes] = track<string>(() =>

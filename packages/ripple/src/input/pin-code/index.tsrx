@@ -88,13 +88,24 @@ export function PinCode(&{
         })(),
     });
 
+    const foundationOpts = { count, format };
     const foundation = new PinCodeFoundation(
         {
             getState: () => untrack(() => state),
             setState: (patch: Partial<PinCodeState>) => { state = { ...untrack(() => state), ...patch }; },
         },
-        { count, format },
+        foundationOpts,
     );
+
+    // count/format 运行时可能变化（如切换验证码位数/格式），Foundation 内部
+    // writeChar/handlePaste 等方法都直接读 this.opts.count/format 做校验和
+    // 边界判断——不显式同步会导致这些方法永远沿用挂载时刻的旧配置（对齐
+    // Slider RTL opts 固化踩坑 #98 的教训与修复方式：不重新构造 Foundation，
+    // 直接修改共享的 opts 对象引用即可让下一次方法调用读到新值）。
+    effect(() => {
+        foundationOpts.count = count;
+        foundationOpts.format = format;
+    });
 
     effect(() => {
         if (value === undefined) return;

@@ -119,4 +119,19 @@ test.describe('PinCode', () => {
     await expect(cells.nth(0)).toHaveValue('9');
     await expect(cells.nth(3)).toHaveValue('6');
   });
+
+  test('format 运行时动态切换后字符校验立即生效（回归防护：Foundation opts 固化会让字符校验永远沿用挂载时刻的旧 format，详见 specs 踩坑 #98/#102）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('PinCode format 动态切换示例', { exact: true });
+    const firstCell = root.locator('.lotus-pin-code-cell').first();
+
+    await firstCell.click();
+    await firstCell.pressSequentially('a');
+    await expect(firstCell).toHaveValue('');
+
+    await page.getByRole('button', { name: /切换 PinCode format/ }).click();
+    await firstCell.click();
+    await firstCell.pressSequentially('a');
+    await expect(firstCell).toHaveValue('a');
+  });
 });

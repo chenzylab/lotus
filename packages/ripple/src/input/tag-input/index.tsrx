@@ -117,13 +117,24 @@ export function TagInput(&{
         inputValue: isInputControlled ? inputValueProp! : '',
     });
 
+    const foundationOpts = { separator, allowDuplicates, max };
     const foundation = new TagInputFoundation(
         {
             getState: () => untrack(() => state),
             setState: (patch: Partial<TagInputState>) => { state = { ...untrack(() => state), ...patch }; },
         },
-        { separator, allowDuplicates, max },
+        foundationOpts,
     );
+
+    // separator/allowDuplicates/max 运行时可能变化，addTagsFromInput 内部
+    // 直接读 this.opts 做拆分/去重/裁剪——不同步会永远沿用挂载时刻的旧配置
+    // （对齐 Slider RTL opts 固化踩坑 #98 的修复方式：修改共享的 opts 对象
+    // 引用，不重新构造 Foundation）。
+    effect(() => {
+        foundationOpts.separator = separator;
+        foundationOpts.allowDuplicates = allowDuplicates;
+        foundationOpts.max = max;
+    });
 
     effect(() => {
         if (value === undefined) return;

@@ -48,10 +48,15 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
     this.setState({ format });
   }
 
-  private applyHsva(hsva: HsvaColor): ColorValue {
+  /** `isControlled` 为 true 时不写 `state.value`——受控模式下颜色必须完全
+   * 来自外部 `value` prop，交互产生的中间结果只作为返回值供调用方拼装
+   * onChange 载荷，不能直接落地到 state，否则父组件拒绝更新时 UI 会永久
+   * 停留在交互产生的中间态（与 Cascader/TreeSelect/Upload/Rating 同一
+   * 根因，详见 specs 踩坑 #100）。 */
+  private applyHsva(hsva: HsvaColor, isControlled: boolean): ColorValue {
     const a = this.opts.alpha ? clamp(hsva.a, 0, 1) : 1;
     const value = fromHsva({ ...hsva, a });
-    this.setState({ value });
+    if (!isControlled) this.setState({ value });
     return value;
   }
 
@@ -64,10 +69,10 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
     return { s, v };
   }
 
-  handleSaturationValueChange(x: number, y: number, width: number, height: number): ColorValue {
+  handleSaturationValueChange(x: number, y: number, width: number, height: number, isControlled: boolean): ColorValue {
     const { s, v } = this.posToSaturationValue(x, y, width, height);
     const { hsva } = this.getState().value;
-    return this.applyHsva({ ...hsva, s, v });
+    return this.applyHsva({ ...hsva, s, v }, isControlled);
   }
 
   /** {s,v} → 手柄中心像素坐标（相对矩形左上角），供渲染层定位手柄使用。 */
@@ -81,10 +86,10 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
     return Math.round(clamp(width === 0 ? 0 : x / width, 0, 1) * 360);
   }
 
-  handleHueChange(x: number, width: number): ColorValue {
+  handleHueChange(x: number, width: number, isControlled: boolean): ColorValue {
     const h = this.posToHue(x, width);
     const { hsva } = this.getState().value;
-    return this.applyHsva({ ...hsva, h });
+    return this.applyHsva({ ...hsva, h }, isControlled);
   }
 
   hueToPos(h: number, width: number): number {
@@ -97,11 +102,11 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
     return Number(clamp(width === 0 ? 0 : x / width, 0, 1).toFixed(2));
   }
 
-  handleAlphaChange(x: number, width: number): ColorValue {
+  handleAlphaChange(x: number, width: number, isControlled: boolean): ColorValue {
     if (!this.opts.alpha) return this.getState().value;
     const a = this.posToAlpha(x, width);
     const { hsva } = this.getState().value;
-    return this.applyHsva({ ...hsva, a });
+    return this.applyHsva({ ...hsva, a }, isControlled);
   }
 
   alphaToPos(a: number, width: number): number {
@@ -111,15 +116,15 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
   // ===================== DataPart 文本输入 =====================
 
   /** 直接写入完整 HSVA（键盘方向键场景，数值已由调用方算好）。 */
-  handleHsvaInput(patch: Partial<HsvaColor>): ColorValue {
+  handleHsvaInput(patch: Partial<HsvaColor>, isControlled: boolean): ColorValue {
     const { hsva } = this.getState().value;
     const next: HsvaColor = { ...hsva, ...patch };
     if (!this.opts.alpha) next.a = 1;
-    return this.applyHsva(next);
+    return this.applyHsva(next, isControlled);
   }
 
   /** rgba 输入框：单个通道文本转数字，越界/非数字返回 null 不提交。 */
-  handleRgbaChannelInput(channel: keyof RgbaColor, raw: string): ColorValue | null {
+  handleRgbaChannelInput(channel: keyof RgbaColor, raw: string, isControlled: boolean): ColorValue | null {
     const num = Number(raw);
     if (!Number.isFinite(num)) return null;
     const max = channel === 'a' ? 1 : 255;
@@ -128,17 +133,17 @@ export class ColorPickerFoundation extends Foundation<ColorPickerState> {
     const next: RgbaColor = { ...rgba, [channel]: num };
     if (!this.opts.alpha) next.a = 1;
     const value = fromRgba(next);
-    this.setState({ value });
+    if (!isControlled) this.setState({ value });
     return value;
   }
 
   /** hex 输入框：整串文本解析，非法格式返回 null 不提交（允许半截输入不报错但也不提交）。 */
-  handleHexInput(raw: string): ColorValue | null {
+  handleHexInput(raw: string, isControlled: boolean): ColorValue | null {
     const value = fromHex(raw);
     if (!value) return null;
     if (!this.opts.alpha) value.rgba.a = 1;
     if (!this.opts.alpha) value.hsva.a = 1;
-    this.setState({ value });
+    if (!isControlled) this.setState({ value });
     return value;
   }
 

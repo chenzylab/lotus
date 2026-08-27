@@ -23,11 +23,19 @@ describe('ColorPickerFoundation', () => {
   it('handleSaturationValueChange：更新 s/v，保留原 h/a', () => {
     const { foundation, getState } = createFoundation();
     const before = getState().value.hsva;
-    const value = foundation.handleSaturationValueChange(0, 0, 200, 200);
+    const value = foundation.handleSaturationValueChange(0, 0, 200, 200, false);
     expect(value.hsva.s).toBe(0);
     expect(value.hsva.v).toBe(100);
     expect(value.hsva.h).toBe(before.h);
     expect(value.hsva.a).toBe(before.a);
+  });
+
+  it('回归防护：isControlled=true 时不写 state.value，但返回值仍是计算结果', () => {
+    const { foundation, getState } = createFoundation();
+    const before = getState().value;
+    const value = foundation.handleSaturationValueChange(0, 0, 200, 200, true);
+    expect(value.hsva.s).toBe(0);
+    expect(getState().value).toEqual(before);
   });
 
   it('saturationValueToPos：与 posToSaturationValue 互逆', () => {
@@ -47,7 +55,7 @@ describe('ColorPickerFoundation', () => {
   it('handleHueChange：更新 h，保留原 s/v/a', () => {
     const { foundation, getState } = createFoundation();
     const before = getState().value.hsva;
-    const value = foundation.handleHueChange(180, 360);
+    const value = foundation.handleHueChange(180, 360, false);
     expect(value.hsva.h).toBe(180);
     expect(value.hsva.s).toBe(before.s);
     expect(value.hsva.v).toBe(before.v);
@@ -63,13 +71,13 @@ describe('ColorPickerFoundation', () => {
   it('handleAlphaChange：alpha=false 时不生效', () => {
     const { foundation, getState } = createFoundation(false);
     const before = getState().value;
-    const value = foundation.handleAlphaChange(0, 200);
+    const value = foundation.handleAlphaChange(0, 200, false);
     expect(value).toEqual(before);
   });
 
   it('handleAlphaChange：alpha=true 时更新 a', () => {
     const { foundation } = createFoundation(true);
-    const value = foundation.handleAlphaChange(0, 200);
+    const value = foundation.handleAlphaChange(0, 200, false);
     expect(value.hsva.a).toBe(0);
     expect(value.rgba.a).toBe(0);
   });
@@ -77,14 +85,14 @@ describe('ColorPickerFoundation', () => {
   it('handleRgbaChannelInput：越界/非数字返回 null，不提交', () => {
     const { foundation, getState } = createFoundation();
     const before = getState().value;
-    expect(foundation.handleRgbaChannelInput('r', '300')).toBeNull();
-    expect(foundation.handleRgbaChannelInput('r', 'abc')).toBeNull();
+    expect(foundation.handleRgbaChannelInput('r', '300', false)).toBeNull();
+    expect(foundation.handleRgbaChannelInput('r', 'abc', false)).toBeNull();
     expect(getState().value).toEqual(before);
   });
 
   it('handleRgbaChannelInput：合法输入更新对应通道并同步 hsva/hex', () => {
     const { foundation } = createFoundation();
-    const value = foundation.handleRgbaChannelInput('r', '255');
+    const value = foundation.handleRgbaChannelInput('r', '255', false);
     expect(value?.rgba.r).toBe(255);
     expect(value?.hex.startsWith('#ff')).toBe(true);
   });
@@ -92,15 +100,28 @@ describe('ColorPickerFoundation', () => {
   it('handleHexInput：非法格式返回 null 不提交', () => {
     const { foundation, getState } = createFoundation();
     const before = getState().value;
-    expect(foundation.handleHexInput('zzzzzz')).toBeNull();
+    expect(foundation.handleHexInput('zzzzzz', false)).toBeNull();
     expect(getState().value).toEqual(before);
   });
 
   it('handleHexInput：合法输入更新三态', () => {
     const { foundation } = createFoundation();
-    const value = foundation.handleHexInput('#ff0000');
+    const value = foundation.handleHexInput('#ff0000', false);
     expect(value?.rgba).toEqual({ r: 255, g: 0, b: 0, a: 1 });
     expect(value?.hsva.h).toBe(0);
+  });
+
+  it('回归防护：isControlled=true 时 handleRgbaChannelInput/handleHexInput 都不写 state', () => {
+    const { foundation, getState } = createFoundation();
+    const before = getState().value;
+
+    const rgbaResult = foundation.handleRgbaChannelInput('r', '255', true);
+    expect(rgbaResult?.rgba.r).toBe(255);
+    expect(getState().value).toEqual(before);
+
+    const hexResult = foundation.handleHexInput('#ff0000', true);
+    expect(hexResult?.rgba.r).toBe(255);
+    expect(getState().value).toEqual(before);
   });
 
   it('setFormat / syncValue：切换展示格式与外部受控同步', () => {

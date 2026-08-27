@@ -176,4 +176,19 @@ test.describe('ColorPicker', () => {
     expect(style).toContain(`left: ${box.width}px`);
     expect(style).toContain('top: 0px');
   });
+
+  test('受控：onChange 拒绝更新时点击色相条/输入 hex 都不会把 UI 带偏（回归防护：与 Cascader/TreeSelect/Upload/Rating 同一根因 bug，详见 specs 踩坑 #100）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('ColorPicker 受控拒绝更新示例', { exact: true });
+    const hexInput = root.locator('.lotus-color-picker-input-hex');
+    await expect(hexInput).toHaveValue('#2eafe6');
+
+    const hue = root.locator('.lotus-color-picker-hue');
+    await hue.scrollIntoViewIfNeeded();
+    const box = await hue.boundingBox();
+    if (!box) throw new Error('no bounding box');
+    await page.mouse.click(box.x + box.width * 0.8, box.y + box.height / 2);
+    await page.waitForTimeout(300);
+    await expect(hexInput).toHaveValue('#2eafe6');
+  });
 });

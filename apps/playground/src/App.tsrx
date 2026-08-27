@@ -397,6 +397,11 @@ export function App() @{
     let &[pinCodeChangeLog] = track<string>('');
     let &[pinCodeCompleteLog] = track<string>('');
     let &[pinCodeControlledValue] = track<string>('123');
+    let &[pinCodeDynamicFormat] = track<'number' | 'mixed'>('number');
+    let &[iconButtonDynamicDisabled] = track<boolean>(true);
+    let &[iconButtonDynamicClickLog] = track<string>('');
+    let &[floatButtonDynamicDisabled] = track<boolean>(true);
+    let &[floatButtonDynamicClickLog] = track<string>('');
 
     interface TablePerson {
         key: string;
@@ -725,6 +730,21 @@ export function App() @{
             <IconButton icon={<IconSetting />} loading aria-label="加载中图标按钮" onClick={() => console.log('should not fire')} />
         </Space>
 
+        <Divider>IconButton：disabled 运行时动态切换（回归防护：非函数字面量 track() 固化快照会让 disabled 变化后点击回调永远被拦截，详见 specs 踩坑 #94）</Divider>
+
+        <Space>
+            <IconButton
+                icon={<IconSetting />}
+                disabled={iconButtonDynamicDisabled}
+                aria-label="IconButton 动态禁用示例"
+                onClick={() => { iconButtonDynamicClickLog = '点击生效'; }}
+            />
+            <Button onClick={() => { iconButtonDynamicDisabled = !iconButtonDynamicDisabled; }}>
+                切换 IconButton 禁用态
+            </Button>
+            <TypographyText type="secondary" aria-label="IconButton 动态禁用日志">{iconButtonDynamicClickLog}</TypographyText>
+        </Space>
+
         <Divider>FloatButton</Divider>
 
         {/* FloatButton 默认 position: fixed，演示区用 position: relative 覆盖以便并排展示 */}
@@ -734,6 +754,22 @@ export function App() @{
             <FloatButton icon={<IconSetting />} shape="square" aria-label="方形悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
             <FloatButton icon={<IconSetting />} size="small" aria-label="小号悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
             <FloatButton icon={<IconSetting />} disabled aria-label="禁用悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} onClick={() => console.log('should not fire')} />
+        </div>
+
+        <Divider>FloatButton：disabled 运行时动态切换（回归防护：与 IconButton 同一根因，详见 specs 踩坑 #94）</Divider>
+
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', position: 'relative', height: '60px' }}>
+            <FloatButton
+                icon={<IconSetting />}
+                disabled={floatButtonDynamicDisabled}
+                aria-label="FloatButton 动态禁用示例"
+                style={{ position: 'relative', right: 'auto', bottom: 'auto' }}
+                onClick={() => { floatButtonDynamicClickLog = '点击生效'; }}
+            />
+            <Button onClick={() => { floatButtonDynamicDisabled = !floatButtonDynamicDisabled; }}>
+                切换 FloatButton 禁用态
+            </Button>
+            <TypographyText type="secondary" aria-label="FloatButton 动态禁用日志">{floatButtonDynamicClickLog}</TypographyText>
         </div>
 
         <Divider>Resizable</Divider>
@@ -3402,6 +3438,16 @@ export function App() @{
             />
         </div>
 
+        <Divider>ColorPicker：受控拒绝更新（回归防护：onChange 拒绝更新时拖拽/输入不应污染 UI）</Divider>
+
+        <div>
+            <ColorPicker
+                value={{ hsva: { h: 200, s: 80, v: 90, a: 1 }, rgba: { r: 46, g: 175, b: 230, a: 1 }, hex: '#2eafe6' }}
+                onChange={() => {}}
+                aria-label="ColorPicker 受控拒绝更新示例"
+            />
+        </div>
+
         <Divider>Transfer：基础用法（type=list，含搜索/全选/禁用项）</Divider>
 
         <div>
@@ -3678,6 +3724,20 @@ export function App() @{
             />
             <Button onClick={() => { pinCodeControlledValue = pinCodeControlledValue === '' ? '9876' : ''; }}>
                 切换 PinCode 值
+            </Button>
+        </div>
+
+        <Divider>PinCode：format 运行时动态切换（回归防护：Foundation opts 固化会让 format 切换后字符校验永远沿用挂载时刻的旧格式，详见 specs 踩坑 #98/#102）</Divider>
+
+        <div>
+            <PinCode
+                count={4}
+                format={pinCodeDynamicFormat}
+                autoFocus={false}
+                aria-label="PinCode format 动态切换示例"
+            />
+            <Button onClick={() => { pinCodeDynamicFormat = pinCodeDynamicFormat === 'number' ? 'mixed' : 'number'; }}>
+                切换 PinCode format（当前：{pinCodeDynamicFormat}）
             </Button>
         </div>
 

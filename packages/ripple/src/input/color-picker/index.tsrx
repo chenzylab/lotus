@@ -487,6 +487,14 @@ export function ColorPicker(&{
         foundationOpts,
     );
 
+    // alpha 运行时可能变化，Foundation 内部大量方法直接读 this.opts.alpha
+    // 决定是否保留透明度通道——不同步会永远沿用挂载时刻的旧配置（对齐
+    // Slider RTL opts 固化踩坑 #98 的修复方式：修改共享的 opts 对象引用，
+    // 不重新构造 Foundation）。
+    effect(() => {
+        foundationOpts.alpha = alpha;
+    });
+
     effect(() => {
         if (value === undefined) return;
         untrack(() => { state = { ...state, value: value! }; });
@@ -511,7 +519,7 @@ export function ColorPicker(&{
         const point = svPointFromEvent(event);
         if (!point) return;
         untrack(() => { svDragging = true; });
-        const next = foundation.handleSaturationValueChange(point.x, point.y, width, height);
+        const next = foundation.handleSaturationValueChange(point.x, point.y, width, height, isControlled);
         emit(next);
     }
 
@@ -530,7 +538,7 @@ export function ColorPicker(&{
         const x = huePointFromEvent(event);
         if (x === null) return;
         untrack(() => { hueDragging = true; });
-        const next = foundation.handleHueChange(x, width);
+        const next = foundation.handleHueChange(x, width, isControlled);
         emit(next);
     }
 
@@ -550,7 +558,7 @@ export function ColorPicker(&{
         const x = alphaPointFromEvent(event);
         if (x === null) return;
         untrack(() => { alphaDragging = true; });
-        const next = foundation.handleAlphaChange(x, width);
+        const next = foundation.handleAlphaChange(x, width, isControlled);
         emit(next);
     }
 
@@ -558,13 +566,13 @@ export function ColorPicker(&{
         const handleMove = (event: MouseEvent) => {
             if (untrack(() => svDragging)) {
                 const point = svPointFromEvent(event);
-                if (point) emit(foundation.handleSaturationValueChange(point.x, point.y, width, height));
+                if (point) emit(foundation.handleSaturationValueChange(point.x, point.y, width, height, isControlled));
             } else if (untrack(() => hueDragging)) {
                 const x = huePointFromEvent(event);
-                if (x !== null) emit(foundation.handleHueChange(x, width));
+                if (x !== null) emit(foundation.handleHueChange(x, width, isControlled));
             } else if (untrack(() => alphaDragging)) {
                 const x = alphaPointFromEvent(event);
-                if (x !== null) emit(foundation.handleAlphaChange(x, width));
+                if (x !== null) emit(foundation.handleAlphaChange(x, width, isControlled));
             }
         };
         const handleUp = () => {
@@ -591,7 +599,7 @@ export function ColorPicker(&{
             default: return;
         }
         event.preventDefault();
-        emit(foundation.handleHsvaInput(patch));
+        emit(foundation.handleHsvaInput(patch, isControlled));
     }
 
     function handleHueKeyDown(event: KeyboardEvent) {
@@ -601,7 +609,7 @@ export function ColorPicker(&{
         else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') h = clamp(hsva.h + 1, 0, 360);
         else return;
         event.preventDefault();
-        emit(foundation.handleHsvaInput({ h }));
+        emit(foundation.handleHsvaInput({ h }, isControlled));
     }
 
     function handleAlphaKeyDown(event: KeyboardEvent) {
@@ -612,7 +620,7 @@ export function ColorPicker(&{
         else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') a = clamp(Number((hsva.a + 0.01).toFixed(2)), 0, 1);
         else return;
         event.preventDefault();
-        emit(foundation.handleHsvaInput({ a }));
+        emit(foundation.handleHsvaInput({ a }, isControlled));
     }
 
     // ===================== 数据区（DataPart） =====================
@@ -625,20 +633,20 @@ export function ColorPicker(&{
 
     function handleHexInput(event: Event) {
         const raw = (event.target as HTMLInputElement).value;
-        const next = foundation.handleHexInput(raw);
+        const next = foundation.handleHexInput(raw, isControlled);
         if (next) emit(next);
     }
 
     function handleRgbaChannelInput(channel: 'r' | 'g' | 'b' | 'a', event: Event) {
         const raw = (event.target as HTMLInputElement).value;
-        const next = foundation.handleRgbaChannelInput(channel, raw);
+        const next = foundation.handleRgbaChannelInput(channel, raw, isControlled);
         if (next) emit(next);
     }
 
     function handleHsvaChannelInput(channel: 'h' | 's' | 'v' | 'a', event: Event) {
         const raw = Number((event.target as HTMLInputElement).value);
         if (!Number.isFinite(raw)) return;
-        const next = foundation.handleHsvaInput({ [channel]: raw } as Partial<HsvaColor>);
+        const next = foundation.handleHsvaInput({ [channel]: raw } as Partial<HsvaColor>, isControlled);
         emit(next);
     }
 
@@ -647,7 +655,7 @@ export function ColorPicker(&{
         if (!w) return;
         try {
             const result = await new w().open();
-            const next = foundation.handleHexInput(result.sRGBHex);
+            const next = foundation.handleHexInput(result.sRGBHex, isControlled);
             if (next) emit(next);
         } catch {
             // 用户取消吸色，忽略
