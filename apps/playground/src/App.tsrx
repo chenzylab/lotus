@@ -3342,6 +3342,12 @@ export function App() @{
             </Button>
         </div>
 
+        <Divider>Rating：受控（onChange 拒绝更新，验证点击不会把 UI 带偏）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <Rating value={3} onChange={() => {}} aria-label="Rating 受控拒绝更新示例" />
+        </div>
+
         <Divider>ColorPicker：基础用法（直接展开面板）</Divider>
 
         <div>

@@ -1,4 +1,4 @@
-import { track, untrack, effect } from 'ripple';
+import { track, untrack } from 'ripple';
 import { RatingFoundation, starFillState, type RatingState, type RatingFoundationOptions } from '@lotus/foundation/input/rating';
 import { IconStar } from '@lotus/icons';
 
@@ -65,11 +65,6 @@ export function Rating(&{
         foundationOpts,
     );
 
-    effect(() => {
-        if (value === undefined) return;
-        untrack(() => { state = { ...state, value: value! }; });
-    });
-
     let starNodes: Array<HTMLElement | null> = [];
 
     function handleStarMouseMove(index: number, event: MouseEvent) {
@@ -94,7 +89,7 @@ export function Rating(&{
         if (!node) return;
         const rect = node.getBoundingClientRect();
         const fraction = fractionWithin(event.clientX, rect);
-        const result = foundation.handleClick(index, fraction);
+        const result = foundation.handleClick(index, fraction, isControlled);
         if (result.changed) onChange?.(result.value);
     }
 
@@ -102,11 +97,17 @@ export function Rating(&{
         if (disabled) return;
         if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
         event.preventDefault();
-        const result = foundation.handleKeyDown(event.key);
+        const result = foundation.handleKeyDown(event.key, isControlled);
         if (result?.changed) onChange?.(result.value);
     }
 
-    let &[displayValue] = track<number>(() => (state.hoverValue === undefined ? state.value : state.hoverValue));
+    // 受控模式下已提交值（hover 预览之外的"底值"）必须直接来自 value prop，
+    // 不能读 state.value——真机验证过“先写本地 state、指望某个 effect 把它
+    // 纠正回受控值”这条路径在父组件 onChange 拒绝更新时完全失效（那个纠正
+    // effect 只在 value prop 本身变化时才会被重新调度）。committedValue 与
+    // Select 的 `isControlled ? value : state.value` 是同一个正确模式。
+    let &[committedValue] = track<number>(() => (isControlled ? value! : state.value));
+    let &[displayValue] = track<number>(() => (state.hoverValue === undefined ? committedValue : state.hoverValue));
 
     let &[stars] = track<Array<{ index: number; fill: 'empty' | 'half' | 'full' }>>(() =>
         Array.from({ length: count }, (_v, index) => ({ index, fill: starFillState(displayValue, index, allowHalf) })),

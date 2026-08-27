@@ -86,17 +86,25 @@ export class RatingFoundation extends Foundation<RatingState> {
    * 点击提交：allowClear 且点击值等于当前已提交值时清零为 0，否则提交新值。
    * 清零场景额外记录 clearedValue，供后续 handleHover 的守卫使用；正常设值
    * 场景清空 clearedValue 记录。
-   */
-  handleClick(index: number, fraction: number): { value: number; changed: boolean } {
+   *
+   * `isControlled` 为 true 时不写 `value`（只在非受控模式下把点击结果落地
+   * 进内部 state）——受控模式下 UI 的展示值必须完全来自外部 `value` prop，
+   * 不能靠"点击先写本地 state、再指望某个 effect 把它纠正回受控值"这种方式
+   * 实现，那个纠正 effect 只在 `value` prop 本身变化时才会被重新调度（它对
+   * `state` 的读取包在 `untrack` 里，不建立响应式依赖），若父组件的
+   * `onChange` 选择不更新 `value`（这正是受控组件校验失败/业务规则拒绝变更
+   * 的典型场景），UI 会永久停留在点击产生的中间态，真机验证过这个 bug 真实
+   * 存在（点击后 1 秒仍未被拉回）。`hoverValue`/`clearedValue` 这两个纯本地
+   * 交互态（不对外暴露、没有对应 prop）不受此限制，任何模式下都正常写。 */
+  handleClick(index: number, fraction: number, isControlled: boolean): { value: number; changed: boolean } {
     const { value } = this.getState();
     const clicked = this.getStarValue(index, fraction);
     const isReset = this.opts.allowClear && clicked === value;
     const next = isReset ? 0 : clicked;
-    if (isReset) {
-      this.setState({ value: next, hoverValue: undefined, clearedValue: clicked });
-    } else {
-      this.setState({ value: next, hoverValue: undefined, clearedValue: null });
-    }
+    const patch = isControlled
+      ? { hoverValue: undefined, clearedValue: isReset ? clicked : null }
+      : { value: next, hoverValue: undefined, clearedValue: isReset ? clicked : null };
+    this.setState(patch);
     return { value: next, changed: next !== value };
   }
 
@@ -104,8 +112,9 @@ export class RatingFoundation extends Foundation<RatingState> {
    * 键盘方向键：step 按 allowHalf 取 0.5/1。越界是**环绕（wrap-around）不是
    * 钳制（clamp）**——对齐 Semi 源码的真实行为：超过 count 直接归零，低于 0
    * 直接跳到 count，不是停在边界值不动。方向键之外的按键返回 null。
+   * `isControlled` 语义同 `handleClick`。
    */
-  handleKeyDown(key: string): { value: number; changed: boolean } | null {
+  handleKeyDown(key: string, isControlled: boolean): { value: number; changed: boolean } | null {
     const { value } = this.getState();
     const step = this.opts.allowHalf ? 0.5 : 1;
     let delta: number;
@@ -126,7 +135,8 @@ export class RatingFoundation extends Foundation<RatingState> {
     if (tempValue > this.opts.count) next = 0;
     else if (tempValue < 0) next = this.opts.count;
     else next = tempValue;
-    this.setState({ value: next, hoverValue: undefined, clearedValue: null });
+    const patch = isControlled ? { hoverValue: undefined, clearedValue: null } : { value: next, hoverValue: undefined, clearedValue: null };
+    this.setState(patch);
     return { value: next, changed: next !== value };
   }
 

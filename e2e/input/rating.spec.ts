@@ -115,4 +115,18 @@ test.describe('Rating', () => {
     await toggleButton.click();
     await expect(group.locator('.lotus-rating-star-full')).toHaveCount(3);
   });
+
+  test('受控：onChange 拒绝更新时点击不会把 UI 带偏（回归防护：Foundation 曾无条件写内部 state，仅靠一个只在 value prop 变化时才重新调度的 effect 纠正，父组件拒绝更新时该 effect 永远不会重跑，UI 会永久停留在点击产生的中间态，真机验证确认过点击后 1 秒仍未被拉回）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating 受控拒绝更新示例', { exact: true });
+    await expect(group.locator('.lotus-rating-star-full')).toHaveCount(3);
+
+    const star5 = group.locator('.lotus-rating-star').nth(4);
+    await star5.click();
+
+    // 点击后立即检查，且等待一小段时间确认不是异步纠正延迟，UI 应始终保持受控值 3。
+    await expect(group.locator('.lotus-rating-star-full')).toHaveCount(3);
+    await page.waitForTimeout(300);
+    await expect(group.locator('.lotus-rating-star-full')).toHaveCount(3);
+  });
 });
