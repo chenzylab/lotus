@@ -18,6 +18,16 @@
 
 export type ChartType = 'bar' | 'line' | 'area' | 'pie' | 'funnel' | 'radar';
 
+/** VChart 原生事件回调参数里，业务方真正关心的字段——原始数据点 `datum`
+ * 与触发这次事件的原生 DOM 事件对象。VChart 的 `EventParams`/`BaseEventParams`
+ * 还携带 `mark`/`model`/`chart`/`vchart` 等内部渲染层对象，这些是 VChart
+ * 自己的实现细节，不应该泄漏进 lotus 的公开 API——只透传业务方能直接消费、
+ * 不需要理解 VChart 内部概念就能使用的两个字段。 */
+export interface ChartEventParams {
+  datum: Record<string, unknown> | undefined;
+  event: Event | undefined;
+}
+
 export interface ChartProps {
   /** 图表类型，决定落到 VChart spec 的 `type` 字段。 */
   type: ChartType;
@@ -27,6 +37,14 @@ export interface ChartProps {
    * 不做 lotus 自己的字段改名封装——VChart 的 spec 概念已经足够精简，重新包一层
    * 命名会制造两套需要对照记忆的 API，对使用方没有增益。 */
   spec?: Record<string, unknown>;
+}
+
+/** 判断 `data` 是否为空——所有数据系列的 `values` 都是空数组时判定为空数据，
+ * 驱动组件层展示 Empty 占位而非渲染一个内容空白的 VChart 实例。VChart 本身
+ * 没有内建"空数据占位"机制（核实过官方 spec 类型定义与源码，不存在
+ * noData/emptyPlaceholder 这类配置项），这一层需要 lotus 自己实现。 */
+export function isChartDataEmpty(data: ChartProps['data']): boolean {
+  return data.length === 0 || data.every((series) => series.values.length === 0);
 }
 
 /**

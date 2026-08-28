@@ -526,6 +526,9 @@ export function App() @{
     let lottieInstance: AnimationItem | null = null;
     let &[hotKeyTriggerCount] = track<number>(0);
     let &[hotKeyClickLog] = track<string>('');
+    let &[chartEventLog] = track<string>('');
+    let &[chartExportLog] = track<string>('');
+    let &[chartLoading] = track<boolean>(false);
     let &[sidebarVisible] = track<boolean>(false);
     let &[sidebarMode] = track<'main' | 'code' | 'file'>('main');
     let &[sidebarBackWardLog] = track<string>('');
@@ -4368,6 +4371,66 @@ export function App() @{
                 />
             </div>
         </div>
+
+        <Divider>Chart：点击/悬浮数据点触发事件回调</Divider>
+
+        <div class="demo-chart-event" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+            <Chart
+                type="bar"
+                data={[{ id: 'bar', values: chartCategoryData }]}
+                spec={{ xField: 'category', yField: 'value' }}
+                width="100%"
+                height="100%"
+                aria-label="Chart 事件回调示例"
+                onClick={({ datum }) => { chartEventLog = `点击：${JSON.stringify(datum)}`; }}
+                onHover={({ datum }) => { chartEventLog = `悬浮：${JSON.stringify(datum)}`; }}
+            />
+        </div>
+        <TypographyText type="secondary" aria-label="Chart 事件日志">{chartEventLog}</TypographyText>
+
+        <Divider>Chart：导出图片按钮</Divider>
+
+        <div class="demo-chart-export" style={{ width: '100%', height: '260px', border: '1px solid var(--lotus-color-border)' }}>
+            <Chart
+                type="line"
+                data={[{ id: 'line', values: chartCategoryData }]}
+                spec={{ xField: 'category', yField: 'value' }}
+                width="100%"
+                height="100%"
+                aria-label="Chart 导出图片示例"
+                showExportButton
+                exportFileName="lotus-chart-demo"
+                onExport={() => { chartExportLog = '已触发导出'; }}
+            />
+        </div>
+        <TypographyText type="secondary" aria-label="Chart 导出日志">{chartExportLog}</TypographyText>
+
+        <Divider>Chart：loading / 空数据态</Divider>
+
+        <Space>
+            <div class="demo-chart-loading" style={{ width: '260px', height: '200px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="bar"
+                    data={[{ id: 'bar', values: chartCategoryData }]}
+                    spec={{ xField: 'category', yField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 加载中示例"
+                    loading={chartLoading}
+                />
+            </div>
+            <div class="demo-chart-empty-demo" style={{ width: '260px', height: '200px', border: '1px solid var(--lotus-color-border)' }}>
+                <Chart
+                    type="bar"
+                    data={[{ id: 'bar', values: [] }]}
+                    spec={{ xField: 'category', yField: 'value' }}
+                    width="100%"
+                    height="100%"
+                    aria-label="Chart 空数据示例"
+                />
+            </div>
+            <Button onClick={() => { chartLoading = !chartLoading; }}>切换 Chart 加载态</Button>
+        </Space>
     </div>
     <BackTop visibilityHeight={200} aria-label="回到顶部（playground 演示）" onClick={() => console.log('back-top clicked')} />
     </>

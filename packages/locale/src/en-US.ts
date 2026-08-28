@@ -271,6 +271,10 @@ const enUS: LocaleShape = {
       return labels[direction] ?? 'Resize';
     },
   },
+  Chart: {
+    emptyTitle: 'No data',
+    exportImage: 'Export image',
+  },
   RichTextEditor: {
     undo: 'Undo',
     redo: 'Redo',

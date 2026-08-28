@@ -286,6 +286,11 @@ export interface ResizableLocale {
   handleLabel: (direction: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'bottomRight' | 'bottomLeft' | 'topLeft') => string;
 }
 
+export interface ChartLocale {
+  emptyTitle: string;
+  exportImage: string;
+}
+
 export interface RichTextEditorLocale {
   undo: string;
   redo: string;
@@ -427,6 +432,7 @@ export interface LocaleShape {
   Nav: NavLocale;
   PinCode: PinCodeLocale;
   Resizable: ResizableLocale;
+  Chart: ChartLocale;
   RichTextEditor: RichTextEditorLocale;
   AiChatDialogue: AiChatDialogueLocale;
   AiToolCall: AiToolCallLocale;

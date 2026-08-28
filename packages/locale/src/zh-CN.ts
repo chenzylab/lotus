@@ -265,6 +265,10 @@ const zhCN: LocaleShape = {
       return labels[direction] ?? '调整大小';
     },
   },
+  Chart: {
+    emptyTitle: '暂无数据',
+    exportImage: '导出图片',
+  },
   RichTextEditor: {
     undo: '撤销',
     redo: '重做',

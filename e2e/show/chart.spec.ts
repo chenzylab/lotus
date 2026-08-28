@@ -79,4 +79,55 @@ test.describe('Chart', () => {
     const uniqueColors = new Set(colors);
     expect(uniqueColors.size).toBeGreaterThan(1);
   });
+
+  test('点击/悬浮图表数据点触发 onClick/onHover 回调，携带原始 datum', async ({ page }) => {
+    await page.goto('/');
+    const chart = page.locator('.demo-chart-event .lotus-chart');
+    const log = page.getByLabel('Chart 事件日志', { exact: true });
+    await chart.scrollIntoViewIfNeeded();
+    const box = (await chart.boundingBox())!;
+
+    await page.mouse.click(box.x + box.width * 0.1, box.y + box.height * 0.75);
+    await expect(log).toContainText('点击：');
+    await expect(log).toContainText('一月');
+
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.6);
+    await expect(log).toContainText('悬浮：', { timeout: 3000 });
+  });
+
+  test('showExportButton 展示导出按钮，点击后触发浏览器下载与 onExport 回调', async ({ page }) => {
+    await page.goto('/');
+    const chart = page.locator('.demo-chart-export .lotus-chart-wrapper');
+    const exportButton = chart.getByLabel('导出图片', { exact: true });
+    await expect(exportButton).toBeVisible();
+
+    const log = page.getByLabel('Chart 导出日志', { exact: true });
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      exportButton.click(),
+    ]);
+    expect(download.suggestedFilename()).toContain('lotus-chart-demo');
+    await expect(log).toHaveText('已触发导出');
+  });
+
+  test('loading=true 时 Spin 蒙层生效，图表实例不被销毁重建', async ({ page }) => {
+    await page.goto('/');
+    const wrapper = page.locator('.demo-chart-loading');
+    const spin = wrapper.locator('.lotus-spin');
+    await expect(spin).toHaveAttribute('aria-busy', 'false');
+
+    await page.getByRole('button', { name: '切换 Chart 加载态' }).click();
+    await expect(spin).toHaveAttribute('aria-busy', 'true');
+    await expect(wrapper.locator('canvas')).toBeVisible();
+
+    await page.getByRole('button', { name: '切换 Chart 加载态' }).click();
+    await expect(spin).toHaveAttribute('aria-busy', 'false');
+  });
+
+  test('data 全部系列 values 为空时展示 Empty 占位，不渲染 canvas', async ({ page }) => {
+    await page.goto('/');
+    const wrapper = page.locator('.demo-chart-empty-demo');
+    await expect(wrapper.getByText('暂无数据')).toBeVisible();
+    await expect(wrapper.locator('canvas')).toHaveCount(0);
+  });
 });
