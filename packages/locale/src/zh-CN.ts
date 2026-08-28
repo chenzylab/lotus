@@ -24,6 +24,7 @@ const zhCN: LocaleShape = {
   },
   Select: {
     clear: '清除',
+    emptyText: '暂无匹配结果',
   },
   Modal: {
     okText: '确定',

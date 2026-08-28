@@ -5,6 +5,37 @@ export type SelectValue = string | number;
 export interface SelectState {
   /** 单选存 SelectValue | undefined；多选存 SelectValue[]。 */
   value: SelectValue | SelectValue[] | undefined;
+  /** 搜索框当前输入值，仅在 `filter` 开启时使用。 */
+  searchInput: string;
+}
+
+export interface SelectFilterableOption {
+  value: SelectValue;
+  label?: any;
+  disabled?: boolean;
+}
+
+/** 对齐 Semi `filter` prop 语义：`false`/未设置不过滤；`true` 走内置的
+ * label 大小写不敏感包含匹配；函数则完全交给调用方判断。来源：
+ * `semi-foundation/select/foundation.ts` `_filterOption`（一手来源核对，
+ * 见 specs 踩坑记录）。*/
+export type SelectFilter = boolean | ((inputValue: string, option: SelectFilterableOption) => boolean);
+
+/** 按 `filter` 规则过滤 optionList，纯函数、不依赖 DOM/组件实例，供
+ * Adapter 层在 input 变化时直接调用。`label` 非字符串时（如传入自定义
+ * ReactNode/JSX）一律转字符串再比较，与 Semi `option.label.toString()`
+ * 行为对齐。*/
+export function filterSelectOptions<T extends SelectFilterableOption>(
+  options: T[],
+  inputValue: string,
+  filter: SelectFilter | undefined,
+): T[] {
+  if (!filter) return options;
+  if (typeof filter === 'function') {
+    return options.filter((option) => filter(inputValue, option));
+  }
+  const input = inputValue.toLowerCase();
+  return options.filter((option) => String(option.label ?? option.value).toLowerCase().includes(input));
 }
 
 /**
@@ -18,6 +49,16 @@ export interface SelectState {
  * 造轮子——这也是 Select 复用 Popover 浮层定位基础设施的核心体现。
  */
 export class SelectFoundation extends Foundation<SelectState> {
+  handleSearch(input: string, onSearch?: (input: string) => void): void {
+    this.setState({ searchInput: input });
+    onSearch?.(input);
+  }
+
+  /** 选中/清空/关闭面板后重置搜索框——对齐 Semi「选中候选项后清空搜索输入」行为。 */
+  resetSearch(): void {
+    this.setState({ searchInput: '' });
+  }
+
   selectSingle(itemValue: SelectValue, isControlled: boolean, onChange?: (value: SelectValue) => void): void {
     if (!isControlled) {
       this.setState({ value: itemValue });

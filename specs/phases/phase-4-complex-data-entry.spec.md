@@ -24,7 +24,7 @@
 
 - [ ] 清单文件中 Phase 4 全部条目勾选，满足 DoD
 - [ ] `virtualList.ts` Foundation 有独立 Vitest 单测（滚动位置 → 可见区间计算、条目高度不固定场景），且 Select/Cascader/TreeSelect/Table 四者的虚拟化代码确认复用同一实现（非各自复制）
-- [ ] Select/Cascader/TreeSelect 均建立性能基线记录（参照 `specs/cross-cutting/perf-baseline.spec.md` 的记录格式），至少覆盖 1 万节点规模下的面板打开、搜索输入两个场景，INP 数据留痕
+- [x] Select/Cascader/TreeSelect 均建立性能基线记录（参照 `specs/cross-cutting/perf-baseline.spec.md` 的记录格式），至少覆盖 1 万节点规模下的面板打开、搜索输入两个场景，INP 数据留痕——核实过程中发现 Select 组件本身缺少 Semi 对齐的 `filter` 搜索能力（`filterOption`/`onSearch`/`searchPosition` 均不存在），已按一手来源（`semi-foundation/select/foundation.ts`）补齐 `filter`/`searchPosition`（trigger/dropdown 两态）/`searchPlaceholder`/`onSearch`，Foundation 单测 + e2e + 文档站 demo + ego-browser 真机验证齐全后再测性能，三者 1 万节点面板打开/搜索响应均在 11~18ms 区间，远低于 200ms 合格线，详见 `specs/cross-cutting/perf-baseline-records.md`
 - [ ] Table 按里程碑逐项验收，每个里程碑（基础/排序筛选/固定列/树形/虚拟化）有独立的验收记录，不允许「表格能跑」就笼统视为完成
 - [ ] Select/Cascader/TreeSelect 的已选值与展开状态同步逻辑，有 Foundation 单测覆盖至少「异步加载子节点后自动展开」「批量选中父节点级联选中/取消子节点」两个场景
 - [ ] Slider/Rating/ColorPicker 均可通过键盘方向键完成等价于拖拽的操作，Playwright 用例覆盖

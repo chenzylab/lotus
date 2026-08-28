@@ -38,8 +38,8 @@ const cascaderRegionData: CascaderNodeData[] = [
 const cascaderVirtualizeData: CascaderNodeData[] = [
     {
         value: 'province-1',
-        label: '省份 1（1000 个子节点）',
-        children: Array.from({ length: 1000 }, (_, i) => ({ value: `city-${i}`, label: `城市 ${i}` })),
+        label: '省份 1（10000 个子节点）',
+        children: Array.from({ length: 10000 }, (_, i) => ({ value: `city-${i}`, label: `城市 ${i}` })),
     },
 ];
 
@@ -56,8 +56,8 @@ const treeSelectLazyData: TreeNodeData[] = [
 const treeSelectVirtualizeData: TreeNodeData[] = [
     {
         key: 'root',
-        label: '根节点（1000 个子节点）',
-        children: Array.from({ length: 1000 }, (_, i) => ({ key: `node-${i}`, label: `节点 ${i}` })),
+        label: '根节点（10000 个子节点）',
+        children: Array.from({ length: 10000 }, (_, i) => ({ key: `node-${i}`, label: `节点 ${i}` })),
     },
 ];
 
@@ -2824,14 +2824,40 @@ export function App() @{
             </div>
         </Space>
 
-        <Divider>Select：virtualize（1万条选项虚拟滚动，对齐 Transfer 已验证的 base/virtual-list.ts 实现模式）</Divider>
+        <Divider>Select：virtualize + filter（1万条选项虚拟滚动 + 搜索，对齐 Transfer 已验证的 base/virtual-list.ts 实现模式）</Divider>
 
         <div style={{ width: '200px' }}>
             <Select
                 optionList={largeSelectOptionList}
                 virtualize={{ height: 240, itemSize: 32 }}
+                filter
+                searchPlaceholder="搜索选项"
                 placeholder="1万条选项"
                 aria-label="Select 虚拟滚动示例"
+            />
+        </div>
+
+        <Divider>Select：filter（内置匹配，searchPosition=trigger 默认叠加在触发器）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Select
+                optionList={businessLineOptions}
+                filter
+                placeholder="请选择业务线"
+                aria-label="Select filter trigger 示例"
+            />
+        </div>
+
+        <Divider>Select：filter（searchPosition=dropdown，搜索框固定在面板顶部）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Select
+                optionList={businessLineOptions}
+                filter
+                searchPosition="dropdown"
+                searchPlaceholder="搜索业务线"
+                placeholder="请选择业务线"
+                aria-label="Select filter dropdown 示例"
             />
         </div>
 
@@ -2845,6 +2871,18 @@ export function App() @{
                 placeholder="请选择业务线"
                 onChange={(v) => console.log('select multiple changed', v)}
                 aria-label="Select 多选示例"
+            />
+        </div>
+
+        <Divider>Select：多选 + filter（trigger 模式下输入框与已选 tags 共存）</Divider>
+
+        <div style={{ width: '320px' }}>
+            <Select
+                optionList={businessLineOptions}
+                multiple
+                filter
+                placeholder="请选择业务线"
+                aria-label="Select 多选 filter 示例"
             />
         </div>
 
@@ -2901,12 +2939,14 @@ export function App() @{
             />
         </div>
 
-        <Divider>Cascader：virtualize（单列 1000 个子节点虚拟滚动，对齐 Select 已验证的实现模式）</Divider>
+        <Divider>Cascader：virtualize（单列 10000 个子节点虚拟滚动，对齐 Select 已验证的实现模式）</Divider>
 
         <div style={{ width: '280px' }}>
             <Cascader
                 treeData={cascaderVirtualizeData}
                 virtualize={{ height: 240, itemSize: 32 }}
+                filterTreeNode
+                searchPlaceholder="搜索城市"
                 placeholder="请选择"
                 aria-label="Cascader 虚拟滚动示例"
             />
@@ -3012,13 +3052,15 @@ export function App() @{
             />
         </div>
 
-        <Divider>TreeSelect：virtualize（1000 个子节点虚拟滚动，对齐 Select/Cascader 已验证的实现模式）</Divider>
+        <Divider>TreeSelect：virtualize（10000 个子节点虚拟滚动，对齐 Select/Cascader 已验证的实现模式）</Divider>
 
         <div style={{ width: '280px' }}>
             <TreeSelect
                 treeData={treeSelectVirtualizeData}
                 virtualize={{ height: 240, itemSize: 32 }}
                 defaultExpandedKeys={['root']}
+                filterTreeNode
+                searchPlaceholder="搜索节点"
                 placeholder="请选择"
                 aria-label="TreeSelect 虚拟滚动示例"
             />

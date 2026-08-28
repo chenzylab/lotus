@@ -23,6 +23,8 @@ export interface TextAreaLocale {
 
 export interface SelectLocale {
   clear: string;
+  /** filter 开启后搜索无匹配结果时的占位文案。 */
+  emptyText: string;
 }
 
 export interface ModalLocale {

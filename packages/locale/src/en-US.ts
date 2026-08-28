@@ -24,6 +24,7 @@ const enUS: LocaleShape = {
   },
   Select: {
     clear: 'Clear',
+    emptyText: 'No matching results',
   },
   Modal: {
     okText: 'OK',

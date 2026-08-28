@@ -1,14 +1,16 @@
 import { track, untrack, effect } from 'ripple';
-import { SelectFoundation, type SelectState, type SelectValue } from '@lotus/foundation/input/select';
+import { SelectFoundation, filterSelectOptions, type SelectFilter, type SelectState, type SelectValue } from '@lotus/foundation/input/select';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
-import { IconChevronDown, IconClear, IconTick } from '@lotus/icons';
+import { IconChevronDown, IconClear, IconSearch, IconTick } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { Popover } from '../../show/popover/index.tsrx';
 
 export type SelectSize = 'large' | 'default' | 'small';
 export type SelectValidateStatus = 'default' | 'warning' | 'error';
+export type SelectSearchPosition = 'trigger' | 'dropdown';
+export type { SelectFilter };
 
 export interface SelectOption {
     value: SelectValue;
@@ -41,9 +43,19 @@ export interface SelectProps {
     suffix?: any;
     position?: FloatingPosition;
     virtualize?: SelectVirtualizeConfig;
+    /** 对齐 Semi `filter`：`true` 走内置 label 包含匹配（大小写不敏感），
+     * 函数则完全交给调用方判断，`false`/不传不过滤（一手来源核对见 specs
+     * 踩坑记录）。 */
+    filter?: SelectFilter;
+    /** 搜索框位置，仅在 `filter` 开启时生效：`'trigger'`（默认，叠加在
+     * 触发器本身，与已选值/tags 共存）或 `'dropdown'`（固定在下拉面板
+     * 顶部，对齐 Cascader/TreeSelect 已有实现）。 */
+    searchPosition?: SelectSearchPosition;
+    searchPlaceholder?: string;
     'aria-label'?: string;
     onChange?: (value: SelectValue | SelectValue[] | undefined) => void;
     onClear?: () => void;
+    onSearch?: (input: string) => void;
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onDropdownVisibleChange?: (visible: boolean) => void;
@@ -144,10 +156,14 @@ export function Select(&{
     prefix,
     suffix,
     virtualize,
+    filter,
+    searchPosition = 'trigger',
+    searchPlaceholder,
     position = 'bottomLeft',
     'aria-label': ariaLabel,
     onChange,
     onClear,
+    onSearch,
     onFocus,
     onBlur,
     onDropdownVisibleChange,
@@ -162,10 +178,12 @@ export function Select(&{
     let &[isControlled] = track<boolean>(() => value !== undefined);
     let &[state] = track<SelectState>({
         value: isControlled ? value : defaultValue,
+        searchInput: '',
     });
     let &[isOpen] = track<boolean>(false);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    let triggerInputNode: HTMLInputElement | null = null;
     let &[scrollTop] = track<number>(0);
     // 键盘导航的虚拟焦点（aria-activedescendant 模式）：DOM 焦点始终留在
     // trigger 上，activeIndex 只是"当前高亮到 optionList 里第几项"，通过
@@ -177,16 +195,24 @@ export function Select(&{
         return `lotus-select-option-${componentId}-${index}`;
     }
 
+    // 过滤后的候选列表：未开启 filter 或搜索框为空时等价于原始 optionList
+    // （引用不变，避免无谓的虚拟化区间重算）。键盘导航/虚拟滚动/点击选中
+    // 全部基于这份列表——搜索时方向键只应在可见候选间移动。
+    let &[filteredOptions] = track<SelectOption[]>(() => {
+        if (!filter || !state.searchInput) return optionList;
+        return filterSelectOptions(optionList, state.searchInput, filter);
+    });
+
     function firstEnabledIndex(): number {
-        return optionList.findIndex((o) => !o.disabled);
+        return filteredOptions.findIndex((o) => !o.disabled);
     }
 
     function nextEnabledIndex(from: number, step: 1 | -1): number {
-        if (optionList.length === 0) return -1;
+        if (filteredOptions.length === 0) return -1;
         let i = from;
-        for (let count = 0; count < optionList.length; count++) {
-            i = (i + step + optionList.length) % optionList.length;
-            if (!optionList[i]?.disabled) return i;
+        for (let count = 0; count < filteredOptions.length; count++) {
+            i = (i + step + filteredOptions.length) % filteredOptions.length;
+            if (!filteredOptions[i]?.disabled) return i;
         }
         return -1;
     }
@@ -198,7 +224,7 @@ export function Select(&{
     let &[virtualRange] = track(() => {
         if (!virtualize) return null;
         return calcVirtualRange({
-            itemCount: optionList.length,
+            itemCount: filteredOptions.length,
             itemHeight: virtualize.itemSize,
             containerHeight: virtualize.height ?? 280,
             scrollTop,
@@ -209,7 +235,7 @@ export function Select(&{
         if (!virtualRange) return [];
         const result: Array<{ option: SelectOption; index: number }> = [];
         for (let i = virtualRange.startIndex; i <= virtualRange.endIndex; i++) {
-            const option = optionList[i];
+            const option = filteredOptions[i];
             if (option) result.push({ option, index: i });
         }
         return result;
@@ -244,16 +270,30 @@ export function Select(&{
         onChange?.(v);
     };
 
+    /** 统一的面板关闭出口：选中/Esc/点击外部均要清空搜索框（filter 开启时），
+     * 避免散落多处 `isOpen = false` 各自决定是否重置、遗漏其中一处。 */
+    function closePanel() {
+        isOpen = false;
+        if (filter) foundation.resetSearch();
+        onDropdownVisibleChange?.(false);
+    }
+
     const handleOptionClick = (option: SelectOption) => {
         if (option.disabled) return;
         if (multiple) {
             foundation.selectMultiple(option.value, isControlled, handleMultipleChange);
+            if (filter) foundation.resetSearch();
             return;
         }
         foundation.selectSingle(option.value, isControlled, handleSingleChange);
-        isOpen = false;
-        onDropdownVisibleChange?.(false);
+        closePanel();
     };
+
+    function handleSearchInput(event: Event) {
+        const input = (event.target as HTMLInputElement).value;
+        foundation.handleSearch(input, onSearch);
+        activeIndex = -1;
+    }
 
     const handleRemoveTag = (itemValue: SelectValue, event: MouseEvent) => {
         event.stopPropagation();
@@ -265,6 +305,9 @@ export function Select(&{
         const next = !untrack(() => isOpen);
         isOpen = next;
         onDropdownVisibleChange?.(next);
+        if (next && filter && searchPosition === 'trigger') {
+            untrack(() => { triggerInputNode?.focus(); });
+        }
     };
 
     const handleClear = (event: MouseEvent) => {
@@ -308,15 +351,14 @@ export function Select(&{
                 if (!open) return;
                 event.preventDefault();
                 const current = untrack(() => activeIndex);
-                const option = optionList[current];
+                const option = filteredOptions[current];
                 if (option) handleOptionClick(option);
                 return;
             }
             case 'Escape': {
                 if (!open) return;
                 event.preventDefault();
-                isOpen = false;
-                onDropdownVisibleChange?.(false);
+                closePanel();
                 return;
             }
             default:
@@ -347,8 +389,7 @@ export function Select(&{
             if (root?.contains(event.target)) return;
             const list = untrack(() => listNode);
             if (list?.contains(event.target)) return;
-            isOpen = false;
-            onDropdownVisibleChange?.(false);
+            closePanel();
         };
         document.addEventListener('mousedown', handleDocumentMouseDown);
         return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
@@ -390,6 +431,11 @@ export function Select(&{
             .join(' '),
     );
 
+    // trigger 模式的搜索框只在面板打开时渲染并接管焦点——参照 Semi
+    // `showInput`/`toggle2SearchInput`：本质等价于 `isOpen && filter`，
+    // 不需要单独维护一个显式的 showInput 状态字段。
+    let &[showTriggerInput] = track<boolean>(() => !!filter && searchPosition === 'trigger' && isOpen);
+
     <>
         <div class={classes} style={style} ref={(node: HTMLElement) => { rootNode = node; }}>
             <Popover
@@ -399,42 +445,57 @@ export function Select(&{
                 spacing={4}
                 closeOnEsc={true}
                 content={
-                    <ul
-                        class={['lotus-select-list', virtualize ? 'lotus-select-list-virtual' : ''].filter(Boolean).join(' ')}
-                        role="listbox"
-                        aria-multiselectable={multiple}
-                        style={virtualize ? { height: `${virtualize.height ?? 280}px` } : undefined}
-                        onScroll={virtualize ? handleVirtualScroll : undefined}
-                        ref={(node: HTMLElement) => { listNode = node; }}
-                    >
-                        @if (virtualize) {
-                            <div style={{ height: `${virtualRange?.totalHeight ?? 0}px` }}>
-                                <div style={{ transform: `translateY(${virtualRange?.offsetY ?? 0}px)` }}>
-                                    @for (const entry of virtualVisibleOptions; index vi; key entry.option.value) {
-                                        <div style={{ height: `${virtualize.itemSize}px` }}>
-                                            <SelectOptionItem
-                                                option={entry.option}
-                                                selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, entry.option.value) : SelectFoundation.isSingleChecked(displayValue, entry.option.value)}
-                                                active={entry.index === activeIndex}
-                                                id={optionDomId(entry.index)}
-                                                onSelect={handleOptionClick}
-                                            />
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        } @else {
-                            @for (const option of optionList; index oi; key option.value) {
-                                <SelectOptionItem
-                                    option={option}
-                                    selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)}
-                                    active={oi === activeIndex}
-                                    id={optionDomId(oi)}
-                                    onSelect={handleOptionClick}
+                    <div class="lotus-select-panel" ref={(node: HTMLElement) => { listNode = node; }}>
+                        @if (filter && searchPosition === 'dropdown') {
+                            <div class="lotus-select-search-box">
+                                <IconSearch />
+                                <input
+                                    class="lotus-select-search-input"
+                                    type="text"
+                                    value={state.searchInput}
+                                    placeholder={searchPlaceholder}
+                                    onInput={handleSearchInput}
                                 />
-                            }
+                            </div>
                         }
-                    </ul>
+                        <ul
+                            class={['lotus-select-list', virtualize ? 'lotus-select-list-virtual' : ''].filter(Boolean).join(' ')}
+                            role="listbox"
+                            aria-multiselectable={multiple}
+                            style={virtualize ? { height: `${virtualize.height ?? 280}px` } : undefined}
+                            onScroll={virtualize ? handleVirtualScroll : undefined}
+                        >
+                            @if (filteredOptions.length === 0) {
+                                <li class="lotus-select-empty">{locale.Select.emptyText}</li>
+                            } @else if (virtualize) {
+                                <div style={{ height: `${virtualRange?.totalHeight ?? 0}px` }}>
+                                    <div style={{ transform: `translateY(${virtualRange?.offsetY ?? 0}px)` }}>
+                                        @for (const entry of virtualVisibleOptions; index vi; key entry.option.value) {
+                                            <div style={{ height: `${virtualize.itemSize}px` }}>
+                                                <SelectOptionItem
+                                                    option={entry.option}
+                                                    selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, entry.option.value) : SelectFoundation.isSingleChecked(displayValue, entry.option.value)}
+                                                    active={entry.index === activeIndex}
+                                                    id={optionDomId(entry.index)}
+                                                    onSelect={handleOptionClick}
+                                                />
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            } @else {
+                                @for (const option of filteredOptions; index oi; key option.value) {
+                                    <SelectOptionItem
+                                        option={option}
+                                        selected={multiple ? SelectFoundation.isMultipleChecked(displayValue, option.value) : SelectFoundation.isSingleChecked(displayValue, option.value)}
+                                        active={oi === activeIndex}
+                                        id={optionDomId(oi)}
+                                        onSelect={handleOptionClick}
+                                    />
+                                }
+                            }
+                        </ul>
+                    </div>
                 }
             >
                 <div
@@ -456,7 +517,7 @@ export function Select(&{
                     }
                     @if (multiple) {
                         <div class="lotus-select-tags">
-                            @if (selectedLabels.length === 0) {
+                            @if (selectedLabels.length === 0 && !showTriggerInput) {
                                 <span class="lotus-select-placeholder">{placeholder}</span>
                             } @else {
                                 @for (const item of selectedLabels; key item.value) {
@@ -471,7 +532,28 @@ export function Select(&{
                                     </span>
                                 }
                             }
+                            @if (showTriggerInput) {
+                                <input
+                                    class="lotus-select-trigger-input"
+                                    type="text"
+                                    value={state.searchInput}
+                                    placeholder={selectedLabels.length === 0 ? placeholder : ''}
+                                    onInput={handleSearchInput}
+                                    onClick={(event: MouseEvent) => event.stopPropagation()}
+                                    ref={(node: HTMLInputElement) => { triggerInputNode = node; }}
+                                />
+                            }
                         </div>
+                    } @else if (showTriggerInput) {
+                        <input
+                            class="lotus-select-trigger-input"
+                            type="text"
+                            value={state.searchInput}
+                            placeholder={singleSelectedLabel !== undefined ? String(singleSelectedLabel) : placeholder}
+                            onInput={handleSearchInput}
+                            onClick={(event: MouseEvent) => event.stopPropagation()}
+                            ref={(node: HTMLInputElement) => { triggerInputNode = node; }}
+                        />
                     } @else {
                         @if (singleSelectedLabel !== undefined) {
                             <span class="lotus-select-value">{singleSelectedLabel}</span>
@@ -636,6 +718,41 @@ export function Select(&{
                 color: var(--lotus-color-text-0);
             }
 
+            .lotus-select-panel {
+                display: flex;
+                flex-direction: column;
+                min-width: 120px;
+            }
+
+            .lotus-select-search-box {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--lotus-color-border);
+                color: var(--lotus-color-text-2);
+            }
+
+            .lotus-select-search-input {
+                flex: 1;
+                border: none;
+                outline: none;
+                background: transparent;
+                font-size: var(--lotus-font-body-size);
+                color: var(--lotus-color-text-0);
+            }
+
+            .lotus-select-trigger-input {
+                flex: 1;
+                min-width: 40px;
+                border: none;
+                outline: none;
+                background: transparent;
+                font-size: var(--lotus-font-body-size);
+                color: var(--lotus-color-text-0);
+                padding: 0;
+            }
+
             .lotus-select-list {
                 list-style: none;
                 margin: 0;
@@ -647,6 +764,12 @@ export function Select(&{
 
             .lotus-select-list-virtual {
                 max-height: none;
+            }
+
+            .lotus-select-empty {
+                padding: 6px 8px;
+                color: var(--lotus-color-text-3);
+                font-size: var(--lotus-font-body-size);
             }
 
         </style>

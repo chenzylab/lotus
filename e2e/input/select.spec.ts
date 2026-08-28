@@ -129,6 +129,67 @@ test.describe('Select', () => {
     await expect(trigger).toHaveText('抖音');
   });
 
+  test('filter=true + searchPosition=trigger（默认）：搜索框叠加在触发器，输入内容过滤候选并高亮命中项，选中后搜索框清空恢复展示已选值', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select filter trigger 示例');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const input = trigger.locator('.lotus-select-trigger-input');
+    await expect(input).toBeVisible();
+    await input.fill('西瓜');
+
+    const options = page.locator('.lotus-select-list li[role="option"]');
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toHaveText('西瓜视频');
+
+    await options.first().click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveText('西瓜视频');
+  });
+
+  test('filter=true + searchPosition=dropdown：搜索框固定在面板顶部，无匹配时展示空状态文案', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select filter dropdown 示例');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const input = page.locator('.lotus-select-search-input');
+    await expect(input).toBeVisible();
+    await input.fill('不存在的选项');
+
+    await expect(page.locator('.lotus-select-empty')).toBeVisible();
+    await expect(page.locator('.lotus-select-list li[role="option"]')).toHaveCount(0);
+  });
+
+  test('多选 + filter：输入框与已选 tags 共存，搜索过滤候选、选中后追加 tag 且搜索框清空', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 多选 filter 示例');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const input = trigger.locator('.lotus-select-trigger-input');
+    await input.fill('轻颜');
+    await page.getByRole('option', { name: '轻颜相机' }).click();
+
+    await expect(trigger).toContainText('轻颜相机');
+    await expect(input).toHaveValue('');
+  });
+
+  test('virtualize + filter：1万条选项搜索后虚拟滚动区间基于过滤结果重新计算', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 虚拟滚动示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const searchInput = trigger.locator('.lotus-select-trigger-input');
+    await searchInput.fill('选项 9999');
+
+    const options = page.locator('.lotus-select-list-virtual li[role="option"]');
+    await expect(options).toHaveCount(1);
+    await expect(options.first()).toHaveText('选项 9999');
+  });
+
   test('virtualize：1万条选项只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('Select 虚拟滚动示例', { exact: true });

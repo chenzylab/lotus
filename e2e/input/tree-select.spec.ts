@@ -232,7 +232,7 @@ test.describe('TreeSelect', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('virtualize：1000 个子节点只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
+  test('virtualize：10000 个子节点只渲染可见区间，滚动后动态切换渲染内容，点击选项正常选中', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('TreeSelect 虚拟滚动示例');
     await trigger.scrollIntoViewIfNeeded();

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SelectFoundation, type SelectState } from './foundation.js';
+import { SelectFoundation, filterSelectOptions, type SelectState } from './foundation.js';
 import type { Adapter } from '../../base/adapter.js';
 
-function createMockAdapter(initial: SelectState): Adapter<SelectState> & { _raw: () => SelectState } {
-  let state = initial;
+function createMockAdapter(initial: Omit<SelectState, 'searchInput'> & { searchInput?: string }): Adapter<SelectState> & { _raw: () => SelectState } {
+  let state: SelectState = { searchInput: '', ...initial };
   return {
     getState: () => state,
     setState: (patch: Partial<SelectState>) => {
@@ -165,5 +165,59 @@ describe('SelectFoundation.isMultipleChecked (static)', () => {
 
   it('returns false when value is not an array (single mode)', () => {
     expect(SelectFoundation.isMultipleChecked('a', 'a')).toBe(false);
+  });
+});
+
+describe('SelectFoundation.handleSearch / resetSearch', () => {
+  it('handleSearch 写入 searchInput 并回调 onSearch', () => {
+    const adapter = createMockAdapter({ value: undefined });
+    const foundation = new SelectFoundation(adapter);
+    const onSearch = vi.fn();
+
+    foundation.handleSearch('抖音', onSearch);
+
+    expect(adapter._raw().searchInput).toBe('抖音');
+    expect(onSearch).toHaveBeenCalledWith('抖音');
+  });
+
+  it('resetSearch 清空 searchInput', () => {
+    const adapter = createMockAdapter({ value: undefined, searchInput: '抖音' });
+    const foundation = new SelectFoundation(adapter);
+
+    foundation.resetSearch();
+
+    expect(adapter._raw().searchInput).toBe('');
+  });
+});
+
+describe('filterSelectOptions', () => {
+  const options = [
+    { value: 'douyin', label: '抖音' },
+    { value: 'ulikecam', label: '轻颜相机' },
+    { value: 'jianying', label: '剪映' },
+  ];
+
+  it('filter 为 false/undefined 时不过滤，原样返回', () => {
+    expect(filterSelectOptions(options, '抖', false)).toEqual(options);
+    expect(filterSelectOptions(options, '抖', undefined)).toEqual(options);
+  });
+
+  it('filter 为 true 时按 label 做大小写不敏感包含匹配', () => {
+    expect(filterSelectOptions(options, '音', true).map((o) => o.value)).toEqual(['douyin']);
+    expect(filterSelectOptions([{ value: 'a', label: 'Douyin' }], 'DOUYIN', true).map((o) => o.value)).toEqual(['a']);
+  });
+
+  it('filter 为 true 时无匹配返回空数组', () => {
+    expect(filterSelectOptions(options, '不存在', true)).toEqual([]);
+  });
+
+  it('filter 为函数时完全交给自定义逻辑判断', () => {
+    const result = filterSelectOptions(options, 'x', (input, option) => option.value === 'jianying');
+    expect(result.map((o) => o.value)).toEqual(['jianying']);
+  });
+
+  it('label 缺失时回退用 value 做字符串匹配', () => {
+    const noLabel = [{ value: 'plain-text' }];
+    expect(filterSelectOptions(noLabel, 'plain', true).map((o) => o.value)).toEqual(['plain-text']);
   });
 });
