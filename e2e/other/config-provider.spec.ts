@@ -46,6 +46,42 @@ test.describe('ConfigProvider', () => {
     await expect(page.getByText('该字段不能为空')).toBeVisible();
   });
 
+  test('DatePicker/TimePicker 的日期/时间格式化输出跟随 locale 切换（回归防护：Phase 4 spec 要求至少两种 locale 的对比测试，此前完全空白）', async ({ page }) => {
+    // zh-CN monthText 是"2026年 8月"这种"年份在前+年月倒序"格式，en-US 是
+    // "Aug 2026"这种"月份缩写在前"格式——顺序和格式完全不同，不是简单的
+    // 文案翻译，足以验证真的走了 locale 的 monthText 函数而非硬编码英文。
+    await page.goto('/');
+    const dateTrigger = page.getByLabel('ConfigProvider DatePicker 示例', { exact: true });
+    await dateTrigger.scrollIntoViewIfNeeded();
+    await dateTrigger.click();
+
+    const monthLabel = page.locator('.lotus-date-picker-navigation-text').first();
+    await expect(monthLabel).toHaveText(/^\d{4}年 \d{1,2}月$/);
+    await expect(page.locator('.lotus-date-picker-weekday').first()).toHaveText('周日');
+
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: '切换到 English' }).click();
+
+    await dateTrigger.click();
+    await expect(monthLabel).toHaveText(/^[A-Z][a-z]{2} \d{4}$/);
+    await expect(page.locator('.lotus-date-picker-weekday').first()).toHaveText('Sun');
+    await page.keyboard.press('Escape');
+
+    // 小时选项文案：zh-CN 带"时"单位后缀（如"01时"），en-US 是纯数字（"01"），
+    // 这是比 AM/PM（两种 locale 缩写恰好相同，无法证明真的切换生效）更有效的
+    // locale 差异验证点。此时已切换到 English，先验证英文态。
+    const timeTrigger = page.getByLabel('ConfigProvider TimePicker 示例', { exact: true });
+    await timeTrigger.scrollIntoViewIfNeeded();
+    await timeTrigger.click();
+    await expect(page.locator('.lotus-time-picker-panel [role="option"]').filter({ hasText: /^01$/ }).first()).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    await page.getByRole('button', { name: 'Switch to 中文' }).click();
+    await timeTrigger.click();
+    await expect(page.locator('.lotus-time-picker-panel [role="option"]').filter({ hasText: '01时' }).first()).toBeVisible();
+    await page.keyboard.press('Escape');
+  });
+
   test('mode 切换暗色主题：写入 document.documentElement 的 data-theme 属性，全局生效，Button/Input/Select/Modal/Table 视觉即时更新（不刷新页面）', async ({ page }) => {
     // 回归防护：调研 Semi 源码确认其 ConfigProvider 本身不承载主题能力
     // （Context 只有 locale/direction/timeZone 等字段），暗色模式是脱离

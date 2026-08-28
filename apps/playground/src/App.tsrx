@@ -3985,6 +3985,12 @@ export function App() @{
                 <div style={{ width: '200px', marginTop: '12px' }}>
                     <Input showClear defaultValue="lotus" aria-label="ConfigProvider Input 示例" />
                 </div>
+                <div style={{ width: '240px', marginTop: '12px' }}>
+                    <DatePicker aria-label="ConfigProvider DatePicker 示例" />
+                </div>
+                <div style={{ width: '160px', marginTop: '12px' }}>
+                    <TimePicker use12Hours aria-label="ConfigProvider TimePicker 示例" />
+                </div>
             </div>
         </ConfigProvider>
 
