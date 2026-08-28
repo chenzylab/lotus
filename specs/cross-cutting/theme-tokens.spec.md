@@ -67,7 +67,7 @@
 - **字体**：font-family、字重 light/regular/bold 三档、完整排印刻度 h1-h6/body/label（各含 size/line-height/weight）
 - **图标尺寸**：extra-small/small/medium/large/extra-large
 - **AI 专属色**：general（渐变）、purple（含 hover/active/disabled）、background-top/bottom（含 hover/active/disabled）
-- **数据可视化调色板**（data-0~19）：**暂缓**，与 Chart/Semi DV 待裁定项绑定，见 `specs/component-inventory.md`「待裁定」一节，非本阶段必需
+- **数据可视化调色板**（data-0~19）：~~暂缓~~ 已交付，见 `packages/tokens/src/static-tokens.ts` 的 `chartDataColor`——亮暗模式各自独立的 20 色（不是共用同一套），数值来源 `~/i/semi-design/packages/semi-theme-default/scss/global.scss` 的 `--semi-color-data-0~19`（`:root`/`body[theme-mode="dark"]` 两个块分别定义，一手来源，非 VChart 主题包自己的兼容兜底值——踩坑细节见 `specs/cross-cutting/foundation-adapter-pattern.md`）
 
 ## 验收标准（每次 Token 变更/新增均需检查）
 

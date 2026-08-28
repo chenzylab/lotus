@@ -243,17 +243,33 @@ export const tagDecorativeColor: Record<
 
 /**
  * 图表分类色板（20 色，供 Chart 组件的多系列/多分类数据着色使用）。
- * 亮暗模式共用同一份取值——分类色板追求"系列间视觉可区分度"这一个客观属性，
- * 不像语义色/装饰色那样需要跟随背景明暗调整对比度（对齐 VChart 官方
- * `@visactor/vchart-semi-theme` 包的 `dark/color-scheme.js` 直接复用
- * `common/data-scheme.js` 同一份颜色数组的既定做法，取值来源也是该包）。
+ * 亮暗模式各自独立的一套取值（与其它语义色/装饰色同一惯例，不是共用）——
+ * 数值来源：`~/i/semi-design/packages/semi-theme-default/scss/global.scss`
+ * 的 `--semi-color-data-0` ~ `data-19`（`:root` 块是亮色取值，
+ * `body[theme-mode="dark"]` 块是暗色取值，两组完全不同的 20 个颜色，
+ * 不是简单复用同一份数据）。
+ *
+ * 踩坑记录：最初误从 `@visactor/vchart-semi-theme` 包（VChart 主题层自己的
+ * 兼容兜底实现，`common/data-scheme.js`）取值，该包 dark 模式复用了与 light
+ * 完全相同的一份硬编码数组——这只是 VChart 包自己的简化实现，不代表 Semi
+ * 应用真实的暗色数据色板，按 AGENTS.md 规定的一手来源优先级，应以
+ * `semi-theme-default` 的 `global.scss` 为准（该文件同时定义了 light/dark
+ * 两套不同的 20 色）。
  */
-export const chartDataColor: string[] = [
-  '#5769ff', '#8ed4e7', '#f58700', '#dcb7fc', '#4a9cf7',
-  '#f3cc35', '#fe8090', '#8bd7d2', '#83b023', '#e9a5e5',
-  '#30a7ce', '#f9c064', '#b171f9', '#77b6f9', '#c88f02',
-  '#ffaab2', '#33b0ab', '#b6d781', '#d458d4', '#bcc6ff',
-];
+export const chartDataColor: Record<'light' | 'dark', string[]> = {
+  light: [
+    '#5769ff', '#8ed4e7', '#f58700', '#dcb7fc', '#4a9cf7',
+    '#f3cc35', '#fe8090', '#8bd7d2', '#83b023', '#e9a5e5',
+    '#30a7ce', '#f9c064', '#b171f9', '#77b6f9', '#c88f02',
+    '#ffaab2', '#33b0ab', '#b6d781', '#d458d4', '#bcc6ff',
+  ],
+  dark: [
+    '#5e6dc2', '#086878', '#faad3f', '#4c2b9c', '#107df8',
+    '#f8ca10', '#c31e57', '#057773', '#9acf0d', '#751d8a',
+    '#10a2b4', '#d06e0b', '#7142c5', '#0764d4', '#fbe86e',
+    '#a01349', '#0bb3a7', '#628a06', '#a230b3', '#28338a',
+  ],
+};
 
 /** AI 专属渐变色变量（Phase 1 起被 Button/Icon/Tag/FloatButton 的 AI 主题变体消费）。 */
 export const aiColor = {

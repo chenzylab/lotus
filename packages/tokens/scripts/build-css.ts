@@ -177,9 +177,8 @@ function tagDecorativeLines(mode: 'light' | 'dark'): string[] {
   return lines;
 }
 
-/** 亮暗模式共用同一份取值，两个 :root 块各自重复写一份，与其它 token 类别的输出结构保持一致。 */
-function chartDataLines(): string[] {
-  return chartDataColor.map((value, i) => `  --lotus-color-data-${i}: ${value};`);
+function chartDataLines(mode: 'light' | 'dark'): string[] {
+  return chartDataColor[mode].map((value, i) => `  --lotus-color-data-${i}: ${value};`);
 }
 
 /** 对 `rgba(r, g, b, a)` 字符串替换透明度分量，用于派生 AI 色的交互态变体。 */
@@ -206,7 +205,7 @@ function build(): string {
     ...staticLines(),
     ...aiLines('light'),
     ...tagDecorativeLines('light'),
-    ...chartDataLines(),
+    ...chartDataLines('light'),
     '}',
   ].join('\n');
 
@@ -217,7 +216,7 @@ function build(): string {
     ...surfaceLines('dark'),
     ...aiLines('dark'),
     ...tagDecorativeLines('dark'),
-    ...chartDataLines(),
+    ...chartDataLines('dark'),
     '}',
   ].join('\n');
 

@@ -19,6 +19,7 @@ import {
   fontWeight,
   typography,
   iconSize,
+  chartDataColor,
 } from './static-tokens.js';
 
 describe('static tokens completeness', () => {
@@ -113,5 +114,17 @@ describe('static tokens completeness', () => {
 
   it('defines a full icon size scale', () => {
     expect(Object.keys(iconSize)).toHaveLength(5);
+  });
+
+  it('defines 20 chart data colors for both light and dark modes, independently (not shared)', () => {
+    expect(chartDataColor.light).toHaveLength(20);
+    expect(chartDataColor.dark).toHaveLength(20);
+    for (const hex of [...chartDataColor.light, ...chartDataColor.dark]) {
+      expect(hex).toMatch(/^#[0-9a-f]{6}$/);
+    }
+    // light/dark 是完全不同的两套取值（对齐一手来源 global.scss 的真实行为），
+    // 不能像早期误从 VChart 主题包取值时那样简单复用同一份数组——一旦两组
+    // 完全相同大概率是回归到了那次错误实现。
+    expect(chartDataColor.light).not.toEqual(chartDataColor.dark);
   });
 });

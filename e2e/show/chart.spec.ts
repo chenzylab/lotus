@@ -80,6 +80,73 @@ test.describe('Chart', () => {
     expect(uniqueColors.size).toBeGreaterThan(1);
   });
 
+  test('多系列图表颜色精确对齐 lotus 品牌数据色板 --lotus-color-data-0~4，且亮暗模式各自独立取值（回归防护：Chart 组件此前一直静默回退到 VChart 默认色板，packages/tokens 从未真正定义过这批 token，详见 specs 踩坑记录）', async ({ page }) => {
+    await page.goto('/');
+    const canvas = page.locator('.demo-chart-pie canvas');
+    await expect(canvas).toBeVisible();
+
+    // 扫描整个 canvas 统计每个精确 RGB 值的出现次数，取出现频率最高的颜色——
+    // 5 个扇区各自的纯色填充区域面积远大于抗锯齿边缘的过渡色像素，高频颜色
+    // 必然就是扇区真实填充色 + 图表背景色，不受采样点具体落在哪个坐标、
+    // canvas 实际尺寸、legend 占位等因素影响，比"预测某个坐标点应该是什么
+    // 颜色"稳健得多。背景色本身面积可能比某个扇区还大，会跟着一起进入高频
+    // 榜单（暗色模式下 canvas 背景显式填充为 lotus 的 --lotus-color-bg-0
+    // dark 值 #16161a，不是透明的），必须显式排除亮/暗两种已知背景色，
+    // 否则背景色会占掉一个名额，把真正的第 5 个扇区颜色挤出前 5 名。
+    const KNOWN_BACKGROUNDS: Array<[number, number, number]> = [
+      [255, 255, 255], // 亮色模式背景
+      [22, 22, 26], // 暗色模式背景 #16161a
+    ];
+    const readTopColors = () =>
+      canvas.evaluate((el, backgrounds) => {
+        const canvasEl = el as HTMLCanvasElement;
+        const ctx = canvasEl.getContext('2d')!;
+        const { width, height } = canvasEl;
+        const data = ctx.getImageData(0, 0, width, height).data;
+        const counts = new Map<string, number>();
+        for (let i = 0; i < data.length; i += 4) {
+          const a = data[i + 3];
+          if (a === 0) continue;
+          const r = data[i]!;
+          const g = data[i + 1]!;
+          const b = data[i + 2]!;
+          if (backgrounds.some(([br, bg, bb]) => r === br && g === bg && b === bb)) continue;
+          const key = `${r},${g},${b}`;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+        return [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([key]) => key.split(',').map(Number) as [number, number, number]);
+      }, KNOWN_BACKGROUNDS);
+
+    function closestDistance(rgb: [number, number, number], palette: Array<[number, number, number]>): number {
+      return Math.min(...palette.map((p) => Math.sqrt((rgb[0] - p[0]) ** 2 + (rgb[1] - p[1]) ** 2 + (rgb[2] - p[2]) ** 2)));
+    }
+
+    const lightPalette: Array<[number, number, number]> = [[87, 105, 255], [142, 212, 231], [245, 135, 0], [220, 183, 252], [74, 156, 247]];
+    const lightTop5 = await readTopColors();
+    for (const rgb of lightTop5) {
+      expect(closestDistance(rgb, lightPalette)).toBeLessThan(5);
+    }
+
+    await page.getByRole('button', { name: /切换到 dark/ }).click();
+    await page.waitForTimeout(500);
+
+    const darkPalette: Array<[number, number, number]> = [[94, 109, 194], [8, 104, 120], [250, 173, 63], [76, 43, 156], [16, 125, 248]];
+    const darkTop5 = await readTopColors();
+    for (const rgb of darkTop5) {
+      expect(closestDistance(rgb, darkPalette)).toBeLessThan(5);
+    }
+
+    // 亮暗两套颜色必须明显不同（不是同一份数据在两种模式下简单复用）
+    for (const rgb of darkTop5) {
+      expect(closestDistance(rgb, lightPalette)).toBeGreaterThan(30);
+    }
+
+    await page.getByRole('button', { name: /切换到 light/ }).click();
+  });
+
   test('点击/悬浮图表数据点触发 onClick/onHover 回调，携带原始 datum', async ({ page }) => {
     await page.goto('/');
     const chart = page.locator('.demo-chart-event .lotus-chart');
