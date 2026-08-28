@@ -22,7 +22,7 @@
 
 - [x] 清单文件中 Phase 6 全部条目勾选，满足 DoD（AiChatDialogue/AiChatInput 完整交付，AiComponent 核实为非独立组件+`colorful` 补齐，见下方核实结论）
 - [x] 开工前产出一份简短映射表（AiChatInput/AiChatDialogue/AiComponent 的具体子功能 → 对应五大设计原则中的哪一条），作为实现依据存档在本 SPEC 文件末尾（**注：本表实际是开发完成后补记，非开工前产出——流程上的欠账，如实记录**）
-- [ ] **未完成**：AiChatDialogue 的流式渲染缺少正式性能验证——`streamingResponseToMessage`/`streamingChatCompletionToMessage` 归约器本身有单测覆盖正确性，但没有按 `perf-baseline` skill 方法论模拟高频（如每 50ms 一个 token）追加场景并记录 INP/帧率数据，这是本 Phase 的真实欠账
+- [x] AiChatDialogue 的流式渲染已按 `perf-baseline` skill 方法论完成正式性能验证：生产构建（`vite build`+`vite preview`）下模拟真实 SSE 场景（每 50ms 一个 `output_text.delta` 块），实测单次追加到两帧绘制完成的耗时——短回复（40 次追加）均值 14.7ms/p95 15.7ms，长回复（100 次追加）前后均值增长比例仅 1.045×，均远低于 200ms 合格线且无退化趋势，判定当前实现（归约器全量重算 + `track()` 整条消息内容作为一个响应式单元）性能达标、无需优化，详见 `specs/cross-cutting/perf-baseline-records.md`
 - [x] 流式生成过程可通过用户操作中断（"停止生成"按钮）：AiChatInput 的 `generating` 受控 prop + `onStopGenerate` 回调已实现，e2e 覆盖按钮切换；Foundation 层不持有网络请求生命周期（中断后的悬挂任务清理责任在消费方，Foundation 状态本身无残留）
 - [x] 消息反馈操作（点赞/点踩/纠错/收藏）的交互状态有 Foundation 单测：`toggleAiLike`/`toggleAiDislike` 互斥切换、`toggleAiEditing`/`commitAiEdit` 均有对应测试（`foundation.test.ts`）；"收藏"Semi 原生无此字段，未实现
 - [x] 流式内容更新时的屏幕阅读器体验已走完整 `a11y-audit` skill 检查：核实发现 `aria-live="polite"` 全程常驻会导致流式期间每次 token 追加都触发播报（等同于逐字打断朗读，不可用），已查证行业最佳实践（AI 对话界面标准做法是"生成期间抑制播报、完成后播报一次完整结果"）并落地——新增 `isAnyMessageStreaming(chats)` 纯函数（`message.ts`），驱动消息列表的 `aria-live` 在存在 `in_progress` 消息时降级为 `'off'`，全部消息完成后恢复 `'polite'`；ego-browser 真机验证三阶段状态转换（开始生成→off，追加中→off，标记完成→polite）+ Foundation 单测 + e2e 回归测试均已覆盖，详见 `specs/cross-cutting/foundation-adapter-pattern.md` 踩坑记录
