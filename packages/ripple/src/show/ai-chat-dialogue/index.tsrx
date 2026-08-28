@@ -2,6 +2,7 @@ import { track, effect, untrack } from 'ripple';
 import {
     AiChatDialogueFoundation,
     nextAiMessageId,
+    isAnyMessageStreaming,
     type AiChatDialogueState,
     type AiChatMessage,
     type AiContentItem,
@@ -125,6 +126,16 @@ export function AiChatDialogue(&{
     let listEl: HTMLElement | null = null;
     let &[showBackToBottom] = track<boolean>(false);
 
+    // 无障碍：流式生成期间（存在 status === 'in_progress' 的消息）暂时把
+    // aria-live 降级为 'off'，不让屏幕阅读器逐 token 打断朗读——ARIA 规范
+    // 与主流实践（ChatGPT/Claude 等 AI 对话界面）一致的做法是"生成过程中
+    // 抑制播报，生成结束后恢复 polite 并让最终完整内容被读出一次"，而不是
+    // 让 role="log" 容器在整段生成期间对每一次 DOM 变动都触发播报——逐字
+    // 打断的体验对屏幕阅读器用户而言等同于不可用。这是 a11y-audit 走完整
+    // 流程时发现的真实问题，此前只在挂载时常驻 aria-live="polite" 没有
+    // 考虑流式场景的特殊性。
+    let &[listAriaLive] = track<'polite' | 'off'>(() => (isAnyMessageStreaming(state.chats) ? 'off' : 'polite'));
+
     effect(() => {
         const count = state.chats.length;
         const el = untrack(() => listEl);
@@ -213,7 +224,7 @@ export function AiChatDialogue(&{
             <ul
                 class="lotus-ai-chat-dialogue-list"
                 role="log"
-                aria-live="polite"
+                aria-live={listAriaLive}
                 aria-label={ariaLabel ?? locale.AiChatDialogue.messageListLabel}
                 ref={(node: HTMLElement | null) => { listEl = node; }}
                 onScroll={handleScroll}

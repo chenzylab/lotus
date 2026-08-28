@@ -14,6 +14,7 @@ import {
   toggleAiEditing,
   commitAiEdit,
   nextAiMessageId,
+  isAnyMessageStreaming,
   type AiChatMessage,
 } from './message.js';
 
@@ -116,5 +117,32 @@ describe('nextAiMessageId', () => {
     const id2 = nextAiMessageId();
     expect(id1).not.toBe(id2);
     expect(id1).toMatch(/^lotus-ai-chat-msg-\d+$/);
+  });
+});
+
+describe('isAnyMessageStreaming', () => {
+  it('空数组判定为 false', () => {
+    expect(isAnyMessageStreaming([])).toBe(false);
+  });
+
+  it('全部消息都是 completed 时判定为 false', () => {
+    const chats: AiChatMessage[] = [
+      { id: 'a', role: 'user', status: 'completed' },
+      { id: 'b', role: 'assistant', status: 'completed' },
+    ];
+    expect(isAnyMessageStreaming(chats)).toBe(false);
+  });
+
+  it('存在一条 in_progress 消息时判定为 true，即使其它消息已完成', () => {
+    const chats: AiChatMessage[] = [
+      { id: 'a', role: 'user', status: 'completed' },
+      { id: 'b', role: 'assistant', status: 'in_progress' },
+    ];
+    expect(isAnyMessageStreaming(chats)).toBe(true);
+  });
+
+  it('未设置 status 的消息不算作流式中', () => {
+    const chats: AiChatMessage[] = [{ id: 'a', role: 'user' }];
+    expect(isAnyMessageStreaming(chats)).toBe(false);
   });
 });

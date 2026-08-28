@@ -4264,6 +4264,18 @@ export function App() @{
                     }
                 }}
             >追加流式增量</Button>
+            <Button
+                onClick={() => {
+                    const chunks = [{ type: 'response.completed', sequence_number: 3, response: { status: 'completed' } }];
+                    const result = streamingResponseToMessage(chunks, aiStreamState);
+                    aiStreamState = result?.nextState ?? null;
+                    const message = result?.message;
+                    if (message) {
+                        aiDialogueMessages = aiDialogueMessages.map((m) => (m.id === 'ai-stream-demo' ? { ...message, id: 'ai-stream-demo' } : m));
+                        aiStreamingLog = '流式消息已完成（回归防护：aria-live 应从生成期间的 off 恢复为 polite，详见 specs 踩坑记录）';
+                    }
+                }}
+            >标记流式完成</Button>
             <Button onClick={() => aiDialogueApi?.scrollToTop()}>滚动到顶部</Button>
             <Button onClick={() => aiDialogueApi?.scrollToBottom()}>滚动到底部</Button>
             <span class="demo-ai-streaming-log">{aiStreamingLog}</span>

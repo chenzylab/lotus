@@ -107,6 +107,22 @@ test.describe('AiChatDialogue', () => {
     await expect(page.locator('.demo-ai-streaming-log')).toHaveText('流式消息已追加增量');
   });
 
+  test('无障碍：流式生成期间 aria-live 降级为 off（不逐字打断朗读），生成完成后恢复 polite（回归防护：a11y-audit 走完整流程发现的真实问题，此前 aria-live="polite" 全程常驻，详见 specs 踩坑记录）', async ({ page }) => {
+    await page.goto('/');
+    const log = page.locator('.lotus-ai-chat-dialogue-list');
+    await log.scrollIntoViewIfNeeded();
+    await expect(log).toHaveAttribute('aria-live', 'polite');
+
+    await page.locator('button', { hasText: '模拟流式回复开始' }).click();
+    await expect(log).toHaveAttribute('aria-live', 'off');
+
+    await page.locator('button', { hasText: '追加流式增量' }).click();
+    await expect(log).toHaveAttribute('aria-live', 'off');
+
+    await page.locator('button', { hasText: '标记流式完成' }).click();
+    await expect(log).toHaveAttribute('aria-live', 'polite');
+  });
+
   test('滚动控制：scrollToTop/scrollToBottom 命令式 API 不抛异常', async ({ page }) => {
     await page.goto('/');
     await page.locator('.lotus-ai-chat-dialogue').scrollIntoViewIfNeeded();

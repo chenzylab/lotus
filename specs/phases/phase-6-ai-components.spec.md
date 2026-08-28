@@ -25,7 +25,7 @@
 - [ ] **未完成**：AiChatDialogue 的流式渲染缺少正式性能验证——`streamingResponseToMessage`/`streamingChatCompletionToMessage` 归约器本身有单测覆盖正确性，但没有按 `perf-baseline` skill 方法论模拟高频（如每 50ms 一个 token）追加场景并记录 INP/帧率数据，这是本 Phase 的真实欠账
 - [x] 流式生成过程可通过用户操作中断（"停止生成"按钮）：AiChatInput 的 `generating` 受控 prop + `onStopGenerate` 回调已实现，e2e 覆盖按钮切换；Foundation 层不持有网络请求生命周期（中断后的悬挂任务清理责任在消费方，Foundation 状态本身无残留）
 - [x] 消息反馈操作（点赞/点踩/纠错/收藏）的交互状态有 Foundation 单测：`toggleAiLike`/`toggleAiDislike` 互斥切换、`toggleAiEditing`/`commitAiEdit` 均有对应测试（`foundation.test.ts`）；"收藏"Semi 原生无此字段，未实现
-- [ ] **未完成**：流式内容更新时的屏幕阅读器体验未经过正式 `a11y-audit` skill 检查——`index.tsrx:211` 已加 `aria-live="polite"`，但这是实现时的常规无障碍处理，不是走完整 audit 流程验证过"逐字更新是否过度打断朗读"，这是本 Phase 的真实欠账
+- [x] 流式内容更新时的屏幕阅读器体验已走完整 `a11y-audit` skill 检查：核实发现 `aria-live="polite"` 全程常驻会导致流式期间每次 token 追加都触发播报（等同于逐字打断朗读，不可用），已查证行业最佳实践（AI 对话界面标准做法是"生成期间抑制播报、完成后播报一次完整结果"）并落地——新增 `isAnyMessageStreaming(chats)` 纯函数（`message.ts`），驱动消息列表的 `aria-live` 在存在 `in_progress` 消息时降级为 `'off'`，全部消息完成后恢复 `'polite'`；ego-browser 真机验证三阶段状态转换（开始生成→off，追加中→off，标记完成→polite）+ Foundation 单测 + e2e 回归测试均已覆盖，详见 `specs/cross-cutting/foundation-adapter-pattern.md` 踩坑记录
 - [x] AiComponent 的实现范围已核实自 Semi 官方文档/源码（而非猜测），核实过程与结论记录在本 SPEC（见下方「AiComponent 核实结论」）
 
 ## 设计原则映射表

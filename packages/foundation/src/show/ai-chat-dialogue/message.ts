@@ -140,6 +140,14 @@ export function isAnnotationItem(item: AiContentItem): item is AiAnnotationConte
   return item.type === 'annotation' || item.type === 'url_citation';
 }
 
+/** 是否存在正在流式生成中的消息——驱动组件层决定消息列表 `aria-live` 的
+ * 播报策略：生成中应降级为 `'off'`（不逐 token 打断屏幕阅读器朗读），
+ * 全部消息完成后恢复 `'polite'` 播报最终结果一次（对齐 a11y-audit 走完整
+ * 流程核实后的结论，详见 specs 踩坑记录）。 */
+export function isAnyMessageStreaming(chats: AiChatMessage[]): boolean {
+  return chats.some((m) => m.status === 'in_progress');
+}
+
 /** 按 id 删除一条消息，返回新数组（不修改原数组）。 */
 export function deleteAiMessageById(chats: AiChatMessage[], id: string): AiChatMessage[] {
   return chats.filter((m) => m.id !== id);
