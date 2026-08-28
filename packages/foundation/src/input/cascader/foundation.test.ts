@@ -121,6 +121,23 @@ describe('handleMultipleCheck', () => {
     expect(getState().checkedKeys.has(key)).toBe(false);
   });
 
+  it('related：取消勾选父节点后子孙节点同步取消勾选（级联方向的另一半，勾选方向已在上面覆盖）', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const parentKey = joinValuePath(['zhejiang', 'hangzhou']);
+    const xihuKey = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
+    const binjiangKey = joinValuePath(['zhejiang', 'hangzhou', 'binjiang']);
+
+    foundation.handleMultipleCheck(parentKey, entities, 'related', false);
+    expect(getState().checkedKeys.has(xihuKey)).toBe(true);
+    expect(getState().checkedKeys.has(binjiangKey)).toBe(true);
+
+    foundation.handleMultipleCheck(parentKey, entities, 'related', false);
+    expect(getState().checkedKeys.has(parentKey)).toBe(false);
+    expect(getState().checkedKeys.has(xihuKey)).toBe(false);
+    expect(getState().checkedKeys.has(binjiangKey)).toBe(false);
+  });
+
   it('unRelated：勾选/取消只影响当前 key，不做三态级联传播', () => {
     const entities = buildCascaderEntities(DATA);
     const { foundation, getState } = makeFoundation();

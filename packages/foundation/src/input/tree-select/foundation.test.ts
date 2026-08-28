@@ -98,6 +98,20 @@ describe('handleCheck（related，默认）', () => {
     expect(result.checkedKeys.has('xihu')).toBe(true);
     expect(getState().checkedKeys.size).toBe(0);
   });
+
+  it('取消勾选父节点后子孙节点同步取消勾选（级联方向的另一半，勾选方向已在上面覆盖）', () => {
+    const entities = buildKeyEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    foundation.handleCheck('hangzhou', entities, 'related', false);
+    expect(getState().checkedKeys.has('hangzhou')).toBe(true);
+    expect(getState().checkedKeys.has('xihu')).toBe(true);
+    expect(getState().checkedKeys.has('binjiang')).toBe(true);
+
+    foundation.handleCheck('hangzhou', entities, 'related', false);
+    expect(getState().checkedKeys.has('hangzhou')).toBe(false);
+    expect(getState().checkedKeys.has('xihu')).toBe(false);
+    expect(getState().checkedKeys.has('binjiang')).toBe(false);
+  });
 });
 
 describe('handleCheck（unRelated）', () => {

@@ -103,6 +103,53 @@ test.describe('ColorPicker', () => {
     await expect(hueHandle).toHaveAttribute('aria-valuenow', String(before + 1));
   });
 
+  test('键盘：饱和度-明度手柄 ArrowUp/ArrowDown 沿明度轴步进（回归防护：此前仅验证过 ArrowRight 的饱和度轴，垂直轴未覆盖）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('ColorPicker 基础', { exact: true });
+    const sv = root.locator('.lotus-color-picker-sv');
+    await sv.scrollIntoViewIfNeeded();
+    const box = await sv.boundingBox();
+    if (!box) throw new Error('no bounding box');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    const handle = root.locator('.lotus-color-picker-sv-handle');
+    await handle.focus();
+
+    const before = await handle.boundingBox();
+    if (!before) throw new Error('no handle box before');
+    await handle.press('ArrowUp');
+    const afterUp = await handle.boundingBox();
+    if (!afterUp) throw new Error('no handle box after ArrowUp');
+    expect(afterUp.y).toBeLessThan(before.y);
+
+    await handle.press('ArrowDown');
+    await handle.press('ArrowDown');
+    const afterDown = await handle.boundingBox();
+    if (!afterDown) throw new Error('no handle box after ArrowDown');
+    expect(afterDown.y).toBeGreaterThan(afterUp.y);
+  });
+
+  test('键盘：透明度滑条方向键步进（ArrowRight/ArrowUp 增大，ArrowLeft/ArrowDown 减小）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('ColorPicker 基础', { exact: true });
+    const alphaHandle = root.getByRole('slider', { name: '透明度' });
+    await alphaHandle.scrollIntoViewIfNeeded();
+    await alphaHandle.focus();
+
+    // 默认初始 alpha 为 1（不透明，已在上限），先用 ArrowLeft 降到中间值，
+    // 才能验证 ArrowRight/ArrowUp 的增大方向不会被上限钳制掩盖。
+    await alphaHandle.press('ArrowLeft');
+    await alphaHandle.press('ArrowLeft');
+    const before = Number(await alphaHandle.getAttribute('aria-valuenow'));
+
+    await alphaHandle.press('ArrowRight');
+    const afterRight = Number(await alphaHandle.getAttribute('aria-valuenow'));
+    expect(afterRight).toBeCloseTo(before + 0.01, 5);
+
+    await alphaHandle.press('ArrowDown');
+    const afterDown = Number(await alphaHandle.getAttribute('aria-valuenow'));
+    expect(afterDown).toBeCloseTo(before, 5);
+  });
+
   test('手动输入 hex 值更新色块与三态同步', async ({ page }) => {
     await page.goto('/');
     const root = page.getByLabel('ColorPicker 基础', { exact: true });

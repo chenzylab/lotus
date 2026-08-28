@@ -58,6 +58,19 @@ test.describe('Rating', () => {
     await expect(page.getByLabel('Rating 半星事件日志', { exact: true })).toContainText('变化：1.5');
   });
 
+  test('allowHalf：键盘方向键按 0.5 步进（回归防护：此前仅验证过鼠标点击半星，键盘路径下的半星步进未经 e2e 验证，仅 Foundation 单测覆盖）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating 半星', { exact: true });
+    await group.scrollIntoViewIfNeeded();
+    await group.focus();
+
+    await group.press('ArrowRight');
+    await expect(page.getByLabel('Rating 半星事件日志', { exact: true })).toContainText('变化：4');
+    await group.press('ArrowLeft');
+    await group.press('ArrowLeft');
+    await expect(page.getByLabel('Rating 半星事件日志', { exact: true })).toContainText('变化：3');
+  });
+
   test('hover 预览：鼠标悬停时星星填充跟随预览，移出后回落到已选值', async ({ page }) => {
     await page.goto('/');
     const group = page.getByLabel('Rating 基础', { exact: true });

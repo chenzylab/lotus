@@ -63,6 +63,36 @@ test.describe('Slider', () => {
     await expect(handle).toHaveAttribute('aria-valuenow', '0');
   });
 
+  test('键盘 PageUp/PageDown：按 10 倍 step 大步跳转', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider 基础', { exact: true });
+    await handle.focus();
+    await handle.press('PageUp');
+    await expect(handle).toHaveAttribute('aria-valuenow', '10');
+    await handle.press('PageDown');
+    await expect(handle).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  test('range：两个手柄均可独立通过键盘方向键调整，min 手柄键盘操作不会越过 max（回归防护：此前 range 模式的键盘路径未经 e2e 验证，仅 Foundation 单测覆盖）', async ({ page }) => {
+    await page.goto('/');
+    const wrapper = page.getByLabel('Slider 范围', { exact: true }).locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]');
+    const handles = wrapper.locator('.lotus-slider-handle');
+    const minHandle = handles.nth(0);
+    const maxHandle = handles.nth(1);
+
+    await minHandle.focus();
+    await minHandle.press('ArrowRight');
+    await expect(minHandle).toHaveAttribute('aria-valuenow', '21');
+
+    await maxHandle.focus();
+    await maxHandle.press('ArrowLeft');
+    await expect(maxHandle).toHaveAttribute('aria-valuenow', '79');
+
+    // Home 对 max 手柄是硬钳制贴住 min，而非跳到全局 min。
+    await maxHandle.press('Home');
+    await expect(maxHandle).toHaveAttribute('aria-valuenow', '21');
+  });
+
   test('range：渲染两个手柄，初始值对齐 defaultValue 两端', async ({ page }) => {
     await page.goto('/');
     const wrapper = page.getByLabel('Slider 范围', { exact: true }).locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]');
@@ -110,6 +140,19 @@ test.describe('Slider', () => {
     if (!box) throw new Error('no bounding box');
     await page.mouse.click(box.x + box.width * 0.9, box.y + box.height / 2);
     await expect(handle).toHaveAttribute('aria-valuenow', '40');
+  });
+
+  test('vertical：键盘 ArrowUp/ArrowDown 与水平模式同语义（Up 增大，Down 减小）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider 垂直', { exact: true });
+    await handle.scrollIntoViewIfNeeded();
+    await handle.focus();
+    await expect(handle).toHaveAttribute('aria-valuenow', '30');
+    await handle.press('ArrowUp');
+    await expect(handle).toHaveAttribute('aria-valuenow', '31');
+    await handle.press('ArrowDown');
+    await handle.press('ArrowDown');
+    await expect(handle).toHaveAttribute('aria-valuenow', '29');
   });
 
   test('vertical：垂直方向渲染对应 class', async ({ page }) => {

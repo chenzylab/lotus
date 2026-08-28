@@ -174,6 +174,28 @@ describe('UploadFoundation', () => {
       expect(successResult?.item.status).toBe('success');
       expect(getState().fileList[0]!.status).toBe('wait');
     });
+
+    it('并发多文件上传：其中一个文件失败不影响其他文件各自的进度/状态（按 uid 定位单项，不做整体重置）', () => {
+      const items: FileItem[] = [
+        { uid: 'u1', name: 'a.png', size: 10, status: 'uploading', percent: 30 },
+        { uid: 'u2', name: 'b.png', size: 10, status: 'uploading', percent: 60 },
+        { uid: 'u3', name: 'c.png', size: 10, status: 'uploading', percent: 90 },
+      ];
+      const { foundation, getState } = createFoundation({}, items);
+
+      foundation.handleError('u2', '网络错误', false);
+      const list = getState().fileList;
+      expect(list.find((f) => f.uid === 'u2')?.status).toBe('uploadFail');
+      expect(list.find((f) => f.uid === 'u1')).toEqual(items[0]);
+      expect(list.find((f) => f.uid === 'u3')).toEqual(items[2]);
+
+      foundation.handleProgress('u1', 50, false);
+      foundation.handleSuccess('u3', { url: 'https://example.com/c.png' }, false);
+      const finalList = getState().fileList;
+      expect(finalList.find((f) => f.uid === 'u1')?.percent).toBe(50);
+      expect(finalList.find((f) => f.uid === 'u2')?.status).toBe('uploadFail');
+      expect(finalList.find((f) => f.uid === 'u3')?.status).toBe('success');
+    });
   });
 
   describe('remove / replace / clear', () => {
