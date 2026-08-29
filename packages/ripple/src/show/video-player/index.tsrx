@@ -231,6 +231,18 @@ export function VideoPlayer(&{
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     });
 
+    // controlsHideTimer 是 scheduleHideControls() 的防抖定时器（鼠标移动时
+    // 取消旧的重新排一个 3 秒后的隐藏），每次调用内部已经会 clearTimeout
+    // 旧的，但如果组件卸载时恰好有一个尚未触发的定时器，不会自动清理——
+    // 卸载后 3 秒内仍会触发 foundation.hideControls()，虽然只是修改 state
+    // 不直接操作 DOM 不会报错，但属于真实的资源泄漏（对齐 Carousel autoPlay
+    // 定时器同一类问题）。
+    effect(() => {
+        return () => {
+            if (controlsHideTimer) clearTimeout(controlsHideTimer);
+        };
+    });
+
     <>
         <div
             class={['lotus-video-player', `lotus-video-player-${theme}`, className ?? ''].filter(Boolean).join(' ')}

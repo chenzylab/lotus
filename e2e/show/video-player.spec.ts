@@ -123,4 +123,51 @@ test.describe('VideoPlayer', () => {
     const volume = await player.locator('video').evaluate((el: HTMLVideoElement) => el.volume);
     expect(volume).toBeLessThan(0.3);
   });
+
+  test('卸载时清理 controlsHideTimer，不留悬挂定时器（回归防护：scheduleHideControls 的防抖定时器此前只在下次调用时被 clearTimeout，组件卸载时若恰好有一个尚未触发的定时器不会被清理，卸载后仍会在 3 秒后触发 foundation.hideControls()）', async ({ page }) => {
+    // 只拦截调用栈里包含 video-player 的 setTimeout/clearTimeout——页面上
+    // 还有其它组件（比如 Table 防抖）可能也用到 setTimeout，全局拦截会
+    // 引入无关噪声。
+    await page.addInitScript(() => {
+      const created = new Set<number>();
+      const cleared = new Set<number>();
+      (window as any).__vpTimeoutCreated = created;
+      (window as any).__vpTimeoutCleared = cleared;
+      const originalSetTimeout = window.setTimeout;
+      const originalClearTimeout = window.clearTimeout;
+      const isFromVideoPlayer = () => (new Error().stack ?? '').includes('video-player');
+      window.setTimeout = ((fn: TimerHandler, ms?: number, ...args: any[]) => {
+        const handle = originalSetTimeout(fn, ms, ...args);
+        if (isFromVideoPlayer() && ms === 3000) created.add(handle as unknown as number);
+        return handle;
+      }) as typeof window.setTimeout;
+      window.clearTimeout = ((handle?: number) => {
+        if (handle !== undefined && created.has(handle)) cleared.add(handle);
+        return originalClearTimeout(handle);
+      }) as typeof window.clearTimeout;
+    });
+
+    await page.goto('/');
+    const player = page.locator('.demo-video-player');
+    await player.scrollIntoViewIfNeeded();
+    // 触发 mousemove 走 handleMouseMove → scheduleHideControls，产生一个
+    // 3 秒后触发的 controlsHideTimer。
+    await player.hover();
+
+    const before = await page.evaluate(() => ({
+      created: [...(window as any).__vpTimeoutCreated as Set<number>],
+      cleared: [...(window as any).__vpTimeoutCleared as Set<number>],
+    }));
+    expect(before.created.length).toBeGreaterThan(0);
+    expect(before.cleared.length).toBe(0);
+
+    await page.getByRole('button', { name: '卸载 VideoPlayer（验证定时器/监听器清理）' }).click();
+    await expect(player).toHaveCount(0);
+
+    const after = await page.evaluate(() => ({
+      created: [...(window as any).__vpTimeoutCreated as Set<number>],
+      cleared: [...(window as any).__vpTimeoutCleared as Set<number>],
+    }));
+    expect(after.cleared).toEqual(after.created);
+  });
 });
