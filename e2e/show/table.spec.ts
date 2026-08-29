@@ -82,13 +82,47 @@ test.describe('Table', () => {
     await expect(root.locator('.lotus-table-expanded-row')).toContainText('张三 的详细信息');
   });
 
-  test('固定列：左右固定列渲染 sticky 定位样式', async ({ page }) => {
+  test('固定列：左右固定列真实生效——渲染 position:sticky，滚动容器后固定列保持原位、非固定列跟随滚动（回归防护：column.fixed 此前是从未消费的死 prop，此测试此前只断言过表头文字，未验证任何 sticky 定位样式）', async ({ page }) => {
     await page.goto('/');
     const root = page.getByLabel('Table 固定列', { exact: true });
-    const firstHeaderCell = root.locator('thead th').first();
-    await expect(firstHeaderCell).toHaveText('姓名');
-    const lastHeaderCell = root.locator('thead th').last();
-    await expect(lastHeaderCell).toHaveText('操作');
+    await root.scrollIntoViewIfNeeded();
+
+    const nameHeader = root.locator('thead th.lotus-table-header-cell').first();
+    const actionHeader = root.locator('thead th.lotus-table-header-cell').last();
+    const ageHeader = root.locator('thead th.lotus-table-header-cell').nth(1);
+
+    await expect(nameHeader).toHaveText('姓名');
+    await expect(nameHeader).toHaveCSS('position', 'sticky');
+    await expect(nameHeader).toHaveCSS('left', '0px');
+    await expect(nameHeader).toHaveClass(/lotus-table-cell-fixed-left-last/);
+
+    await expect(actionHeader).toHaveText('操作');
+    await expect(actionHeader).toHaveCSS('position', 'sticky');
+    await expect(actionHeader).toHaveCSS('right', '0px');
+    await expect(actionHeader).toHaveClass(/lotus-table-cell-fixed-right-first/);
+
+    const scrollEl = root.locator('.lotus-table-scroll');
+    const nameBefore = await nameHeader.boundingBox();
+    const actionBefore = await actionHeader.boundingBox();
+    const ageBefore = await ageHeader.boundingBox();
+    if (!nameBefore || !actionBefore || !ageBefore) throw new Error('no bounding box before scroll');
+
+    await scrollEl.evaluate((el) => { el.scrollLeft = 200; });
+
+    const nameAfter = await nameHeader.boundingBox();
+    const actionAfter = await actionHeader.boundingBox();
+    const ageAfter = await ageHeader.boundingBox();
+    if (!nameAfter || !actionAfter || !ageAfter) throw new Error('no bounding box after scroll');
+
+    expect(Math.abs(nameAfter.x - nameBefore.x)).toBeLessThan(1);
+    expect(Math.abs(actionAfter.x - actionBefore.x)).toBeLessThan(1);
+    expect(ageBefore.x - ageAfter.x).toBeCloseTo(200, 0);
+
+    // 数据行的固定列单元格同样要 sticky（不止表头），否则纵向滚动时表头和
+    // 数据行的固定列会视觉错位。
+    const firstBodyRow = root.locator('tbody tr.lotus-table-row').first();
+    const nameBodyCell = firstBodyRow.locator('td.lotus-table-cell-fixed').first();
+    await expect(nameBodyCell).toHaveCSS('position', 'sticky');
   });
 
   test('空数据：展示 Empty 占位', async ({ page }) => {

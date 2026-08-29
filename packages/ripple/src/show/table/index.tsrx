@@ -9,11 +9,14 @@ import {
     filterData,
     flattenRows,
     calcAllSelectedStatus,
+    calcFixedOffsets,
+    hasFixedColumns,
     type TableState,
     type ColumnDef,
     type SortOrder,
     type FlatRow,
     type ChangeInfo,
+    type FixedOffsets,
 } from '@lotus/foundation/show/table';
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { Checkbox } from '../../input/checkbox/index.tsrx';
@@ -136,6 +139,8 @@ interface TableRowProps<T = any> {
     onRow: ((record: T, index: number) => Record<string, any>) | undefined;
     onRowToggle: (record: T, index: number, checked: boolean) => void;
     onExpandToggle: (key: string, record: T) => void;
+    fixedCellStyle: (index: number) => Record<string, any> | undefined;
+    fixedCellClass: (index: number) => string;
 }
 
 /** 单行 `<tr>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，避免
@@ -156,6 +161,8 @@ function TableRow<T = any>(&{
     onRow,
     onRowToggle,
     onExpandToggle,
+    fixedCellStyle,
+    fixedCellClass,
 }: TableRowProps<T>) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
@@ -203,10 +210,11 @@ function TableRow<T = any>(&{
                     }
                 </td>
             }
-            @for (const col of leafColumns) {
+            @for (const col of leafColumns; index colIndex) {
                 <td
-                    class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? ''].filter(Boolean).join(' ')}
+                    class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? '', fixedCellClass(colIndex)].filter(Boolean).join(' ')}
                     role="gridcell"
+                    style={fixedCellStyle(colIndex)}
                     onClick={() => { if (expandRowByClick && (flat.hasChildren || hasExpandedRowRender)) onExpandToggle(flat.key, flat.record); }}
                 >
                     {col.render ? col.render(getCellValue(flat.record, col.dataIndex), flat.record, 0) : getCellValue(flat.record, col.dataIndex)}
@@ -274,6 +282,22 @@ function TableRow<T = any>(&{
 
         .lotus-table-expanded-row .lotus-table-expanded-cell {
             background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-table-cell-fixed {
+            background: var(--lotus-color-bg-1);
+        }
+
+        .lotus-table-row:hover .lotus-table-cell-fixed {
+            background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-table-cell-fixed-left-last {
+            box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.12);
+        }
+
+        .lotus-table-cell-fixed-right-first {
+            box-shadow: -4px 0 8px -4px rgba(0, 0, 0, 0.12);
         }
     </style>
     </>
@@ -380,6 +404,57 @@ export function Table<T = any>(&{
     let &[leafColumns] = track<ColumnDef<T>[]>(() => flattenLeafColumns(columns));
     let &[headerRowCount] = track<number>(() => getHeaderRowCount(columns));
     let &[headerRows] = track<HeaderCell<T>[][]>(() => buildHeaderRows(columns, headerRowCount));
+
+    // 固定列偏移量计算：Semi 的做法是给固定列单元格手动写 style.left/right
+    // （不是纯 CSS position:sticky 一步到位），偏移量是"同侧固定列的实测宽度
+    // 累加"——不能用声明的 column.width，因为实际渲染宽度可能因 padding/
+    // 内容溢出/用户拖拽调整过而与声明值不同。用 <th> 的 ref 收集真实测量值，
+    // 在 leafColumns 结构变化或列宽调整后重新测量一次；不用 ResizeObserver
+    // 逐列监听（管理成本高，且列宽变化本身不改变 <th> 尺寸只改变 left/right，
+    // 观察 <th> 尺寸不会形成响应式循环，但没有必要为此维护 N 个 observer 实例）。
+    let theadNode: HTMLElement | null = null;
+    let &[measuredWidths] = track<number[]>(() => leafColumns.map(() => 0));
+
+    function remeasureColumnWidths() {
+        const thead = untrack(() => theadNode);
+        if (!thead) return;
+        const cells = thead.querySelectorAll<HTMLElement>('th.lotus-table-header-cell');
+        const widths = Array.from(cells).map((cell) => cell.offsetWidth);
+        measuredWidths = widths;
+    }
+
+    effect(() => {
+        void leafColumns;
+        void state.columnWidths;
+        queueMicrotask(remeasureColumnWidths);
+    });
+
+    let &[fixedOffsets] = track<FixedOffsets>(() => calcFixedOffsets(leafColumns, measuredWidths));
+    let &[tableHasFixedColumns] = track<boolean>(() => hasFixedColumns(leafColumns));
+
+    function fixedCellStyle(index: number): Record<string, any> | undefined {
+        if (!tableHasFixedColumns) return undefined;
+        const left = fixedOffsets.left[index];
+        const right = fixedOffsets.right[index];
+        if (left !== null && left !== undefined) return { position: 'sticky', left: `${left}px`, zIndex: 2 };
+        if (right !== null && right !== undefined) return { position: 'sticky', right: `${right}px`, zIndex: 2 };
+        return undefined;
+    }
+
+    function fixedCellClass(index: number): string {
+        if (!tableHasFixedColumns) return '';
+        const col = leafColumns[index];
+        if (!col) return '';
+        const isLastLeftFixed = (col.fixed === 'left' || col.fixed === true)
+            && leafColumns[index + 1]?.fixed !== 'left' && leafColumns[index + 1]?.fixed !== true;
+        const isFirstRightFixed = col.fixed === 'right'
+            && leafColumns[index - 1]?.fixed !== 'right';
+        return [
+            (col.fixed === 'left' || col.fixed === true || col.fixed === 'right') ? 'lotus-table-cell-fixed' : '',
+            isLastLeftFixed ? 'lotus-table-cell-fixed-left-last' : '',
+            isFirstRightFixed ? 'lotus-table-cell-fixed-right-first' : '',
+        ].filter(Boolean).join(' ');
+    }
 
     let &[processed] = track<T[]>(() => {
         const filtered = filterData(dataSource, leafColumns, state.filterState);
@@ -565,7 +640,11 @@ export function Table<T = any>(&{
             onScroll={isVirtualized ? handleVirtualScroll : undefined}
         >
             <table class="lotus-table" role="grid" style={scroll?.x ? { minWidth: typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x } : undefined}>
-                <thead class="lotus-table-thead" style={scroll?.y !== undefined ? { position: 'sticky', top: 0, zIndex: 1 } : undefined}>
+                <thead
+                    class="lotus-table-thead"
+                    style={scroll?.y !== undefined ? { position: 'sticky', top: 0, zIndex: 1 } : undefined}
+                    ref={(node: HTMLElement | null) => { theadNode = node; if (node) queueMicrotask(remeasureColumnWidths); }}
+                >
                     @for (const row of headerRows) {
                         <tr role="row">
                             @if (rowSelection && row === headerRows[0]) {
@@ -585,11 +664,14 @@ export function Table<T = any>(&{
                             }
                             @for (const cell of row) {
                                 <th
-                                    class={['lotus-table-cell', 'lotus-table-header-cell', cell.column.align ? `lotus-table-align-${cell.column.align}` : '', cell.column.className ?? ''].filter(Boolean).join(' ')}
+                                    class={['lotus-table-cell', 'lotus-table-header-cell', cell.column.align ? `lotus-table-align-${cell.column.align}` : '', cell.column.className ?? '', cell.isLeaf ? fixedCellClass(leafColumns.indexOf(cell.column)) : ''].filter(Boolean).join(' ')}
                                     role="columnheader"
                                     colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                                     rowSpan={cell.rowSpan > 1 ? cell.rowSpan : undefined}
-                                    style={cell.column.width ? { width: `${cell.column.width}px` } : undefined}
+                                    style={{
+                                        ...(cell.column.width ? { width: `${cell.column.width}px` } : {}),
+                                        ...(cell.isLeaf ? fixedCellStyle(leafColumns.indexOf(cell.column)) : {}),
+                                    }}
                                 >
                                     @if (cell.isLeaf && cell.column.sorter) {
                                         <span
@@ -680,6 +762,8 @@ export function Table<T = any>(&{
                                 onRow={onRow}
                                 onRowToggle={handleRowToggle}
                                 onExpandToggle={handleExpandToggle}
+                                fixedCellStyle={fixedCellStyle}
+                                fixedCellClass={fixedCellClass}
                             />
                         }
                         @if (virtualRange && (virtualRange.totalHeight - virtualRange.offsetY - (virtualRange.endIndex - virtualRange.startIndex + 1) * virtualize!.itemSize) > 0) {
@@ -878,6 +962,22 @@ export function Table<T = any>(&{
                 background: var(--lotus-color-primary);
                 border-color: var(--lotus-color-primary);
                 color: #ffffff;
+            }
+
+            .lotus-table-cell-fixed {
+                background: var(--lotus-color-bg-1);
+            }
+
+            .lotus-table-header-cell.lotus-table-cell-fixed {
+                background: var(--lotus-color-fill-0);
+            }
+
+            .lotus-table-cell-fixed-left-last {
+                box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.12);
+            }
+
+            .lotus-table-cell-fixed-right-first {
+                box-shadow: -4px 0 8px -4px rgba(0, 0, 0, 0.12);
             }
         </style>
     </div>

@@ -3854,7 +3854,7 @@ export function App() @{
 
         <Divider>Table：固定列（左右两侧 fixed）</Divider>
 
-        <div>
+        <div style={{ width: '400px' }}>
             <Table
                 columns={tableFixedColumns}
                 dataSource={tableBasicData}
