@@ -317,6 +317,7 @@ export function App() @{
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
+    let &[motionProgressPercent] = track<number>(30);
     let &[spinSpinning] = track<boolean>(true);
     let &[stepsCurrent] = track<number>(1);
     let &[paginationCurrentPage] = track<number>(3);
@@ -514,6 +515,7 @@ export function App() @{
     let &[configProviderModalVisible] = track<boolean>(false);
     let &[configProviderDirection] = track<'ltr' | 'rtl'>('ltr');
     let &[rtlSidebarVisible] = track<boolean>(false);
+    let &[rtlSidebarMode] = track<'main' | 'code'>('main');
     let &[cropperResultUrl] = track<string>('');
     let &[cropperZoom] = track<number>(1);
     let &[chatMessages] = track<ChatMessage[]>(() => [
@@ -525,6 +527,8 @@ export function App() @{
     let cropperApiRef: CropperApi | undefined;
     let &[userGuideVisible] = track<boolean>(false);
     let lottieInstance: AnimationItem | null = null;
+    let &[lottieMounted] = track<boolean>(true);
+    let &[videoPlayerMounted] = track<boolean>(true);
     let &[hotKeyTriggerCount] = track<number>(0);
     let &[hotKeyClickLog] = track<string>('');
     let &[chartEventLog] = track<string>('');
@@ -795,8 +799,8 @@ export function App() @{
 
         <Divider>Progress</Divider>
 
-        <Space vertical align="start">
-            <Progress percent={30} showInfo aria-label="line 基础进度条" />
+        <Space vertical align="start" style={{ width: '320px' }}>
+            <Progress percent={30} showInfo aria-label="line 基础进度条" style={{ width: '100%' }} />
             <Progress percent={70} type="circle" showInfo aria-label="circle 基础进度条" />
             <Progress
                 percent={progressPercent}
@@ -808,9 +812,12 @@ export function App() @{
                 ]}
                 strokeGradient
                 aria-label="多段渐变进度条（受控，按钮驱动）"
+                style={{ width: '100%' }}
             />
             <Button onClick={() => { progressPercent = progressPercent >= 100 ? 0 : progressPercent + 20; }}>切换 Progress 百分比</Button>
-            <Progress percent={30} showInfo format={(p) => `第 ${Math.round(p / 10)} 步，共 10 步`} aria-label="自定义 format 文案进度条（验证 aria-valuetext 跟随 format 而非原始百分比）" />
+            <Progress percent={30} showInfo format={(p) => `第 ${Math.round(p / 10)} 步，共 10 步`} aria-label="自定义 format 文案进度条（验证 aria-valuetext 跟随 format 而非原始百分比）" style={{ width: '100%' }} />
+            <Progress percent={motionProgressPercent} showInfo motion={false} aria-label="禁用动画的进度条（验证 motion=false 时 CSS transition 被禁用）" style={{ width: '100%' }} />
+            <Button onClick={() => { motionProgressPercent = motionProgressPercent >= 100 ? 0 : motionProgressPercent + 20; }}>切换禁用动画的 Progress 百分比</Button>
         </Space>
 
         <Divider>Spin</Divider>
@@ -4060,15 +4067,47 @@ export function App() @{
                 <div style={{ width: '320px' }}>
                     <Slider defaultValue={30} aria-label="ConfigProvider direction 示例 Slider" />
                 </div>
+                <div style={{ marginTop: '12px' }}>
+                    <Pagination total={95} defaultCurrentPage={1} aria-label="ConfigProvider direction 示例 Pagination" />
+                </div>
+                <div style={{ marginTop: '12px', width: '280px' }}>
+                    <DatePicker aria-label="ConfigProvider direction 示例 DatePicker" />
+                </div>
+                <div style={{ marginTop: '12px', width: '400px', height: '160px' }}>
+                    <Carousel
+                        items={[
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>RTL 1</TypographyText></div>,
+                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>RTL 2</TypographyText></div>,
+                        ]}
+                        autoPlay={false}
+                        aria-label="ConfigProvider direction 示例 Carousel"
+                    />
+                </div>
+                <div style={{ marginTop: '12px', width: '400px' }}>
+                    <AudioPlayer
+                        audioUrl={[
+                            { src: '/demo-track-1.mp3', title: 'RTL 曲目一' },
+                            { src: '/demo-track-2.mp3', title: 'RTL 曲目二' },
+                        ]}
+                        aria-label="ConfigProvider direction 示例 AudioPlayer"
+                    />
+                </div>
                 <Sidebar
                     visible={rtlSidebarVisible}
                     title="RTL 示例 Sidebar"
-                    onCancel={() => { rtlSidebarVisible = false; }}
+                    mode={rtlSidebarMode}
+                    renderMainContent={() => (
+                        <div style={{ padding: '12px' }}>
+                            <Button onClick={() => { rtlSidebarMode = 'code'; }}>进入 RTL 详情视图</Button>
+                            <div style={{ marginTop: '8px' }}>RTL 模式下应贴视口左侧，resize 手柄在其右边缘。</div>
+                        </div>
+                    )}
+                    renderDetailContent={() => <div style={{ padding: '12px' }}>RTL 详情视图：返回箭头应指向右侧。</div>}
+                    onBackWard={() => { rtlSidebarMode = 'main'; }}
+                    onCancel={() => { rtlSidebarVisible = false; rtlSidebarMode = 'main'; }}
                     resizable
                     aria-label="ConfigProvider direction 示例 Sidebar"
-                >
-                    RTL 模式下应贴视口左侧，resize 手柄在其右边缘。
-                </Sidebar>
+                />
             </div>
         </ConfigProvider>
 
@@ -4163,26 +4202,38 @@ export function App() @{
 
         <Divider>VideoPlayer：视频播放器</Divider>
 
-        <div class="demo-video-player" style={{ width: '480px' }}>
-            <VideoPlayer src="/demo-video.mp4" width="100%" height="270px" />
+        <div style={{ marginBottom: '8px' }}>
+            <Button onClick={() => { videoPlayerMounted = !videoPlayerMounted; }}>
+                {videoPlayerMounted ? '卸载 VideoPlayer（验证定时器/监听器清理）' : '重新挂载 VideoPlayer'}
+            </Button>
         </div>
+        @if (videoPlayerMounted) {
+            <div class="demo-video-player" style={{ width: '480px' }}>
+                <VideoPlayer src="/demo-video.mp4" width="100%" height="270px" />
+            </div>
+        }
 
         <Divider>Lottie：动画</Divider>
 
         <div class="demo-lottie-wrap" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div class="demo-lottie" style={{ width: '160px', height: '160px', border: '1px solid var(--lotus-color-border)' }}>
-                <Lottie
-                    params={{ path: '/demo-lottie.json' }}
-                    width="160px"
-                    height="160px"
-                    getAnimationInstance={(instance) => { lottieInstance = instance; }}
-                />
-            </div>
+            @if (lottieMounted) {
+                <div class="demo-lottie" style={{ width: '160px', height: '160px', border: '1px solid var(--lotus-color-border)' }}>
+                    <Lottie
+                        params={{ path: '/demo-lottie.json' }}
+                        width="160px"
+                        height="160px"
+                        getAnimationInstance={(instance) => { lottieInstance = instance; }}
+                    />
+                </div>
+            }
             <Space>
                 <Button onClick={() => lottieInstance?.play()}>播放</Button>
                 <Button onClick={() => lottieInstance?.pause()}>暂停</Button>
                 <Button onClick={() => lottieInstance?.stop()}>停止</Button>
                 <Button onClick={() => lottieInstance?.setSpeed(2)}>2 倍速</Button>
+                <Button onClick={() => { lottieMounted = !lottieMounted; }}>
+                    {lottieMounted ? '卸载 Lottie（验证 destroy 清理）' : '重新挂载 Lottie'}
+                </Button>
             </Space>
         </div>
 

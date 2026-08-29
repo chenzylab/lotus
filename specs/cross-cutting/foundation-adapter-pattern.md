@@ -3012,6 +3012,55 @@ padding = clientHeight"恰好等于外层高度。无论选哪种方案，JS 里
 命中总是稳定偏离预期几项、偏移量本身不随机变化"，应优先怀疑盒模型/坐标
 系不一致，而不是逻辑分支写错。
 
+## 踩坑 #72（重大）：Progress 组件曾用自研 `animateValue`（内部基于
+`requestAnimationFrame`）逐帧计算数值过渡，这是 spec 明确禁止的实现方式
+（`phase-2-navigation-feedback.spec.md`"进度类动画使用 CSS 动画实现，不
+使用 JS `requestAnimationFrame` 手动计算"），且从代码落地起从未被验收标准
+的勾选流程发现过——直到系统性核对未勾选项时才暴露
+
+**现象**：Progress 的 `percent` prop 变化时，组件内部用 `effect` 监听变化，
+每次都启动一个 `animateValue({ from, to, duration: 300, onFrame: (v) =>
+displayPercent = Math.round(v) })`，靠 rAF 回调不断刷新 `displayPercent`
+这个 track 值来制造"数字滚动"的视觉效果，`aria-valuenow`/`aria-valuetext`
+也绑定在这个逐帧变化的中间态上。核对 Semi 一手来源
+（`packages/semi-foundation/progress/progress.scss`）发现其只有
+`transition: width`/`transition: stroke-dashoffset` 两行纯 CSS 声明，
+完全没有对应的 JS 帧驱动代码——Semi 把"数值变化的视觉平滑"整体交给浏览器
+的 CSS 过渡引擎，`aria-valuenow` 只会设置成目标值本身，不会跟着过渡过程
+report 中间数字。
+
+**为什么这类问题不会被 typecheck/常规测试拦下**：`animateValue` 工具函数
+本身是自研的、经过单测的正确实现，`onRest` 回调也确实会让 `displayPercent`
+收敛到目标值，组件行为在功能层面完全正确（视觉上数字会有滚动效果，
+`aria-valuenow` 最终也是对的）。已有的 e2e 用例断言的都是"点击后最终值
+等于目标值"（`toHaveText('50%', { timeout: 2000 })`），这种断言在 JS rAF
+方案和纯 CSS transition 方案下都能通过，测试红不了、typecheck 也不会报错，
+唯一能发现问题的路径就是回去重新对照 spec 原文逐字核对（spec 这条要求写
+在"验收标准"里，不是代码注释或类型签名，不会在任何自动化流程里显式报错）。
+
+**重构方式**：删除 `animateValue` 调用与相关 `effect`，`displayPercent`
+直接简化为 `track<number>(() => clampPercent(percent))`——即 percent 本身
+clamp 后的结果，不再是可变插值中间态，`aria-valuenow`/文案 format 因此
+总是反映真实目标值。视觉平滑过渡改为在 CSS 里给 `.lotus-progress-track-
+inner` 加 `transition: width 0.3s linear, height 0.3s linear`，给
+`.lotus-progress-circle-ring-inner` 加 `transition: stroke-dashoffset 0.3s
+linear`，浏览器在 `style` 内联的 `width`/`stroke-dashoffset` 数值变化时
+自动补间。`motion={false}` 时新增 `.lotus-progress-no-motion` class，把
+上述元素的 `transition-duration` 置零禁用过渡，而不是像原方案那样在 JS 层
+判断"是否要走 rAF 循环"。
+
+**验证方式的教训**：用 `getComputedStyle(el).width` 在 e2e/浏览器里验证
+transition 是否生效时，如果外层容器没有明确宽度（比如 demo 用
+`Space vertical` 这种 `inline-flex` 收缩布局包裹，`.lotus-progress-track`
+的 `flex:1` 拿不到父级宽度），算出来的 `width` 会恒为 `0px`，造成"改动
+好像没生效"的假象——这不是 CSS 改动的问题，是 Progress 组件本身的既定
+设计（对照 Semi 官方文档 demo，`<Progress>` 一律套一层
+`<div style={{ width: 200 }}>` 才使用，组件自身不假设占满容器宽度）。
+真正验证 transition 是否生效，必须先确认外层容器给了明确宽度，再读
+`getBoundingClientRect().width` 这类实际像素值在过渡中间时刻（如 100ms
+后）与稳定后（如 600ms 后）是否不同，而不是只读一次 `getComputedStyle`
+判断"有没有值"。
+
 ## 对后续组件开发的结论性指导
 
 - 所有涉及状态机的组件，Foundation 层一律继承 `packages/foundation/src/base/adapter.ts` 的 `Foundation<S>` 基类，不要重新发明 Adapter 接口形状。

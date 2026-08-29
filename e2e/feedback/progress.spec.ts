@@ -60,4 +60,31 @@ test.describe('Progress', () => {
     const line = page.getByLabel('line 基础进度条');
     await expect(line).toHaveAttribute('aria-valuetext', '30%');
   });
+
+  test('数值变化由 CSS transition 驱动（回归防护：曾用 JS requestAnimationFrame 逐帧计算，违反 Phase 2 spec「不使用 JS 手动计算」要求，重构为纯 CSS transition 后需验证 transition 属性真实生效）', async ({ page }) => {
+    await page.goto('/');
+    const line = page.getByLabel('line 基础进度条');
+    const inner = line.locator('.lotus-progress-track-inner');
+    const transition = await inner.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transition).toContain('width');
+
+    const circle = page.getByLabel('circle 基础进度条');
+    const ring = circle.locator('.lotus-progress-circle-ring-inner');
+    const ringTransition = await ring.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(ringTransition).toContain('stroke-dashoffset');
+  });
+
+  test('motion=false 时禁用 CSS transition（aria-valuenow 立即反映目标值，且过渡时长为 0）', async ({ page }) => {
+    await page.goto('/');
+    const noMotion = page.getByLabel('禁用动画的进度条（验证 motion=false 时 CSS transition 被禁用）');
+    const inner = noMotion.locator('.lotus-progress-track-inner');
+
+    const duration = await inner.evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(duration.split(',').every((d) => parseFloat(d) === 0)).toBe(true);
+
+    await expect(noMotion).toHaveAttribute('aria-valuenow', '30');
+    const button = page.getByRole('button', { name: '切换禁用动画的 Progress 百分比' });
+    await button.click();
+    await expect(noMotion).toHaveAttribute('aria-valuenow', '50');
+  });
 });

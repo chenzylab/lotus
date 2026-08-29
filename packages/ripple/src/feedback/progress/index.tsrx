@@ -1,4 +1,4 @@
-import { track, effect, untrack } from 'ripple';
+import { track } from 'ripple';
 import {
     clampPercent,
     calcCircleGeometry,
@@ -9,7 +9,6 @@ import {
     type ProgressStrokeLinecap,
     type ProgressStrokeStop,
 } from '@lotus/foundation/feedback/progress';
-import { animateValue } from '@lotus/foundation/base/animate-value';
 
 export type { ProgressType, ProgressDirection, ProgressSize, ProgressStrokeLinecap, ProgressStrokeStop };
 
@@ -58,29 +57,15 @@ export function Progress(&{
     class: className,
     'aria-label': ariaLabel,
 }: ProgressProps) @{
-    let &[displayPercent] = track<number>(clampPercent(percent));
-    let previousPercent = clampPercent(percent);
-
-    effect(() => {
-        const target = clampPercent(percent);
-        const from = untrack(() => previousPercent);
-        if (from === target) return;
-        previousPercent = target;
-
-        if (!motion) {
-            displayPercent = target;
-            return;
-        }
-        const handle = animateValue({
-            from,
-            to: target,
-            duration: 300,
-            easing: 'linear',
-            onFrame: (value) => { displayPercent = Math.round(value); },
-            onRest: () => { displayPercent = target; },
-        });
-        return () => handle.destroy();
-    });
+    // 数值变化的平滑过渡交给纯 CSS transition（.lotus-progress-track-inner
+    // 的 width/height、.lotus-progress-circle-ring-inner 的 stroke-dashoffset），
+    // 不用 JS 逐帧计算中间值——核对 Semi 一手来源（progress.scss 只有
+    // `transition: width`/`transition: stroke-dashoffset`，没有任何 JS 帧
+    // 驱动逻辑）确认纯 CSS 方案就是标准做法，进度条填充这类场景不需要
+    // "精确到帧"的控制粒度。displayPercent 现在就是 percent 本身：
+    // aria-valuenow/文案应该反映真实目标值，不该跟着视觉动画过程报告
+    // 中间态数字。
+    let &[displayPercent] = track<number>(() => clampPercent(percent));
 
     let &[resolvedStroke] = track<string | undefined>(() => {
         if (stroke === undefined) return undefined;
@@ -94,6 +79,7 @@ export function Progress(&{
             `lotus-progress-${type}`,
             `lotus-progress-size-${size}`,
             type === 'line' ? `lotus-progress-direction-${direction}` : '',
+            motion ? '' : 'lotus-progress-no-motion',
             className ?? '',
         ]
             .filter(Boolean)
@@ -225,7 +211,7 @@ export function Progress(&{
                 bottom: 0;
                 background: var(--lotus-color-success);
                 border-radius: var(--lotus-border-radius-full);
-                transition: background-color 0.2s ease;
+                transition: background-color 0.2s ease, width 0.3s linear, height 0.3s linear;
             }
 
             .lotus-progress-direction-horizontal .lotus-progress-track-inner {
@@ -236,6 +222,10 @@ export function Progress(&{
             .lotus-progress-direction-vertical .lotus-progress-track-inner {
                 right: 0;
                 width: 100%;
+            }
+
+            .lotus-progress-no-motion .lotus-progress-track-inner {
+                transition-duration: 0s;
             }
 
             .lotus-progress-line-text {
@@ -261,7 +251,11 @@ export function Progress(&{
                 stroke: var(--lotus-color-success);
                 transform: rotate(-90deg);
                 transform-origin: center;
-                transition: stroke 0.2s ease;
+                transition: stroke 0.2s ease, stroke-dashoffset 0.3s linear;
+            }
+
+            .lotus-progress-no-motion .lotus-progress-circle-ring-inner {
+                transition-duration: 0s;
             }
 
             .lotus-progress-circle-text {

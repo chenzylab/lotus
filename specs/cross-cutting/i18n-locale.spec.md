@@ -18,5 +18,5 @@
 - [ ] 任意面向用户的文案字符串搜索（`grep` 中文/英文硬编码字符串于 `packages/ripple/src` 下）应为零命中（测试/注释除外）
 - [ ] Form 组件切换 locale 后，校验错误文案实时更新（不需要重新挂载组件）
 - [ ] DatePicker/Calendar 的月份名称、周起始日在切换到日语/阿拉伯语 locale 后正确显示，且阿拉伯语场景下整体布局镜像（非文案本身镜像，是布局方向）
-- [ ] RTL 模式下方向性图标（如 Breadcrumb 分隔箭头、Collapse 展开箭头）视觉上正确翻转
+- [x] RTL 模式下方向性图标视觉上正确翻转——**这条验收标准列举的两个例子本身有误，如实修正**：核对源码确认 Breadcrumb 默认分隔符是文本 `/`（Semi 一手来源同样如此），不是箭头图标；Collapse 用 `IconChevronUp/Down` 垂直箭头，垂直方向不受 RTL 影响，两者都不需要处理。真正需要镜像的是水平方向、带阅读顺序语义的图标，核实后发现 6 个组件确实完全没做：Pagination 上/下页、DatePicker 上/下月+上/下年、Carousel 左右切换箭头（含位置镜像）、Image 预览上一张/下一张、AudioPlayer 上一曲/下一曲、Sidebar 返回箭头，均已用 `locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined` 补齐（对齐 Semi 一手来源 `rtl.scss` 的 `scaleX(-1)` 方案），Carousel/Image 预览的箭头容器物理位置同步改用 `inset-inline-start/end` 逻辑属性镜像。核实中顺带发现并修复一处与 RTL 无关的既有缺陷：AudioPlayer 快退/快进按钮此前用 `«`/`»` 文本符号占位，`@lotus/icons` 早已移植好 `IconBackward`/`IconFastForward` 却未使用，已换成真正图标（核对 Semi 一手来源确认这两个图标本身不受 RTL 镜像，是媒体控制通用符号约定）。ego-browser 真机验证全部 6 处镜像 + e2e 固化，`--repeat-each=5` 稳定通过
 - [ ] 新增语言包时不需要修改任何组件代码（纯数据层扩展），作为架构正确性的反向验证

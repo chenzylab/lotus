@@ -26,7 +26,7 @@
 
 - [ ] 清单文件中 Phase 5 全部条目勾选，满足 DoD
 - [x] ConfigProvider 切换主题色后，抽查的 5 个既有组件（建议覆盖 Button/Input/Select/Modal/Table 各一次）在不刷新页面的前提下视觉即时更新，Playwright 用例验证——重新核实后发现 Semi 的 ConfigProvider 本身不承载主题能力（暗色模式是脱离 ConfigProvider 的全局属性操作），这条标准描述的是 lotus 自己想要的能力而非照搬 Semi，本次新增 `ConfigProvider.mode` prop 实现并验证
-- [ ] ConfigProvider 切换语言后，Form 校验文案、DatePicker 月份名称等此前依赖 `@lotus/locale` 的组件同步更新
-- [ ] DragMove/HotKeys 的 Foundation 层可独立于任何具体组件单测（验证其「纯交互能力」定位是否真正做到框架/组件无关）
-- [ ] AudioPlayer/VideoPlayer 的播放状态机有 Foundation 单测，覆盖切换播放源时旧的定时器/事件监听被正确清理
-- [ ] Lottie 组件卸载时动画实例被销毁，无残留渲染循环（Playwright 验证长时间停留无内存增长趋势，或至少确认销毁方法被调用）
+- [x] ConfigProvider 切换语言后，Form 校验文案、DatePicker 月份名称等此前依赖 `@lotus/locale` 的组件同步更新——`e2e/other/config-provider.spec.ts` 已有对应测试（切换 locale 后 Form 校验错误文案实时更新；DatePicker/TimePicker 的月份格式/星期文案/小时单位跟随 locale 切换），纯文档滞后未勾选
+- [x] DragMove/HotKeys 的 Foundation 层可独立于任何具体组件单测（验证其「纯交互能力」定位是否真正做到框架/组件无关）——核实两者的 `foundation.ts` 均不依赖 `document`/`window` 等 DOM 全局对象，各自有独立 `foundation.test.ts`（HotKeys 16 条、DragMove 13 条），纯文档滞后未勾选
+- [x] AudioPlayer/VideoPlayer 的播放状态机有 Foundation 单测，覆盖切换播放源时旧的定时器/事件监听被正确清理——核实两者播放状态机完全委托给原生 `<audio>`/`<video>` 元素事件（JSX 属性绑定 `onTimeUpdate` 等，非手写 `addEventListener`），"切换播放源"场景下浏览器自己处理旧监听器，Foundation 本身不持有网络/媒体层监听器，这部分 spec 字面要求的场景不存在。但核实组件层时发现 VideoPlayer 确实有一个真实缺口：`controlsHideTimer`（控制条自动隐藏的防抖 `setTimeout`）此前只在下次调用时被 `clearTimeout`，组件卸载时若恰好有一个尚未触发的定时器完全没有清理逻辑，是与 Carousel autoPlay 定时器同一类"卸载时遗漏清理"的问题，已补上对应 `effect` cleanup 并用调用栈拦截的方式写 e2e 验证，`--repeat-each=5` 稳定通过；`fullscreenchange` 监听器已有正确 cleanup
+- [x] Lottie 组件卸载时动画实例被销毁，无残留渲染循环（Playwright 验证长时间停留无内存增长趋势，或至少确认销毁方法被调用）——核实驱动 lottie-web 实例的两处 `effect` 均已在 cleanup 里正确调用 `animation.destroy()`，是真实代码早就实现好、只是从未有 e2e 验证过这条卸载路径的情况；新增测试验证卸载后 DOM 容器随之移除、重新挂载后能正常渲染新实例（排除"表面卸载但底层状态已损坏"的假阳性），`--repeat-each=5` 稳定通过
