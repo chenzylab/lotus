@@ -36,6 +36,9 @@ jobs:
       - name: Unit test
         run: pnpm test
 
+      - name: Foundation coverage
+        run: pnpm --filter @lotus/foundation run test:coverage
+
   e2e:
     name: e2e test
     runs-on: ubuntu-latest

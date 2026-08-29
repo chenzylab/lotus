@@ -30,7 +30,7 @@
 
 ## 验收标准
 
-- [ ] 每个组件的 Foundation（若存在）有对应 `.test.ts`，覆盖率达标
-- [ ] 每个组件至少 1 条 Playwright 交互测试 + 1 张视觉快照
-- [ ] CI 中 Vitest 与 Playwright 均为必过项，不允许跳过（若确有环境限制需要跳过，必须在 PR 描述中明确说明并给出后续补测计划，符合用户全局原则中"诚实报错，不掩盖失败"）
-- [ ] 视觉快照 baseline 变更历史可追溯（git diff 能看出哪次提交更新了哪些快照及原因）
+- [x] 每个组件的 Foundation（若存在）有对应 `.test.ts`，覆盖率达标——核实 `packages/foundation/src` 下 70 个 `foundation.ts` 里 69 个已有对应 `.test.ts`，唯一缺失的 `show/sidebar/foundation.ts` 是纯重导出汇总文件（真正逻辑拆在同目录 `container-machine.ts`/`code-content.ts`/`mcp-configure.ts`/`main.ts` 里，均已各自有测试），其中 `file-item.ts` 的 `defaultMenuBarActiveState()` 此前遗漏测试已补上，`annotation.ts`/`file-content.ts` 是纯类型定义无需测试。覆盖率此前从未真正测量过（`@vitest/coverage-v8` 依赖未安装），现已安装并新增 `packages/foundation/vitest.config.ts` 设置语句覆盖率阈值 85%，实测 89.33%（4104/4594），达标
+- [ ] 每个组件至少 1 条 Playwright 交互测试 + 1 张视觉快照——交互测试部分已大量覆盖（`e2e/` 下 81 个 spec 文件对应 82 个组件目录），但视觉快照（`toHaveScreenshot`）在全仓库 0 处使用，是完全未落地的系统性缺口，用户已确认本次不处理，留待后续专门安排
+- [x] CI 中 Vitest 与 Playwright 均为必过项，不允许跳过——核实 `.github/workflows/ci.yml` 的 `Unit test`/`Run e2e tests` 均为普通 step，无 `continue-on-error`/跳过标记，任一失败整个 job 即红；新增 `Foundation coverage` step 接入覆盖率阈值门禁（`pnpm --filter @lotus/foundation run test:coverage`，故意调高阈值验证过退出码确实非 0）
+- [ ] 视觉快照 baseline 变更历史可追溯（git diff 能看出哪次提交更新了哪些快照及原因）——依赖上一条"每个组件至少 1 张视觉快照"，该基础设施尚不存在，无从谈起可追溯性，同样留待后续处理
