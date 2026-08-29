@@ -44,4 +44,21 @@ test.describe('Lottie', () => {
       expect(shapeCount).toBeGreaterThan(0);
     });
   });
+
+  test('卸载时正确销毁动画实例，DOM 容器随之移除（回归防护：驱动 lottie-web 实例的两处 effect 均在 cleanup 里调用 animation.destroy()，此前只有 Foundation/组件源码层面看得出来，从未有 e2e 验证过这条卸载路径真的会执行）', async ({ page }) => {
+    await page.goto('/');
+    const container = page.locator('.demo-lottie .lotus-lottie');
+    await expect(container).toBeVisible();
+    await expect(container.locator('svg')).toBeVisible();
+
+    await page.getByRole('button', { name: '卸载 Lottie（验证 destroy 清理）' }).click();
+    await expect(page.locator('.demo-lottie')).toHaveCount(0);
+
+    // 重新挂载后应该能正常渲染出一个全新实例，不是"卸载动作本身没报错，
+    // 但底层状态已经损坏、重新挂载后不再工作"这种假阳性。
+    await page.getByRole('button', { name: '重新挂载 Lottie' }).click();
+    const remounted = page.locator('.demo-lottie .lotus-lottie');
+    await expect(remounted).toBeVisible();
+    await expect(remounted.locator('svg')).toBeVisible();
+  });
 });

@@ -51,4 +51,23 @@ test.describe('Notification', () => {
     await expect(page.locator('.lotus-notification')).toHaveCount(0);
     await expect(page.locator('.lotus-notification-root')).toHaveCount(0);
   });
+
+  test('重复挂载/卸载 100 次无残留：触发+destroyAll 循环后 DOM 干净、挂载容器不累积（回归防护：同 Toast 一致的单例懒挂载设计，参照 e2e/feedback/toast.spec.ts 同名测试）', async ({ page }) => {
+    await page.goto('/');
+    const triggerBtn = page.getByRole('button', { name: '连续触发 2 条（topRight）', exact: true });
+    const destroyBtn = page.getByRole('button', { name: 'Notification.destroyAll', exact: true });
+
+    for (let i = 0; i < 100; i++) {
+      await triggerBtn.click();
+      await destroyBtn.click();
+    }
+
+    await expect(page.locator('.lotus-notification')).toHaveCount(0);
+    await expect(page.locator('.lotus-notification-root')).toHaveCount(0);
+
+    await triggerBtn.click();
+    await expect(page.locator('.lotus-notification')).toHaveCount(2);
+    await expect(page.locator('.lotus-notification-root')).toHaveCount(1);
+    await destroyBtn.click();
+  });
 });
