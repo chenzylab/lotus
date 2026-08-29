@@ -21,7 +21,7 @@
 
 ## 验收标准
 
-- [ ] 清单文件中 Phase 1 全部条目勾选，且每项满足 AGENTS.md 第 3 节 DoD
+- [x] 清单文件中 Phase 1 全部条目勾选，且每项满足 AGENTS.md 第 3 节 DoD——`specs/component-inventory.md` Phase 1 小节 16 个组件全部 `[x]`
 - [x] Grid 组件在至少 3 个断点下的响应式行为有 Playwright 视觉快照覆盖——核实此前 `e2e/basic/grid.spec.ts` 只测过 pull/push/span=0 两个静态场景，完全没有验证过任何响应式断点是否真的生效，是真实缺口；新增测试覆盖 xs（<768px，回退到 span 本身）/md（768-991px）/lg（≥992px）三档视口宽度，用 `getBoundingClientRect` 精确百分比宽度断言（Col 的响应式是 JS 计算后写入 inline style flexBasis，不是 CSS `@media`，需要真实切换 viewport 才能验证），比像素级视觉快照更不容易受字体渲染/抗锯齿差异误报，`--repeat-each=5` 5/5 稳定通过
 - [x] Icon 包支持按需引入单个图标（不因为引入一个图标打包进全量 SVG），有构建产物体积的 Playwright/脚本级校验——新增 `packages/icons/scripts/verify-tree-shaking.ts`（`pnpm --filter @lotus/icons run verify:tree-shaking`），用真实 Vite+ripple 插件分别构建"只 import 1 个图标"与"全量 export"两个入口，核心断言是产物里出现的图标函数定义数量（1 个 vs 524 个）而非字节数——探索过程中发现字节数会被 ripple 运行时的固定注入体积（hydration/operations 等内部模块，不随图标数量变化）掩盖真实差异，单图标产物因为这部分固定开销仍有 345KB，容易误判为"tree-shaking 没生效"，改用函数定义计数后得到精确、无噪声的信号：单图标引入产物只含 1 个图标函数、全量引入含 524 个，确凿证明按需引入生效
 - [x] `packages/icons` 生成的图标组件数量与源 SVG 数量一致（523 个正式图标 + 84 个 lab 图标，脚本级校验数量匹配，防止生成流程静默跳过部分文件）——核实发现该校验其实早已实现（`packages/icons/scripts/generate-icons.ts` 第 172-176 行、`packages/icons-lab` 同款脚本对应位置），生成流程本身有 `if (generated.length !== svgFiles.length) throw` 硬校验，只是从未打勾；重跑 `pnpm --filter @lotus/icons run generate` 验证确实生效（524 个源文件 = 524 个生成组件，无 diff）。`@lotus/icons` 524 个 = Semi 一手来源正式图标 523 个 + lotus 自有 `lotus_logo.svg` 1 个，`@lotus/icons-lab` 独立成包 84 个对齐一手来源，详见 `specs/component-inventory.md` 第 20 行的澄清记录
