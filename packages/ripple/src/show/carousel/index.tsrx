@@ -65,6 +65,12 @@ export function Carousel(&{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
+    // 左右切换箭头是方向性图标：对齐 Semi 一手来源
+    // semi-foundation/carousel/rtl.scss——RTL 下箭头容器的物理位置随
+    // inset-inline-start/end 逻辑属性自动镜像（prev 挪到右侧、next 挪到
+    // 左侧），图标本身同时需要 scaleX(-1) 镜像朝向。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
+
     const isControlled = activeIndexProp !== undefined;
 
     let &[state] = track<CarouselState>({
@@ -178,7 +184,7 @@ export function Carousel(&{
                     aria-label={locale.Carousel.prev}
                     onClick={handlePrev}
                 >
-                    <IconChevronLeft />
+                    <IconChevronLeft style={rtlIconStyle} />
                 </button>
             }
             @if (showArrow && items.length > 1) {
@@ -188,7 +194,7 @@ export function Carousel(&{
                     aria-label={locale.Carousel.next}
                     onClick={handleNext}
                 >
-                    <IconChevronRight />
+                    <IconChevronRight style={rtlIconStyle} />
                 </button>
             }
 
@@ -286,11 +292,11 @@ export function Carousel(&{
             }
 
             .lotus-carousel-arrow-left {
-                left: var(--lotus-spacing-tight);
+                inset-inline-start: var(--lotus-spacing-tight);
             }
 
             .lotus-carousel-arrow-right {
-                right: var(--lotus-spacing-tight);
+                inset-inline-end: var(--lotus-spacing-tight);
             }
 
             .lotus-carousel-indicators {

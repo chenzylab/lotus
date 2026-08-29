@@ -36,6 +36,11 @@ export function Preview(&{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
+    // 上一张/下一张切换箭头是方向性图标，RTL 下箭头容器物理位置随
+    // inset-inline-start/end 自动镜像，图标本身同时需要 scaleX(-1)
+    // 镜像朝向（对齐 Carousel 已验证的同一套方案）。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
+
     let &[state] = track<PreviewState>(() => ({ ...initialPreviewState(currentIndex) }));
     let &[containerNode] = track<HTMLElement | null>(null);
     let &[isDragging] = track<boolean>(false);
@@ -184,12 +189,12 @@ export function Preview(&{
 
                     @if (hasMultiple) {
                         <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-left" aria-label={locale.ImagePreview.prev} onClick={(e: MouseEvent) => { e.stopPropagation(); handlePrev(); }}>
-                            <IconChevronLeft />
+                            <IconChevronLeft style={rtlIconStyle} />
                         </button>
                     }
                     @if (hasMultiple) {
                         <button type="button" class="lotus-image-preview-arrow lotus-image-preview-arrow-right" aria-label={locale.ImagePreview.next} onClick={(e: MouseEvent) => { e.stopPropagation(); handleNext(); }}>
-                            <IconChevronRight />
+                            <IconChevronRight style={rtlIconStyle} />
                         </button>
                     }
 
@@ -266,11 +271,11 @@ export function Preview(&{
             }
 
             .lotus-image-preview-arrow-left {
-                left: var(--lotus-spacing-loose);
+                inset-inline-start: var(--lotus-spacing-loose);
             }
 
             .lotus-image-preview-arrow-right {
-                right: var(--lotus-spacing-loose);
+                inset-inline-end: var(--lotus-spacing-loose);
             }
 
             .lotus-image-preview-toolbar {

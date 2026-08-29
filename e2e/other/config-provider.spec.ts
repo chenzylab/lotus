@@ -117,4 +117,51 @@ test.describe('ConfigProvider', () => {
     await toggleBtn.click();
     expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('light');
   });
+
+  test('direction=rtl：方向性图标水平镜像（Pagination 上下页、DatePicker 上下月/年、Carousel 左右切换、AudioPlayer 上下曲、Sidebar 返回箭头），回归防护：此前 CSS 逻辑属性只处理了布局位置镜像，图标本身的视觉朝向从未处理——图标库只有 LTR 默认方向一套，SVG 形状不会因为父容器 dir=rtl 就自动翻转，需要组件层显式用 scaleX(-1)', async ({ page }) => {
+    await page.goto('/');
+    const toggleBtn = page.getByRole('button', { name: /切换到 rtl|切换到 ltr/ });
+    await toggleBtn.scrollIntoViewIfNeeded();
+    await toggleBtn.click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('dir'))).toBe('rtl');
+
+    const rtlPagination = page.getByLabel('ConfigProvider direction 示例 Pagination');
+    const pagerPrevIcon = rtlPagination.locator('.lotus-pagination-prev svg');
+    const pagerNextIcon = rtlPagination.locator('.lotus-pagination-next svg');
+    await expect(pagerPrevIcon).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    await expect(pagerNextIcon).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+
+    await page.getByLabel('ConfigProvider direction 示例 DatePicker').click();
+    const navIcons = page.locator('.lotus-date-picker-navigation svg');
+    await expect(navIcons).toHaveCount(4);
+    for (let i = 0; i < 4; i++) {
+      await expect(navIcons.nth(i)).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    }
+    await page.keyboard.press('Escape');
+
+    const rtlCarousel = page.getByLabel('ConfigProvider direction 示例 Carousel');
+    await expect(rtlCarousel.locator('.lotus-carousel-arrow-left svg')).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    await expect(rtlCarousel.locator('.lotus-carousel-arrow-right svg')).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    // 物理位置也应该跟随镜像：arrow-left 用 inset-inline-start，RTL 下应
+    // 该渲染在视觉右侧而不是左侧。
+    const carouselBox = await rtlCarousel.boundingBox();
+    const leftArrowBox = await rtlCarousel.locator('.lotus-carousel-arrow-left').boundingBox();
+    if (!carouselBox || !leftArrowBox) throw new Error('no bounding box');
+    expect(leftArrowBox.x).toBeGreaterThan(carouselBox.x + carouselBox.width / 2);
+
+    const rtlAudioPlayer = rtlCarousel.locator('xpath=ancestor::div[contains(@style,"border")]').locator('.lotus-audio-player');
+    await expect(rtlAudioPlayer.locator('button[aria-label="上一曲"] svg')).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    await expect(rtlAudioPlayer.locator('button[aria-label="下一曲"] svg')).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+    // 快退/快进是媒体控制通用符号，不应该跟随 RTL 镜像（对齐 Semi 一手
+    // 来源 AudioPlayer 没有独立 rtl.scss 的既有行为）。
+    await expect(rtlAudioPlayer.locator('button[aria-label="快退"] svg')).toHaveCSS('transform', 'none');
+    await expect(rtlAudioPlayer.locator('button[aria-label="快进"] svg')).toHaveCSS('transform', 'none');
+
+    await page.getByRole('button', { name: '打开 RTL 示例 Sidebar' }).click();
+    await expect(page.locator('.lotus-sidebar-container')).toHaveClass(/lotus-sidebar-container-visible/);
+    await page.getByRole('button', { name: '进入 RTL 详情视图' }).click();
+    await expect(page.locator('.lotus-sidebar-back svg')).toHaveCSS('transform', 'matrix(-1, 0, 0, 1, 0, 0)');
+
+    await toggleBtn.click();
+  });
 });

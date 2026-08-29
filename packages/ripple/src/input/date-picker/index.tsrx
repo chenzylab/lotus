@@ -113,6 +113,10 @@ interface NavigationProps {
     prevMonthLabel: string;
     nextMonthLabel: string;
     nextYearLabel: string;
+    /** RTL 模式下上/下月、上/下年箭头需要水平镜像（对齐 Semi 一手来源
+     * semi-foundation/datePicker/rtl.scss 的 transform: scaleX(-1) 方案），
+     * 由父组件读取 locale.dir 后传入，Navigation 自身不直接依赖 LocaleContext。 */
+    rtlIconStyle?: Record<string, any>;
 }
 
 function Navigation(&{
@@ -126,14 +130,15 @@ function Navigation(&{
     prevMonthLabel,
     nextMonthLabel,
     nextYearLabel,
+    rtlIconStyle,
 }: NavigationProps) @{
     <>
         <div class="lotus-date-picker-navigation">
-            <IconButton icon={<IconDoubleChevronLeft />} theme="borderless" size="small" onClick={onPrevYear} aria-label={prevYearLabel} />
-            <IconButton icon={<IconChevronLeft />} theme="borderless" size="small" onClick={onPrevMonth} aria-label={prevMonthLabel} />
+            <IconButton icon={<IconDoubleChevronLeft style={rtlIconStyle} />} theme="borderless" size="small" onClick={onPrevYear} aria-label={prevYearLabel} />
+            <IconButton icon={<IconChevronLeft style={rtlIconStyle} />} theme="borderless" size="small" onClick={onPrevMonth} aria-label={prevMonthLabel} />
             <button type="button" class="lotus-date-picker-navigation-text" onClick={onHeaderClick}>{monthText}</button>
-            <IconButton icon={<IconChevronRight />} theme="borderless" size="small" onClick={onNextMonth} aria-label={nextMonthLabel} />
-            <IconButton icon={<IconDoubleChevronRight />} theme="borderless" size="small" onClick={onNextYear} aria-label={nextYearLabel} />
+            <IconButton icon={<IconChevronRight style={rtlIconStyle} />} theme="borderless" size="small" onClick={onNextMonth} aria-label={nextMonthLabel} />
+            <IconButton icon={<IconDoubleChevronRight style={rtlIconStyle} />} theme="borderless" size="small" onClick={onNextYear} aria-label={nextYearLabel} />
         </div>
 
         <style>
@@ -380,6 +385,9 @@ interface YearMonthWheelProps {
     backLabel: string;
     yearLabel: string;
     monthLabel: string;
+    /** "返回"箭头是方向性图标，RTL 下语义镜像（LTR 指向左表示返回，RTL
+     * 下阅读顺序反转，返回箭头应指向右）。 */
+    rtlIconStyle?: Record<string, any>;
 }
 
 function YearMonthWheel(&{
@@ -395,6 +403,7 @@ function YearMonthWheel(&{
     backLabel,
     yearLabel,
     monthLabel,
+    rtlIconStyle,
 }: YearMonthWheelProps) @{
     let &[yearList] = track<ScrollListItemData<number>[]>(() => years.map((y) => ({ value: y.value, text: `${y.value}`, disabled: y.disabled })));
     let &[monthList] = track<ScrollListItemData<number>[]>(() => months.map((m) => ({ value: m.value, text: monthLabels[m.value - 1] ?? `${m.value}`, disabled: m.disabled })));
@@ -404,7 +413,7 @@ function YearMonthWheel(&{
     <>
         <div class="lotus-date-picker-yam">
             <div class="lotus-date-picker-yam-header">
-                <IconButton icon={<IconChevronLeft />} theme="borderless" size="small" onClick={onBack} aria-label={backLabel} />
+                <IconButton icon={<IconChevronLeft style={rtlIconStyle} />} theme="borderless" size="small" onClick={onBack} aria-label={backLabel} />
             </div>
             <ScrollList bodyHeight={224}>
                 <ScrollItem mode="normal" list={yearList} selectedIndex={yearIndex} onSelect={(item) => onSelectYear(item.value)} aria-label={yearLabel} />
@@ -469,6 +478,10 @@ export function DatePicker(&{
 }: DatePickerProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
+    // 上/下月、上/下年箭头是方向性图标，RTL 下需要水平镜像（对齐 Semi
+    // 一手来源 semi-foundation/datePicker/rtl.scss 的 scaleX(-1) 方案）。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
 
     const isRange = isRangeType(type);
     const isDateTime = isDateTimeType(type);
@@ -775,6 +788,7 @@ export function DatePicker(&{
             backLabel: locale.DatePicker.cancel,
             yearLabel: locale.DatePicker.months[0],
             monthLabel: locale.DatePicker.months[0],
+            rtlIconStyle,
         };
     }
 
@@ -858,6 +872,7 @@ export function DatePicker(&{
                                                         prevMonthLabel="上个月"
                                                         nextMonthLabel="下个月"
                                                         nextYearLabel="下一年"
+                                                        rtlIconStyle={rtlIconStyle}
                                                     />
                                                     <MonthGrid
                                                         pickerDate={state.monthLeft.pickerDate}

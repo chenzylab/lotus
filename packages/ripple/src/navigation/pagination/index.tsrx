@@ -81,6 +81,11 @@ export function Pagination(&{
     let &[totalPageNum] = track<number>(() => getTotalPageNumber(total, pageSize));
     let &[pageList] = track<PageListItem[]>(() => computePageList(displayCurrentPage, totalPageNum).pageList);
 
+    // 上一页/下一页箭头是方向性图标——图标库只有 LTR 默认朝向一套，RTL 下
+    // "下一页"在阅读顺序上应该指向左边，需要水平镜像（对齐 Semi 一手来源
+    // semi-foundation/pagination/rtl.scss 的 transform: scaleX(-1) 方案）。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
+
     function updatePage(target: number) {
         const clamped = clampCurrentPage(target, totalPageNum);
         if (clamped === untrack(() => displayCurrentPage)) return;
@@ -160,7 +165,7 @@ export function Pagination(&{
                 aria-label={locale.Pagination.prevPage}
                 onClick={goPrev}
             >
-                <IconChevronLeft />
+                <IconChevronLeft style={rtlIconStyle} />
             </button>
 
             @for (const item of pageList; index i) {
@@ -189,7 +194,7 @@ export function Pagination(&{
                 aria-label={locale.Pagination.nextPage}
                 onClick={goNext}
             >
-                <IconChevronRight />
+                <IconChevronRight style={rtlIconStyle} />
             </button>
 
             @if (showSizeChanger) {

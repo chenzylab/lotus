@@ -7,7 +7,7 @@ import {
     type AudioUrl,
     type PlaybackRate,
 } from '@lotus/foundation/show/audio-player';
-import { IconPlay, IconPause, IconChevronLeft, IconChevronRight, IconRefresh, IconVolume2, IconVolumeSilentStroked } from '@lotus/icons';
+import { IconPlay, IconPause, IconChevronLeft, IconChevronRight, IconBackward, IconFastForward, IconRefresh, IconVolume2, IconVolumeSilentStroked } from '@lotus/icons';
 import { Popover } from '../popover/index.tsrx';
 import { AudioSlider } from './audio-slider.tsrx';
 import { zhCN } from '@lotus/locale';
@@ -36,6 +36,12 @@ export function AudioPlayer(&{
 }: AudioPlayerProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
+    // 上一首/下一首箭头带阅读顺序语义，RTL 下需要镜像；快退/快进
+    // （IconBackward/IconFastForward）是媒体控制的全球通用符号约定，
+    // 核对 Semi 一手来源确认其 AudioPlayer 没有独立 rtl.scss、不做这两个
+    // 图标的镜像处理，不属于本次要修的范围。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
 
     let &[state] = track<AudioPlayerState>(() => ({
         isPlaying: autoPlay,
@@ -182,7 +188,7 @@ export function AudioPlayer(&{
                 <div class="lotus-audio-player-toolbar">
                     @if (isMultiTrack) {
                         <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.prev} onClick={() => handleTrackChange('prev')}>
-                            <IconChevronLeft />
+                            <IconChevronLeft style={rtlIconStyle} />
                         </button>
                     }
 
@@ -196,12 +202,12 @@ export function AudioPlayer(&{
 
                     @if (isMultiTrack) {
                         <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.next} onClick={() => handleTrackChange('next')}>
-                            <IconChevronRight />
+                            <IconChevronRight style={rtlIconStyle} />
                         </button>
                     }
 
-                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.rewind} onClick={() => handleSkip(-1)}>«</button>
-                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.forward} onClick={() => handleSkip(1)}>»</button>
+                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.rewind} onClick={() => handleSkip(-1)}><IconBackward /></button>
+                    <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.forward} onClick={() => handleSkip(1)}><IconFastForward /></button>
                     <button type="button" class="lotus-audio-player-btn" aria-label={locale.AudioPlayer.replay} onClick={handleRefresh}>
                         <IconRefresh />
                     </button>

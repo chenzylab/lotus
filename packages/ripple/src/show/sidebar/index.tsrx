@@ -31,11 +31,15 @@ function SidebarHeader(&{ isMainMode, title, detailHeader, showClose, onBack, on
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
+    // "返回"箭头带阅读顺序语义（LTR 指向左表示返回，RTL 下阅读顺序反转，
+    // 返回箭头应指向右），RTL 下水平镜像。
+    let &[rtlIconStyle] = track<Record<string, any> | undefined>(() => (locale.dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined));
+
     <>
     <div class="lotus-sidebar-header">
         @if (!isMainMode) {
             <button type="button" class="lotus-sidebar-back" aria-label={locale.Sidebar.back} onClick={onBack}>
-                <IconArrowLeft />
+                <IconArrowLeft style={rtlIconStyle} />
             </button>
         }
         @if (detailHeader !== undefined && !isMainMode) {
