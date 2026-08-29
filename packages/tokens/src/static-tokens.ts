@@ -271,17 +271,47 @@ export const chartDataColor: Record<'light' | 'dark', string[]> = {
   ],
 };
 
-/** AI 专属渐变色变量（Phase 1 起被 Button/Icon/Tag/FloatButton 的 AI 主题变体消费）。 */
+/**
+ * AI 专属渐变色变量（Phase 1 起被 Button/Icon/Tag/FloatButton 的 AI 主题变体消费）。
+ * 数值来源：`~/i/semi-design/packages/semi-theme-default/scss/{_palette.scss,global.scss}`
+ * 一手来源核对（此前的实现是自行拍的近似色，角度/色标数/顺序均与一手来源不符，2026-08-29
+ * 核实修正，详见 specs 踩坑记录）。`general`/`generalHover`/`generalActive` 对应 Semi 的
+ * `--semi-ai-general-5/6/7` 四色标 278deg 渐变，亮暗模式下是完全不同的两套颜色（Semi 原实现
+ * 本身就未做透明度派生，是独立色值）；`purpleHover`/`purpleActive` 同理是独立色值
+ * （`--semi-ai-purple-6/7`），不是 `purple` 降透明度的近似。
+ */
 export const aiColor = {
-  general: 'linear-gradient(90deg, #5C4CFF 0%, #A64EFF 50%, #FF57C6 100%)',
-  // hover/active 是 general 渐变整体调深的固定色值（对应 Semi 的 --semi-color-ai-general-hover/active），
-  // 渐变字符串无法用 withAlpha() 派生透明度，故各色标直接给出调深后的十六进制值。
-  generalHover: 'linear-gradient(90deg, #4B3ACC 0%, #8A3ECC 50%, #CC4599 100%)',
-  generalActive: 'linear-gradient(90deg, #3A2D9E 0%, #6E30A3 50%, #A3357A 100%)',
-  purpleLight: 'rgba(166, 71, 255, 1)',
-  purpleDark: 'rgba(195, 117, 255, 1)',
-  backgroundTopLight: 'rgba(166, 71, 255, 0.08)',
-  backgroundTopDark: 'rgba(195, 117, 255, 0.16)',
-  backgroundBottomLight: 'rgba(92, 76, 255, 0.04)',
-  backgroundBottomDark: 'rgba(92, 76, 255, 0.12)',
-};
+  light: {
+    general: 'linear-gradient(278deg, #e945ff 0%, #a647ff 30%, #6b61ff 60%, #2e8cff 100%)',
+    generalHover: 'linear-gradient(278deg, #c235db 0%, #8636db 30%, #584ddb 60%, #2172db 100%)',
+    generalActive: 'linear-gradient(278deg, #9d27b8 0%, #6928b8 30%, #473bb8 60%, #1659b8 100%)',
+    generalDisabled: 'linear-gradient(278deg, #feb5ff 0%, #e3b5ff 30%, #c1c0ff 60%, #abd5ff 100%)',
+    purple: 'rgba(166, 71, 255, 1)',
+    purpleHover: 'rgba(134, 54, 219, 1)',
+    purpleActive: 'rgba(105, 40, 184, 1)',
+    // Semi 一手来源里 disabled 态复用 general-2/purple-2 档位，不是靠透明度派生。
+    purpleDisabled: 'rgba(227, 181, 255, 1)',
+    backgroundTop: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.16) 6.58%, rgba(176, 48, 240, 0.096) 32.88%, rgba(231, 45, 255, 0.048) 59.17%, rgba(255, 255, 255, 0) 94.23%)',
+    backgroundTopHover: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.24) 6.58%, rgba(176, 48, 240, 0.144) 32.88%, rgba(231, 45, 255, 0.072) 59.17%, rgba(255, 255, 255, 0) 94.23%)',
+    backgroundTopActive: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.32) 6.58%, rgba(176, 48, 240, 0.192) 32.88%, rgba(231, 45, 255, 0.096) 59.17%, rgba(255, 255, 255, 0) 94.23%)',
+    backgroundBottom: 'linear-gradient(201.15deg, rgba(255, 255, 255, 0.04) 6.58%, rgba(255, 226, 138, 0.04) 32.88%, rgba(231, 45, 255, 0.04) 67.93%, rgba(0, 115, 255, 0.04) 94.23%)',
+    backgroundBottomHover: 'linear-gradient(201.15deg, rgba(255, 255, 255, 0.08) 6.58%, rgba(255, 226, 138, 0.08) 32.88%, rgba(231, 45, 255, 0.08) 67.93%, rgba(0, 115, 255, 0.08) 94.23%)',
+    backgroundBottomActive: 'linear-gradient(201.15deg, rgba(255, 255, 255, 0.12) 6.58%, rgba(255, 226, 138, 0.12) 32.88%, rgba(231, 45, 255, 0.12) 67.93%, rgba(0, 115, 255, 0.12) 94.23%)',
+  },
+  dark: {
+    general: 'linear-gradient(278deg, #ea6bf6 0%, #c375ff 30%, #8681fc 60%, #5ba2f5 100%)',
+    generalHover: 'linear-gradient(278deg, #f38ff8 0%, #d598ff 30%, #a3a0fd 60%, #83bbf8 100%)',
+    generalActive: 'linear-gradient(278deg, #f9b4fb 0%, #e5baff 30%, #c0c0fd 60%, #acd2fa 100%)',
+    generalDisabled: 'linear-gradient(278deg, #1a56ac 0%, #463bb4 30%, #6f31b8 60%, #9429ad 100%)',
+    purple: 'rgba(195, 117, 255, 1)',
+    purpleHover: 'rgba(213, 152, 255, 1)',
+    purpleActive: 'rgba(229, 186, 255, 1)',
+    purpleDisabled: 'rgba(111, 49, 184, 1)',
+    backgroundTop: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.36) 6.58%, rgba(176, 48, 240, 0.216) 32.88%, rgba(154, 0, 174, 0.108) 59.17%, rgba(0, 0, 0, 0) 94.23%)',
+    backgroundTopHover: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.54) 6.58%, rgba(176, 48, 240, 0.324) 32.88%, rgba(154, 0, 174, 0.162) 59.17%, rgba(0, 0, 0, 0) 94.23%)',
+    backgroundTopActive: 'linear-gradient(201.15deg, rgba(83, 56, 255, 0.72) 6.58%, rgba(176, 48, 240, 0.432) 32.88%, rgba(154, 0, 174, 0.216) 59.17%, rgba(0, 0, 0, 0) 94.23%)',
+    backgroundBottom: 'linear-gradient(201.15deg, rgba(255, 226, 138, 0.2) 6.58%, rgba(231, 45, 255, 0.2) 50.4%, rgba(0, 115, 255, 0.2) 94.23%)',
+    backgroundBottomHover: 'linear-gradient(201.15deg, rgba(255, 226, 138, 0.3) 6.58%, rgba(231, 45, 255, 0.3) 50.4%, rgba(0, 115, 255, 0.3) 94.23%)',
+    backgroundBottomActive: 'linear-gradient(201.15deg, rgba(255, 226, 138, 0.4) 6.58%, rgba(231, 45, 255, 0.4) 50.4%, rgba(0, 115, 255, 0.4) 94.23%)',
+  },
+} as const;

@@ -17,7 +17,7 @@
 
 - [x] Button 按钮（含 AI 主题变体，对应官网 AIButton）
 - [x] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付；复用 ButtonFoundation，未做多色 icon fill 增强）
-- [x] Icon 图标（含 AI 主题变体，对应官网 AIIcon；524 个正式+lab 图标已全部生成）
+- [x] Icon 图标（含 AI 主题变体，对应官网 AIIcon；`@lotus/icons` 524 个 = Semi `semi-icons` 一手来源正式图标 523 个 + lotus 自有 `lotus_logo.svg` 1 个，`@lotus/icons-lab` 独立成包，84 个与一手来源 `semi-icons-lab` 完全对齐——此前"524 个正式+lab"这句表述容易误读成"524 已含 lab"，核实澄清：lab 图标不在这 524 之内，是单独一个包）
 - [x] Typography 字体排印
 - [x] Divider 分割线
 - [x] Space 间距

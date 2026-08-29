@@ -54,12 +54,39 @@ test.describe('Upload', () => {
     await expect(root.locator('.lotus-upload-file-name')).toHaveText('locked.png');
   });
 
-  test('draggable：拖拽区域可见，role=button 且键盘可达', async ({ page }) => {
+  test('draggable：拖拽区域可见，role=button 且带 tabindex=0 语义标记', async ({ page }) => {
     await page.goto('/');
     const root = page.getByLabel('Upload 拖拽', { exact: true });
     const dragArea = root.locator('.lotus-upload-drag-area');
     await expect(dragArea).toHaveAttribute('role', 'button');
     await expect(dragArea).toHaveAttribute('tabindex', '0');
+  });
+
+  test('键盘无障碍：聚焦拖拽区后按 Enter 真正打开文件选择器（回归防护：此前同名测试"键盘可达"只断言过 role/tabindex 两个静态属性，从未真正按键验证过 handleTriggerKeyDown 是否被触发）', async ({ page }) => {
+    await page.goto('/');
+    const dragRoot = page.getByLabel('Upload 拖拽', { exact: true });
+    const dragArea = dragRoot.locator('.lotus-upload-drag-area');
+    await dragArea.scrollIntoViewIfNeeded();
+
+    // 用元素级别的 locator.press（事件直接派发到该元素）而非
+    // page.keyboard.press（全局键盘事件，依赖"当前恰好拥有焦点的元素"），
+    // 排除 focus() 与全局按键之间可能存在的焦点丢失窗口。
+    const chooserPromise = page.waitForEvent('filechooser');
+    await dragArea.press('Enter');
+    const chooser = await chooserPromise;
+    expect(chooser).toBeTruthy();
+  });
+
+  test('键盘无障碍：聚焦拖拽区后按 Space 真正打开文件选择器', async ({ page }) => {
+    await page.goto('/');
+    const dragRoot = page.getByLabel('Upload 拖拽', { exact: true });
+    const dragArea = dragRoot.locator('.lotus-upload-drag-area');
+    await dragArea.scrollIntoViewIfNeeded();
+
+    const chooserPromise = page.waitForEvent('filechooser');
+    await dragArea.press(' ');
+    const chooser = await chooserPromise;
+    expect(chooser).toBeTruthy();
   });
 
   test('draggable：拖拽释放文件后进入上传列表', async ({ page }) => {

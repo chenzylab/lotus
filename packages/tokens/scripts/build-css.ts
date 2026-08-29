@@ -147,25 +147,22 @@ function staticLines(): string[] {
 }
 
 function aiLines(mode: 'light' | 'dark'): string[] {
-  const purple = mode === 'light' ? aiColor.purpleLight : aiColor.purpleDark;
-  const bgTop = mode === 'light' ? aiColor.backgroundTopLight : aiColor.backgroundTopDark;
-  const bgBottom = mode === 'light' ? aiColor.backgroundBottomLight : aiColor.backgroundBottomDark;
+  const c = aiColor[mode];
   return [
-    `  --lotus-color-ai-general: ${aiColor.general};`,
-    `  --lotus-color-ai-general-hover: ${aiColor.generalHover};`,
-    `  --lotus-color-ai-general-active: ${aiColor.generalActive};`,
-    `  --lotus-color-ai-purple: ${purple};`,
-    `  --lotus-color-ai-purple-hover: ${withAlpha(purple, 0.85)};`,
-    `  --lotus-color-ai-purple-active: ${withAlpha(purple, 0.7)};`,
-    `  --lotus-color-ai-purple-disabled: ${withAlpha(purple, 0.35)};`,
-    `  --lotus-color-ai-background-top: ${bgTop};`,
-    `  --lotus-color-ai-background-top-hover: ${bgTop};`,
-    `  --lotus-color-ai-background-top-active: ${bgTop};`,
-    `  --lotus-color-ai-background-top-disabled: ${withAlpha(bgTop, 0.5)};`,
-    `  --lotus-color-ai-background-bottom: ${bgBottom};`,
-    `  --lotus-color-ai-background-bottom-hover: ${bgBottom};`,
-    `  --lotus-color-ai-background-bottom-active: ${bgBottom};`,
-    `  --lotus-color-ai-background-bottom-disabled: ${withAlpha(bgBottom, 0.5)};`,
+    `  --lotus-color-ai-general: ${c.general};`,
+    `  --lotus-color-ai-general-hover: ${c.generalHover};`,
+    `  --lotus-color-ai-general-active: ${c.generalActive};`,
+    `  --lotus-color-ai-general-disabled: ${c.generalDisabled};`,
+    `  --lotus-color-ai-purple: ${c.purple};`,
+    `  --lotus-color-ai-purple-hover: ${c.purpleHover};`,
+    `  --lotus-color-ai-purple-active: ${c.purpleActive};`,
+    `  --lotus-color-ai-purple-disabled: ${c.purpleDisabled};`,
+    `  --lotus-color-ai-background-top: ${c.backgroundTop};`,
+    `  --lotus-color-ai-background-top-hover: ${c.backgroundTopHover};`,
+    `  --lotus-color-ai-background-top-active: ${c.backgroundTopActive};`,
+    `  --lotus-color-ai-background-bottom: ${c.backgroundBottom};`,
+    `  --lotus-color-ai-background-bottom-hover: ${c.backgroundBottomHover};`,
+    `  --lotus-color-ai-background-bottom-active: ${c.backgroundBottomActive};`,
   ];
 }
 
@@ -179,15 +176,6 @@ function tagDecorativeLines(mode: 'light' | 'dark'): string[] {
 
 function chartDataLines(mode: 'light' | 'dark'): string[] {
   return chartDataColor[mode].map((value, i) => `  --lotus-color-data-${i}: ${value};`);
-}
-
-/** 对 `rgba(r, g, b, a)` 字符串替换透明度分量，用于派生 AI 色的交互态变体。 */
-function withAlpha(rgba: string, alpha: number): string {
-  const match = rgba.match(/rgba?\(([^)]+)\)/);
-  if (!match) return rgba;
-  const parts = match[1]!.split(',').map((p) => p.trim());
-  const [r, g, b] = parts;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function kebab(s: string): string {

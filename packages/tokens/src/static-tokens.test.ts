@@ -20,6 +20,7 @@ import {
   typography,
   iconSize,
   chartDataColor,
+  aiColor,
 } from './static-tokens.js';
 
 describe('static tokens completeness', () => {
@@ -126,5 +127,31 @@ describe('static tokens completeness', () => {
     // 不能像早期误从 VChart 主题包取值时那样简单复用同一份数组——一旦两组
     // 完全相同大概率是回归到了那次错误实现。
     expect(chartDataColor.light).not.toEqual(chartDataColor.dark);
+  });
+
+  it('defines independent light/dark AI gradient colors aligned with Semi 一手来源 (--semi-ai-general-5/6/7)', () => {
+    // 回归防护：此前 general/generalHover/generalActive 三个渐变完全不区分
+    // light/dark（两种模式读同一份值），且颜色本身是拍脑袋近似值而非一手
+    // 来源真实数值（角度用了 90deg 而非 Semi 的 278deg、色标数用了 3 个而非
+    // 4 个、颜色顺序也是反的）。2026-08-29 核实修正，此测试确保不会静默
+    // 回归到 light === dark 这种此前的错误状态。
+    expect(aiColor.light.general).not.toEqual(aiColor.dark.general);
+    expect(aiColor.light.generalHover).not.toEqual(aiColor.dark.generalHover);
+    expect(aiColor.light.generalActive).not.toEqual(aiColor.dark.generalActive);
+
+    for (const mode of ['light', 'dark'] as const) {
+      const c = aiColor[mode];
+      // 四色标 278deg 渐变（对齐一手来源，不是任意角度/任意色标数）。
+      expect(c.general).toMatch(/^linear-gradient\(278deg,.+0%,.+30%,.+60%,.+100%\)$/);
+      expect(c.generalHover).toMatch(/^linear-gradient\(278deg,/);
+      expect(c.generalActive).toMatch(/^linear-gradient\(278deg,/);
+      expect(c.generalDisabled).toMatch(/^linear-gradient\(278deg,/);
+      // purple 三态是独立色值（Semi 的 purple-5/6/7 各自不同），不是同一个
+      // 基准色降透明度的近似派生——三者互不相等才说明真的对齐了一手来源。
+      expect(c.purple).not.toEqual(c.purpleHover);
+      expect(c.purpleHover).not.toEqual(c.purpleActive);
+      expect(c.backgroundTop).toMatch(/^linear-gradient\(201\.15deg,/);
+      expect(c.backgroundBottom).toMatch(/^linear-gradient\(201\.15deg,/);
+    }
   });
 });
