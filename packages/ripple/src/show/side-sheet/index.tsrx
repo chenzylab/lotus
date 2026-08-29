@@ -1,6 +1,7 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { SideSheetFoundation, initialSideSheetState, type SideSheetState } from '@lotus/foundation/show/side-sheet';
 import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
+import { lockBodyScroll, unlockBodyScroll } from '@lotus/foundation/base/scroll-lock';
 import { IconClose } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -48,27 +49,6 @@ const SIZE_HEIGHT: Record<SideSheetSize, string> = {
 
 function isVerticalPlacement(placement: SideSheetPlacement): boolean {
     return placement === 'left' || placement === 'right';
-}
-
-let scrollLockCount = 0;
-let originalBodyOverflow = '';
-
-function lockBodyScroll() {
-    if (scrollLockCount === 0) {
-        originalBodyOverflow = document.body.style.overflow;
-        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-        document.body.style.overflow = 'hidden';
-        if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-    scrollLockCount += 1;
-}
-
-function unlockBodyScroll() {
-    scrollLockCount = Math.max(0, scrollLockCount - 1);
-    if (scrollLockCount === 0) {
-        document.body.style.overflow = originalBodyOverflow;
-        document.body.style.paddingRight = '';
-    }
 }
 
 export function SideSheet(&{

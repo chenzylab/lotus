@@ -3,6 +3,7 @@ import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { ModalFoundation, initialModalState, type ModalState } from '@lotus/foundation/show/modal';
 import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
+import { lockBodyScroll, unlockBodyScroll } from '@lotus/foundation/base/scroll-lock';
 import { Button, type ButtonType } from '../../basic/button/index.tsrx';
 import { IconClose } from '@lotus/icons';
 
@@ -93,6 +94,18 @@ export function Modal(&{
         if (visible) {
             untrack(() => foundation.handleShow());
         }
+    });
+
+    // body 滚动锁定：对齐 Semi Modal 的 disabledBodyScroll/enabledBodyScroll
+    // 行为——Modal 本身没有像 SideSheet 那样暴露 disableScroll 开关 prop
+    // （核对一手来源 semi-ui/modal/Modal.tsx 确认 Semi Modal 就是打开必锁、
+    // 关闭必解，不可配置），打开即锁定。与 SideSheet 共用同一个
+    // base/scroll-lock 模块的引用计数器，避免"Modal 打开 → SideSheet 打开
+    // → 其中一个关闭"这种跨组件嵌套场景下错误地提前解锁。
+    effect(() => {
+        if (!visible) return;
+        lockBodyScroll();
+        return () => unlockBodyScroll();
     });
 
     // 打开时记录触发前的焦点元素并把焦点移入对话框（对齐 Semi ModalContent.componentDidMount：

@@ -15,6 +15,21 @@ test.describe('Modal', () => {
     await expect(page.getByText(/afterClose 触发于/)).toBeVisible();
   });
 
+  test('body 滚动锁定：打开时锁定，关闭后恢复（回归防护：此前 Modal 完全没有接入 body 滚动锁定，背景内容在 Modal 打开期间仍可滚动）', async ({ page }) => {
+    await page.goto('/');
+    const bodyOverflow = () => page.evaluate(() => document.body.style.overflow);
+    await expect.poll(bodyOverflow).not.toBe('hidden');
+
+    await page.getByRole('button', { name: '打开基础 Modal' }).click();
+    const modal = page.getByLabel('基础 Modal');
+    await expect(modal).toBeVisible();
+    await expect.poll(bodyOverflow).toBe('hidden');
+
+    await modal.getByRole('button', { name: '确定' }).click();
+    await expect(modal).toBeHidden();
+    await expect.poll(bodyOverflow).not.toBe('hidden');
+  });
+
   test('点击遮罩空白区域关闭，点击内容区域不会误触发关闭', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: '打开基础 Modal' }).click();

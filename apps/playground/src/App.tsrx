@@ -325,6 +325,7 @@ export function App() @{
     let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[collapsibleOpen] = track<boolean>(false);
     let &[carouselControlledIndex] = track<number>(0);
+    let &[carouselMounted] = track<boolean>(true);
     let &[modalBasicVisible] = track<boolean>(false);
     let &[modalCustomFooterVisible] = track<boolean>(false);
     let &[modalAsyncVisible] = track<boolean>(false);
@@ -1501,16 +1502,23 @@ export function App() @{
         <Space vertical align="start" style={{ width: '100%', gap: '24px' }}>
             <div style={{ width: '100%' }}>
                 <TypographyText type="secondary">基础用法（autoPlay，箭头+指示器）</TypographyText>
-                <div style={{ width: '400px', height: '200px', marginTop: '8px' }}>
-                    <Carousel
-                        items={[
-                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第一页</TypographyText></div>,
-                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第二页</TypographyText></div>,
-                            <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-warning-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第三页</TypographyText></div>,
-                        ]}
-                        aria-label="基础 Carousel"
-                    />
+                <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                    <Button onClick={() => { carouselMounted = !carouselMounted; }}>
+                        {carouselMounted ? '卸载 Carousel（验证 autoPlay 定时器清理）' : '重新挂载 Carousel'}
+                    </Button>
                 </div>
+                @if (carouselMounted) {
+                    <div style={{ width: '400px', height: '200px' }}>
+                        <Carousel
+                            items={[
+                                <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-primary-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第一页</TypographyText></div>,
+                                <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-success-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第二页</TypographyText></div>,
+                                <div style={{ width: '100%', height: '100%', background: 'var(--lotus-color-warning-light-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypographyText>第三页</TypographyText></div>,
+                            ]}
+                            aria-label="基础 Carousel"
+                        />
+                    </div>
+                }
             </div>
 
             <div style={{ width: '100%' }}>

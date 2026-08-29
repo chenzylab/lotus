@@ -56,6 +56,46 @@ test.describe('SideSheet', () => {
     await expect(page.locator('.lotus-side-sheet-title', { hasText: 'keepDOM SideSheet' })).toBeAttached();
   });
 
+  test('body 滚动锁定：跨组件引用计数——Modal 打开后 SideSheet 也打开，关闭 SideSheet 不应误解锁 body（Modal 还开着），两者都关闭后才真正恢复（回归防护：此前 Modal 完全没有滚动锁定，SideSheet 自己维护独立计数器，两者各自为政无法感知对方状态）', async ({ page }) => {
+    await page.goto('/');
+    const bodyOverflow = () => page.evaluate(() => document.body.style.overflow);
+
+    await expect.poll(bodyOverflow).not.toBe('hidden');
+
+    await page.getByRole('button', { name: '打开基础 Modal' }).click();
+    const modal = page.getByLabel('基础 Modal');
+    await expect(modal).toBeVisible();
+    await expect.poll(bodyOverflow).toBe('hidden');
+
+    // Modal 遮罩会拦截指针事件，挡住页面上"打开 keepDOM SideSheet"这个
+    // 触发按钮（这是 Modal 遮罩本身的正确行为，不是 bug）。这里只是要验证
+    // "两个 Portal 同时打开时的锁定计数逻辑"，不需要真的走用户点击交互，
+    // 用 DOM API 直接触发按钮的 click 事件绕过指针事件拦截。
+    await page.evaluate(() => {
+      const btn = [...document.querySelectorAll('button')].find((b) => b.textContent?.includes('打开 keepDOM SideSheet'));
+      btn?.click();
+    });
+    const sheet = page.getByLabel('keepDOM SideSheet');
+    await expect(sheet).toBeVisible();
+    await expect.poll(bodyOverflow).toBe('hidden');
+
+    await page.evaluate(() => {
+      const closeBtn = document.querySelector<HTMLElement>('.lotus-side-sheet-close');
+      closeBtn?.click();
+    });
+    await expect(sheet).toBeHidden();
+    // SideSheet 关闭了，但 Modal 还开着，body 不应该被误解锁。
+    await expect.poll(bodyOverflow).toBe('hidden');
+
+    await page.evaluate(() => {
+      const okBtn = [...document.querySelectorAll('button')].find((b) => b.textContent === '确定');
+      okBtn?.click();
+    });
+    await expect(modal).toBeHidden();
+    // 两者都关闭后，body 才真正恢复可滚动。
+    await expect.poll(bodyOverflow).not.toBe('hidden');
+  });
+
   test('回归防护：其它 Portal 组件（Modal）开关一次后，仍能正常打开/关闭 keepDOM SideSheet', async ({ page }) => {
     // 这条测试对应一个真实的 Ripple 运行时 bug：多个 Portal 共享同一个
     // document.body 作为挂载 target 时，事件委托监听器没有做引用计数，

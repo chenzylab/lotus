@@ -75,4 +75,51 @@ test.describe('Carousel', () => {
     await page.getByRole('button', { name: '跳到第一页' }).click();
     await expect(carousel.locator('.lotus-carousel-item-active')).toHaveText('受控 1');
   });
+
+  test('autoPlay 卸载时清理定时器，不留内存泄漏（回归防护：驱动 foundation.play 的 effect 此前没有返回清理函数，组件卸载后 setInterval 永不清理）', async ({ page }) => {
+    // 只拦截调用栈里包含 carousel/foundation 的 setInterval/clearInterval——
+    // 页面上还有 Vite HMR client（30s 心跳，页面级持久连接，不受任何组件
+    // 卸载影响）和 Lottie demo（内部自己管理生命周期）各自的定时器，全局
+    // 拦截会把这些无关定时器也算进"是否泄漏"的判断，产生假阳性。
+    await page.addInitScript(() => {
+      const created = new Set<number>();
+      const cleared = new Set<number>();
+      (window as any).__carouselIntervalCreated = created;
+      (window as any).__carouselIntervalCleared = cleared;
+      const originalSetInterval = window.setInterval;
+      const originalClearInterval = window.clearInterval;
+      const isFromCarouselFoundation = () => (new Error().stack ?? '').includes('carousel/foundation');
+      window.setInterval = ((fn: TimerHandler, ms?: number, ...args: any[]) => {
+        const handle = originalSetInterval(fn, ms, ...args);
+        if (isFromCarouselFoundation()) created.add(handle as unknown as number);
+        return handle;
+      }) as typeof window.setInterval;
+      window.clearInterval = ((handle?: number) => {
+        if (handle !== undefined && created.has(handle)) cleared.add(handle);
+        return originalClearInterval(handle);
+      }) as typeof window.clearInterval;
+    });
+
+    await page.goto('/');
+    const carousel = page.getByLabel('基础 Carousel');
+    await carousel.scrollIntoViewIfNeeded();
+    await expect(carousel).toBeVisible();
+
+    const beforeUnmount = await page.evaluate(() => ({
+      created: [...(window as any).__carouselIntervalCreated as Set<number>],
+      cleared: [...(window as any).__carouselIntervalCleared as Set<number>],
+    }));
+    expect(beforeUnmount.created.length).toBeGreaterThan(0);
+    expect(beforeUnmount.cleared.length).toBe(0);
+
+    await page.getByRole('button', { name: '卸载 Carousel（验证 autoPlay 定时器清理）' }).click();
+    await expect(carousel).not.toBeVisible();
+
+    const afterUnmount = await page.evaluate(() => ({
+      created: [...(window as any).__carouselIntervalCreated as Set<number>],
+      cleared: [...(window as any).__carouselIntervalCleared as Set<number>],
+    }));
+    // 挂载期间创建的每一个 Carousel 定时器，卸载后都应该被清理。
+    expect(afterUnmount.cleared).toEqual(afterUnmount.created);
+  });
 });

@@ -97,6 +97,7 @@ export function Carousel(&{
     effect(() => {
         if (!shouldAutoPlay()) return;
         untrack(() => foundation.play(items.length, resolveIntervalMs()));
+        return () => foundation.stop();
     });
 
     function handleChange(nextIndex: number) {
