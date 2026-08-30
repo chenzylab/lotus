@@ -93,6 +93,7 @@ export const navGroups: NavGroup[] = [
       { text: 'Sidebar 侧边栏', href: '/show/sidebar' },
       { text: 'Chart 图表', href: '/show/chart' },
       { text: 'AiChatInput AI 输入框', href: '/show/ai-chat-input' },
+      { text: 'AiChatDialogue AI 对话', href: '/show/ai-chat-dialogue' },
     ],
   },
   {
