@@ -62,7 +62,7 @@ catalogs:
       version: 4.1.10
 
 patchedDependencies:
-  ripple@0.3.123: 876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646
+  ripple@0.3.123: 35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198
 
 importers:
 
@@ -118,7 +118,7 @@ importers:
         version: 18.0.9
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
       shiki:
         specifier: 'catalog:'
         version: 4.4.3
@@ -161,7 +161,7 @@ importers:
         version: link:../../packages/tokens
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@ripple-ts/vite-plugin':
         specifier: 'catalog:'
@@ -211,7 +211,7 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@ripple-ts/vite-plugin':
         specifier: 'catalog:'
@@ -233,7 +233,7 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
@@ -249,7 +249,7 @@ importers:
     dependencies:
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
@@ -334,7 +334,7 @@ importers:
         version: 1.30.0
       ripple:
         specifier: 'catalog:'
-        version: 0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0)
+        version: 0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0)
     devDependencies:
       '@tsrx/typescript-plugin':
         specifier: 'catalog:'
@@ -4180,7 +4180,7 @@ snapshots:
     dependencies:
       protocol-buffers-schema: 3.6.1
 
-  ripple@0.3.123(patch_hash=876bb8c87f34f73162da99b455eeef652174e06459ee5c2dfaf2461ec8b28646)(@typescript-eslint/types@8.67.0):
+  ripple@0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0):
     dependencies:
       '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
       '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
