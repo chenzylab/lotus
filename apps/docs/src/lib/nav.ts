@@ -91,6 +91,7 @@ export const navGroups: NavGroup[] = [
       { text: 'Table 表格', href: '/show/table' },
       { text: 'Chat 聊天', href: '/show/chat' },
       { text: 'Sidebar 侧边栏', href: '/show/sidebar' },
+      { text: 'Chart 图表', href: '/show/chart' },
     ],
   },
   {
