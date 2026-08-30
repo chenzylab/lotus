@@ -223,7 +223,7 @@ export function Tree(&{
     );
 
     <>
-        <div class={classes} style={style} aria-label={ariaLabel}>
+        <div class={classes} style={style} role="tree" aria-label={ariaLabel} aria-multiselectable={multiple ? true : undefined}>
             @if (filterTreeNode) {
                 <div class="lotus-tree-search">
                     <span class="lotus-tree-search-icon"><IconSearch /></span>
@@ -259,6 +259,11 @@ export function Tree(&{
                         node.disabled ? 'lotus-tree-node-disabled' : '',
                     ].filter(Boolean).join(' ')}
                     style={{ paddingLeft: `${node.level * 20}px` }}
+                    role="treeitem"
+                    aria-level={node.level + 1}
+                    aria-expanded={node.hasChildren || loadData ? state.expandedKeys.has(node.key) : undefined}
+                    aria-selected={multiple ? state.checkedKeys.has(node.key) : node.key === state.selectedKey}
+                    aria-disabled={disabled || node.disabled ? true : undefined}
                 >
                     @if (!node.isLeaf || loadData) {
                         <span

@@ -76,7 +76,8 @@ import { Tree } from '@lotus/ripple';
 
 ## Accessibility
 
-- 树节点用 `<div>`/`<span>` 渲染，当前不携带 `role="tree"`/`role="treeitem"` 这类 ARIA Tree 语义，如实记录为当前限制。
+- 根容器携带 `role="tree"`，多选模式下额外携带 `aria-multiselectable={true}`。
+- 每个节点携带 `role="treeitem"`、`aria-level`（从 1 开始）、`aria-expanded`（仅有子节点或配置了 `loadData` 的节点才设置）、`aria-selected`（单选态反映 `selectedKey`，多选态反映 `checkedKeys`）、`aria-disabled`（节点或整树 `disabled` 时设置）。
 - 多选模式下每个节点的 `Checkbox` 携带来自节点 `label` 的 `aria-label`。
 - 搜索框的清除按钮携带来自 `@lotus/locale` 的 `Tree.clearSearch` 本地化 `aria-label`。
 

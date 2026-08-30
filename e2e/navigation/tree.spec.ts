@@ -31,6 +31,32 @@ test.describe('Tree', () => {
     await expect(zhangsan).not.toHaveClass(/lotus-tree-node-selected/);
   });
 
+  test('树形 ARIA 语义：根容器 role=tree，节点 role=treeitem/aria-level/aria-expanded/aria-selected 正确反映状态（回归防护：此前完全没有树形 ARIA 标记）', async ({ page }) => {
+    await page.goto('/');
+    const tree = page.locator('[aria-label="单选 Tree"]');
+    await expect(tree).toHaveAttribute('role', 'tree');
+    await expect(tree).not.toHaveAttribute('aria-multiselectable', 'true');
+
+    const root = tree.locator('.lotus-tree-node', { hasText: '研发部' }).first();
+    await expect(root).toHaveAttribute('role', 'treeitem');
+    await expect(root).toHaveAttribute('aria-level', '1');
+    await expect(root).toHaveAttribute('aria-expanded', 'true');
+    await expect(root).toHaveAttribute('aria-selected', 'false');
+
+    const frontend = tree.locator('.lotus-tree-node', { hasText: '前端组' });
+    await expect(frontend).toHaveAttribute('aria-expanded', 'false');
+    await tree.locator('.lotus-tree-switcher').nth(1).click();
+    await expect(frontend).toHaveAttribute('aria-expanded', 'true');
+
+    const zhangsan = tree.locator('.lotus-tree-node', { hasText: '张三' });
+    await expect(zhangsan).toHaveAttribute('aria-level', '3');
+    await zhangsan.locator('.lotus-tree-node-content').click();
+    await expect(zhangsan).toHaveAttribute('aria-selected', 'true');
+
+    const multiTree = page.locator('[aria-label="多选 Tree（三态级联）"]');
+    await expect(multiTree).toHaveAttribute('aria-multiselectable', 'true');
+  });
+
   test('多选 Tree：三态级联，勾选全部子节点后父节点自动全选', async ({ page }) => {
     await page.goto('/');
     const tree = page.locator('[aria-label="多选 Tree（三态级联）"]');
