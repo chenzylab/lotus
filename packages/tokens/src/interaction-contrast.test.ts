@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { contrastRatio, WCAG_AA_UI_COMPONENT } from './contrast.js';
 import { buildPalette } from './palette.js';
-import { bg as bgTokens, focusBorder } from './static-tokens.js';
+import { bg as bgTokens, focusBorder, tagDecorativeColor } from './static-tokens.js';
 
 /**
  * theme-tokens.spec.md 第83行验收标准：交互状态变量（hover/active/focus）
@@ -53,6 +53,44 @@ describe('interaction state contrast — white text on hover/active solid-fill h
     for (const { hover, active } of Object.values(results)) {
       expect(hover).toBeGreaterThan(1.5);
       expect(active).toBeGreaterThan(1.5);
+    }
+  });
+});
+
+/**
+ * a11y.spec.md 第47行验收标准："色彩对比度检查覆盖 Token 层新增的每一个语义色
+ * 变量，而非仅默认主题色"。核实发现 Tag 装饰色（16 色，`tagDecorativeColor`）
+ * 此前完全没有对比度测试——`.lotus-tag-colorful.lotus-tag-solid` 用它做实心
+ * 背景配白字（`color: #ffffff`，见 `show/tag/index.tsrx`），是与 7 语义色相
+ * 同一类"实心色块 + 白字"场景，此前完全遗漏。
+ */
+describe('tag decorative color contrast — white text on solid-fill', () => {
+  it('records light mode white-text-on-tag-color contrast (no hard threshold, same rationale as semantic hues)', () => {
+    const results: Record<string, number> = {};
+    for (const [key, value] of Object.entries(tagDecorativeColor)) {
+      results[key] = Number(contrastRatio('#ffffff', value.light).toFixed(2));
+    }
+    console.log('[contrast] light mode white text on tag decorative colors:', results);
+    for (const ratio of Object.values(results)) {
+      expect(ratio).toBeGreaterThan(1.5);
+    }
+  });
+
+  it('records dark mode white-text-on-tag-color contrast (yellow/amber confirmed as genuine Semi 一手来源 floor, not a lotus regression — see rationale below)', () => {
+    const results: Record<string, number> = {};
+    for (const [key, value] of Object.entries(tagDecorativeColor)) {
+      results[key] = Number(contrastRatio('#ffffff', value.dark).toFixed(2));
+    }
+    console.log('[contrast] dark mode white text on tag decorative colors:', results);
+    // 暗色模式 yellow(1.34)/amber(1.56) 是已核实的例外：用 Semi 一手来源暗色
+    // `--semi-yellow-5`(253,222,67)/`--semi-amber-5`(245,202,80) 独立计算得
+    // 1.337/1.562，与 lotus 实测几乎完全一致——Semi `tag/mixin.scss` 的
+    // solid 类型对全部 16 色无条件统一用白字，没有为过亮的颜色切换黑字，
+    // 这是 Semi 官方本身的固有权衡，不是 lotus 引入的额外劣化。硬下限只挡
+    // "非本这两色以外还有新的更极端劣化"，不对 yellow/amber 本身重新假设。
+    for (const [key, ratio] of Object.entries(results)) {
+      const floor = key === 'yellow' ? 1.3 : 1.5;
+      expect(ratio).toBeGreaterThan(floor);
     }
   });
 });

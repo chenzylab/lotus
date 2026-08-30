@@ -19,6 +19,7 @@ catalog:
   vitest: 4.1.10
   '@vitest/coverage-v8': 4.1.10
   '@playwright/test': 1.62.1
+  '@axe-core/playwright': 4.13.0
   '@ripple-ts/adapter-node': 0.3.123
   marked: 18.0.9
   shiki: 4.4.3
