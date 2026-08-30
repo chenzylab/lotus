@@ -73,4 +73,11 @@ export const routes = [
   renderRoute({ path: '/feedback/toast', entry: '/src/pages/feedback/toast.tsrx' }),
   renderRoute({ path: '/navigation/navigation', entry: '/src/pages/navigation/navigation.tsrx' }),
   renderRoute({ path: '/navigation/tabs', entry: '/src/pages/navigation/tabs.tsrx' }),
+  renderRoute({ path: '/input/tag-input', entry: '/src/pages/input/tag-input.tsrx' }),
+  renderRoute({ path: '/input/text-area', entry: '/src/pages/input/text-area.tsrx' }),
+  renderRoute({ path: '/input/time-picker', entry: '/src/pages/input/time-picker.tsrx' }),
+  renderRoute({ path: '/input/transfer', entry: '/src/pages/input/transfer.tsrx' }),
+  renderRoute({ path: '/input/tree-select', entry: '/src/pages/input/tree-select.tsrx' }),
+  renderRoute({ path: '/input/upload', entry: '/src/pages/input/upload.tsrx' }),
+  renderRoute({ path: '/other/config-provider', entry: '/src/pages/other/config-provider.tsrx' }),
 ];

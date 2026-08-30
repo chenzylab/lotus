@@ -48,6 +48,12 @@ export const navGroups: NavGroup[] = [
       { text: 'Rating 评分', href: '/input/rating' },
       { text: 'Slider 滑块', href: '/input/slider' },
       { text: 'Form 表单', href: '/input/form' },
+      { text: 'TagInput 标签输入框', href: '/input/tag-input' },
+      { text: 'TextArea 多行输入框', href: '/input/text-area' },
+      { text: 'TimePicker 时间选择器', href: '/input/time-picker' },
+      { text: 'Transfer 穿梭框', href: '/input/transfer' },
+      { text: 'TreeSelect 树形选择器', href: '/input/tree-select' },
+      { text: 'Upload 上传', href: '/input/upload' },
     ],
   },
   {
@@ -83,6 +89,12 @@ export const navGroups: NavGroup[] = [
       { text: 'Skeleton 骨架屏', href: '/feedback/skeleton' },
       { text: 'Spin 加载中', href: '/feedback/spin' },
       { text: 'Toast 提示', href: '/feedback/toast' },
+    ],
+  },
+  {
+    title: '其他',
+    items: [
+      { text: 'ConfigProvider 全局配置', href: '/other/config-provider' },
     ],
   },
 ];
