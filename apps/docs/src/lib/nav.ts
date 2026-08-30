@@ -90,6 +90,7 @@ export const navGroups: NavGroup[] = [
       { text: 'SideSheet 侧边抽屉', href: '/show/side-sheet' },
       { text: 'Table 表格', href: '/show/table' },
       { text: 'Chat 聊天', href: '/show/chat' },
+      { text: 'Sidebar 侧边栏', href: '/show/sidebar' },
     ],
   },
   {

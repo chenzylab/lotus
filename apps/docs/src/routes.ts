@@ -106,4 +106,5 @@ export const routes = [
   renderRoute({ path: '/show/side-sheet', entry: '/src/pages/show/side-sheet.tsrx' }),
   renderRoute({ path: '/show/table', entry: '/src/pages/show/table.tsrx' }),
   renderRoute({ path: '/show/chat', entry: '/src/pages/show/chat.tsrx' }),
+  renderRoute({ path: '/show/sidebar', entry: '/src/pages/show/sidebar.tsrx' }),
 ];
