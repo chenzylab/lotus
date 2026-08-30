@@ -53,6 +53,12 @@ export const routes = [
   renderRoute({ path: '/show/popover', entry: '/src/pages/show/popover.tsrx' }),
   renderRoute({ path: '/show/dropdown', entry: '/src/pages/show/dropdown.tsrx' }),
   renderRoute({ path: '/feedback/skeleton', entry: '/src/pages/feedback/skeleton.tsrx' }),
+  renderRoute({ path: '/feedback/banner', entry: '/src/pages/feedback/banner.tsrx' }),
+  renderRoute({ path: '/feedback/notification', entry: '/src/pages/feedback/notification.tsrx' }),
+  renderRoute({ path: '/feedback/popconfirm', entry: '/src/pages/feedback/popconfirm.tsrx' }),
+  renderRoute({ path: '/feedback/progress', entry: '/src/pages/feedback/progress.tsrx' }),
+  renderRoute({ path: '/feedback/spin', entry: '/src/pages/feedback/spin.tsrx' }),
+  renderRoute({ path: '/feedback/toast', entry: '/src/pages/feedback/toast.tsrx' }),
   renderRoute({ path: '/navigation/navigation', entry: '/src/pages/navigation/navigation.tsrx' }),
   renderRoute({ path: '/navigation/tabs', entry: '/src/pages/navigation/tabs.tsrx' }),
 ];

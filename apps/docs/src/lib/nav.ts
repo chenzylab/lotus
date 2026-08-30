@@ -64,7 +64,13 @@ export const navGroups: NavGroup[] = [
   {
     title: '反馈类',
     items: [
+      { text: 'Banner 通栏提示', href: '/feedback/banner' },
+      { text: 'Notification 通知', href: '/feedback/notification' },
+      { text: 'Popconfirm 气泡确认框', href: '/feedback/popconfirm' },
+      { text: 'Progress 进度条', href: '/feedback/progress' },
       { text: 'Skeleton 骨架屏', href: '/feedback/skeleton' },
+      { text: 'Spin 加载中', href: '/feedback/spin' },
+      { text: 'Toast 提示', href: '/feedback/toast' },
     ],
   },
 ];
