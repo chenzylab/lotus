@@ -34,13 +34,6 @@ export interface CalendarProps {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function formatHour(hour: number, locale: string): string {
-    if (locale === 'zh-CN') return `${hour}:00`;
-    const period = hour < 12 ? 'AM' : 'PM';
-    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${displayHour} ${period}`;
-}
-
 export function Calendar(&{
     mode = 'week',
     displayValue,
@@ -195,7 +188,7 @@ function CalendarWeekView(&{
         <div class="lotus-calendar-week-body">
             <div class="lotus-calendar-time-gutter">
                 @for (const hour of HOURS; index i) {
-                    <div class="lotus-calendar-time-gutter-cell">{formatHour(hour, locale.code)}</div>
+                    <div class="lotus-calendar-time-gutter-cell">{locale.Calendar.formatHour(hour)}</div>
                 }
             </div>
             @for (const day of days; index i) {

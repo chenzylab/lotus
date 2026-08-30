@@ -38,6 +38,11 @@ const enUS: LocaleShape = {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ],
+    formatHour: (hour) => {
+      const period = hour < 12 ? 'AM' : 'PM';
+      const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${displayHour} ${period}`;
+    },
   },
   UserGuide: {
     next: 'Next',
@@ -80,6 +85,10 @@ const enUS: LocaleShape = {
     clear: 'Clear',
     today: 'Today',
     now: 'Now',
+    prevYearLabel: 'Previous year',
+    prevMonthLabel: 'Previous month',
+    nextMonthLabel: 'Next month',
+    nextYearLabel: 'Next year',
   },
   Upload: {
     uploadFail: (status) => `Upload failed: HTTP ${status}`,

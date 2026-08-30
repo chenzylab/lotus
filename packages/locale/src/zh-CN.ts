@@ -35,6 +35,7 @@ const zhCN: LocaleShape = {
     remaining: (remained) => `还有 ${remained} 项`,
     weekdays: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
     months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    formatHour: (hour) => `${hour}:00`,
   },
   UserGuide: {
     next: '下一步',
@@ -74,6 +75,10 @@ const zhCN: LocaleShape = {
     clear: '清除',
     today: '今天',
     now: '此刻',
+    prevYearLabel: '上一年',
+    prevMonthLabel: '上个月',
+    nextMonthLabel: '下个月',
+    nextYearLabel: '下一年',
   },
   Upload: {
     uploadFail: (status) => `上传失败：HTTP ${status}`,

@@ -58,6 +58,13 @@ test.describe('ConfigProvider', () => {
     const monthLabel = page.locator('.lotus-date-picker-navigation-text').first();
     await expect(monthLabel).toHaveText(/^\d{4}年 \d{1,2}月$/);
     await expect(page.locator('.lotus-date-picker-weekday').first()).toHaveText('周日');
+    // 上/下月、上/下年导航按钮的 aria-label（回归防护：此前是硬编码中文
+    // 字符串"上一年"/"上个月"/"下个月"/"下一年"，切到 en-US 后不会跟着变）。
+    const navButtons = page.locator('.lotus-date-picker-navigation button[aria-label]');
+    await expect(navButtons.nth(0)).toHaveAttribute('aria-label', '上一年');
+    await expect(navButtons.nth(1)).toHaveAttribute('aria-label', '上个月');
+    await expect(navButtons.nth(2)).toHaveAttribute('aria-label', '下个月');
+    await expect(navButtons.nth(3)).toHaveAttribute('aria-label', '下一年');
 
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: '切换到 English' }).click();
@@ -65,6 +72,10 @@ test.describe('ConfigProvider', () => {
     await dateTrigger.click();
     await expect(monthLabel).toHaveText(/^[A-Z][a-z]{2} \d{4}$/);
     await expect(page.locator('.lotus-date-picker-weekday').first()).toHaveText('Sun');
+    await expect(navButtons.nth(0)).toHaveAttribute('aria-label', 'Previous year');
+    await expect(navButtons.nth(1)).toHaveAttribute('aria-label', 'Previous month');
+    await expect(navButtons.nth(2)).toHaveAttribute('aria-label', 'Next month');
+    await expect(navButtons.nth(3)).toHaveAttribute('aria-label', 'Next year');
     await page.keyboard.press('Escape');
 
     // 小时选项文案：zh-CN 带"时"单位后缀（如"01时"），en-US 是纯数字（"01"），
@@ -80,6 +91,18 @@ test.describe('ConfigProvider', () => {
     await timeTrigger.click();
     await expect(page.locator('.lotus-time-picker-panel [role="option"]').filter({ hasText: '01时' }).first()).toBeVisible();
     await page.keyboard.press('Escape');
+
+    // Calendar 时间刻度格式（回归防护：此前 formatHour 在组件内部硬编码
+    // `locale === 'zh-CN'` 分支判断 24 小时制/12 小时 AM-PM 制，违反"新增
+    // 语言包不需要改组件代码"的架构要求；现改为 locale.Calendar.formatHour
+    // 格式化函数，此时已切回中文，应为 24 小时制"14:00"）。
+    const calendar = page.getByLabel('ConfigProvider Calendar 示例', { exact: true });
+    await calendar.scrollIntoViewIfNeeded();
+    await expect(calendar.locator('.lotus-calendar-time-gutter-cell').nth(14)).toHaveText('14:00');
+
+    await page.getByRole('button', { name: '切换到 English' }).click();
+    await expect(calendar.locator('.lotus-calendar-time-gutter-cell').nth(14)).toHaveText('2 PM');
+    await page.getByRole('button', { name: 'Switch to 中文' }).click();
   });
 
   test('mode 切换暗色主题：写入 document.documentElement 的 data-theme 属性，全局生效，Button/Input/Select/Modal/Table 视觉即时更新（不刷新页面）', async ({ page }) => {

@@ -868,10 +868,10 @@ export function DatePicker(&{
                                                         onNextMonth={() => switchMonth('nextMonth', 'left')}
                                                         onNextYear={() => switchMonth('nextYear', 'left')}
                                                         onHeaderClick={() => { foundation.initYearMonth(state.monthLeft.pickerDate); foundation.showYearPicker('left'); }}
-                                                        prevYearLabel="上一年"
-                                                        prevMonthLabel="上个月"
-                                                        nextMonthLabel="下个月"
-                                                        nextYearLabel="下一年"
+                                                        prevYearLabel={locale.DatePicker.prevYearLabel}
+                                                        prevMonthLabel={locale.DatePicker.prevMonthLabel}
+                                                        nextMonthLabel={locale.DatePicker.nextMonthLabel}
+                                                        nextYearLabel={locale.DatePicker.nextYearLabel}
                                                         rtlIconStyle={rtlIconStyle}
                                                     />
                                                     <MonthGrid
@@ -930,10 +930,11 @@ export function DatePicker(&{
                                                             onNextMonth={() => switchMonth('nextMonth', 'right')}
                                                             onNextYear={() => switchMonth('nextYear', 'right')}
                                                             onHeaderClick={() => { foundation.initYearMonth(state.monthRight.pickerDate); foundation.showYearPicker('right'); }}
-                                                            prevYearLabel="上一年"
-                                                            prevMonthLabel="上个月"
-                                                            nextMonthLabel="下个月"
-                                                            nextYearLabel="下一年"
+                                                            prevYearLabel={locale.DatePicker.prevYearLabel}
+                                                            prevMonthLabel={locale.DatePicker.prevMonthLabel}
+                                                            nextMonthLabel={locale.DatePicker.nextMonthLabel}
+                                                            nextYearLabel={locale.DatePicker.nextYearLabel}
+                                                            rtlIconStyle={rtlIconStyle}
                                                         />
                                                         <MonthGrid
                                                             pickerDate={state.monthRight.pickerDate}

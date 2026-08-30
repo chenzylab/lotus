@@ -37,6 +37,7 @@ export interface CalendarLocale {
   remaining: (remained: number) => string;
   weekdays: [string, string, string, string, string, string, string];
   months: [string, string, string, string, string, string, string, string, string, string, string, string];
+  formatHour: (hour: number) => string;
 }
 
 export interface UserGuideLocale {
@@ -79,6 +80,10 @@ export interface DatePickerLocale {
   clear: string;
   today: string;
   now: string;
+  prevYearLabel: string;
+  prevMonthLabel: string;
+  nextMonthLabel: string;
+  nextYearLabel: string;
 }
 
 export interface UploadLocale {
