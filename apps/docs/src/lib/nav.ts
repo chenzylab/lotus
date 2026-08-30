@@ -24,6 +24,11 @@ export const navGroups: NavGroup[] = [
       { text: 'Grid 栅格', href: '/basic/grid' },
       { text: 'Layout 布局', href: '/basic/layout' },
       { text: 'Typography 排版', href: '/basic/typography' },
+      { text: 'IconButton 图标按钮', href: '/basic/icon-button' },
+      { text: 'FloatButton 悬浮按钮', href: '/basic/float-button' },
+      { text: 'Resizable 可调整大小', href: '/basic/resizable' },
+      { text: 'DragMove 拖拽移动', href: '/basic/drag-move' },
+      { text: 'HotKeys 快捷键', href: '/basic/hotkeys' },
     ],
   },
   {
