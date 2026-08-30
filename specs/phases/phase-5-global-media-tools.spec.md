@@ -24,7 +24,7 @@
 
 ## 验收标准
 
-- [ ] 清单文件中 Phase 5 全部条目勾选，满足 DoD
+- [x] 清单文件中 Phase 5 全部条目勾选，满足 DoD——核实 `specs/component-inventory.md` Phase 5 小节全部 14 个组件均已勾选（ConfigProvider/RTL/Locale/Sidebar/CodeHighlight/MarkdownRender/JsonViewer/Chat/AudioPlayer/VideoPlayer/Lottie/DragMove/HotKeys）
 - [x] ConfigProvider 切换主题色后，抽查的 5 个既有组件（建议覆盖 Button/Input/Select/Modal/Table 各一次）在不刷新页面的前提下视觉即时更新，Playwright 用例验证——重新核实后发现 Semi 的 ConfigProvider 本身不承载主题能力（暗色模式是脱离 ConfigProvider 的全局属性操作），这条标准描述的是 lotus 自己想要的能力而非照搬 Semi，本次新增 `ConfigProvider.mode` prop 实现并验证
 - [x] ConfigProvider 切换语言后，Form 校验文案、DatePicker 月份名称等此前依赖 `@lotus/locale` 的组件同步更新——`e2e/other/config-provider.spec.ts` 已有对应测试（切换 locale 后 Form 校验错误文案实时更新；DatePicker/TimePicker 的月份格式/星期文案/小时单位跟随 locale 切换），纯文档滞后未勾选
 - [x] DragMove/HotKeys 的 Foundation 层可独立于任何具体组件单测（验证其「纯交互能力」定位是否真正做到框架/组件无关）——核实两者的 `foundation.ts` 均不依赖 `document`/`window` 等 DOM 全局对象，各自有独立 `foundation.test.ts`（HotKeys 16 条、DragMove 13 条），纯文档滞后未勾选
