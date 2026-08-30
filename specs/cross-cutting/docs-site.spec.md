@@ -113,13 +113,14 @@ md 正文中用 fenced code block 加语言标注 `tsrx demo` 表示"这是一�
 
 - [x] `apps/docs` 可独立 `pnpm dev` 启动，路由与 `packages/ripple/src` 分类结构一致（实测：`/basic/divider` 真机渲染验证通过）
 - [x] `get_doc(slug)` 的 Vitest 单测覆盖：frontmatter 解析、代码高亮、TOC 提取、`tsrx demo` 引用解析（10 个测试，含针对真实 `docs/basic/divider.md` 的集成测试）
-- [ ] 每个已完成组件（对照 `specs/component-inventory.md` 打勾状态）都有对应 `docs/<category>/<component>.md`，章节结构符合上方规范——**此前"当前只有 Divider 一个"的记录已严重滞后于实际代码**，核实后发现 82 个组件目录里已有 21 篇。经用户确认逐分类分批补齐，每篇要求对齐 Semi 文档结构 + ego-browser 真机验证：
+- [x] 每个已完成组件（对照 `specs/component-inventory.md` 打勾状态）都有对应 `docs/<category>/<component>.md`，章节结构符合上方规范——**此前"当前只有 Divider 一个"的记录已严重滞后于实际代码**，核实后发现 82 个组件目录里已有 21 篇。经用户确认逐分类分批补齐，每篇要求对齐 Semi 文档结构 + ego-browser 真机验证：
   - basic 分类 5 篇已补齐（IconButton/FloatButton/Resizable/DragMove/HotKeys）；顺带修复 `doc-demo-card.tsrx` 预览容器缺少 `position:relative` 的真实 bug（导致 `position:absolute` 定位的 demo 组件飘出可视区域）
   - feedback 分类 6 篇已补齐（Banner/Notification/Popconfirm/Progress/Spin/Toast）；过程中发现并修复了重大架构问题——Toast/Notification 在模块顶层 `import { mount } from 'ripple'`，`mount` 是纯客户端 API，服务端入口没有这个导出，导致任何页面引用这两个组件的 demo 就会让 docs 站生产构建的 server entry 直接崩溃。已通过 `pnpm patch` 给 `ripple` 包的 `index-server.js` 补上 `mount`/`hydrate` 的安全 stub（详见 `patches/ripple@0.3.123.patch`）修复
   - navigation 分类 5 篇已补齐（Anchor/BackTop/Pagination/Steps/Tree；Nav 本已有文档，目录名 `nav` 与文档路径 `navigation` 不一致导致此前误判为缺失）；过程中发现 Tree 组件完全没有树形 ARIA 语义（缺 `role="tree"`/`treeitem`/`aria-expanded`/`aria-selected`/`aria-level`），已修复补齐并新增 e2e 验证
   - input 分类 13 篇已补齐（AutoComplete/Cascader/ColorPicker/DatePicker/PinCode/Rating/Slider/TagInput/TextArea/TimePicker/Transfer/TreeSelect/Upload）；过程中发现 Transfer 组件的过滤器/列表容器 `aria-label` 硬编码英文字面量（"Transfer filter"/"Option list"/"Selected list"），已修复为走 `@lotus/locale`
   - other 分类 1 篇已补齐（ConfigProvider，新增导航分组"其他"）；顺带补上 `ConfigProviderThemeMode` 类型未从包主入口导出的遗漏
-  - 当前进度 57/82，仅剩 show 分类 30 篇（`show` 目录共 35 个组件，5 个已有文档）待后续批次推进
+  - show 分类 30 篇已分四批全部补齐：AudioPlayer/Badge/Calendar/Card/Carousel/Collapse/Collapsible/Cropper/Descriptions/Empty/Highlight/Image/List/Timeline（14 篇）→ CodeHighlight/MarkdownRender/JsonViewer/OverflowList/ScrollList/UserGuide/Lottie/VideoPlayer/Modal/SideSheet（10 篇）→ Table/Chat（2 篇）→ Sidebar/Chart/AiChatInput/AiChatDialogue（4 篇，均为复杂组合型组件单独处理）
+  - **82/82 全部完成**。核对时发现 `navigation/nav` 目录名与文档路径 `navigation.md`/路由 `/navigation/navigation` 不一致，非真实缺失（Nav 组件文档本已随第一批 navigation 补齐一起完成，只是文件名不叫 `nav.md`）
 - [x] 每个 demo 用 Chrome 真机渲染验证一次（Divider 的两个 demo 均截图确认渲染正确，含响应式/交互场景）
 - [x] 文档站本身作为 `pnpm -r build` 的一部分纳入 CI（新增 `apps/docs` 后同步更新根 `package.json` 的 `build`/`typecheck` 脚本 filter 范围）——实测 `pnpm --filter @lotus/docs run build`/`run typecheck` 均成功（`apps/docs` 包名 `@lotus/docs`，被根 `package.json` 的 `--filter=./apps/*` 通配正确覆盖），CI `ci.yml` 的 `Build`/`Typecheck` 步骤运行 `pnpm build`/`pnpm typecheck` 会一并覆盖，无需额外配置
 
