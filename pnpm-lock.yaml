@@ -104,6 +104,9 @@ importers:
       '@lotus/icons-lab':
         specifier: workspace:*
         version: link:../../packages/icons-lab
+      '@lotus/illustrations':
+        specifier: workspace:*
+        version: link:../../packages/illustrations
       '@lotus/ripple':
         specifier: workspace:*
         version: link:../../packages/ripple

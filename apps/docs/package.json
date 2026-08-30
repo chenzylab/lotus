@@ -17,6 +17,7 @@
     "@lotus/ripple": "workspace:*",
     "@lotus/icons": "workspace:*",
     "@lotus/icons-lab": "workspace:*",
+    "@lotus/illustrations": "workspace:*",
     "@lotus/tokens": "workspace:*",
     "ripple": "catalog:",
     "@ripple-ts/adapter-node": "catalog:",
