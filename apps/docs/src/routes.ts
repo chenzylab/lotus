@@ -108,4 +108,5 @@ export const routes = [
   renderRoute({ path: '/show/chat', entry: '/src/pages/show/chat.tsrx' }),
   renderRoute({ path: '/show/sidebar', entry: '/src/pages/show/sidebar.tsrx' }),
   renderRoute({ path: '/show/chart', entry: '/src/pages/show/chart.tsrx' }),
+  renderRoute({ path: '/show/ai-chat-input', entry: '/src/pages/show/ai-chat-input.tsrx' }),
 ];
