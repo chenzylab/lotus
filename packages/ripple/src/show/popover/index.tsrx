@@ -117,6 +117,27 @@ export function Popover(&{
         }
     };
 
+    // 对齐 Semi：trigger 为 click/contextMenu 时，点击触发器与浮层以外的区域
+    // 默认关闭面板（不需要额外 prop 开关，Semi foundation.ts 的 `_bindEvent`
+    // 在这两种 trigger 下无条件调用 `registerClickOutsideHandler`）。用
+    // `mousedown` 而非 `click` 对齐 Semi 的事件时机——`click` 会在 mouseup
+    // 后才触发，此时若外部点击目标本身也会引发页面跳转/其他副作用，会有一
+    // 帧的时序竞争。
+    effect(() => {
+        if (isControlled || (trigger !== 'click' && trigger !== 'contextMenu')) return;
+        if (!displayVisible) return;
+        function handleDocumentMouseDown(event: MouseEvent) {
+            const target = event.target as Node;
+            const trig = untrack(() => triggerNode);
+            const floating = untrack(() => floatingNode);
+            if (trig?.contains(target)) return;
+            if (floating?.contains(target)) return;
+            foundation.hide(isControlled, onVisibleChange);
+        }
+        document.addEventListener('mousedown', handleDocumentMouseDown);
+        return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
+    });
+
     function resolvePortalTarget(): HTMLElement | null {
         if (getPopupContainer) return getPopupContainer();
         return typeof document !== 'undefined' ? document.body : null;

@@ -30,6 +30,32 @@ test.describe('Popover', () => {
     await expect(page.locator('.lotus-popover')).not.toBeVisible();
   });
 
+  test('按 Esc 键关闭浮层后，焦点归还到触发元素（回归防护：a11y.spec.md 要求浮层关闭后焦点归还）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'click 打开卡片' });
+    await trigger.click();
+    await expect(page.locator('.lotus-popover')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.lotus-popover')).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
+
+  test('click 触发：点击触发器和浮层以外的区域自动关闭（对齐 Semi trigger=click/contextMenu 默认行为，回归防护：此前完全没有点击外部关闭机制）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'click 打开卡片' });
+    await trigger.click();
+    await expect(page.locator('.lotus-popover')).toBeVisible();
+
+    // 点击浮层内部不应关闭
+    await page.locator('.lotus-popover-content').click();
+    await expect(page.locator('.lotus-popover')).toBeVisible();
+
+    // 点击页面空白区域应关闭
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    await expect(page.locator('.lotus-popover')).not.toBeVisible();
+  });
+
   test('hover 触发 + showArrow 时浮层带箭头样式', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByRole('button', { name: 'hover + 箭头' });

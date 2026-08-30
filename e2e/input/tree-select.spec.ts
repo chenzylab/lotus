@@ -15,8 +15,8 @@ test.describe('TreeSelect', () => {
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    await expect(page.getByRole('treeitem', { name: '前端组' })).toBeVisible();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' })).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
@@ -25,9 +25,9 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 单选', { exact: true });
     await trigger.click();
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '张三' }).locator('.lotus-tree-select-node-content').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '张三' }).locator('.lotus-tree-select-node-content').click();
 
     await expect(trigger).toContainText('张三');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -45,14 +45,14 @@ test.describe('TreeSelect', () => {
     await expect(page.locator(`#${activeId}`)).toHaveText('研发部');
 
     await trigger.press('ArrowRight');
-    await expect(page.getByRole('treeitem', { name: '前端组' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' })).toBeVisible();
 
     await trigger.press('ArrowDown');
     activeId = await trigger.getAttribute('aria-activedescendant');
     await expect(page.locator(`#${activeId}`)).toHaveText('前端组');
 
     await trigger.press('ArrowRight');
-    await expect(page.getByRole('treeitem', { name: '张三' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '张三' })).toBeVisible();
 
     await trigger.press('ArrowDown');
     activeId = await trigger.getAttribute('aria-activedescendant');
@@ -74,9 +74,9 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });
     await trigger.click();
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '后端组' }).locator('.lotus-tree-select-switcher').click();
-    const zhaoliu = page.getByRole('treeitem', { name: '赵六' });
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '后端组' }).locator('.lotus-tree-select-switcher').click();
+    const zhaoliu = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '赵六' });
     await expect(zhaoliu).toHaveAttribute('aria-disabled', 'true');
     const checkbox = zhaoliu.locator('input[type="checkbox"]');
     await expect(checkbox).toBeDisabled();
@@ -87,12 +87,12 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });
     await trigger.click();
 
-    const deptCheckbox = page.getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
+    const deptCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
     await checkboxClickTarget(deptCheckbox).click();
     await expect(deptCheckbox).toBeChecked();
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    const feCheckbox = page.getByRole('treeitem', { name: '前端组' }).locator('input[type="checkbox"]');
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    const feCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' }).locator('input[type="checkbox"]');
     await expect(feCheckbox).toBeChecked();
   });
 
@@ -101,7 +101,7 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });
     await trigger.click();
 
-    const deptCheckbox = page.getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
+    const deptCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
     await checkboxClickTarget(deptCheckbox).click();
 
     await expect(trigger).toContainText('研发部');
@@ -114,14 +114,14 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });
     await trigger.click();
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
-    await checkboxClickTarget(page.getByRole('treeitem', { name: '张三' }).locator('input[type="checkbox"]')).click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
+    await checkboxClickTarget(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '张三' }).locator('input[type="checkbox"]')).click();
 
-    await page.getByRole('treeitem', { name: '后端组' }).locator('.lotus-tree-select-switcher').click();
-    await checkboxClickTarget(page.getByRole('treeitem', { name: '王五' }).locator('input[type="checkbox"]')).click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '后端组' }).locator('.lotus-tree-select-switcher').click();
+    await checkboxClickTarget(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '王五' }).locator('input[type="checkbox"]')).click();
 
-    await checkboxClickTarget(page.getByRole('treeitem', { name: '产品部' }).locator('input[type="checkbox"]')).click();
+    await checkboxClickTarget(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '产品部' }).locator('input[type="checkbox"]')).click();
 
     const restTag = trigger.locator('.lotus-tree-select-tag-rest');
     await expect(restTag).toBeVisible();
@@ -132,7 +132,7 @@ test.describe('TreeSelect', () => {
     await page.goto('/');
     const trigger = page.getByLabel('TreeSelect 多选', { exact: true });
     await trigger.click();
-    const deptCheckbox = page.getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
+    const deptCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
     await checkboxClickTarget(deptCheckbox).click();
 
     const tags = trigger.locator('.lotus-tree-select-tag');
@@ -146,12 +146,12 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect unRelated', { exact: true });
     await trigger.click();
 
-    const deptCheckbox = page.getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
+    const deptCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('input[type="checkbox"]');
     await checkboxClickTarget(deptCheckbox).click();
     await expect(deptCheckbox).toBeChecked();
 
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    const feCheckbox = page.getByRole('treeitem', { name: '前端组' }).locator('input[type="checkbox"]');
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    const feCheckbox = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' }).locator('input[type="checkbox"]');
     await expect(feCheckbox).not.toBeChecked();
   });
 
@@ -163,9 +163,9 @@ test.describe('TreeSelect', () => {
     const searchInput = page.locator('.lotus-tree-select-search-input');
     await searchInput.fill('张三');
 
-    await expect(page.getByRole('treeitem', { name: '研发部' })).toBeVisible();
-    await expect(page.getByRole('treeitem', { name: '前端组' })).toBeVisible();
-    await expect(page.getByRole('treeitem', { name: '张三' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '张三' })).toBeVisible();
   });
 
   test('搜索：点击匹配节点后选中生效', async ({ page }) => {
@@ -174,7 +174,7 @@ test.describe('TreeSelect', () => {
     await trigger.click();
     await page.locator('.lotus-tree-select-search-input').fill('张三');
 
-    await page.getByRole('treeitem', { name: '张三' }).locator('.lotus-tree-select-node-content').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '张三' }).locator('.lotus-tree-select-node-content').click();
     await expect(trigger).toContainText('张三');
   });
 
@@ -183,13 +183,13 @@ test.describe('TreeSelect', () => {
     const trigger = page.getByLabel('TreeSelect 懒加载', { exact: true });
     await trigger.click();
 
-    await page.getByRole('treeitem', { name: '水果' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '水果' }).locator('.lotus-tree-select-switcher').click();
 
-    const fruitItem = page.getByRole('treeitem', { name: '水果' });
+    const fruitItem = page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '水果' });
     await expect(fruitItem.locator('.lotus-tree-select-switcher-loading')).toBeVisible();
 
-    await expect(page.getByRole('treeitem', { name: '苹果' })).toBeVisible();
-    await expect(page.getByRole('treeitem', { name: '香蕉' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '苹果' })).toBeVisible();
+    await expect(page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '香蕉' })).toBeVisible();
   });
 
   test('受控：外部按钮驱动 value 变化时同步更新（非本组件自身交互触发）', async ({ page }) => {
@@ -210,9 +210,9 @@ test.describe('TreeSelect', () => {
     await expect(trigger).toContainText('张三');
 
     await trigger.click();
-    await page.getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
-    await page.getByRole('treeitem', { name: '李四' }).locator('.lotus-tree-select-node-content').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '研发部' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '前端组' }).locator('.lotus-tree-select-switcher').click();
+    await page.locator('.lotus-tree-select-panel').getByRole('treeitem', { name: '李四' }).locator('.lotus-tree-select-node-content').click();
 
     await page.waitForTimeout(300);
     await expect(trigger).toContainText('张三');
