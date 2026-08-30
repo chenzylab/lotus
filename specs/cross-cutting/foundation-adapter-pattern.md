@@ -308,10 +308,26 @@ stub（见 `project-codegen.js` 的 `create_adapter_browser_stub_source`），�
 lotus 自己代码的错误。用户决策：暂不深挖修复方案（可选路径包括本地重新实现一个不依赖
 `@ripple-ts/vite-plugin` 的 `defineConfig` 恒等函数、或 `pnpm patch` 直接修补
 `process.platform` 那一行加 `typeof process !== 'undefined'` 判断），先如实记录、继续
-推进其他组件覆盖广度。**结论：`apps/docs` 站当前所有交互类组件 demo 在浏览器里均不可
-点击验证**（Switch/Tag/Tabs 等），后续在 docs 里新增交互类组件 demo 时，交互行为的真实
-验证必须依赖 `apps/playground`（纯 CSR，不受此问题影响）或组件包内的 e2e 测试
+推进其他组件覆盖广度。**结论（写下时）：`apps/docs` 站当前所有交互类组件 demo 在浏览器里
+均不可点击验证**（Switch/Tag/Tabs 等），后续在 docs 里新增交互类组件 demo 时，交互行为的
+真实验证必须依赖 `apps/playground`（纯 CSR，不受此问题影响）或组件包内的 e2e 测试
 （同样跑在独立的纯 CSR 环境），不能指望在 docs 站点里点击验证。
+
+**2026-08-30 复核：该问题在当前依赖版本下已不再复现，不能再假设"docs 站交互不可验证"**。
+`pnpm-workspace.yaml` 锁定的 `@ripple-ts/vite-plugin` 已升级到 `0.3.123`（写下本条踩坑
+时是 `0.3.118`）。检查生产构建产物 `apps/docs/dist/client/assets/*.js`，全部 `process`
+引用（含 `typeof process === "object"`/`typeof process !== "undefined"` 这类判断）均已
+加了防护，未再发现裸露的 `process.platform` 访问。用 ego-browser 在生产构建服务器
+（`node dist/server/entry.js`）上实测：DragMove 用真实鼠标拖拽（`dragMouse`，非模拟
+`dispatchEvent`）验证元素坐标随拖拽距离正确变化；HotKeys 的 `onHotKey` 回调用 CDP
+`Input.dispatchKeyEvent` 正确合成 ctrl+s 组合键（**踩坑教训**：ego-browser 的
+`pressKey('Control+s')` 这种把整个组合键当字符串传入的写法不会正确设置 `ctrlKey`，
+必须用 CDP 分别派发 modifier 键与主键的 down/up 才能合成真实的组合键事件）后，
+`触发次数` 从 0 正确变为 1。两者均确认 hydrate 与事件绑定完全正常。**结论更新**：
+截至本次复核，docs 站的交互类 demo 可以在浏览器里真机验证，不必再强制退回
+`apps/playground`/e2e 曲线验证——但既然这是上游工具链版本升级带来的隐性修复（没有
+对应的 changelog 明确提及），未来若 `@ripple-ts/vite-plugin` 版本再变化，应重新
+用真实交互（非纯展示 demo）复测一次，不能想当然认为"这个问题早就记录过且已确认存在"。
 
 ## 踩坑 #10：`<span>` 内嵌套 `<div>` 触发 tsrx 编译器的 HTML5 语义校验，报错位置与真实
 根因严重错位（2026-08-13 Avatar 组件实测，排查耗时极长）
