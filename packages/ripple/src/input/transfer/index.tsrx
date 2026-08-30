@@ -501,7 +501,7 @@ export function Transfer(&{
                     }
                 </div>
                 @if (filter !== false && type !== 'treeList') {
-                    <div class="lotus-transfer-search" role="search" aria-label="Transfer filter">
+                    <div class="lotus-transfer-search" role="search" aria-label={locale.Transfer.filterLabel}>
                         <Input
                             prefix={<IconSearch />}
                             showClear
@@ -517,7 +517,7 @@ export function Transfer(&{
                         <div class="lotus-transfer-loading"><Spin /></div>
                     } @else if (type === 'treeList') {
                         @if (treeNodes.length === 0) {
-                            <Empty description={emptyContent.left ?? locale.Transfer.emptyLeft} aria-label="empty" />
+                            <Empty description={emptyContent.left ?? locale.Transfer.emptyLeft} />
                         } @else {
                             <Tree
                                 treeData={treeNodes}
@@ -529,9 +529,9 @@ export function Transfer(&{
                             />
                         }
                     } @else if (pagedVisibleData.length === 0) {
-                        <Empty description={state.inputValue ? (emptyContent.search ?? locale.Transfer.emptySearch) : (emptyContent.left ?? locale.Transfer.emptyLeft)} aria-label="empty" />
+                        <Empty description={state.inputValue ? (emptyContent.search ?? locale.Transfer.emptySearch) : (emptyContent.left ?? locale.Transfer.emptyLeft)} />
                     } @else {
-                        <div class="lotus-transfer-list" role="list" aria-label="Option list">
+                        <div class="lotus-transfer-list" role="list" aria-label={locale.Transfer.optionListLabel}>
                             @for (const row of groupedRows; index ri) {
                                 @if (row.kind === 'group') {
                                     <div class="lotus-transfer-group-title">{row.title}</div>
@@ -572,12 +572,12 @@ export function Transfer(&{
                 </div>
                 <div class="lotus-transfer-body">
                     @if (selectedList.length === 0) {
-                        <Empty description={emptyContent.right ?? locale.Transfer.emptyRight} aria-label="empty" />
+                        <Empty description={emptyContent.right ?? locale.Transfer.emptyRight} />
                     } @else if (effectiveVirtualize) {
                         <div
                             class="lotus-transfer-list lotus-transfer-list-virtual"
                             role="list"
-                            aria-label="Selected list"
+                            aria-label={locale.Transfer.selectedListLabel}
                             style={{ height: `${virtualize!.height ?? 280}px` }}
                             onScroll={handleVirtualScroll}
                             ref={(node: HTMLElement) => { virtualContainerNode = node; }}
@@ -602,7 +602,7 @@ export function Transfer(&{
                             </div>
                         </div>
                     } @else {
-                        <div class="lotus-transfer-list" role="list" aria-label="Selected list">
+                        <div class="lotus-transfer-list" role="list" aria-label={locale.Transfer.selectedListLabel}>
                             @for (const item of selectedList; index si; key item.key) {
                                 <SelectedItem
                                     item={item}

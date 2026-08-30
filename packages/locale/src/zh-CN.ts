@@ -123,6 +123,9 @@ const zhCN: LocaleShape = {
     emptySearch: '无搜索结果',
     emptyRight: '暂无已选',
     clear: '清空',
+    filterLabel: '过滤器',
+    optionListLabel: '可选列表',
+    selectedListLabel: '已选列表',
   },
   AudioPlayer: {
     loadError: '加载失败',

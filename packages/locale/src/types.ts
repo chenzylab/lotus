@@ -131,6 +131,9 @@ export interface TransferLocale {
   emptySearch: string;
   emptyRight: string;
   clear: string;
+  filterLabel: string;
+  optionListLabel: string;
+  selectedListLabel: string;
 }
 
 export interface AudioPlayerLocale {

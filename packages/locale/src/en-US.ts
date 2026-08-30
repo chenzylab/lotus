@@ -133,6 +133,9 @@ const enUS: LocaleShape = {
     emptySearch: 'No results',
     emptyRight: 'No selection',
     clear: 'Clear',
+    filterLabel: 'Filter',
+    optionListLabel: 'Option list',
+    selectedListLabel: 'Selected list',
   },
   AudioPlayer: {
     loadError: 'Failed to load',

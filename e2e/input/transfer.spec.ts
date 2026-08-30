@@ -11,6 +11,14 @@ test.describe('Transfer', () => {
     await expect(rightItems.nth(1)).toHaveText('樱桃');
   });
 
+  test('过滤器/列表容器的 aria-label 走本地化文案（回归防护：此前硬编码英文字面量 "Transfer filter"/"Option list"/"Selected list"，不随语言切换更新）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Transfer 基础', { exact: true });
+    await expect(root.locator('[role="search"]')).toHaveAttribute('aria-label', '过滤器');
+    await expect(root.locator('.lotus-transfer-panel-left [role="list"]')).toHaveAttribute('aria-label', '可选列表');
+    await expect(root.locator('.lotus-transfer-panel-right [role="list"]')).toHaveAttribute('aria-label', '已选列表');
+  });
+
   test('左侧勾选：新增项出现在右侧已选列表', async ({ page }) => {
     await page.goto('/');
     const root = page.getByLabel('Transfer 基础', { exact: true });
