@@ -113,9 +113,9 @@ md 正文中用 fenced code block 加语言标注 `tsrx demo` 表示"这是一�
 
 - [x] `apps/docs` 可独立 `pnpm dev` 启动，路由与 `packages/ripple/src` 分类结构一致（实测：`/basic/divider` 真机渲染验证通过）
 - [x] `get_doc(slug)` 的 Vitest 单测覆盖：frontmatter 解析、代码高亮、TOC 提取、`tsrx demo` 引用解析（10 个测试，含针对真实 `docs/basic/divider.md` 的集成测试）
-- [ ] 每个已完成组件（对照 `specs/component-inventory.md` 打勾状态）都有对应 `docs/<category>/<component>.md`，章节结构符合上方规范（当前只有 Divider 一个，Space/Grid 待补）
+- [ ] 每个已完成组件（对照 `specs/component-inventory.md` 打勾状态）都有对应 `docs/<category>/<component>.md`，章节结构符合上方规范——**此前"当前只有 Divider 一个"的记录已严重滞后于实际代码**：实测 `apps/docs/docs/` 下已有 21 篇（`basic/{button,divider,grid,layout,space,typography}`、`feedback/skeleton`、`input/{checkbox,form,input,input-number,radio,select,switch}`、`navigation/{breadcrumb,navigation,tabs}`、`show/{avatar,dropdown,popover,tag,tooltip}`），对照 `packages/ripple/src` 下 82 个组件目录，仍缺 61 篇（basic 5 个、feedback 6 个、input 12 个、navigation 6 个、other 1 个、show 31 个）。经用户确认现在开始补齐，逐分类分批推进，每篇要求对齐 Semi 文档结构 + ego-browser 真机验证
 - [x] 每个 demo 用 Chrome 真机渲染验证一次（Divider 的两个 demo 均截图确认渲染正确，含响应式/交互场景）
-- [ ] 文档站本身作为 `pnpm -r build` 的一部分纳入 CI（新增 `apps/docs` 后同步更新根 `package.json` 的 `build`/`typecheck` 脚本 filter 范围）——当前 `pnpm -r build`/`pnpm -r typecheck` 已自动纳入（用了 `--filter=./apps/*` 通配），待全量走查时确认
+- [x] 文档站本身作为 `pnpm -r build` 的一部分纳入 CI（新增 `apps/docs` 后同步更新根 `package.json` 的 `build`/`typecheck` 脚本 filter 范围）——实测 `pnpm --filter @lotus/docs run build`/`run typecheck` 均成功（`apps/docs` 包名 `@lotus/docs`，被根 `package.json` 的 `--filter=./apps/*` 通配正确覆盖），CI `ci.yml` 的 `Build`/`Typecheck` 步骤运行 `pnpm build`/`pnpm typecheck` 会一并覆盖，无需额外配置
 
 ## 实测落地结论（与上方「调研依据」设计意图的实际出入，2026-08-12）
 
