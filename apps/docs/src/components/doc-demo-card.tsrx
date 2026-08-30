@@ -29,6 +29,7 @@ export function DocDemoCard({ children, highlightedSource }: DocDemoCardProps) @
             }
 
             .lotus-demo-preview {
+                position: relative;
                 padding: var(--lotus-spacing-loose);
                 background: var(--lotus-color-bg-1);
             }
