@@ -88,6 +88,8 @@ export const navGroups: NavGroup[] = [
       { text: 'VideoPlayer 视频播放器', href: '/show/video-player' },
       { text: 'Modal 对话框', href: '/show/modal' },
       { text: 'SideSheet 侧边抽屉', href: '/show/side-sheet' },
+      { text: 'Table 表格', href: '/show/table' },
+      { text: 'Chat 聊天', href: '/show/chat' },
     ],
   },
   {
