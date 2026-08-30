@@ -59,6 +59,11 @@ export const navGroups: NavGroup[] = [
       { text: 'Breadcrumb 面包屑', href: '/navigation/breadcrumb' },
       { text: 'Nav 导航', href: '/navigation/navigation' },
       { text: 'Tabs 标签页', href: '/navigation/tabs' },
+      { text: 'Anchor 锚点', href: '/navigation/anchor' },
+      { text: 'BackTop 回到顶部', href: '/navigation/back-top' },
+      { text: 'Pagination 分页', href: '/navigation/pagination' },
+      { text: 'Steps 步骤条', href: '/navigation/steps' },
+      { text: 'Tree 树形控件', href: '/navigation/tree' },
     ],
   },
   {
