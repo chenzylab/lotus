@@ -96,7 +96,9 @@ export {
 export {
     InputNumber,
     type InputNumberProps,
+    type InputNumberApi,
     type InputNumberSize,
+    type ScientificNotationConfig,
 } from './input/input-number/index.tsrx';
 export {
     Select,

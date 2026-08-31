@@ -16,6 +16,26 @@ export interface InputNumberBounds {
   step: number;
 }
 
+export type ScientificNotationConfig = boolean | { threshold?: number };
+
+/**
+ * 国家/地区代码到货币代码的映射（对齐 Semi `getCurrencyByLocaleCode`，覆盖
+ * Semi 文档列出的常见 localeCode；未命中全码时按语言前缀回退，最终兜底 USD）。
+ */
+const LOCALE_TO_CURRENCY: Record<string, string> = {
+  'zh-CN': 'CNY', 'zh-HK': 'HKD', 'zh-TW': 'TWD', 'ja-JP': 'JPY', 'ko-KR': 'KRW',
+  'th-TH': 'THB', 'vi-VN': 'VND', 'ms-MY': 'MYR', 'id-ID': 'IDR', 'hi-IN': 'INR', 'ar-SA': 'SAR',
+  'en-GB': 'GBP', 'de-DE': 'EUR', 'fr-FR': 'EUR', 'it-IT': 'EUR', 'es-ES': 'EUR', 'pt-PT': 'EUR', 'ru-RU': 'RUB',
+  'en-US': 'USD', 'en-CA': 'CAD', 'es-MX': 'MXN',
+  'pt-BR': 'BRL', 'es-AR': 'ARS',
+  'en-AU': 'AUD', 'en-NZ': 'NZD',
+  'en-ZA': 'ZAR', 'ar-EG': 'EGP',
+};
+
+const LANGUAGE_FALLBACK_CURRENCY: Record<string, string> = {
+  en: 'USD', zh: 'CNY', es: 'EUR', fr: 'EUR', de: 'EUR', it: 'EUR', ja: 'JPY', ko: 'KRW', ru: 'RUB', ar: 'SAR',
+};
+
 /**
  * InputNumber 的受控/非受控 + 步进 + 边界钳制状态机。与 InputFoundation
  * （纯字符串管理）语义不同，这里额外需要"字符串 -> 数值 -> clamp -> 字符串"
@@ -33,6 +53,79 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
     if (raw.trim() === '') return undefined;
     const n = Number(raw);
     return Number.isNaN(n) ? undefined : n;
+  }
+
+  /** 四舍五入到指定小数位数；precision 为 undefined 时原样返回。 */
+  static roundToPrecision(value: number, precision: number | undefined): number {
+    if (precision === undefined) return value;
+    return Number(value.toFixed(precision));
+  }
+
+  /**
+   * 根据 localeCode 推导默认货币代码（对齐 Semi `getCurrencyByLocaleCode`）：
+   * 先精确匹配完整 locale，未命中再按语言前缀回退，最终兜底 USD。
+   */
+  static resolveCurrencyByLocale(localeCode: string): string {
+    if (LOCALE_TO_CURRENCY[localeCode]) return LOCALE_TO_CURRENCY[localeCode];
+    const language = localeCode.split('-')[0] ?? localeCode;
+    return LANGUAGE_FALLBACK_CURRENCY[language] ?? 'USD';
+  }
+
+  /**
+   * 货币格式化：基于原生 `Intl.NumberFormat`（不引入第三方货币库，对齐
+   * AGENTS.md「基础能力自研」——`Intl.NumberFormat` 是 JS 标准内置 API）。
+   * `currency` 为字符串时直接当货币代码用；为 `true` 时按 localeCode 推导。
+   */
+  static formatCurrency(
+    value: number,
+    currency: boolean | string,
+    localeCode: string,
+    currencyDisplay: 'symbol' | 'code' | 'name' = 'symbol',
+    showCurrencySymbol = true,
+    precision?: number,
+  ): string {
+    const currencyCode = typeof currency === 'string' && currency.trim() !== ''
+      ? currency
+      : InputNumberFoundation.resolveCurrencyByLocale(localeCode);
+    const formatter = new Intl.NumberFormat(localeCode, {
+      style: 'currency',
+      currency: currencyCode,
+      currencyDisplay,
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision,
+    });
+    if (showCurrencySymbol) return formatter.format(value);
+    // 不展示符号/代码/名称部分时，退化为纯数字格式化（沿用同一 locale 的分组/小数规则）。
+    const plain = new Intl.NumberFormat(localeCode, {
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision,
+    });
+    return plain.format(value);
+  }
+
+  /** 科学计数法启用判断：boolean true 或非 null 的配置对象都算启用。 */
+  static isScientificNotationEnabled(config: ScientificNotationConfig | undefined): boolean {
+    return config === true || (typeof config === 'object' && config !== null);
+  }
+
+  /** 科学计数法阈值：配置对象里的 threshold，缺省/非法时回退 15（对齐 Semi 默认值）。 */
+  static getScientificNotationThreshold(config: ScientificNotationConfig | undefined): number {
+    if (typeof config === 'object' && config !== null && typeof config.threshold === 'number' && config.threshold >= 1) {
+      return config.threshold;
+    }
+    return 15;
+  }
+
+  /** 有效数字位数达到/超过阈值时转换成科学计数法字符串，否则原样转字符串。 */
+  static toScientificNotationIfNeeded(value: number, config: ScientificNotationConfig | undefined): string {
+    if (!InputNumberFoundation.isScientificNotationEnabled(config) || value === 0) return String(value);
+    const threshold = InputNumberFoundation.getScientificNotationThreshold(config);
+    const absStr = String(Math.abs(value));
+    const hasExp = /e/i.test(absStr);
+    const significantDigits = absStr.replace(/[.\-+eE]/g, '').replace(/^0+/, '');
+    if (!hasExp && significantDigits.length < threshold) return String(value);
+    const fractionDigits = Math.max(0, Math.min(100, Math.floor(threshold) - 1));
+    return value.toExponential(fractionDigits).replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
   }
 
   /**
@@ -53,10 +146,12 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
   }
 
   /**
-   * 失焦/Enter 时的最终规整：把当前值 clamp 到边界内，重新生成展示字符串。
-   * 空输入不强制变成 0——保持 undefined，对齐 Semi「不强加默认值」的语义。
+   * 失焦/Enter 时的最终规整：把当前值 clamp 到边界内、按 precision 四舍五入，
+   * 重新生成展示字符串（展示字符串的货币/科学计数法格式化由渲染层的
+   * `resolveDisplayValue` 负责，Foundation 只管数值本身的规整）。空输入
+   * 不强制变成 0——保持 undefined，对齐 Semi「不强加默认值」的语义。
    */
-  handleBlur(bounds: InputNumberBounds, isControlled: boolean, onChange?: (value: number | undefined) => void): void {
+  handleBlur(bounds: InputNumberBounds, isControlled: boolean, onChange?: (value: number | undefined) => void, precision?: number): void {
     const { inputValue, value } = this.getState();
     this.setState({ isFocus: false });
 
@@ -65,7 +160,7 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
       this.setState({ inputValue: '' });
       return;
     }
-    const clamped = InputNumberFoundation.clamp(parsed, bounds);
+    const clamped = InputNumberFoundation.roundToPrecision(InputNumberFoundation.clamp(parsed, bounds), precision);
     const nextInputValue = String(clamped);
     if (!isControlled) {
       this.setState({ inputValue: nextInputValue, value: clamped });
@@ -102,7 +197,8 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
 
   /**
    * 步进器加/减：基于当前值（缺省时取 0）按 step/shiftStep clamp 后的新值，
-   * disabled 时不响应。
+   * disabled 时不响应。`stepOverride` 用于 shiftStep（按住 Shift 时步进值
+   * 与 bounds.step 不同）。
    */
   handleStep(
     direction: 1 | -1,
@@ -110,11 +206,14 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
     isControlled: boolean,
     disabled: boolean,
     onChange?: (value: number | undefined) => void,
+    precision?: number,
+    stepOverride?: number,
   ): void {
     if (disabled) return;
     const { value } = this.getState();
     const base = value ?? 0;
-    const next = InputNumberFoundation.clamp(base + direction * bounds.step, bounds);
+    const effectiveStep = stepOverride ?? bounds.step;
+    const next = InputNumberFoundation.roundToPrecision(InputNumberFoundation.clamp(base + direction * effectiveStep, bounds), precision);
     const nextInputValue = String(next);
     if (!isControlled) {
       this.setState({ inputValue: nextInputValue, value: next });

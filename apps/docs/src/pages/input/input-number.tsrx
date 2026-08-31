@@ -7,6 +7,11 @@ import { InputNumberBoundaryDemo } from '../../demos/input/input-number/boundary
 import { InputNumberDisabledDemo } from '../../demos/input/input-number/disabled.tsrx';
 import { InputNumberClearDemo } from '../../demos/input/input-number/clear.tsrx';
 import { InputNumberControlledDemo } from '../../demos/input/input-number/controlled.tsrx';
+import { FormatInputNumberDemo } from '../../demos/input/input-number/format.tsrx';
+import { InnerButtonsInputNumberDemo } from '../../demos/input/input-number/inner-buttons.tsrx';
+import { ScientificNotationInputNumberDemo } from '../../demos/input/input-number/scientific-notation.tsrx';
+import { CurrencyInputNumberDemo } from '../../demos/input/input-number/currency.tsrx';
+import { ImperativeInputNumberDemo } from '../../demos/input/input-number/imperative.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -24,6 +29,11 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/input-number/disabled.tsrx': InputNumberDisabledDemo,
     '../../src/demos/input/input-number/clear.tsrx': InputNumberClearDemo,
     '../../src/demos/input/input-number/controlled.tsrx': InputNumberControlledDemo,
+    '../../src/demos/input/input-number/format.tsrx': FormatInputNumberDemo,
+    '../../src/demos/input/input-number/inner-buttons.tsrx': InnerButtonsInputNumberDemo,
+    '../../src/demos/input/input-number/scientific-notation.tsrx': ScientificNotationInputNumberDemo,
+    '../../src/demos/input/input-number/currency.tsrx': CurrencyInputNumberDemo,
+    '../../src/demos/input/input-number/imperative.tsrx': ImperativeInputNumberDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

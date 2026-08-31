@@ -222,6 +222,106 @@ describe('InputNumberFoundation.handleStep', () => {
   });
 });
 
+describe('InputNumberFoundation.roundToPrecision (static)', () => {
+  it('rounds to the given decimal places', () => {
+    expect(InputNumberFoundation.roundToPrecision(1.2345, 2)).toBe(1.23);
+    expect(InputNumberFoundation.roundToPrecision(1.005, 2)).toBe(1);
+  });
+
+  it('leaves the value unchanged when precision is undefined', () => {
+    expect(InputNumberFoundation.roundToPrecision(1.23456, undefined)).toBe(1.23456);
+  });
+});
+
+describe('InputNumberFoundation.resolveCurrencyByLocale (static)', () => {
+  it('matches an exact locale code', () => {
+    expect(InputNumberFoundation.resolveCurrencyByLocale('zh-CN')).toBe('CNY');
+    expect(InputNumberFoundation.resolveCurrencyByLocale('en-US')).toBe('USD');
+    expect(InputNumberFoundation.resolveCurrencyByLocale('ja-JP')).toBe('JPY');
+  });
+
+  it('falls back to the language prefix when the full locale is unmapped', () => {
+    expect(InputNumberFoundation.resolveCurrencyByLocale('zh-XX')).toBe('CNY');
+    expect(InputNumberFoundation.resolveCurrencyByLocale('en-XX')).toBe('USD');
+  });
+
+  it('falls back to USD when nothing matches', () => {
+    expect(InputNumberFoundation.resolveCurrencyByLocale('xx-XX')).toBe('USD');
+  });
+});
+
+describe('InputNumberFoundation.formatCurrency (static)', () => {
+  it('formats using an explicit currency code', () => {
+    expect(InputNumberFoundation.formatCurrency(1234.5, 'USD', 'en-US')).toBe('$1,234.50');
+  });
+
+  it('derives the currency from localeCode when currency=true', () => {
+    expect(InputNumberFoundation.formatCurrency(100, true, 'zh-CN')).toBe('¥100.00');
+  });
+
+  it('respects currencyDisplay=code', () => {
+    const result = InputNumberFoundation.formatCurrency(100, 'USD', 'en-US', 'code');
+    expect(result).toContain('USD');
+    expect(result).toContain('100.00');
+  });
+
+  it('strips the currency symbol when showCurrencySymbol=false', () => {
+    const result = InputNumberFoundation.formatCurrency(1234.5, 'USD', 'en-US', 'symbol', false);
+    expect(result).not.toContain('$');
+    expect(result).toContain('1,234.5');
+  });
+
+  it('applies precision to the fraction digits', () => {
+    expect(InputNumberFoundation.formatCurrency(1234.567, 'USD', 'en-US', 'symbol', true, 0)).toBe('$1,235');
+  });
+});
+
+describe('InputNumberFoundation.isScientificNotationEnabled / getScientificNotationThreshold (static)', () => {
+  it('true enables it with the default threshold', () => {
+    expect(InputNumberFoundation.isScientificNotationEnabled(true)).toBe(true);
+    expect(InputNumberFoundation.getScientificNotationThreshold(true)).toBe(15);
+  });
+
+  it('a config object enables it and can override the threshold', () => {
+    expect(InputNumberFoundation.isScientificNotationEnabled({ threshold: 5 })).toBe(true);
+    expect(InputNumberFoundation.getScientificNotationThreshold({ threshold: 5 })).toBe(5);
+  });
+
+  it('false/undefined disables it', () => {
+    expect(InputNumberFoundation.isScientificNotationEnabled(false)).toBe(false);
+    expect(InputNumberFoundation.isScientificNotationEnabled(undefined)).toBe(false);
+  });
+
+  it('an invalid threshold falls back to 15', () => {
+    expect(InputNumberFoundation.getScientificNotationThreshold({ threshold: 0 })).toBe(15);
+    expect(InputNumberFoundation.getScientificNotationThreshold({})).toBe(15);
+  });
+});
+
+describe('InputNumberFoundation.toScientificNotationIfNeeded (static)', () => {
+  it('leaves short numbers untouched', () => {
+    expect(InputNumberFoundation.toScientificNotationIfNeeded(1992.15, true)).toBe('1992.15');
+  });
+
+  it('converts numbers whose significant digit count reaches the threshold', () => {
+    const result = InputNumberFoundation.toScientificNotationIfNeeded(123456789012345, true);
+    expect(result).toContain('e+');
+  });
+
+  it('respects a custom threshold', () => {
+    const result = InputNumberFoundation.toScientificNotationIfNeeded(123456, { threshold: 5 });
+    expect(result).toContain('e+');
+  });
+
+  it('does nothing when disabled', () => {
+    expect(InputNumberFoundation.toScientificNotationIfNeeded(123456789012345, false)).toBe('123456789012345');
+  });
+
+  it('does nothing for zero', () => {
+    expect(InputNumberFoundation.toScientificNotationIfNeeded(0, true)).toBe('0');
+  });
+});
+
 describe('InputNumberFoundation.isStepDisabled (static)', () => {
   it('increment disabled at max', () => {
     expect(InputNumberFoundation.isStepDisabled(1, 10, bounded, false)).toBe(true);

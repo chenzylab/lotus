@@ -1,7 +1,7 @@
 import { track } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi } from '@lotus/ripple';
+import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -315,7 +315,9 @@ export function App() @{
     let &[inputControlledValue] = track<string>('受控初始值');
     let &[inputExternalControlledValue] = track<string>('初始值');
     let inputImperativeApi: InputApi | null = null;
+    let inputNumberImperativeApi: InputNumberApi | null = null;
     let textAreaImperativeApi: TextAreaApi | null = null;
+    let checkboxImperativeApi: CheckboxApi | null = null;
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
@@ -656,6 +658,20 @@ export function App() @{
         <Space>
             <Switch checked={switchControlledChecked} onChange={(c: boolean) => { switchControlledChecked = c; }} aria-label="Switch 受控示例" />
             <Button onClick={() => { switchControlledChecked = !switchControlledChecked; }}>切换 Switch</Button>
+        </Space>
+
+        <Divider>Switch：aria-labelledby / onMouseEnter / onMouseLeave（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div>
+                <span id="switch-labelledby-demo">开关标签</span>
+                <Switch aria-labelledby="switch-labelledby-demo" style={{ marginLeft: '8px' }} />
+            </div>
+            <Switch
+                aria-label="mouse enter/leave 示例"
+                onMouseEnter={() => console.log('switch onMouseEnter fired')}
+                onMouseLeave={() => console.log('switch onMouseLeave fired')}
+            />
         </Space>
 
         <Divider />
@@ -2875,6 +2891,17 @@ export function App() @{
             <Button onClick={() => { checkboxControlledChecked = !checkboxControlledChecked; }}>切换</Button>
         </Space>
 
+        <Divider>Checkbox：addonId/extraId/getCheckboxApi（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Checkbox addonId="checkbox-addon-id-demo" extraId="checkbox-extra-id-demo" extra="自定义 addonId/extraId">
+                自定义 id 示例
+            </Checkbox>
+            <Checkbox getCheckboxApi={(api) => { checkboxImperativeApi = api; }}>命令式 focus/blur</Checkbox>
+            <Button onClick={() => checkboxImperativeApi?.focus()}>聚焦</Button>
+            <Button onClick={() => checkboxImperativeApi?.blur()}>失焦</Button>
+        </Space>
+
         <Divider>CheckboxGroup：数组方式 / 垂直</Divider>
 
         <CheckboxGroup
@@ -3029,6 +3056,44 @@ export function App() @{
                 />
             </div>
             <Button onClick={() => { inputNumberControlledValue = inputNumberControlledValue + 10; }}>加 10</Button>
+        </Space>
+
+        <Divider>InputNumber：formatter/parser / precision / shiftStep / innerButtons / 长按连续 / 科学计数法 / 货币 / 命令式（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '220px' }}>
+                <InputNumber
+                    defaultValue={1000}
+                    formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                    parser={(s) => s.replace(/,/g, '')}
+                    aria-label="InputNumber formatter 千分位示例"
+                />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={1.2345} precision={2} step={0.1} aria-label="InputNumber precision 示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={0} step={1} shiftStep={20} aria-label="InputNumber shiftStep 示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={0} innerButtons aria-label="InputNumber innerButtons 示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={0} pressTimeout={100} pressInterval={80} aria-label="InputNumber 长按连续触发示例" />
+            </div>
+            <div style={{ width: '220px' }}>
+                <InputNumber defaultValue={123456789012345} scientificNotation aria-label="InputNumber 科学计数法示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber defaultValue={1234.5} currency="CNY" localeCode="zh-CN" aria-label="InputNumber 货币示例" />
+            </div>
+            <Space>
+                <div style={{ width: '200px' }}>
+                    <InputNumber getInputNumberApi={(api) => { inputNumberImperativeApi = api; }} defaultValue={0} aria-label="InputNumber 命令式 focus/blur 示例" />
+                </div>
+                <Button onClick={() => inputNumberImperativeApi?.focus()}>聚焦</Button>
+                <Button onClick={() => inputNumberImperativeApi?.blur()}>失焦</Button>
+            </Space>
         </Space>
 
         <Divider>Select：基本 / 尺寸 / 禁用 / 校验状态</Divider>
@@ -3635,6 +3700,30 @@ export function App() @{
                 切换 Slider
             </Button>
         </div>
+
+        <Divider>Slider：handleDot / railStyle / showBoundary / tooltipOnMark / getAriaValueText（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '320px' }}>
+                <Slider defaultValue={30} handleDot={{ color: 'var(--lotus-color-danger)', size: '10px' }} aria-label="Slider 自定义手柄圆点" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <Slider defaultValue={30} railStyle={{ background: 'var(--lotus-color-fill-2)' }} aria-label="Slider 自定义轨道样式" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <Slider defaultValue={30} showBoundary aria-label="Slider 显示边界值" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <Slider defaultValue={40} marks={{ 0: '0', 50: '50', 100: '100' }} tooltipOnMark aria-label="Slider mark 带 Tooltip" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <Slider
+                    defaultValue={30}
+                    getAriaValueText={(v: number) => `当前值 ${v} 分`}
+                    aria-label="Slider getAriaValueText 示例"
+                />
+            </div>
+        </Space>
 
         <Divider>Rating：基础用法</Divider>
 
