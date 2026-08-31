@@ -66,7 +66,7 @@ export {
     type EllipsisConfig,
 } from './basic/typography/shared.tsrx';
 export { Switch, type SwitchProps } from './input/switch/index.tsrx';
-export { Checkbox, type CheckboxProps } from './input/checkbox/index.tsrx';
+export { Checkbox, type CheckboxProps, type CheckboxApi } from './input/checkbox/index.tsrx';
 export {
     CheckboxGroup,
     type CheckboxGroupProps,

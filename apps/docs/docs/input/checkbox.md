@@ -71,22 +71,44 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 ../../src/demos/input/checkbox/group-pure-card.tsrx
 ```
 
+### 自定义 id / 命令式 focus
+
+`addonId`/`extraId` 分别关联 `aria-labelledby`/`aria-describedby`（不传则自动生成）；`getCheckboxApi` 交出 `focus()`/`blur()` 命令式句柄。
+
+```tsrx demo
+../../src/demos/input/checkbox/imperative.tsrx
+```
+
 ## API 参考
 
 ### Checkbox
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| addonId | addon（children+extra 容器）的 id，配合 aria-labelledby 建立语义关联，不传则自动生成 | string | - |
 | aria-label | 设置 aria-label 属性 | string | - |
 | checked | 指示当前是否选中，配合 onChange 使用 | boolean | - |
 | class | 类名 | string | - |
 | defaultChecked | 初始是否选中 | boolean | false |
 | disabled | 是否禁用 | boolean | false |
 | extra | 选项右侧额外内容 | any | - |
+| extraId | extra 副文本的 id，配合 aria-describedby 建立语义关联，不传则自动生成 | string | - |
+| getCheckboxApi | 交出命令式 API（focus/blur） | `(api: CheckboxApi) => void` | - |
 | indeterminate | 半选中态（纯视觉，不影响 checked 实际值） | boolean | false |
 | style | 内联样式 | object | - |
 | value | 在 CheckboxGroup 中使用时的选项值 | string \| number | - |
 | onChange | 选中状态变化时的回调 | `(checked: boolean) => void` | - |
+
+### CheckboxApi
+
+`getCheckboxApi` 交出的命令式句柄，与 Input 的 `InputApi` 同一模式。
+
+| 方法 | 说明 |
+| --- | --- |
+| focus(options?) | 命令式聚焦；`options.preventScroll` 透传给原生 focus() 的同名选项 |
+| blur() | 命令式移出焦点 |
+
+> 无障碍提示：有 `children`/`extra` 时，`aria-labelledby`/`aria-describedby` 会分别关联到 addon/extra 容器；浏览器的可访问名称计算规则中 `aria-labelledby` 优先级高于 `aria-label`，此时容器文本内容才是真正的可访问名称（对齐 Semi 的既有行为）。
 
 ### CheckboxGroup
 
@@ -106,7 +128,7 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 
 `CheckboxGroupOption` 结构：`{ value: string \| number; label?: any; disabled?: boolean; extra?: any }`。
 
-> 注意事项：lotus 尚未实现 `CheckboxGroup.optionLabelKey`/`optionValueKey` 自定义字段名映射、`addonId`/`extraId`（aria 关联 id，不传时自动生成）、`preventScroll`、命令式 `focus()`/`blur()`。
+> 注意事项：lotus 尚未实现 `CheckboxGroup.optionLabelKey`/`optionValueKey` 自定义字段名映射；`preventScroll` 未作为独立 prop 暴露——已通过命令式 `focus(options)` 的参数覆盖同等能力。
 
 ## Accessibility
 

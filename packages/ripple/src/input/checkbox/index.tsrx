@@ -3,6 +3,14 @@ import { CheckboxFoundation, type CheckboxState } from '@lotus/foundation/input/
 import { IconTick, IconMinus } from '@lotus/icons';
 import { CheckboxContext } from './checkbox-context.js';
 
+export interface CheckboxApi {
+    /** 命令式聚焦原生 checkbox（对齐 Semi 的 ref.current.focus()；与 Input 的
+     * getInputApi 同一模式）。`preventScroll` 透传给原生 focus() 的同名选项。 */
+    focus: (options?: { preventScroll?: boolean }) => void;
+    /** 命令式移出焦点，同上。 */
+    blur: () => void;
+}
+
 export interface CheckboxProps {
     children?: any;
     checked?: boolean;
@@ -10,12 +18,19 @@ export interface CheckboxProps {
     disabled?: boolean;
     indeterminate?: boolean;
     extra?: any;
+    /** extra 副文本的 id，配合 aria-describedby 建立语义关联；不传则自动生成。 */
+    extraId?: string;
+    /** addon（children+extra 容器）的 id，配合 aria-labelledby 建立语义关联；不传则自动生成。 */
+    addonId?: string;
     value?: string | number;
+    getCheckboxApi?: (api: CheckboxApi) => void;
     onChange?: (checked: boolean) => void;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
 }
+
+let checkboxIdCounter = 0;
 
 export function Checkbox(&{
     children,
@@ -24,13 +39,24 @@ export function Checkbox(&{
     disabled = false,
     indeterminate = false,
     extra,
+    extraId,
+    addonId,
     value,
+    getCheckboxApi,
     onChange,
     'aria-label': ariaLabel,
     style,
     class: className,
 }: CheckboxProps) @{
     const contextTracked = CheckboxContext.get();
+    let checkboxEl: HTMLInputElement | null = null;
+    const resolvedExtraId = extraId ?? (extra != null ? `lotus-checkbox-extra-${++checkboxIdCounter}` : undefined);
+    const resolvedAddonId = addonId ?? ((children != null || extra != null) ? `lotus-checkbox-addon-${++checkboxIdCounter}` : undefined);
+
+    getCheckboxApi?.({
+        focus: (options) => checkboxEl?.focus(options),
+        blur: () => checkboxEl?.blur(),
+    });
 
     // Group 内使用时，选中态与 disabled 都由 Context 接管，自身 props 被忽略
     // （对齐 Semi："在 Group 中使用时无效"）；单独使用时才走自身 state。
@@ -107,11 +133,14 @@ export function Checkbox(&{
             onClick={(event: MouseEvent) => { event.preventDefault(); handleClick(); }}
         >
             <input
+                ref={(node: HTMLInputElement) => { checkboxEl = node; }}
                 type="checkbox"
                 class="lotus-checkbox-native"
                 checked={displayChecked}
                 disabled={effectiveDisabled}
                 aria-label={ariaLabel}
+                aria-labelledby={resolvedAddonId}
+                aria-describedby={resolvedExtraId}
             />
             <span class={['lotus-checkbox-box', isPureCardType ? 'lotus-checkbox-box-pureCardType' : ''].filter(Boolean).join(' ')}>
                 @if (indeterminate) {
@@ -123,12 +152,12 @@ export function Checkbox(&{
                 }
             </span>
             @if (children != null || extra != null) {
-                <span class="lotus-checkbox-content">
+                <span id={resolvedAddonId} class="lotus-checkbox-content">
                     @if (children != null) {
                         <span class="lotus-checkbox-label">{children}</span>
                     }
                     @if (extra != null) {
-                        <span class={['lotus-checkbox-extra', isCardType && children == null ? 'lotus-checkbox-extra-noChildren' : ''].filter(Boolean).join(' ')}>{extra}</span>
+                        <span id={resolvedExtraId} class={['lotus-checkbox-extra', isCardType && children == null ? 'lotus-checkbox-extra-noChildren' : ''].filter(Boolean).join(' ')}>{extra}</span>
                     }
                 </span>
             }

@@ -111,4 +111,21 @@ test.describe('Checkbox', () => {
     await thirdItem.click();
     await expect(thirdCheckbox).not.toBeChecked();
   });
+
+  test('addonId/extraId：正确关联到 aria-labelledby/aria-describedby（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const checkbox = page.locator('#checkbox-addon-id-demo').locator('xpath=preceding-sibling::input[@type="checkbox"]');
+    await expect(checkbox).toHaveAttribute('aria-labelledby', 'checkbox-addon-id-demo');
+    await expect(checkbox).toHaveAttribute('aria-describedby', 'checkbox-extra-id-demo');
+  });
+
+  test('getCheckboxApi：交出的 focus()/blur() 真实生效（对齐 Semi ref.current.focus()，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const checkbox = page.getByLabel('命令式 focus/blur', { exact: true });
+    const group = checkbox.locator('xpath=ancestor::*[contains(@class,"lotus-space")][1]');
+    await group.getByRole('button', { name: '聚焦' }).click();
+    await expect(checkbox).toBeFocused();
+    await group.getByRole('button', { name: '失焦' }).click();
+    await expect(checkbox).not.toBeFocused();
+  });
 });
