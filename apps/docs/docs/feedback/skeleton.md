@@ -113,6 +113,15 @@ HTML 结构模拟同样的视觉效果，Skeleton 本身的用法不受影响。
 | rows | 设置段落占位图的行数 | number | 4 |
 | style | 样式 | object | - |
 
+### SkeletonImage / SkeletonTitle / SkeletonButton
+
+三者仅接受通用的 `class`/`style`，对齐 Semi `Skeleton.Image`/`Skeleton.Title`/`Skeleton.Button` 的实际用法（Semi 文档表格未单独列出，源码/示例确认无其他专属 prop）。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 类名 | string | - |
+| style | 样式 | object | - |
+
 ## 文案规范
 
 - 不变的固定内容直接展示固定内容，可变的内容使用骨架屏展示。
