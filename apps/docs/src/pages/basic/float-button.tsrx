@@ -2,6 +2,7 @@ import { Fragment, trackAsync } from 'ripple';
 import { DocsLayout } from '../../components/docs-layout.tsrx';
 import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { BasicFloatButtonDemo } from '../../demos/basic/float-button/basic.tsrx';
+import { BadgeFloatButtonDemo } from '../../demos/basic/float-button/badge.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -14,6 +15,7 @@ import { loadDoc } from server;
 
 const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/basic/float-button/basic.tsrx': BasicFloatButtonDemo,
+    '../../src/demos/basic/float-button/badge.tsrx': BadgeFloatButtonDemo,
 };
 
 export function FloatButtonDocPage() @{

@@ -21,11 +21,20 @@ import { FloatButton } from '@lotus/ripple';
 ../../src/demos/basic/float-button/basic.tsrx
 ```
 
+### 角标
+
+`badge` 透传给 `Badge` 包裹按钮本体，支持 `Badge` 的全部配置（`count`、`dot`、`position` 等）。
+
+```tsrx demo
+../../src/demos/basic/float-button/badge.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | aria-label | 可访问名称（必填——纯图标按钮省略会导致屏幕阅读器用户无法辨识） | string | 必填 |
+| badge | 角标参数，透传给 `Badge` 包裹按钮本体 | `Omit<BadgeProps, 'children'>` | 无 |
 | class | 类名 | string | 无 |
 | colorful | 是否使用 AI 场景专属渐变色 | boolean | `false` |
 | disabled | 是否禁用 | boolean | `false` |

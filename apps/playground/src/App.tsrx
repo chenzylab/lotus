@@ -781,6 +781,7 @@ export function App() @{
             <FloatButton icon={<IconSetting />} shape="square" aria-label="方形悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
             <FloatButton icon={<IconSetting />} size="small" aria-label="小号悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
             <FloatButton icon={<IconSetting />} disabled aria-label="禁用悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} onClick={() => console.log('should not fire')} />
+            <FloatButton icon={<IconSetting />} badge={{ count: 5 }} aria-label="带角标的悬浮按钮" style={{ position: 'relative', right: 'auto', bottom: 'auto' }} />
         </div>
 
         <Divider>FloatButton：disabled 运行时动态切换（回归防护：与 IconButton 同一根因，详见 specs 踩坑 #94）</Divider>

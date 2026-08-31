@@ -1,5 +1,6 @@
 import { track } from 'ripple';
 import { FloatButtonFoundation } from '@lotus/foundation/basic/float-button';
+import { Badge, type BadgeProps } from '../../show/badge/index.tsrx';
 
 export type FloatButtonShape = 'square' | 'round';
 export type FloatButtonSize = 'small' | 'default' | 'large';
@@ -12,6 +13,8 @@ export interface FloatButtonProps {
     disabled?: boolean;
     href?: string;
     target?: string;
+    /** 角标参数，透传给 Badge 包裹按钮本体（对齐 Semi）。 */
+    badge?: Omit<BadgeProps, 'children'>;
     onClick?: (event: MouseEvent) => void;
     /** 必填——FloatButton 是纯图标按钮（无文本插槽），图标本身对屏幕阅读器
      * 是 aria-hidden，省略 aria-label 会让按钮对屏幕阅读器用户完全不可辨识
@@ -35,6 +38,7 @@ export function FloatButton(&{
     disabled = false,
     href,
     target,
+    badge,
     onClick,
     'aria-label': ariaLabel,
     style,
@@ -75,16 +79,31 @@ export function FloatButton(&{
     );
 
     <>
-        <button
-            type="button"
-            class={classes}
-            style={style}
-            disabled={disabled}
-            aria-label={ariaLabel}
-            onClick={handleClick}
-        >
-            <span class="lotus-float-button-icon">{icon}</span>
-        </button>
+        @if (badge) {
+            <Badge {...badge}>
+                <button
+                    type="button"
+                    class={classes}
+                    style={style}
+                    disabled={disabled}
+                    aria-label={ariaLabel}
+                    onClick={handleClick}
+                >
+                    <span class="lotus-float-button-icon">{icon}</span>
+                </button>
+            </Badge>
+        } @else {
+            <button
+                type="button"
+                class={classes}
+                style={style}
+                disabled={disabled}
+                aria-label={ariaLabel}
+                onClick={handleClick}
+            >
+                <span class="lotus-float-button-icon">{icon}</span>
+            </button>
+        }
 
         <style>
             .lotus-float-button {

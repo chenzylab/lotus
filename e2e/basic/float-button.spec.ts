@@ -61,4 +61,13 @@ test.describe('FloatButton', () => {
     expect(box).not.toBeNull();
     expect(box!.width).toBeLessThan(40);
   });
+
+  test('badge：透传给 Badge 包裹按钮本体，角标数字正确渲染（对齐 Semi，回归防护：此前 lotus 完全没有实现，待 Badge 组件就绪后补齐）', async ({ page }) => {
+    await page.goto('/');
+    const button = page.getByRole('button', { name: '带角标的悬浮按钮' });
+    await expect(button).toBeVisible();
+
+    const badgeCount = button.locator('xpath=ancestor::*[contains(@class,"lotus-badge")]').locator('.lotus-badge-count');
+    await expect(badgeCount).toHaveText('5');
+  });
 });
