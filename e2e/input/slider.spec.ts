@@ -176,4 +176,48 @@ test.describe('Slider', () => {
     await toggleButton.click();
     await expect(handle).toHaveAttribute('aria-valuenow', '30');
   });
+
+  test('handleDot：自定义手柄圆点颜色/尺寸生效（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider 自定义手柄圆点', { exact: true });
+    await expect(handle).toHaveCSS('width', '10px');
+    await expect(handle).toHaveCSS('height', '10px');
+  });
+
+  test('railStyle：自定义轨道样式生效（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider 自定义轨道样式', { exact: true });
+    const rail = handle.locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]').locator('.lotus-slider-rail');
+    const defaultRail = page.getByLabel('Slider 受控示例', { exact: true })
+      .locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]')
+      .locator('.lotus-slider-rail');
+    const customBg = await rail.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const defaultBg = await defaultRail.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(customBg).not.toBe(defaultBg);
+  });
+
+  test('showBoundary：hover 轨道时展示最大值/最小值边界提示（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider 显示边界值', { exact: true });
+    const wrapper = handle.locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]');
+    const boundaryMin = wrapper.locator('.lotus-slider-boundary-min');
+    await expect(boundaryMin).toHaveText('0');
+    await wrapper.hover();
+    await expect(boundaryMin).toHaveCSS('opacity', '1');
+  });
+
+  test('tooltipOnMark：轨道上的 mark 刻度点带 Tooltip（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider mark 带 Tooltip', { exact: true });
+    const wrapper = handle.locator('xpath=ancestor::div[contains(@class,"lotus-slider-rail-wrapper")]');
+    const dot = wrapper.locator('.lotus-slider-dot').first();
+    await dot.hover();
+    await expect(page.locator('.lotus-tooltip').first()).toBeVisible();
+  });
+
+  test('getAriaValueText：手柄携带自定义 aria-valuetext（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider getAriaValueText 示例', { exact: true });
+    await expect(handle).toHaveAttribute('aria-valuetext', '当前值 30 分');
+  });
 });

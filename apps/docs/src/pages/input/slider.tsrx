@@ -4,6 +4,7 @@ import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { SliderBasicDemo } from '../../demos/input/slider/basic.tsrx';
 import { SliderRangeDemo } from '../../demos/input/slider/range.tsrx';
 import { SliderMarksDemo } from '../../demos/input/slider/marks.tsrx';
+import { CustomizationSliderDemo } from '../../demos/input/slider/customization.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -18,6 +19,7 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/slider/basic.tsrx': SliderBasicDemo,
     '../../src/demos/input/slider/range.tsrx': SliderRangeDemo,
     '../../src/demos/input/slider/marks.tsrx': SliderMarksDemo,
+    '../../src/demos/input/slider/customization.tsrx': CustomizationSliderDemo,
 };
 
 export function SliderDocPage() @{

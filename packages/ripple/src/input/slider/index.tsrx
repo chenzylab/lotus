@@ -11,6 +11,11 @@ import { Tooltip } from '../../show/tooltip/index.tsrx';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
+export interface SliderHandleDotStyle {
+    color?: string;
+    size?: string;
+}
+
 export interface SliderProps {
     min?: number;
     max?: number;
@@ -24,9 +29,27 @@ export interface SliderProps {
     verticalReverse?: boolean;
     disabled?: boolean;
     tipFormatter?: ((value: number) => any) | null;
+    /** 手柄圆点自定义样式；range 模式下可传数组分别配置两个手柄。 */
+    handleDot?: SliderHandleDotStyle | SliderHandleDotStyle[];
+    /** 轨道自定义样式。 */
+    railStyle?: Record<string, any>;
+    /** 拖拽提示 Tooltip 是否带箭头。 */
+    showArrow?: boolean;
+    /** hover 时是否展示最大值/最小值边界提示。 */
+    showBoundary?: boolean;
+    /** marks 刻度标签是否显示。 */
+    showMarkLabel?: boolean;
+    /** 轨道上的 mark 刻度点是否也带 Tooltip。 */
+    tooltipOnMark?: boolean;
+    /** 是否始终显示 Tooltip（不传时仅拖拽/聚焦态显示）。 */
+    tooltipVisible?: boolean;
+    /** 为滑块当前值提供用户友好的可访问性名称；参数 index 是 range 模式下的手柄序号（0=min，1=max）。 */
+    getAriaValueText?: (value: number, index?: number) => string;
     onChange?: (value: SliderValue) => void;
     onAfterChange?: (value: SliderValue) => void;
+    onMouseUp?: (event: MouseEvent) => void;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
     style?: Record<string, any>;
     class?: string;
 }
@@ -61,9 +84,19 @@ export function Slider(&{
     verticalReverse = false,
     disabled = false,
     tipFormatter,
+    handleDot,
+    railStyle,
+    showArrow = true,
+    showBoundary = false,
+    showMarkLabel = true,
+    tooltipOnMark = false,
+    tooltipVisible,
+    getAriaValueText,
     onChange,
     onAfterChange,
+    onMouseUp,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
     style,
     class: className,
 }: SliderProps) @{
@@ -147,11 +180,12 @@ export function Slider(&{
             const result = foundation.onHandleMove(event.clientX, event.clientY, rect);
             if (result?.changed) emitChange(result.value);
         };
-        const handleUp = () => {
+        const handleUp = (event: MouseEvent) => {
             const current = untrack(() => state);
             if (!current.dragging) return;
             foundation.onHandleUp();
             emitAfterChange();
+            onMouseUp?.(event);
         };
         document.addEventListener('mousemove', handleMove);
         document.addEventListener('mouseup', handleUp);
@@ -204,6 +238,21 @@ export function Slider(&{
         return tipFormatter ? tipFormatter(v) : v;
     }
 
+    /** handleDot 可以是单个配置（两个手柄共用）或数组（index 0=min，1=max）。 */
+    function resolveHandleDotStyle(index: number): Record<string, any> {
+        if (!handleDot) return {};
+        const dot = Array.isArray(handleDot) ? handleDot[index] : handleDot;
+        if (!dot) return {};
+        const style: Record<string, any> = {};
+        if (dot.color) style.background = dot.color;
+        if (dot.size) { style.width = dot.size; style.height = dot.size; }
+        return style;
+    }
+
+    function resolveAriaValueText(v: number, index?: number): string | undefined {
+        return getAriaValueText ? getAriaValueText(v, index) : undefined;
+    }
+
     let &[markList] = track<Array<{ value: number; percent: number; label: string; active: boolean }>>(() => {
         if (!marks) return [];
         return Object.keys(marks).map((key) => {
@@ -229,20 +278,29 @@ export function Slider(&{
                 ref={(node: HTMLElement) => { railNode = node; }}
                 onMouseDown={handleRailPointerDown}
             >
-                <div class="lotus-slider-rail">
+                <div class="lotus-slider-rail" style={railStyle}>
                     <div class="lotus-slider-track" style={trackStyle} />
                     @if (marks) {
                         <div class="lotus-slider-dots">
                             @for (const mark of markList; index mi; key mark.value) {
-                                <div
-                                    class={['lotus-slider-dot', mark.active ? 'lotus-slider-dot-active' : ''].filter(Boolean).join(' ')}
-                                    style={handlePositionStyle(mark.percent)}
-                                />
+                                @if (tooltipOnMark) {
+                                    <Tooltip trigger="hover" content={formatTip(mark.value)} position={vertical ? 'right' : 'top'}>
+                                        <div
+                                            class={['lotus-slider-dot', mark.active ? 'lotus-slider-dot-active' : ''].filter(Boolean).join(' ')}
+                                            style={handlePositionStyle(mark.percent)}
+                                        />
+                                    </Tooltip>
+                                } @else {
+                                    <div
+                                        class={['lotus-slider-dot', mark.active ? 'lotus-slider-dot-active' : ''].filter(Boolean).join(' ')}
+                                        style={handlePositionStyle(mark.percent)}
+                                    />
+                                }
                             }
                         </div>
                     }
                 </div>
-                @if (marks) {
+                @if (marks && showMarkLabel) {
                     <div class="lotus-slider-marks">
                         @for (const mark of markList; index mi2; key mark.value) {
                             <div class="lotus-slider-mark" style={handlePositionStyle(mark.percent)}>{mark.label}</div>
@@ -250,21 +308,31 @@ export function Slider(&{
                     </div>
                 }
 
+                @if (showBoundary) {
+                    <>
+                        <div class="lotus-slider-boundary lotus-slider-boundary-min">{min}</div>
+                        <div class="lotus-slider-boundary lotus-slider-boundary-max">{max}</div>
+                    </>
+                }
+
                 <Tooltip
                     trigger="custom"
-                    visible={state.dragging === 'min' || state.focusPos === 'min'}
+                    visible={tooltipVisible ?? (state.dragging === 'min' || state.focusPos === 'min')}
                     content={formatTip(minValue)}
                     position={vertical ? 'right' : 'top'}
+                    showArrow={showArrow}
                 >
                     <div
                         class="lotus-slider-handle"
-                        style={handlePositionStyle(foundation.valueToPercent(minValue))}
+                        style={{ ...handlePositionStyle(foundation.valueToPercent(minValue)), ...resolveHandleDotStyle(0) }}
                         role="slider"
                         tabIndex={disabled ? -1 : 0}
                         aria-label={ariaLabel}
+                        aria-labelledby={ariaLabelledBy}
                         aria-valuemin={min}
                         aria-valuemax={range ? maxValue : max}
                         aria-valuenow={minValue}
+                        aria-valuetext={resolveAriaValueText(minValue, range ? 0 : undefined)}
                         aria-disabled={disabled}
                         onMouseDown={() => handlePointerDownOnHandle('min')}
                         onKeyDown={(e: KeyboardEvent) => handleKeyDown(e, 'min')}
@@ -275,18 +343,21 @@ export function Slider(&{
                 @if (range) {
                     <Tooltip
                         trigger="custom"
-                        visible={state.dragging === 'max' || state.focusPos === 'max'}
+                        visible={tooltipVisible ?? (state.dragging === 'max' || state.focusPos === 'max')}
                         content={formatTip(maxValue)}
                         position={vertical ? 'right' : 'top'}
+                        showArrow={showArrow}
                     >
                         <div
                             class="lotus-slider-handle"
-                            style={handlePositionStyle(foundation.valueToPercent(maxValue))}
+                            style={{ ...handlePositionStyle(foundation.valueToPercent(maxValue)), ...resolveHandleDotStyle(1) }}
                             role="slider"
                             tabIndex={disabled ? -1 : 0}
+                            aria-labelledby={ariaLabelledBy}
                             aria-valuemin={minValue}
                             aria-valuemax={max}
                             aria-valuenow={maxValue}
+                            aria-valuetext={resolveAriaValueText(maxValue, 1)}
                             aria-disabled={disabled}
                             onMouseDown={() => handlePointerDownOnHandle('max')}
                             onKeyDown={(e: KeyboardEvent) => handleKeyDown(e, 'max')}
@@ -312,6 +383,29 @@ export function Slider(&{
 
             .lotus-slider-rail-wrapper {
                 position: relative;
+            }
+
+            /* hover 到轨道时展示最大值/最小值边界提示（showBoundary），默认隐藏。 */
+            .lotus-slider-boundary {
+                position: absolute;
+                top: -20px;
+                font-size: var(--lotus-font-caption-size);
+                color: var(--lotus-color-text-2);
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                pointer-events: none;
+            }
+
+            .lotus-slider-rail-wrapper:hover .lotus-slider-boundary {
+                opacity: 1;
+            }
+
+            .lotus-slider-boundary-min {
+                inset-inline-start: 0;
+            }
+
+            .lotus-slider-boundary-max {
+                inset-inline-end: 0;
             }
 
             .lotus-slider-rail {
