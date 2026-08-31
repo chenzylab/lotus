@@ -8,6 +8,8 @@ import { SelectValidateStatusDemo } from '../../demos/input/select/validate-stat
 import { SelectClearDemo } from '../../demos/input/select/clear.tsrx';
 import { SelectMultipleDemo } from '../../demos/input/select/multiple.tsrx';
 import { SelectControlledDemo } from '../../demos/input/select/controlled.tsrx';
+import { SelectFilterDemo } from '../../demos/input/select/filter.tsrx';
+import { SelectFilterDropdownDemo } from '../../demos/input/select/filter-dropdown.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -26,6 +28,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/select/clear.tsrx': SelectClearDemo,
     '../../src/demos/input/select/multiple.tsrx': SelectMultipleDemo,
     '../../src/demos/input/select/controlled.tsrx': SelectControlledDemo,
+    '../../src/demos/input/select/filter.tsrx': SelectFilterDemo,
+    '../../src/demos/input/select/filter-dropdown.tsrx': SelectFilterDropdownDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值
