@@ -66,3 +66,39 @@ describe('calcFloatingStyle: autoAdjustOverflow 溢出翻转', () => {
     expect(style.position).toBe('right');
   });
 });
+
+describe('calcFloatingStyle: arrowPointAtCenter=false 时的箭头偏移（对齐 Semi）', () => {
+  it('showArrow=false 时不产生任何箭头偏移（没有箭头可偏移）', () => {
+    const style = calcFloatingStyle({ position: 'top', triggerRect: CENTER_TRIGGER, floatingSize: SIZE, showArrow: false, arrowPointAtCenter: false, ...VIEWPORT });
+    expect(style.arrowOffsetX).toBeUndefined();
+  });
+
+  it('arrowPointAtCenter=true（默认）时不产生偏移，箭头保持在浮层中心', () => {
+    const style = calcFloatingStyle({ position: 'top', triggerRect: CENTER_TRIGGER, floatingSize: SIZE, showArrow: true, ...VIEWPORT });
+    expect(style.arrowOffsetX).toBeUndefined();
+  });
+
+  it('arrowPointAtCenter=false 且 position=top：trigger 中点偏视口左侧时箭头挪向左边缘', () => {
+    const leftTrigger: FloatingRect = { top: 400, left: 50, right: 150, bottom: 440, width: 100, height: 40 };
+    const style = calcFloatingStyle({ position: 'top', triggerRect: leftTrigger, floatingSize: SIZE, showArrow: true, arrowPointAtCenter: false, ...VIEWPORT });
+    expect(style.arrowOffsetX).toBe('25%');
+  });
+
+  it('arrowPointAtCenter=false 且 position=bottom：trigger 中点偏视口右侧时箭头挪向右边缘', () => {
+    const rightTrigger: FloatingRect = { top: 400, left: 850, right: 950, bottom: 440, width: 100, height: 40 };
+    const style = calcFloatingStyle({ position: 'bottom', triggerRect: rightTrigger, floatingSize: SIZE, showArrow: true, arrowPointAtCenter: false, ...VIEWPORT });
+    expect(style.arrowOffsetX).toBe('75%');
+  });
+
+  it('arrowPointAtCenter=false 且 position=left：trigger 中点偏视口上侧时箭头挪向上边缘', () => {
+    const topTrigger: FloatingRect = { top: 50, left: 400, right: 450, bottom: 90, width: 50, height: 40 };
+    const style = calcFloatingStyle({ position: 'left', triggerRect: topTrigger, floatingSize: SIZE, showArrow: true, arrowPointAtCenter: false, ...VIEWPORT });
+    expect(style.arrowOffsetY).toBe('25%');
+  });
+
+  it('arrowPointAtCenter=false 且 position=topLeft（边缘对齐方向）：不产生偏移，箭头位置由 CSS 固定', () => {
+    const style = calcFloatingStyle({ position: 'topLeft', triggerRect: CENTER_TRIGGER, floatingSize: SIZE, showArrow: true, arrowPointAtCenter: false, ...VIEWPORT });
+    expect(style.arrowOffsetX).toBeUndefined();
+    expect(style.arrowOffsetY).toBeUndefined();
+  });
+});

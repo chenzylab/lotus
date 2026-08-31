@@ -1,6 +1,7 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { TooltipFoundation, type TooltipState, type TooltipTrigger } from '@lotus/foundation/show/tooltip';
 import { calcFloatingStyle, type FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
 
 export interface PopoverProps {
     children?: any;
@@ -15,13 +16,33 @@ export interface PopoverProps {
     autoAdjustOverflow?: boolean;
     spacing?: number;
     showArrow?: boolean;
+    /** "小三角"是否指向触发元素中心；仅 `showArrow=true` 且 position 为 top/bottom/left/right 时有意义。 */
+    arrowPointAtCenter?: boolean;
     /** 按 Esc 键（触发元素或浮层内）是否关闭面板；受控模式下不生效。 */
     closeOnEsc?: boolean;
+    /** 焦点处于浮层内时，Tab/Shift+Tab 是否在浮层内首尾元素间循环。 */
+    guardFocus?: boolean;
+    /** 关闭后焦点是否回到触发元素（仅 trigger 为 hover/focus/click 时生效）。 */
+    returnFocusOnClose?: boolean;
+    /** trigger 为 hover 时，是否不响应键盘聚焦触发浮层显示。 */
+    disableFocusListener?: boolean;
+    /** 点击弹出层及内部任一元素时是否自动关闭浮层。 */
+    clickToHide?: boolean;
+    /** 是否阻止浮层上的点击事件冒泡。 */
+    stopPropagation?: boolean;
+    /** 关闭时是否保留内部 DOM 不销毁（对齐 Semi，用于避免内部组件重新挂载）。 */
+    keepDOM?: boolean;
+    /** 更新该值可手动触发浮层重新定位。 */
+    rePosKey?: string | number;
     getPopupContainer?: () => HTMLElement | null;
     zIndex?: number;
     style?: Record<string, any>;
     class?: string;
     onVisibleChange?: (visible: boolean) => void;
+    /** 浮层展示时，点击非 children、非浮层内部区域的回调（仅 trigger 为 custom/click 时有效）。 */
+    onClickOutSide?: (event: MouseEvent) => void;
+    /** 触发元素或浮层内按 Esc 键时调用（不受 closeOnEsc 影响，即使不关闭也会触发）。 */
+    onEscKeyDown?: (event: KeyboardEvent) => void;
 }
 
 let popoverIdCounter = 0;
@@ -38,24 +59,36 @@ export function Popover(&{
     autoAdjustOverflow = true,
     spacing,
     showArrow = false,
+    arrowPointAtCenter = true,
     closeOnEsc = true,
+    guardFocus = true,
+    returnFocusOnClose = true,
+    disableFocusListener = false,
+    clickToHide = false,
+    stopPropagation = false,
+    keepDOM = false,
+    rePosKey,
     getPopupContainer,
     zIndex = 1030,
     style,
     class: className,
     onVisibleChange,
+    onClickOutSide,
+    onEscKeyDown,
 }: PopoverProps) @{
     const isControlled = trigger === 'custom';
     let &[state] = track<TooltipState>({ visible: isControlled ? !!visibleProp : false });
     let &[triggerNode] = track<HTMLElement | null>(null);
     let &[floatingNode] = track<HTMLElement | null>(null);
-    let &[floatingStyle] = track<{ position: FloatingPosition; left: number; top: number; transform: string } | null>(null);
+    let &[floatingStyle] = track<{ position: FloatingPosition; left: number; top: number; transform: string; arrowOffsetX?: string; arrowOffsetY?: string } | null>(null);
+    let &[hasRenderedOnce] = track<boolean>(false);
     const contentId = `lotus-popover-${++popoverIdCounter}`;
     // showArrow=true 时浮层需要给箭头留出更多间距，对齐 Semi 的 4px/10px 默认值差异。
     const resolvedSpacing = spacing ?? (showArrow ? 10 : 4);
     // trigger 为 click/custom 时 content 是独立可交互面板（dialog 语义），
     // hover/focus 时只是辅助说明（tooltip 语义），对齐 Semi 的无障碍设计。
     const contentRole = trigger === 'click' || trigger === 'custom' ? 'dialog' : 'tooltip';
+    let prevFocusElement: HTMLElement | null = null;
 
     const foundation = new TooltipFoundation({
         getState: () => untrack(() => state),
@@ -65,12 +98,24 @@ export function Popover(&{
     let &[displayVisible] = track<boolean>(() => (isControlled ? !!visibleProp : state.visible));
 
     effect(() => {
+        if (displayVisible) {
+            hasRenderedOnce = true;
+            prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
+        } else if (returnFocusOnClose && trigger !== 'custom') {
+            untrack(() => prevFocusElement)?.focus({ preventScroll: true });
+        }
+    });
+
+    effect(() => {
         if (!displayVisible) {
             floatingStyle = null;
             return;
         }
         const trigger = triggerNode;
         if (!trigger) return;
+        // rePosKey 变化本身不携带任何数据，只需要让这个 effect 重新执行——读一下
+        // 让 Ripple 的依赖追踪捕获它即可（对齐 Semi「更新该值可手动触发重新定位」语义）。
+        void rePosKey;
         const rect = trigger.getBoundingClientRect();
         const floating = untrack(() => floatingNode);
         const floatingSize = floating
@@ -82,6 +127,8 @@ export function Popover(&{
             floatingSize,
             spacing: resolvedSpacing,
             autoAdjustOverflow,
+            showArrow,
+            arrowPointAtCenter,
         });
     });
 
@@ -98,7 +145,7 @@ export function Popover(&{
         foundation.toggle(isControlled, onVisibleChange);
     };
     const handleFocus = () => {
-        if (!condition || trigger !== 'focus') return;
+        if (!condition || disableFocusListener || trigger !== 'focus') return;
         foundation.scheduleShow(mouseEnterDelay, isControlled, onVisibleChange);
     };
     const handleBlur = () => {
@@ -111,10 +158,28 @@ export function Popover(&{
         foundation.show(isControlled, onVisibleChange);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-        if (closeOnEsc && !isControlled && event.key === 'Escape' && untrack(() => state.visible)) {
-            foundation.hide(isControlled, onVisibleChange);
-            untrack(() => triggerNode)?.focus();
+        if (event.key === 'Escape' && untrack(() => state.visible)) {
+            onEscKeyDown?.(event);
+            if (closeOnEsc && !isControlled) {
+                foundation.hide(isControlled, onVisibleChange);
+                untrack(() => triggerNode)?.focus();
+            }
+            return;
         }
+        if (guardFocus && event.key === 'Tab' && displayVisible) {
+            const floating = untrack(() => floatingNode);
+            if (!floating) return;
+            const focusable = getFocusableElements(floating);
+            const target = resolveTabWrapTarget(focusable, document.activeElement, event.shiftKey);
+            if (target) {
+                event.preventDefault();
+                target.focus();
+            }
+        }
+    };
+    const handleContentClick = (event: MouseEvent) => {
+        if (stopPropagation) event.stopPropagation();
+        if (clickToHide) foundation.hide(isControlled, onVisibleChange);
     };
 
     // 对齐 Semi：trigger 为 click/contextMenu 时，点击触发器与浮层以外的区域
@@ -122,9 +187,10 @@ export function Popover(&{
     // 在这两种 trigger 下无条件调用 `registerClickOutsideHandler`）。用
     // `mousedown` 而非 `click` 对齐 Semi 的事件时机——`click` 会在 mouseup
     // 后才触发，此时若外部点击目标本身也会引发页面跳转/其他副作用，会有一
-    // 帧的时序竞争。
+    // 帧的时序竞争。custom trigger 下也要通知 onClickOutSide（Semi 语义：
+    // custom/click 两种 trigger 都有效），但不能擅自 hide（真源在外部）。
     effect(() => {
-        if (isControlled || (trigger !== 'click' && trigger !== 'contextMenu')) return;
+        if (trigger !== 'click' && trigger !== 'contextMenu' && trigger !== 'custom') return;
         if (!displayVisible) return;
         function handleDocumentMouseDown(event: MouseEvent) {
             const target = event.target as Node;
@@ -132,7 +198,8 @@ export function Popover(&{
             const floating = untrack(() => floatingNode);
             if (trig?.contains(target)) return;
             if (floating?.contains(target)) return;
-            foundation.hide(isControlled, onVisibleChange);
+            onClickOutSide?.(event);
+            if (!isControlled) foundation.hide(isControlled, onVisibleChange);
         }
         document.addEventListener('mousedown', handleDocumentMouseDown);
         return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
@@ -168,7 +235,7 @@ export function Popover(&{
             {children}
         </span>
 
-        @if (displayVisible && content != null) {
+        @if ((displayVisible || (keepDOM && hasRenderedOnce)) && content != null) {
             <Portal target={resolvePortalTarget()}>
                 <div
                     id={contentId}
@@ -181,8 +248,12 @@ export function Popover(&{
                         top: `${floatingStyle?.top ?? 0}px`,
                         transform: floatingStyle?.transform ?? '',
                         zIndex,
+                        ...(displayVisible ? {} : { display: 'none' }),
+                        ...(floatingStyle?.arrowOffsetX ? { '--lotus-popover-arrow-offset-x': floatingStyle.arrowOffsetX } : {}),
+                        ...(floatingStyle?.arrowOffsetY ? { '--lotus-popover-arrow-offset-y': floatingStyle.arrowOffsetY } : {}),
                     }}
                     onKeyDown={handleKeyDown}
+                    onClick={handleContentClick}
                     ref={(node: HTMLElement) => { floatingNode = node; }}
                 >
                     @if (showArrow) {
@@ -224,28 +295,28 @@ export function Popover(&{
             .lotus-popover-arrow-topLeft .lotus-popover-arrow,
             .lotus-popover-arrow-topRight .lotus-popover-arrow {
                 bottom: -5px;
-                left: calc(50% - 5px);
+                left: calc(var(--lotus-popover-arrow-offset-x, 50%) - 5px);
             }
 
             .lotus-popover-arrow-bottom .lotus-popover-arrow,
             .lotus-popover-arrow-bottomLeft .lotus-popover-arrow,
             .lotus-popover-arrow-bottomRight .lotus-popover-arrow {
                 top: -5px;
-                left: calc(50% - 5px);
+                left: calc(var(--lotus-popover-arrow-offset-x, 50%) - 5px);
             }
 
             .lotus-popover-arrow-left .lotus-popover-arrow,
             .lotus-popover-arrow-leftTop .lotus-popover-arrow,
             .lotus-popover-arrow-leftBottom .lotus-popover-arrow {
                 right: -5px;
-                top: calc(50% - 5px);
+                top: calc(var(--lotus-popover-arrow-offset-y, 50%) - 5px);
             }
 
             .lotus-popover-arrow-right .lotus-popover-arrow,
             .lotus-popover-arrow-rightTop .lotus-popover-arrow,
             .lotus-popover-arrow-rightBottom .lotus-popover-arrow {
                 left: -5px;
-                top: calc(50% - 5px);
+                top: calc(var(--lotus-popover-arrow-offset-y, 50%) - 5px);
             }
         </style>
     </>

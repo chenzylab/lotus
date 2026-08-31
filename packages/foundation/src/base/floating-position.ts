@@ -30,6 +30,9 @@ export interface FloatingStyle {
   left: number;
   top: number;
   transform: string;
+  /** `arrowPointAtCenter=false` 时箭头需要偏离浮层中心的百分比（如 `'20%'`），未偏移时为 undefined。 */
+  arrowOffsetX?: string;
+  arrowOffsetY?: string;
 }
 
 /** 触发元素中点/边界基准点 + spacing 间距，算出浮层的 left/top 锚点与 CSS transform 平移量。 */
@@ -99,6 +102,15 @@ export interface CalcFloatingStyleOptions {
   autoAdjustOverflow?: boolean;
   viewportWidth?: number;
   viewportHeight?: number;
+  /**
+   * `top`/`bottom`/`left`/`right` 四个居中方向下箭头是否指向 trigger 中心。
+   * `true`（默认，对齐 Semi）：浮层本身已居中对齐 trigger，箭头天然在浮层中心，
+   * 不需要额外偏移。`false`：箭头挪到 trigger 在视口中更靠近的一侧边缘（对齐
+   * Semi `isTriggerNearLeft`/`isTriggerNearTop` 的简化版——只判断 trigger 中点
+   * 相对视口中点的左右/上下侧，不做 Semi 那样基于箭头自身宽度的像素级钳制）。
+   */
+  arrowPointAtCenter?: boolean;
+  showArrow?: boolean;
 }
 
 /**
@@ -106,6 +118,27 @@ export interface CalcFloatingStyleOptions {
  * 对侧后不会溢出，则采用翻转后的方向；否则保留首选方向（即使仍溢出——交给业务方
  * 通过 `spacing`/自定义 style 处理极端情况，不做过度复杂的多级降级）。
  */
+const CENTER_POSITIONS: FloatingPosition[] = ['top', 'bottom', 'left', 'right'];
+
+/**
+ * `arrowPointAtCenter=false` 时箭头相对浮层中心的偏移百分比：挪到 trigger
+ * 在视口中更靠近的一侧边缘（简化版，不做像素级钳制）。只对居中方向（非
+ * Left/Right/Top/Bottom 变体）生效——边缘对齐方向箭头位置由 CSS 固定在角落，
+ * 不需要动态偏移。
+ */
+function calcArrowOffset(position: FloatingPosition, triggerRect: FloatingRect, viewportWidth: number, viewportHeight: number): { arrowOffsetX?: string; arrowOffsetY?: string } {
+  if (!CENTER_POSITIONS.includes(position)) return {};
+  const midX = triggerRect.left + triggerRect.width / 2;
+  const midY = triggerRect.top + triggerRect.height / 2;
+
+  if (position === 'top' || position === 'bottom') {
+    const isNearLeft = midX < viewportWidth / 2;
+    return { arrowOffsetX: isNearLeft ? '25%' : '75%' };
+  }
+  const isNearTop = midY < viewportHeight / 2;
+  return { arrowOffsetY: isNearTop ? '25%' : '75%' };
+}
+
 export function calcFloatingStyle(options: CalcFloatingStyleOptions): FloatingStyle {
   const {
     position,
@@ -115,6 +148,8 @@ export function calcFloatingStyle(options: CalcFloatingStyleOptions): FloatingSt
     autoAdjustOverflow = true,
     viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920,
     viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080,
+    arrowPointAtCenter = true,
+    showArrow = false,
   } = options;
 
   let finalPosition = position;
@@ -128,5 +163,8 @@ export function calcFloatingStyle(options: CalcFloatingStyleOptions): FloatingSt
   }
 
   const anchor = calcAnchor(finalPosition, triggerRect, spacing);
-  return { position: finalPosition, left: anchor.left, top: anchor.top, transform: anchor.transform };
+  const arrowOffset = showArrow && !arrowPointAtCenter
+    ? calcArrowOffset(finalPosition, triggerRect, viewportWidth, viewportHeight)
+    : {};
+  return { position: finalPosition, left: anchor.left, top: anchor.top, transform: anchor.transform, ...arrowOffset };
 }

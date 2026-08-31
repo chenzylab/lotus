@@ -6,6 +6,8 @@ import { PopoverPositionDemo } from '../../demos/show/popover/position.tsrx';
 import { PopoverControlledDemo } from '../../demos/show/popover/controlled.tsrx';
 import { PopoverConditionDemo } from '../../demos/show/popover/condition.tsrx';
 import { PopoverArrowDemo } from '../../demos/show/popover/arrow.tsrx';
+import { ArrowPointAtCenterPopoverDemo } from '../../demos/show/popover/arrow-point-at-center.tsrx';
+import { ClickOutsidePopoverDemo } from '../../demos/show/popover/click-outside.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -22,6 +24,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/show/popover/controlled.tsrx': PopoverControlledDemo,
     '../../src/demos/show/popover/condition.tsrx': PopoverConditionDemo,
     '../../src/demos/show/popover/arrow.tsrx': PopoverArrowDemo,
+    '../../src/demos/show/popover/arrow-point-at-center.tsrx': ArrowPointAtCenterPopoverDemo,
+    '../../src/demos/show/popover/click-outside.tsrx': ClickOutsidePopoverDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

@@ -65,4 +65,58 @@ test.describe('Popover', () => {
     await expect(popover).toBeVisible();
     await expect(popover.locator('.lotus-popover-arrow')).toBeVisible();
   });
+
+  test('arrowPointAtCenter=false 时箭头挪离浮层中心（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+
+    const centerTrigger = page.getByRole('button', { name: 'arrowPointAtCenter=true' });
+    await centerTrigger.hover();
+    const centerArrow = page.locator('.lotus-popover.lotus-popover-arrow-bottomLeft .lotus-popover-arrow');
+    await expect(centerArrow).toBeVisible();
+    const centerLeft = await centerArrow.evaluate((el) => getComputedStyle(el).left);
+
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(100);
+
+    const offsetTrigger = page.getByRole('button', { name: 'arrowPointAtCenter=false' });
+    await offsetTrigger.hover();
+    const offsetArrow = page.locator('.lotus-popover.lotus-popover-arrow-bottom .lotus-popover-arrow');
+    await expect(offsetArrow).toBeVisible();
+    const offsetLeft = await offsetArrow.evaluate((el) => getComputedStyle(el).left);
+
+    expect(offsetLeft).not.toBe(centerLeft);
+  });
+
+  test('onClickOutSide/onEscKeyDown：点击外部与按 Esc 都触发对应回调（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'onClickOutSide/onEscKeyDown' });
+    await trigger.click();
+    await expect(page.locator('.lotus-popover')).toBeVisible();
+
+    await page.locator('body').click({ position: { x: 5, y: 5 } });
+    expect(logs).toContain('popover onClickOutSide fired');
+
+    await trigger.click();
+    await page.keyboard.press('Escape');
+    expect(logs).toContain('popover onEscKeyDown fired');
+  });
+
+  test('stopPropagation + clickToHide：点击浮层内容不冒泡到 body，且点击后自动关闭（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'clickToHide' });
+    await trigger.click();
+
+    const popover = page.locator('.lotus-popover', { hasText: '点我关闭' });
+    await expect(popover).toBeVisible();
+
+    await popover.getByText('点我关闭（clickToHide）').click();
+    expect(logs).toContain('popover content clicked');
+    await expect(popover).not.toBeVisible();
+  });
 });
