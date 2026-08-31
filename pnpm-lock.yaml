@@ -65,6 +65,7 @@ catalogs:
       version: 4.1.10
 
 patchedDependencies:
+  '@tsrx/core@0.1.60': ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd
   ripple@0.3.123: 35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198
 
 importers:
@@ -2507,7 +2508,7 @@ snapshots:
   '@ripple-ts/vite-plugin@0.3.123(@typescript-eslint/types@8.67.0)':
     dependencies:
       '@ripple-ts/adapter': 0.3.123
-      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)
       '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
     transitivePeerDependencies:
       - '@typescript-eslint/types'
@@ -2756,7 +2757,7 @@ snapshots:
       '@tiptap/extensions': 3.30.3(@tiptap/core@3.30.3(@tiptap/pm@3.30.3))(@tiptap/pm@3.30.3)
       '@tiptap/pm': 3.30.3
 
-  '@tsrx/core@0.1.60(@typescript-eslint/types@8.67.0)':
+  '@tsrx/core@0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
       '@noble/hashes': 2.3.0
@@ -2774,7 +2775,7 @@ snapshots:
 
   '@tsrx/eslint-parser@0.3.123(@typescript-eslint/types@8.67.0)(eslint@10.8.1)':
     dependencies:
-      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)
       eslint: 10.8.1
     transitivePeerDependencies:
       - '@typescript-eslint/types'
@@ -2787,14 +2788,14 @@ snapshots:
 
   '@tsrx/prettier-plugin@0.3.123(@typescript-eslint/types@8.67.0)(prettier@3.9.6)':
     dependencies:
-      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)
       prettier: 3.9.6
     transitivePeerDependencies:
       - '@typescript-eslint/types'
 
   '@tsrx/ripple@0.1.61(@typescript-eslint/types@8.67.0)':
     dependencies:
-      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)
       esrap: 2.3.2(@typescript-eslint/types@8.67.0)
       is-reference: 3.0.3
       zimmerframe: 1.1.4
@@ -4207,7 +4208,7 @@ snapshots:
 
   ripple@0.3.123(patch_hash=35d8697ecb1222e0508f94672e66b71c8e0f2fe114665d38bff85582172bd198)(@typescript-eslint/types@8.67.0):
     dependencies:
-      '@tsrx/core': 0.1.60(@typescript-eslint/types@8.67.0)
+      '@tsrx/core': 0.1.60(patch_hash=ea95572b768f0b642b2a9dfaafdb120fc55728c3882d13a6dd3819d3b19920cd)(@typescript-eslint/types@8.67.0)
       '@tsrx/ripple': 0.1.61(@typescript-eslint/types@8.67.0)
       clsx: 2.1.1
       devalue: 5.9.0

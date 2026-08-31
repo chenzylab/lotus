@@ -1,5 +1,7 @@
 import { Foundation, type Adapter } from '../../base/adapter.js';
 
+export * from './group-foundation.js';
+
 export type ResizeDirection = 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'bottomRight' | 'bottomLeft' | 'topLeft';
 
 export interface ResizableSize {
@@ -20,6 +22,37 @@ export interface ResizableConstraints {
   maxWidth: number;
   maxHeight: number;
   lockAspectRatio: boolean;
+  /** 拖动像素与实际尺寸变化的比例，默认 1（对齐 Semi `ratio`）。 */
+  ratio?: number;
+  /** 容器被 CSS transform scale 缩放时的还原系数，默认 1（对齐 Semi `scale`）。 */
+  scale?: number;
+  /** 增量对齐步长，默认不启用（对齐 Semi `grid`，[1,1] 等价于不生效）。 */
+  grid?: [number, number];
+  /** 吸附到指定绝对像素点（对齐 Semi `snap`）。 */
+  snap?: { x?: number[]; y?: number[] };
+  /** 吸附生效的最小间隙阈值，默认 0 表示总是吸附到最近的 grid/snap 目标（对齐 Semi `snapGap`）。 */
+  snapGap?: number;
+}
+
+export type ResizeStartCallback = (direction: ResizeDirection, event: MouseEvent) => void;
+export type ResizeChangeCallback = (size: ResizableSize, direction: ResizeDirection) => void;
+
+function snapToGrid(value: number, gridSize: number): number {
+  return Math.round(value / gridSize) * gridSize;
+}
+
+function findNearestSnap(value: number, snapPoints: number[], snapGap: number): number {
+  if (snapPoints.length === 0) return value;
+  let nearest = snapPoints[0]!;
+  let minDistance = Math.abs(value - nearest);
+  for (const point of snapPoints) {
+    const distance = Math.abs(value - point);
+    if (distance < minDistance) {
+      nearest = point;
+      minDistance = distance;
+    }
+  }
+  return snapGap === 0 || minDistance < snapGap ? nearest : value;
 }
 
 /** 拖拽起点快照：记录手柄按下瞬间的指针坐标与容器尺寸，作为后续 delta 计算的基准。 */
@@ -63,9 +96,11 @@ export class ResizableFoundation extends Foundation<ResizableState> {
   onResize(pointerX: number, pointerY: number, constraints: ResizableConstraints): ResizableSize | null {
     if (!this.origin) return null;
     const { direction, startX, startY, startWidth, startHeight } = this.origin;
+    const scale = constraints.scale ?? 1;
+    const ratio = constraints.ratio ?? 1;
 
-    const dx = pointerX - startX;
-    const dy = pointerY - startY;
+    const dx = ((pointerX - startX) * ratio) / scale;
+    const dy = ((pointerY - startY) * ratio) / scale;
 
     let width = startWidth;
     let height = startHeight;
@@ -86,15 +121,27 @@ export class ResizableFoundation extends Foundation<ResizableState> {
     height = clamp(height, constraints.minHeight, constraints.maxHeight);
 
     if (constraints.lockAspectRatio) {
-      const ratio = startWidth / startHeight;
+      const aspectRatio = startWidth / startHeight;
       const isHorizontalDrive = HORIZONTAL_LEFT.includes(direction) || HORIZONTAL_RIGHT.includes(direction);
       if (isHorizontalDrive) {
-        height = clamp(width / ratio, constraints.minHeight, constraints.maxHeight);
-        width = clamp(height * ratio, constraints.minWidth, constraints.maxWidth);
+        height = clamp(width / aspectRatio, constraints.minHeight, constraints.maxHeight);
+        width = clamp(height * aspectRatio, constraints.minWidth, constraints.maxWidth);
       } else {
-        width = clamp(height * ratio, constraints.minWidth, constraints.maxWidth);
-        height = clamp(width / ratio, constraints.minHeight, constraints.maxHeight);
+        width = clamp(height * aspectRatio, constraints.minWidth, constraints.maxWidth);
+        height = clamp(width / aspectRatio, constraints.minHeight, constraints.maxHeight);
       }
+    }
+
+    const snapGap = constraints.snapGap ?? 0;
+    if (constraints.snap?.x) width = findNearestSnap(width, constraints.snap.x, snapGap);
+    if (constraints.snap?.y) height = findNearestSnap(height, constraints.snap.y, snapGap);
+
+    if (constraints.grid) {
+      const [gridW, gridH] = constraints.grid;
+      const griddedWidth = snapToGrid(width, gridW);
+      const griddedHeight = snapToGrid(height, gridH);
+      width = snapGap === 0 || Math.abs(griddedWidth - width) <= snapGap ? griddedWidth : width;
+      height = snapGap === 0 || Math.abs(griddedHeight - height) <= snapGap ? griddedHeight : height;
     }
 
     this.setState({ width, height });

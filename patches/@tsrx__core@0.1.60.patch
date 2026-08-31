@@ -1,0 +1,30 @@
+diff --git a/src/plugin.js b/src/plugin.js
+index 2e037f417c647e09ff01ec01df02d1786f2f7902..1e3200c4177d29f2b6faecb2d947c72bb5dc2aaf 100644
+--- a/src/plugin.js
++++ b/src/plugin.js
+@@ -5162,7 +5162,24 @@ export function TSRXPlugin(config) {
+ 			parseBlock(createNewLexicalScope, node, exitStrict) {
+ 				const parent = this.#path.at(-1);
+ 
+-				if (this.#isNativeTemplateNode(parent) && this.#templateControlFlowBlockDepth > 0) {
++				// `#templateControlFlowBlockDepth` is set (and always restored in a
++				// `finally`) only while parsing a `@for` directive's own header+body (and
++				// its `@empty` clause) — see `#parseJSXControlFlowExpression`'s `for`
++				// branch — so `depth > 0` alone already identifies "the next `{ }` block
++				// is this `@for`'s body/`@empty`", with no possible false positive from a
++				// plain JS `for` loop. The extra `#isNativeTemplateNode(parent)` guard is
++				// unreliable here: `#path` is deliberately emptied while parsing a `@if`/
++				// `@switch`/`@try` directive's own body (`#parseTemplateControlFlowBlock`
++				// hides the enclosing template so that body tokenizes as code), so a `@for`
++				// nested directly inside such a directive's branch sees an empty `#path`
++				// here even though it is still inside a native template — which used to
++				// make this check fail and fall through to `super.parseBlock()`. That wraps
++				// any directive found in the `@for`'s body in a bare `ExpressionStatement`
++				// (native statement parsing has no bare-directive-as-statement handling),
++				// which the SSR printer (esrap's `ts` language) cannot serialize — surfacing
++				// as "Not implemented: JSXFragment" at build time for code shaped like
++				// `@if (…) { @for (…) { @if (…) { … } } }`.
++				if (this.#templateControlFlowBlockDepth > 0) {
+ 					this.#templateControlFlowBlockDepth--;
+ 					try {
+ 						return this.#parseTemplateControlFlowBlock(createNewLexicalScope, node, exitStrict);

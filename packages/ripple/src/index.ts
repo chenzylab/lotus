@@ -27,7 +27,13 @@ export {
     type ResizableProps,
     type ResizableSizeChange,
     type ResizeDirection,
+    type ResizeHandleMap,
+    type ResizeHandleStyleMap,
+    type ResizeHandleClassMap,
 } from './basic/resizable/index.tsrx';
+export { ResizeItem, type ResizeItemProps } from './basic/resizable/resize-item.tsrx';
+export { ResizeHandler, type ResizeHandlerProps } from './basic/resizable/resize-handler.tsrx';
+export { ResizeGroup, type ResizeGroupProps, type ResizeGroupItemConfig } from './basic/resizable/resize-group.tsrx';
 export { Divider, type DividerProps } from './basic/divider/index.tsrx';
 export {
     Space,

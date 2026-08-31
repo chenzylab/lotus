@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -825,6 +825,51 @@ export function App() @{
             <div style={{ padding: '12px' }}>拖拽边缘或角落调整大小</div>
         </Resizable>
 
+        <Divider>Resizable（boundElement + grid + 自定义 handle）</Divider>
+
+        <div style={{ width: '300px', height: '200px', border: '1px solid var(--lotus-color-border)', position: 'relative' }}>
+            <Resizable
+                defaultWidth={150}
+                defaultHeight={100}
+                boundElement="parent"
+                grid={[20, 20]}
+                handleStyle={{ bottomRight: { background: 'var(--lotus-color-primary)' } }}
+                aria-label="限制在父容器内、20px 网格吸附的可调整大小容器"
+            >
+                <div style={{ padding: '8px' }}>bound=parent，grid=20px</div>
+            </Resizable>
+        </div>
+
+        <Divider>Resizable Group（JSX 写法）</Divider>
+
+        <div style={{ width: '600px', height: '80px' }}>
+            <ResizeGroup direction="horizontal" aria-label="分栏面板 JSX">
+                <ResizeItem defaultSize="30%" min="10%" style={{ background: 'rgba(0,0,0,0.04)' }}>
+                    <div style={{ padding: '8px' }}>面板一 30%</div>
+                </ResizeItem>
+                <ResizeHandler />
+                <ResizeItem defaultSize={1} style={{ background: 'rgba(0,0,0,0.08)' }}>
+                    <div style={{ padding: '8px' }}>面板二 flex</div>
+                </ResizeItem>
+                <ResizeHandler />
+                <ResizeItem defaultSize={1} style={{ background: 'rgba(0,0,0,0.04)' }}>
+                    <div style={{ padding: '8px' }}>面板三 flex</div>
+                </ResizeItem>
+            </ResizeGroup>
+        </div>
+
+        <Divider>Resizable Group（items 简化写法）</Divider>
+
+        <div style={{ width: '600px', height: '80px' }}>
+            <ResizeGroup
+                direction="horizontal"
+                items={[
+                    { content: <div style={{ padding: '8px' }}>items 面板一</div>, defaultSize: '200px', style: { background: 'rgba(0,0,0,0.04)' } },
+                    { content: <div style={{ padding: '8px' }}>items 面板二</div>, defaultSize: 1, style: { background: 'rgba(0,0,0,0.08)' } },
+                ]}
+            />
+        </div>
+
         <Divider>Progress</Divider>
 
         <Space vertical align="start" style={{ width: '320px' }}>
@@ -846,6 +891,7 @@ export function App() @{
             <Progress percent={30} showInfo format={(p) => `第 ${Math.round(p / 10)} 步，共 10 步`} aria-label="自定义 format 文案进度条（验证 aria-valuetext 跟随 format 而非原始百分比）" style={{ width: '100%' }} />
             <Progress percent={motionProgressPercent} showInfo motion={false} aria-label="禁用动画的进度条（验证 motion=false 时 CSS transition 被禁用）" style={{ width: '100%' }} />
             <Button onClick={() => { motionProgressPercent = motionProgressPercent >= 100 ? 0 : motionProgressPercent + 20; }}>切换禁用动画的 Progress 百分比</Button>
+            <Progress percent={40} id="progress-id-demo" aria-labelledby="progress-labelledby-demo" aria-valuetext="自定义覆盖文案" style={{ width: '100%' }} />
         </Space>
 
         <Divider>Spin</Divider>
@@ -977,6 +1023,15 @@ export function App() @{
             <Button onClick={() => Toast.destroyAll()}>destroyAll</Button>
         </Space>
 
+        <Divider>Toast：theme/textMaxWidth/onClose/config（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Button onClick={() => Toast.info({ content: 'theme=light 浅色填充样式', theme: 'light' })}>Toast（theme=light）</Button>
+            <Button onClick={() => Toast.info({ content: '这是一条很长很长很长很长很长很长很长很长的提示文案，用于验证 textMaxWidth 生效', textMaxWidth: 200 })}>Toast（textMaxWidth=200）</Button>
+            <Button onClick={() => Toast.info({ content: '关闭时触发 onClose', showClose: true, onClose: () => console.log('toast onClose fired') })}>Toast（onClose）</Button>
+            <Button onClick={() => { Toast.config({ theme: 'light' }); Toast.info('config 全局配置后触发（应为 light 主题）'); }}>Toast.config（全局 theme=light）</Button>
+        </Space>
+
         <Divider>Notification</Divider>
 
         <Space>
@@ -984,6 +1039,26 @@ export function App() @{
             <Button onClick={() => Notification.success({ title: '成功', content: '操作已完成', position: 'bottomLeft' })}>Notification.success（bottomLeft）</Button>
             <Button onClick={() => { Notification.warning({ title: '警告一', position: 'topRight' }); Notification.error({ title: '错误二', position: 'topRight' }); }}>连续触发 2 条（topRight）</Button>
             <Button onClick={() => Notification.destroyAll()}>Notification.destroyAll</Button>
+        </Space>
+
+        <Divider>Notification：theme/onClick/onClose/onCloseClick（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Button onClick={() => Notification.info({
+                title: 'theme=light',
+                content: '浅色填充样式',
+                theme: 'light',
+                position: 'topRight',
+            })}>Notification（theme=light）</Button>
+            <Button onClick={() => Notification.info({
+                title: '点我触发 onClick',
+                content: '点击卡片本身（非关闭按钮）',
+                position: 'topRight',
+                onClick: () => console.log('notification onClick fired'),
+                onClose: () => console.log('notification onClose fired'),
+                onCloseClick: (id) => console.log('notification onCloseClick fired: ' + id),
+            })}>Notification（onClick/onClose/onCloseClick）</Button>
+            <Button onClick={() => { Notification.config({ position: 'bottomRight' }); Notification.info({ title: 'config 全局配置后触发', content: '应弹出在 bottomRight' }); }}>Notification.config（全局 position=bottomRight）</Button>
         </Space>
 
         <Divider>Tree</Divider>
@@ -2373,6 +2448,33 @@ export function App() @{
             </Popover>
             <Popover content="hover 触发 popover" showArrow>
                 <Button theme="solid" type="secondary">hover + 箭头</Button>
+            </Popover>
+        </Space>
+
+        <Divider>Popover：arrowPointAtCenter/stopPropagation/onClickOutSide/onEscKeyDown（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Popover content="箭头指向元素中心（默认）" showArrow arrowPointAtCenter position="bottomLeft">
+                <Button theme="solid">arrowPointAtCenter=true</Button>
+            </Popover>
+            <Popover content="箭头挪向边缘" showArrow arrowPointAtCenter={false} position="bottom">
+                <Button theme="solid" type="secondary">arrowPointAtCenter=false</Button>
+            </Popover>
+            <Popover
+                trigger="click"
+                content={<div style={{ padding: '4px' }}>点击外部会触发 onClickOutSide</div>}
+                onClickOutSide={() => console.log('popover onClickOutSide fired')}
+                onEscKeyDown={() => console.log('popover onEscKeyDown fired')}
+            >
+                <Button theme="solid" type="tertiary">onClickOutSide/onEscKeyDown</Button>
+            </Popover>
+            <Popover
+                trigger="click"
+                stopPropagation
+                clickToHide
+                content={<div style={{ padding: '4px' }} onClick={() => console.log('popover content clicked')}>点我关闭（clickToHide）</div>}
+            >
+                <Button theme="solid" type="warning">clickToHide</Button>
             </Popover>
         </Space>
 

@@ -15,6 +15,10 @@ export interface ResizableSizeChange {
     height: number;
 }
 
+export type ResizeHandleMap = Partial<Record<ResizeDirection, any>>;
+export type ResizeHandleStyleMap = Partial<Record<ResizeDirection, Record<string, any>>>;
+export type ResizeHandleClassMap = Partial<Record<ResizeDirection, string>>;
+
 export interface ResizableProps {
     children?: any;
     width?: number;
@@ -28,6 +32,24 @@ export interface ResizableProps {
     lockAspectRatio?: boolean;
     /** 未指定时 8 方向手柄全部启用；传入子集则只启用列出的方向。 */
     enable?: ResizeDirection[];
+    /** 拖动像素与实际尺寸变化的比例，默认 1（对齐 Semi `ratio`）。 */
+    ratio?: number;
+    /** 容器被 CSS transform scale 缩放时的坐标还原系数，默认 1（对齐 Semi `scale`）。 */
+    scale?: number;
+    /** 限制调整范围的边界元素：'parent'|'window'|自定义 DOM 元素（对齐 Semi `boundElement`）。 */
+    boundElement?: 'parent' | 'window' | HTMLElement;
+    /** 每个方向自定义手柄渲染内容（对齐 Semi `handleNode`）。 */
+    handleNode?: ResizeHandleMap;
+    /** 每个方向手柄的自定义样式（对齐 Semi `handleStyle`）。 */
+    handleStyle?: ResizeHandleStyleMap;
+    /** 每个方向手柄的自定义类名（对齐 Semi `handleClass`）。 */
+    handleClass?: ResizeHandleClassMap;
+    /** 增量对齐步长，默认 [1,1] 表示不生效（对齐 Semi `grid`）。 */
+    grid?: [number, number];
+    /** 吸附到指定绝对像素点（对齐 Semi `snap`）。 */
+    snap?: { x?: number[]; y?: number[] };
+    /** 吸附生效的最小间隙阈值，默认 0（对齐 Semi `snapGap`）。 */
+    snapGap?: number;
     onResizeStart?: (direction: ResizeDirection) => void;
     onChange?: (size: ResizableSizeChange, direction: ResizeDirection) => void;
     onResizeEnd?: (size: ResizableSizeChange, direction: ResizeDirection) => void;
@@ -58,6 +80,15 @@ export function Resizable(&{
     maxHeight = Infinity,
     lockAspectRatio = false,
     enable,
+    ratio = 1,
+    scale = 1,
+    boundElement,
+    handleNode,
+    handleStyle,
+    handleClass,
+    grid,
+    snap,
+    snapGap,
     onResizeStart,
     onChange,
     onResizeEnd,
@@ -75,6 +106,8 @@ export function Resizable(&{
         isResizing: false,
         direction: null,
     });
+
+    let resizableNode: HTMLElement | null = null;
 
     effect(() => {
         if (!isControlled) return;
@@ -98,6 +131,29 @@ export function Resizable(&{
         onResizeStart?.(direction);
     }
 
+    // boundElement 收窄 max 约束：'parent' 用父节点、'window' 用视口、自定义元素用其自身
+    // 的边界矩形，只在方向包含对应轴向时才需要收窄（对齐 Semi calBoundaryMax 思路，
+    // 简化为直接用 getBoundingClientRect 计算可用剩余空间，不复刻 flex 场景的复杂分支）。
+    function resolveBoundMax(): { maxWidth: number; maxHeight: number } {
+        if (!boundElement || !resizableNode) return { maxWidth, maxHeight };
+        const rect = resizableNode.getBoundingClientRect();
+        let boundRect: { right: number; bottom: number } | null = null;
+        if (boundElement === 'parent' && resizableNode.parentElement) {
+            boundRect = resizableNode.parentElement.getBoundingClientRect();
+        } else if (boundElement === 'window') {
+            boundRect = { right: window.innerWidth, bottom: window.innerHeight };
+        } else if (boundElement instanceof HTMLElement) {
+            boundRect = boundElement.getBoundingClientRect();
+        }
+        if (!boundRect) return { maxWidth, maxHeight };
+        const availableWidth = boundRect.right - rect.left;
+        const availableHeight = boundRect.bottom - rect.top;
+        return {
+            maxWidth: Math.min(maxWidth, availableWidth),
+            maxHeight: Math.min(maxHeight, availableHeight),
+        };
+    }
+
     effect(() => {
         const handlePointerMove = (event: MouseEvent) => {
             const current = untrack(() => state);
@@ -107,7 +163,11 @@ export function Resizable(&{
             // minWidth/maxWidth 等约束运行时变化后必须靠这里的实时读取才能
             // 生效，不能依赖外层一次性 const 快照（对齐 Slider RTL opts 固化
             // 踩坑 #98 的教训）。
-            const constraints: ResizableConstraints = { minWidth, minHeight, maxWidth, maxHeight, lockAspectRatio };
+            const bound = resolveBoundMax();
+            const constraints: ResizableConstraints = {
+                minWidth, minHeight, maxWidth: bound.maxWidth, maxHeight: bound.maxHeight,
+                lockAspectRatio, ratio, scale, grid, snap, snapGap,
+            };
             const size = foundation.onResize(event.clientX, event.clientY, constraints);
             if (size) {
                 onChange?.(size, current.direction);
@@ -189,12 +249,22 @@ export function Resizable(&{
     }));
 
     <>
-        <div class={classes} style={sizeStyle} aria-label={ariaLabel}>
+        <div
+            class={classes}
+            style={sizeStyle}
+            aria-label={ariaLabel}
+            ref={(node: HTMLElement) => { resizableNode = node; }}
+        >
             <div class="lotus-resizable-content">{children}</div>
 
             @for (const direction of enabledDirections; key direction) {
                 <div
-                    class={`lotus-resizable-handler lotus-resizable-handler-${direction}`}
+                    class={[
+                        'lotus-resizable-handler',
+                        `lotus-resizable-handler-${direction}`,
+                        handleClass?.[direction] ?? '',
+                    ].filter(Boolean).join(' ')}
+                    style={handleStyle?.[direction]}
                     role="button"
                     tabIndex={0}
                     aria-label={locale.Resizable.handleLabel(direction)}
@@ -203,7 +273,9 @@ export function Resizable(&{
                         startResize(direction, event.clientX, event.clientY);
                     }}
                     onKeyDown={(event: KeyboardEvent) => handleHandleKeyDown(direction, event)}
-                />
+                >
+                    {handleNode?.[direction]}
+                </div>
             }
         </div>
 

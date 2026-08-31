@@ -96,4 +96,17 @@ test.describe('Notification', () => {
     expect(logs.some((log) => log.startsWith('notification onCloseClick fired: lotus-notification-'))).toBe(true);
     expect(logs).toContain('notification onClose fired');
   });
+
+  test('config：全局配置对已挂载的容器实时生效，无需 destroyAll 重新挂载（对齐 Semi 每次 render 都重新读配置的响应式行为）', async ({ page }) => {
+    await page.goto('/');
+    // 先触发一次普通 Notification，确保容器已挂载（非首次挂载场景）。
+    await page.getByRole('button', { name: 'Notification.info（topRight）', exact: true }).click();
+    await expect(page.locator('.lotus-notification')).toBeVisible();
+    await page.getByRole('button', { name: 'Notification.destroyAll', exact: true }).click();
+
+    await page.getByRole('button', { name: 'Notification.config（全局 position=bottomRight）', exact: true }).click();
+    const notification = page.locator('.lotus-notification', { hasText: 'config 全局配置后触发' });
+    await expect(notification).toBeVisible();
+    await expect(page.locator('.lotus-notification-wrapper-bottomRight')).toContainText('config 全局配置后触发');
+  });
 });

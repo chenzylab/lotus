@@ -39,9 +39,12 @@ function nextId(): string {
 
 type NotificationUpdateFn = (list: NotificationItem[]) => void;
 
+type NotificationConfigUpdateFn = (config: NotificationGlobalConfig) => void;
+
 interface NotificationListRootProps {
     registerController: (fn: NotificationUpdateFn) => void;
-    positionOverride: NotificationGlobalConfig;
+    registerConfigController: (fn: NotificationConfigUpdateFn) => void;
+    initialConfig: NotificationGlobalConfig;
     foundation: NotificationListFoundation;
 }
 
@@ -65,12 +68,14 @@ function resolveWrapperStyle(position: NotificationPosition, zIndex: number | un
  * 模块顶层使用，组件内部创建状态 + 回调反向暴露更新函数）。核心差异
  * 是按 6 个 position 分组渲染，每个 position 一个独立定位容器。
  */
-export function NotificationListRoot(&{ registerController, positionOverride, foundation }: NotificationListRootProps) @{
+export function NotificationListRoot(&{ registerController, registerConfigController, initialConfig, foundation }: NotificationListRootProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
     let &[list] = track<Array<NotificationItem>>([]);
+    let &[positionOverride] = track<NotificationGlobalConfig>(initialConfig);
     registerController((next: NotificationItem[]) => { list = next; });
+    registerConfigController((next: NotificationGlobalConfig) => { positionOverride = next; });
 
     function handleCloseClick(id: string) {
         foundation.closeByClick(id);
@@ -232,7 +237,6 @@ export function NotificationListRoot(&{ registerController, positionOverride, fo
 
 interface NotificationMountEntry {
     unmountFn: () => void;
-    pushUpdate: NotificationUpdateFn | null;
     foundation: NotificationListFoundation;
     container: HTMLElement;
 }
@@ -243,6 +247,17 @@ const mounts = new Map<HTMLElement, NotificationMountEntry>();
 let globalConfig: NotificationGlobalConfig = {};
 // 按 id 记录该通知挂载在哪个 entry，close()/handleClose 需要据此定位 foundation。
 const idToContainer = new Map<string, HTMLElement>();
+// 每个已挂载 root 的配置更新函数——存函数引用本身而非塞进 entry 对象属性，
+// 后者会在 mount() 尚未同步执行完 registerConfigController 前就拷贝走当时
+// 仍是 null 的值（对齐 pushUpdate 现有模式：闭包变量才是唯一可信来源）。
+const configSetters = new Set<NotificationConfigUpdateFn>();
+
+/** Notification.config() 之后，把最新配置实时推送给所有已挂载的 root（对齐
+ * Semi 每次 render 都重新读配置的天然响应式行为——lotus 命令式单例架构下，
+ * 已挂载的 props 是一次性快照，需要这条通道才能不重新挂载也生效）。 */
+function broadcastConfig(): void {
+    for (const setter of configSetters) setter(globalConfig);
+}
 
 function ensureMounted(getPopupContainer?: () => HTMLElement): NotificationMountEntry {
     const parent = getPopupContainer?.() ?? document.body;
@@ -258,11 +273,12 @@ function ensureMounted(getPopupContainer?: () => HTMLElement): NotificationMount
         target: container,
         props: {
             registerController: (fn: NotificationUpdateFn) => { pushUpdate = fn; },
-            positionOverride: globalConfig,
+            registerConfigController: (fn: NotificationConfigUpdateFn) => { configSetters.add(fn); },
+            initialConfig: globalConfig,
             foundation,
         },
     });
-    const entry: NotificationMountEntry = { unmountFn, pushUpdate, foundation, container };
+    const entry: NotificationMountEntry = { unmountFn, foundation, container };
     mounts.set(parent, entry);
     return entry;
 }
@@ -305,8 +321,9 @@ export const Notification = {
     warning: (opts: NotificationOptions) => open('warning', opts),
     error: (opts: NotificationOptions) => open('error', opts),
     close: (id: string) => { findFoundationById(id)?.remove(id); idToContainer.delete(id); },
-    /** 全局默认配置，未来 open() 调用若未显式指定对应字段则回退到这里（对齐 Semi `Notification.config`）。 */
-    config: (config: NotificationGlobalConfig) => { globalConfig = { ...globalConfig, ...config }; },
+    /** 全局默认配置，未来 open() 调用若未显式指定对应字段则回退到这里（对齐 Semi `Notification.config`）。
+     * 已挂载的容器也会实时更新（broadcastConfig），不需要 destroyAll() 重新挂载才生效。 */
+    config: (config: NotificationGlobalConfig) => { globalConfig = { ...globalConfig, ...config }; broadcastConfig(); },
     destroyAll: () => {
         for (const entry of mounts.values()) {
             entry.foundation.destroyAll();
@@ -315,5 +332,6 @@ export const Notification = {
         }
         mounts.clear();
         idToContainer.clear();
+        configSetters.clear();
     },
 };

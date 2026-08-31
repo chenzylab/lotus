@@ -75,4 +75,46 @@ test.describe('Toast', () => {
     await expect(page.locator('.lotus-toast-root')).toHaveCount(1);
     await destroyBtn.click();
   });
+
+  test('theme=light：渲染出对应语义色的浅底 + 边框（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Toast（theme=light）', exact: true }).click();
+
+    const toast = page.locator('.lotus-toast-theme-light');
+    await expect(toast).toBeVisible();
+    await expect(toast).toHaveCSS('border-color', 'rgb(0, 100, 250)');
+  });
+
+  test('textMaxWidth：正确覆盖默认的 max-width（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Toast（textMaxWidth=200）', exact: true }).click();
+
+    const toast = page.locator('.lotus-toast', { hasText: '很长很长' });
+    await expect(toast).toBeVisible();
+    await expect(toast).toHaveCSS('max-width', '200px');
+  });
+
+  test('onClose：主动点击关闭按钮时触发（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Toast（onClose）', exact: true }).click();
+
+    const toast = page.locator('.lotus-toast', { hasText: '关闭时触发' });
+    await toast.getByRole('button', { name: '关闭' }).click();
+    expect(logs).toContain('toast onClose fired');
+  });
+
+  test('config：全局配置对已挂载的容器实时生效，无需 destroyAll 重新挂载（对齐 Semi 每次 render 都重新读配置的响应式行为）', async ({ page }) => {
+    await page.goto('/');
+    // 先触发一次普通 Toast，确保容器已挂载（非首次挂载场景）。
+    await page.getByRole('button', { name: 'Toast.info', exact: true }).click();
+    await expect(page.locator('.lotus-toast')).toBeVisible();
+    await page.getByRole('button', { name: 'destroyAll', exact: true }).click();
+
+    await page.getByRole('button', { name: 'Toast.config（全局 theme=light）', exact: true }).click();
+    const toast = page.locator('.lotus-toast-theme-light', { hasText: 'config 全局配置后触发' });
+    await expect(toast).toBeVisible();
+  });
 });

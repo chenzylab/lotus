@@ -1,4 +1,5 @@
 export type ToastType = 'success' | 'warning' | 'error' | 'info' | 'default';
+export type ToastTheme = 'normal' | 'light';
 
 export interface ToastItem {
   id: string;
@@ -8,6 +9,20 @@ export interface ToastItem {
   showClose: boolean;
   icon?: any;
   stack: boolean;
+  theme: ToastTheme;
+  textMaxWidth?: number | string;
+  onClose?: () => void;
+}
+
+/** `Toast.config` 全局默认值，未指定时组件自身默认值生效（对齐 Semi）。 */
+export interface ToastGlobalConfig {
+  top?: number | string;
+  bottom?: number | string;
+  left?: number | string;
+  right?: number | string;
+  zIndex?: number;
+  theme?: ToastTheme;
+  duration?: number;
 }
 
 export interface ToastListState {
@@ -61,9 +76,11 @@ export class ToastListFoundation {
   }
 
   remove(id: string): void {
+    const item = this.list.find((t) => t.id === id);
     this.clearTimer(id);
     this.list = this.list.filter((t) => t.id !== id);
     this.emit();
+    item?.onClose?.();
   }
 
   destroyAll(): void {

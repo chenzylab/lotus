@@ -3,6 +3,9 @@ import { DocsLayout } from '../../components/docs-layout.tsrx';
 import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { BasicResizableDemo } from '../../demos/basic/resizable/basic.tsrx';
 import { EnableResizableDemo } from '../../demos/basic/resizable/enable.tsrx';
+import { ConstraintsResizableDemo } from '../../demos/basic/resizable/constraints.tsrx';
+import { GroupResizableDemo } from '../../demos/basic/resizable/group.tsrx';
+import { GroupItemsResizableDemo } from '../../demos/basic/resizable/group-items.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -16,6 +19,9 @@ import { loadDoc } from server;
 const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/basic/resizable/basic.tsrx': BasicResizableDemo,
     '../../src/demos/basic/resizable/enable.tsrx': EnableResizableDemo,
+    '../../src/demos/basic/resizable/constraints.tsrx': ConstraintsResizableDemo,
+    '../../src/demos/basic/resizable/group.tsrx': GroupResizableDemo,
+    '../../src/demos/basic/resizable/group-items.tsrx': GroupItemsResizableDemo,
 };
 
 export function ResizableDocPage() @{

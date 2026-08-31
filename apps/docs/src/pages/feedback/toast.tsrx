@@ -3,6 +3,7 @@ import { DocsLayout } from '../../components/docs-layout.tsrx';
 import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { BasicToastDemo } from '../../demos/feedback/toast/basic.tsrx';
 import { StackToastDemo } from '../../demos/feedback/toast/stack.tsrx';
+import { ThemeToastDemo } from '../../demos/feedback/toast/theme.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -16,6 +17,7 @@ import { loadDoc } from server;
 const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/feedback/toast/basic.tsrx': BasicToastDemo,
     '../../src/demos/feedback/toast/stack.tsrx': StackToastDemo,
+    '../../src/demos/feedback/toast/theme.tsrx': ThemeToastDemo,
 };
 
 export function ToastDocPage() @{

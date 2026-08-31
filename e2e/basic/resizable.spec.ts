@@ -103,3 +103,117 @@ test.describe('Resizable', () => {
     expect(after!.height).toBe(before.height);
   });
 });
+
+test.describe('Resizable 单组件模式补齐的 Semi 缺口', () => {
+  test('boundElement="parent" 限制调整范围不超出父容器；grid 生效使尺寸吸附到网格步长；handleStyle 应用到指定方向手柄', async ({ page }) => {
+    await page.goto('/');
+    const resizable = page.getByLabel('限制在父容器内、20px 网格吸附的可调整大小容器');
+    await resizable.scrollIntoViewIfNeeded();
+
+    const handler = resizable.locator('.lotus-resizable-handler-bottomRight');
+    const bg = await handler.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+
+    const parentBox = (await resizable.locator('xpath=..').boundingBox())!;
+    const handlerBox = (await handler.boundingBox())!;
+    const startX = handlerBox.x + handlerBox.width / 2;
+    const startY = handlerBox.y + handlerBox.height / 2;
+
+    // 往超出父容器范围的方向大幅拖拽，验证 boundElement="parent" 生效。
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 1000, startY + 1000, { steps: 5 });
+    await page.mouse.up();
+
+    const box = await resizable.boundingBox();
+    expect(box!.width).toBeLessThanOrEqual(parentBox.width + 1);
+    expect(box!.height).toBeLessThanOrEqual(parentBox.height + 1);
+
+    // grid=[20,20]：拖拽后的尺寸应该是 20 的整数倍（网格吸附，snapGap 默认 0 总是吸附）。
+    expect(Math.round(box!.width) % 20).toBeLessThanOrEqual(1);
+    expect(Math.round(box!.height) % 20).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('ResizeGroup（组合组件，对齐 Semi ResizeGroup/ResizeItem/ResizeHandler）', () => {
+  test('JSX 写法：3 个 ResizeItem + 2 个 ResizeHandler 正确渲染，defaultSize 三态（%/flex 比例）按预期分配空间', async ({ page }) => {
+    await page.goto('/');
+    const group = page.locator('.lotus-resizable-group').first();
+    await group.scrollIntoViewIfNeeded();
+
+    const items = group.locator('.lotus-resizable-group-item');
+    await expect(items).toHaveCount(3);
+    await expect(group.locator('.lotus-resizable-group-handler')).toHaveCount(2);
+
+    const groupBox = (await group.boundingBox())!;
+    const widths = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+
+    // 第一项 defaultSize="30%"，容器减去 2 个 6px handler 后的可用宽度的 30%。
+    const available = groupBox.width - 12;
+    expect(widths[0]).toBeCloseTo(available * 0.3, 0);
+    // 第二、三项都是 flex=1，应均分剩余 70%。
+    expect(widths[1]).toBeCloseTo(widths[2], 0);
+  });
+
+  test('拖拽 handler 只影响相邻两个 item，一个变大另一个等量变小，其余 item 不受影响（回归防护：此前 lotus 完全没有 Group 组合模式，对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.locator('.lotus-resizable-group').first();
+    await group.scrollIntoViewIfNeeded();
+
+    const items = group.locator('.lotus-resizable-group-item');
+    const handler = group.locator('.lotus-resizable-group-handler').first();
+    const before = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+
+    const handlerBox = (await handler.boundingBox())!;
+    const startX = handlerBox.x + handlerBox.width / 2;
+    const startY = handlerBox.y + handlerBox.height / 2;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 60, startY, { steps: 5 });
+    await page.mouse.up();
+
+    const after = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+    expect(after[0]).toBeGreaterThan(before[0]);
+    expect(after[1]).toBeLessThan(before[1]);
+    // 第三项不参与本次拖拽，允许几像素的重排浮点误差（百分比 -> px 换算精度），
+    // 但变化量应远小于第一/二项的变化量（不应该被联动影响）。
+    expect(Math.abs(after[2] - before[2])).toBeLessThan(5);
+  });
+
+  test('拖拽超出 min 约束时被夹住，不会继续缩小（对齐 Semi judgeConstraint/adjustNewSize）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.locator('.lotus-resizable-group').first();
+    await group.scrollIntoViewIfNeeded();
+
+    const items = group.locator('.lotus-resizable-group-item');
+    const handler = group.locator('.lotus-resizable-group-handler').first();
+    const handlerBox = (await handler.boundingBox())!;
+    const startX = handlerBox.x + handlerBox.width / 2;
+    const startY = handlerBox.y + handlerBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX - 400, startY, { steps: 5 });
+    await page.mouse.up();
+
+    const groupBox = (await group.boundingBox())!;
+    const firstWidth = (await items.first().boundingBox())!.width;
+    // 第一项 min="10%"，不应小于容器宽度的 10%（留一点误差空间）。
+    expect(firstWidth).toBeGreaterThanOrEqual(groupBox.width * 0.1 - 2);
+  });
+
+  test('items 简化 API：无需手写 ResizeItem/ResizeHandler，直接渲染配置数组对应的面板', async ({ page }) => {
+    await page.goto('/');
+    const group = page.locator('.lotus-resizable-group').nth(1);
+    await group.scrollIntoViewIfNeeded();
+
+    const items = group.locator('.lotus-resizable-group-item');
+    await expect(items).toHaveCount(2);
+    await expect(items.first()).toContainText('items 面板一');
+    await expect(items.nth(1)).toContainText('items 面板二');
+
+    const widths = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+    // 第一项 defaultSize='200px' 固定，第二项 flex=1 占满剩余空间。
+    expect(widths[0]).toBeCloseTo(200, 0);
+  });
+});

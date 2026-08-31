@@ -67,4 +67,5 @@ minimumReleaseAgeExclude:
   - '@tiptap/starter-kit@3.30.3'
 
 patchedDependencies:
+  '@tsrx/core@0.1.60': patches/@tsrx__core@0.1.60.patch
   ripple@0.3.123: patches/ripple@0.3.123.patch
