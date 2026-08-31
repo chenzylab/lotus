@@ -7,6 +7,10 @@ import { RadioControlledDemo } from '../../demos/input/radio/controlled.tsrx';
 import { RadioAdvancedModeDemo } from '../../demos/input/radio/advanced-mode.tsrx';
 import { RadioGroupOptionsDemo } from '../../demos/input/radio/group-options.tsrx';
 import { RadioGroupJsxDemo } from '../../demos/input/radio/group-jsx.tsrx';
+import { RadioGroupButtonDemo } from '../../demos/input/radio/group-button.tsrx';
+import { RadioGroupCardDemo } from '../../demos/input/radio/group-card.tsrx';
+import { RadioGroupPureCardDemo } from '../../demos/input/radio/group-pure-card.tsrx';
+import { ImperativeRadioDemo } from '../../demos/input/radio/imperative.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -24,6 +28,10 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/radio/advanced-mode.tsrx': RadioAdvancedModeDemo,
     '../../src/demos/input/radio/group-options.tsrx': RadioGroupOptionsDemo,
     '../../src/demos/input/radio/group-jsx.tsrx': RadioGroupJsxDemo,
+    '../../src/demos/input/radio/group-button.tsrx': RadioGroupButtonDemo,
+    '../../src/demos/input/radio/group-card.tsrx': RadioGroupCardDemo,
+    '../../src/demos/input/radio/group-pure-card.tsrx': RadioGroupPureCardDemo,
+    '../../src/demos/input/radio/imperative.tsrx': ImperativeRadioDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

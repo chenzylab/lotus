@@ -73,12 +73,14 @@ export {
     type CheckboxGroupOption,
     type CheckboxGroupDirection,
 } from './input/checkbox/group.tsrx';
-export { Radio, type RadioProps, type RadioMode } from './input/radio/index.tsrx';
+export { Radio, type RadioProps, type RadioMode, type RadioApi } from './input/radio/index.tsrx';
 export {
     RadioGroup,
     type RadioGroupProps,
     type RadioGroupOption,
     type RadioGroupDirection,
+    type RadioGroupType,
+    type RadioGroupButtonSize,
 } from './input/radio/group.tsrx';
 export {
     Input,

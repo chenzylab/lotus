@@ -1,7 +1,7 @@
 import { track } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi } from '@lotus/ripple';
+import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -318,6 +318,7 @@ export function App() @{
     let inputNumberImperativeApi: InputNumberApi | null = null;
     let textAreaImperativeApi: TextAreaApi | null = null;
     let checkboxImperativeApi: CheckboxApi | null = null;
+    let radioImperativeApi: RadioApi | null = null;
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
@@ -2967,10 +2968,10 @@ export function App() @{
         <Divider>Radio：基本 / 辅助文本 / 禁用</Divider>
 
         <Space vertical align="start">
-            <Radio name="radio-basic" onChange={(c: boolean) => console.log('radio changed', c)} aria-label="Radio 示例">Lotus Design</Radio>
-            <Radio name="radio-extra" extra="Lotus 是由社区共同设计开发并维护的组件库" aria-label="Radio 带辅助文本示例">带辅助文本</Radio>
-            <Radio name="radio-disabled-unchecked" defaultChecked={false} disabled aria-label="Radio 禁用未选中示例">禁用未选中</Radio>
-            <Radio name="radio-disabled-checked" defaultChecked disabled aria-label="Radio 禁用已选中示例">禁用已选中</Radio>
+            <Radio name="radio-basic" onChange={(c: boolean) => console.log('radio changed', c)}>Radio 示例</Radio>
+            <Radio name="radio-extra" extra="Lotus 是由社区共同设计开发并维护的组件库">Radio 带辅助文本</Radio>
+            <Radio name="radio-disabled-unchecked" defaultChecked={false} disabled>Radio 禁用未选中</Radio>
+            <Radio name="radio-disabled-checked" defaultChecked disabled>Radio 禁用已选中</Radio>
         </Space>
 
         <Divider>Radio：受控（外部按钮驱动）</Divider>
@@ -2980,9 +2981,8 @@ export function App() @{
                 name="radio-controlled"
                 checked={radioControlledChecked}
                 onChange={(c: boolean) => { radioControlledChecked = c; }}
-                aria-label="Radio 受控示例"
             >
-                受控 radio
+                Radio 受控示例
             </Radio>
             <Button onClick={() => { radioControlledChecked = !radioControlledChecked; }}>切换 Radio</Button>
         </Space>
@@ -3017,6 +3017,64 @@ export function App() @{
                 </>
             }
         />
+
+        <Divider>Radio：addonId/extraId/getRadioApi/autoFocus（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Radio name="radio-addon-id-demo" addonId="radio-addon-id-demo" extraId="radio-extra-id-demo" extra="自定义 addonId/extraId">
+                Radio 自定义 id 示例
+            </Radio>
+            <Radio name="radio-imperative-api-demo" getRadioApi={(api) => { radioImperativeApi = api; }}>Radio 命令式 focus/blur</Radio>
+            <Button onClick={() => radioImperativeApi?.focus()}>聚焦</Button>
+            <Button onClick={() => radioImperativeApi?.blur()}>失焦</Button>
+            {/* autoFocus 在 playground 中显式设为 false：playground 是所有 demo 共享同一页面，
+                autoFocus 会让浏览器自动把页面滚动到该元素位置，误触发 BackTop（visibilityHeight=200）
+                的显示阈值，参照 PinCode 既有 demo 的同类规避方式。真实 autoFocus 效果见 docs 的
+                imperative demo（每个组件独立页面，不受此限制）。 */}
+            <Radio name="radio-autofocus-demo" autoFocus={false}>autoFocus 示例</Radio>
+        </Space>
+
+        <Divider>RadioGroup：type=button（Semi 独有于 Radio，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <RadioGroup type="button" buttonSize="small" defaultValue="A" name="radio-group-button-small" aria-label="RadioGroup button small 示例">
+                <Radio value="A">A</Radio>
+                <Radio value="B">B</Radio>
+                <Radio value="C" disabled>C</Radio>
+            </RadioGroup>
+            <RadioGroup type="button" buttonSize="middle" defaultValue="A" name="radio-group-button-middle" aria-label="RadioGroup button middle 示例">
+                <Radio value="A">A</Radio>
+                <Radio value="B">B</Radio>
+                <Radio value="C" disabled>C</Radio>
+            </RadioGroup>
+            <RadioGroup type="button" buttonSize="large" defaultValue="A" name="radio-group-button-large" aria-label="RadioGroup button large 示例">
+                <Radio value="A">A</Radio>
+                <Radio value="B">B</Radio>
+                <Radio value="C" disabled>C</Radio>
+            </RadioGroup>
+        </Space>
+
+        <Divider>RadioGroup：type=card（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <RadioGroup type="card" defaultValue="1" direction="vertical" name="radio-group-card" aria-label="RadioGroup card 示例">
+            <Radio value="1" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Radio>
+            <Radio value="2" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Radio>
+        </RadioGroup>
+
+        <Divider>RadioGroup：type=pureCard（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <RadioGroup type="pureCard" defaultValue="1" direction="vertical" name="radio-group-pure-card" aria-label="RadioGroup pureCard 示例">
+            <Radio value="1" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Radio>
+            <Radio value="2" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Radio>
+        </RadioGroup>
 
         <Divider>InputNumber：基本 / 步进 / 边界 / 禁用</Divider>
 
