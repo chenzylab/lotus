@@ -54,4 +54,23 @@ test.describe('Switch', () => {
     await toggleButton.click();
     await expect(controlled).toHaveAttribute('aria-checked', 'false');
   });
+
+  test('aria-labelledby：正确关联外部标签元素（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const labelled = page.getByLabel('开关标签', { exact: true });
+    await expect(labelled).toHaveAttribute('aria-labelledby', 'switch-labelledby-demo');
+  });
+
+  test('onMouseEnter/onMouseLeave：鼠标移入移出正确触发（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+
+    await page.goto('/');
+    const target = page.getByLabel('mouse enter/leave 示例', { exact: true });
+    await target.hover();
+    expect(logs).toContain('switch onMouseEnter fired');
+
+    await page.mouse.move(0, 0);
+    expect(logs).toContain('switch onMouseLeave fired');
+  });
 });

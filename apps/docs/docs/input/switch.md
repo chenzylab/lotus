@@ -60,6 +60,7 @@ Switch 提供三种尺寸：`large`、`default`、`small`。
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | aria-label | aria-label 属性 | string | - |
+| aria-labelledby | aria-labelledby 属性 | string | - |
 | checked | 指示当前是否选中，配合 onChange 使用 | boolean | - |
 | checkedText | 打开时展示的内容，size 为 small 时无效 | any | - |
 | class | 类名 | string | - |
@@ -70,12 +71,14 @@ Switch 提供三种尺寸：`large`、`default`、`small`。
 | style | 内联样式 | object | - |
 | uncheckedText | 关闭时展示的内容，size 为 small 时无效 | any | - |
 | onChange | 变化时回调函数 | `(checked: boolean) => void` | - |
+| onMouseEnter | 鼠标移入时回调 | `(event: MouseEvent) => void` | - |
+| onMouseLeave | 鼠标移出时回调 | `(event: MouseEvent) => void` | - |
 
 ## Accessibility
 
 ### ARIA
 
-- Switch 渲染时会带上 `role="switch"` 与 `aria-checked`，可传入 `aria-label` 描述开关作用。
+- Switch 渲染时会带上 `role="switch"` 与 `aria-checked`，可传入 `aria-label` 或 `aria-labelledby`（指向外部标签元素 id）描述开关作用。
 
 ## 设计变量
 

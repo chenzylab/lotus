@@ -10,7 +10,10 @@ export interface SwitchProps {
     checkedText?: any;
     uncheckedText?: any;
     onChange?: (checked: boolean) => void;
+    onMouseEnter?: (event: MouseEvent) => void;
+    onMouseLeave?: (event: MouseEvent) => void;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
     style?: Record<string, any>;
     class?: string;
 }
@@ -24,7 +27,10 @@ export function Switch(&{
     checkedText,
     uncheckedText,
     onChange,
+    onMouseEnter,
+    onMouseLeave,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
     style,
     class: className,
 }: SwitchProps) @{
@@ -82,10 +88,13 @@ export function Switch(&{
             role="switch"
             aria-checked={displayChecked}
             aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledBy}
             disabled={disabled || loading}
             class={classes}
             style={style}
             onClick={() => foundation.handleToggle(isControlled, onChange)}
+            onMouseEnter={(event: MouseEvent) => onMouseEnter?.(event)}
+            onMouseLeave={(event: MouseEvent) => onMouseLeave?.(event)}
         >
             <span class="lotus-switch-knob">
                 @if (loading) {
