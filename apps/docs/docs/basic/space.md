@@ -56,6 +56,7 @@ import { Space } from '@lotus/ripple';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | align | 对齐方式，支持 `start`、`end`、`center`、`baseline` | string | `center` |
+| class | 类名 | string | - |
 | spacing | 间距尺寸，支持 `tight`(8px)、`medium`(16px)、`loose`(24px) 或 number、`[水平, 垂直]` 数组 | string \| number \| array | `tight` |
 | vertical | 是否为垂直间距 | boolean | `false` |
 | wrap | 是否自动换行 | boolean | `false` |
