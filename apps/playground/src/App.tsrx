@@ -2856,16 +2856,11 @@ export function App() @{
         <Divider>Checkbox：基本 / 辅助文本 / 禁用 / indeterminate</Divider>
 
         <Space vertical align="start">
-            <Checkbox onChange={(c: boolean) => console.log('checkbox changed', c)} aria-label="示例">Lotus Design</Checkbox>
-            <Checkbox
-                extra="Lotus 是由社区共同设计开发并维护的组件库"
-                aria-label="带辅助文本示例"
-            >
-                带辅助文本
-            </Checkbox>
-            <Checkbox defaultChecked={false} disabled aria-label="禁用未选中示例">禁用未选中</Checkbox>
-            <Checkbox defaultChecked disabled aria-label="禁用已选中示例">禁用已选中</Checkbox>
-            <Checkbox indeterminate aria-label="indeterminate 示例">indeterminate</Checkbox>
+            <Checkbox onChange={(c: boolean) => console.log('checkbox changed', c)}>示例</Checkbox>
+            <Checkbox extra="Lotus 是由社区共同设计开发并维护的组件库">带辅助文本</Checkbox>
+            <Checkbox defaultChecked={false} disabled>禁用未选中</Checkbox>
+            <Checkbox defaultChecked disabled>禁用已选中</Checkbox>
+            <Checkbox indeterminate>indeterminate</Checkbox>
         </Space>
 
         <Divider>Checkbox：受控</Divider>
@@ -2874,9 +2869,8 @@ export function App() @{
             <Checkbox
                 checked={checkboxControlledChecked}
                 onChange={(c: boolean) => { checkboxControlledChecked = c; }}
-                aria-label="受控示例"
             >
-                受控 checkbox
+                受控示例
             </Checkbox>
             <Button onClick={() => { checkboxControlledChecked = !checkboxControlledChecked; }}>切换</Button>
         </Space>

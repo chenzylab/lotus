@@ -2,6 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Checkbox', () => {
   test('非受控点击后切换选中态', async ({ page }) => {
+    // 对齐 Semi：有 children 时组件把 aria-labelledby 指向 children 文本容器，
+    // 浏览器可访问性名称计算此时会忽略 aria-label，改用 children 文本本身
+    // 作为真正的可访问名称——用 getByLabel 定位时必须传 children 文本。
     await page.goto('/');
     const checkbox = page.getByLabel('示例', { exact: true });
     const clickTarget = checkbox.locator('xpath=..');
@@ -15,7 +18,7 @@ test.describe('Checkbox', () => {
 
   test('disabled 状态下点击不改变选中态', async ({ page }) => {
     await page.goto('/');
-    const disabledUnchecked = page.getByLabel('禁用未选中示例', { exact: true });
+    const disabledUnchecked = page.getByLabel('禁用未选中', { exact: true });
     const clickTarget = disabledUnchecked.locator('xpath=..');
 
     await expect(disabledUnchecked).toBeDisabled();
@@ -26,7 +29,7 @@ test.describe('Checkbox', () => {
 
   test('indeterminate 状态下带对应 class', async ({ page }) => {
     await page.goto('/');
-    const indeterminate = page.getByLabel('indeterminate 示例', { exact: true });
+    const indeterminate = page.getByLabel('indeterminate', { exact: true });
     const label = indeterminate.locator('xpath=..');
 
     await expect(label).toHaveClass(/lotus-checkbox-indeterminate/);
