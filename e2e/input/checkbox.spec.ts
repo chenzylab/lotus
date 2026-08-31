@@ -81,4 +81,31 @@ test.describe('Checkbox', () => {
     await expect(checkboxA).not.toBeChecked();
     await expect(checkboxB).toBeChecked();
   });
+
+  test('type=card：卡片容器带边框 class，选中态带对应选中 class（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('CheckboxGroup card 示例', { exact: true });
+    // defaultValue=['1','3']：第一项（value='1'）选中，第二项（value='2'）未选中。
+    const checkedItem = group.getByText('单选框标题').first().locator('xpath=ancestor::label[contains(@class,"lotus-checkbox")]');
+    const uncheckedItem = group.getByText('单选框标题').nth(1).locator('xpath=ancestor::label[contains(@class,"lotus-checkbox")]');
+
+    await expect(checkedItem).toHaveClass(/lotus-checkbox-cardType/);
+    await expect(checkedItem).toHaveClass(/lotus-checkbox-cardType-checked/);
+    await expect(uncheckedItem).toHaveClass(/lotus-checkbox-cardType/);
+    await expect(uncheckedItem).not.toHaveClass(/lotus-checkbox-cardType-checked/);
+  });
+
+  test('type=pureCard：不显示 checkbox 方框图标，点击卡片仍能正确切换选中状态（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('CheckboxGroup pureCard 示例', { exact: true });
+    const box = group.locator('.lotus-checkbox-box').first();
+    await expect(box).toHaveClass(/lotus-checkbox-box-pureCardType/);
+    await expect(box).toHaveCSS('opacity', '0');
+
+    const thirdItem = group.getByText('单选框标题').nth(2).locator('xpath=ancestor::label[contains(@class,"lotus-checkbox")]');
+    const thirdCheckbox = group.getByRole('checkbox').nth(2);
+    await expect(thirdCheckbox).toBeChecked();
+    await thirdItem.click();
+    await expect(thirdCheckbox).not.toBeChecked();
+  });
 });

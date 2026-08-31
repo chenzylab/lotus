@@ -7,6 +7,8 @@ import { CheckboxIndeterminateDemo } from '../../demos/input/checkbox/indetermin
 import { CheckboxControlledDemo } from '../../demos/input/checkbox/controlled.tsrx';
 import { CheckboxGroupOptionsDemo } from '../../demos/input/checkbox/group-options.tsrx';
 import { CheckboxGroupJsxDemo } from '../../demos/input/checkbox/group-jsx.tsrx';
+import { CheckboxGroupCardDemo } from '../../demos/input/checkbox/group-card.tsrx';
+import { CheckboxGroupPureCardDemo } from '../../demos/input/checkbox/group-pure-card.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -24,6 +26,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/checkbox/controlled.tsrx': CheckboxControlledDemo,
     '../../src/demos/input/checkbox/group-options.tsrx': CheckboxGroupOptionsDemo,
     '../../src/demos/input/checkbox/group-jsx.tsrx': CheckboxGroupJsxDemo,
+    '../../src/demos/input/checkbox/group-card.tsrx': CheckboxGroupCardDemo,
+    '../../src/demos/input/checkbox/group-pure-card.tsrx': CheckboxGroupPureCardDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

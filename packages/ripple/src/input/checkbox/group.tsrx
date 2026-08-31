@@ -1,8 +1,9 @@
 import { track, untrack } from 'ripple';
 import { CheckboxGroupFoundation, type CheckboxGroupState } from '@lotus/foundation/input/checkbox';
-import { CheckboxContext, type CheckboxContextValue } from './checkbox-context.js';
+import { CheckboxContext, type CheckboxContextValue, type CheckboxGroupType } from './checkbox-context.js';
 import { Checkbox } from './index.tsrx';
 
+export type { CheckboxGroupType };
 export type CheckboxGroupDirection = 'horizontal' | 'vertical';
 
 export interface CheckboxGroupOption {
@@ -19,6 +20,9 @@ export interface CheckboxGroupProps {
     defaultValue?: Array<string | number>;
     disabled?: boolean;
     direction?: CheckboxGroupDirection;
+    /** 组内所有 Checkbox 的样式类型：`default` 默认样式；`card` 带背景边框的卡片样式；
+     * `pureCard` 卡片样式且不显示 checkbox 方框图标（对齐 Semi）。 */
+    type?: CheckboxGroupType;
     name?: string;
     onChange?: (value: Array<string | number>) => void;
     'aria-label'?: string;
@@ -33,6 +37,7 @@ export function CheckboxGroup(&{
     defaultValue = [],
     disabled = false,
     direction = 'vertical',
+    type = 'default',
     onChange,
     'aria-label': ariaLabel,
     style,
@@ -63,6 +68,7 @@ export function CheckboxGroup(&{
     let &[, contextValue] = track<CheckboxContextValue>(() => ({
         value: displayValue,
         disabled,
+        type,
         onItemToggle: handleItemToggle,
     }));
     CheckboxContext.set(contextValue);
@@ -71,6 +77,8 @@ export function CheckboxGroup(&{
         [
             'lotus-checkbox-group',
             `lotus-checkbox-group-${direction}`,
+            type !== 'default' ? `lotus-checkbox-group-${direction}-cardType` : '',
+            type === 'pureCard' ? 'lotus-checkbox-group-pureCardType' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -102,6 +110,14 @@ export function CheckboxGroup(&{
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 16px;
+            }
+
+            .lotus-checkbox-group-vertical-cardType {
+                gap: var(--lotus-spacing-tight);
+            }
+
+            .lotus-checkbox-group-pureCardType .lotus-checkbox {
+                column-gap: 0;
             }
         </style>
     </>

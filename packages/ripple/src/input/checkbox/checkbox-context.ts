@@ -7,9 +7,12 @@ import { Context, type Tracked } from 'ripple';
  * `value` 数组是否包含自身 `value` 决定，Checkbox 自身的 checked/defaultChecked
  * 被忽略（对齐 Semi："在 Group 中使用时无效"）。
  */
+export type CheckboxGroupType = 'default' | 'card' | 'pureCard';
+
 export interface CheckboxContextValue {
   value: Array<string | number>;
   disabled: boolean;
+  type: CheckboxGroupType;
   onItemToggle: (itemValue: string | number) => void;
 }
 

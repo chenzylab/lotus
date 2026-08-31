@@ -37,6 +37,10 @@ export function Checkbox(&{
     let &[inGroup] = track(() => contextTracked != null);
     let &[groupChecked] = track(() => value !== undefined && (contextTracked?.value.value.includes(value) ?? false));
     let &[groupDisabled] = track(() => contextTracked?.value.disabled ?? false);
+    // type 只能通过 CheckboxGroup 设置（对齐 Semi），单独使用的 Checkbox 恒为 default。
+    let &[groupType] = track(() => contextTracked?.value.type ?? 'default');
+    let &[isCardType] = track(() => groupType !== 'default');
+    let &[isPureCardType] = track(() => groupType === 'pureCard');
 
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
@@ -86,6 +90,9 @@ export function Checkbox(&{
             displayChecked ? 'lotus-checkbox-checked' : '',
             indeterminate ? 'lotus-checkbox-indeterminate' : '',
             effectiveDisabled ? 'lotus-checkbox-disabled' : '',
+            isCardType ? 'lotus-checkbox-cardType' : '',
+            isCardType && displayChecked ? 'lotus-checkbox-cardType-checked' : '',
+            isCardType && effectiveDisabled ? 'lotus-checkbox-cardType-disabled' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -106,7 +113,7 @@ export function Checkbox(&{
                 disabled={effectiveDisabled}
                 aria-label={ariaLabel}
             />
-            <span class="lotus-checkbox-box">
+            <span class={['lotus-checkbox-box', isPureCardType ? 'lotus-checkbox-box-pureCardType' : ''].filter(Boolean).join(' ')}>
                 @if (indeterminate) {
                     <IconMinus />
                 } @else {
@@ -121,7 +128,7 @@ export function Checkbox(&{
                         <span class="lotus-checkbox-label">{children}</span>
                     }
                     @if (extra != null) {
-                        <span class="lotus-checkbox-extra">{extra}</span>
+                        <span class={['lotus-checkbox-extra', isCardType && children == null ? 'lotus-checkbox-extra-noChildren' : ''].filter(Boolean).join(' ')}>{extra}</span>
                     }
                 </span>
             }
@@ -213,6 +220,76 @@ export function Checkbox(&{
             .lotus-checkbox-extra {
                 font-size: var(--lotus-font-label-size);
                 color: var(--lotus-color-text-2);
+            }
+
+            /* ---- cardType / pureCardType：带背景边框的卡片样式（对齐 Semi） ---- */
+            .lotus-checkbox-cardType {
+                align-items: flex-start;
+                box-sizing: border-box;
+                border-radius: var(--lotus-border-radius-small);
+                padding: var(--lotus-spacing-base-tight) var(--lotus-spacing-base);
+                background: transparent;
+                border: var(--lotus-border-width-control) solid transparent;
+                transition: background-color 0.2s ease, border-color 0.2s ease;
+            }
+
+            .lotus-checkbox-cardType:hover:not(.lotus-checkbox-cardType-disabled) {
+                background: var(--lotus-color-fill-0);
+            }
+
+            .lotus-checkbox-cardType:active:not(.lotus-checkbox-cardType-disabled) {
+                background: var(--lotus-color-fill-1);
+            }
+
+            .lotus-checkbox-cardType-checked {
+                background: var(--lotus-color-primary-light-default);
+                border-color: var(--lotus-color-primary);
+            }
+
+            .lotus-checkbox-cardType-checked:hover {
+                background: var(--lotus-color-primary-light-default);
+                border-color: var(--lotus-color-primary-hover);
+            }
+
+            .lotus-checkbox-cardType-checked:active {
+                background: var(--lotus-color-primary-light-default);
+                border-color: var(--lotus-color-primary-active);
+            }
+
+            .lotus-checkbox-cardType-disabled {
+                cursor: not-allowed;
+            }
+
+            .lotus-checkbox-cardType-disabled.lotus-checkbox-cardType-checked {
+                background: var(--lotus-color-primary-light-default);
+                border-color: var(--lotus-color-disabled-border);
+            }
+
+            .lotus-checkbox-cardType .lotus-checkbox-box {
+                background: var(--lotus-color-bg-1);
+            }
+
+            /* pureCardType：checkbox 方框用 opacity+width 隐藏而非 display:none——
+               a11y 键盘聚焦依赖 input 的 focus/blur 事件，display:none 会让原生
+               input 完全退出可聚焦树，隐藏后仍要保留可聚焦能力（对齐 Semi 的既有
+               实现取舍，见 checkbox.scss 对应注释）。 */
+            .lotus-checkbox-box-pureCardType {
+                opacity: 0;
+                width: 0;
+                margin-top: 0;
+                border: none;
+            }
+
+            .lotus-checkbox-cardType .lotus-checkbox-content {
+                flex: 1;
+            }
+
+            .lotus-checkbox-cardType .lotus-checkbox-label {
+                font-weight: var(--lotus-font-weight-semibold);
+            }
+
+            .lotus-checkbox-extra-noChildren {
+                margin-top: 0;
             }
         </style>
     </>

@@ -2909,6 +2909,40 @@ export function App() @{
             }
         />
 
+        <Divider>CheckboxGroup：type=card（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <CheckboxGroup type="card" defaultValue={['1', '3']} direction="vertical" aria-label="CheckboxGroup card 示例">
+            <Checkbox value="1" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="2" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="3" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="4" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+        </CheckboxGroup>
+
+        <Divider>CheckboxGroup：type=pureCard（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <CheckboxGroup type="pureCard" defaultValue={['1', '3']} direction="vertical" aria-label="CheckboxGroup pureCard 示例">
+            <Checkbox value="1" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="2" disabled extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="3" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+            <Checkbox value="4" extra="Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统" style={{ width: '280px' }}>
+                单选框标题
+            </Checkbox>
+        </CheckboxGroup>
+
         <Divider>Radio：基本 / 辅助文本 / 禁用</Divider>
 
         <Space vertical align="start">

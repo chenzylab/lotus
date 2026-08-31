@@ -55,6 +55,22 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 ../../src/demos/input/checkbox/group-jsx.tsrx
 ```
 
+### 卡片样式
+
+给 `CheckboxGroup` 设置 `type="card"`，组内每个 `Checkbox` 渲染成带背景边框的卡片。
+
+```tsrx demo
+../../src/demos/input/checkbox/group-card.tsrx
+```
+
+### 无 checkbox 的纯卡片样式
+
+`type="pureCard"` 在卡片样式基础上隐藏 checkbox 方框图标，点击卡片本身即可切换选中。
+
+```tsrx demo
+../../src/demos/input/checkbox/group-pure-card.tsrx
+```
+
 ## API 参考
 
 ### Checkbox
@@ -84,12 +100,13 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 | name | 原生 `name` 属性，透传给组内每个 Checkbox 的 input | string | - |
 | options | 选项数组声明方式 | `CheckboxGroupOption[]` | [] |
 | style | 内联样式 | object | - |
+| type | 组内所有 Checkbox 的样式类型：`default` 默认；`card` 带背景边框的卡片样式；`pureCard` 卡片样式且不显示 checkbox 方框图标 | `'default'` \| `'card'` \| `'pureCard'` | `'default'` |
 | value | 选中值数组 | `Array<string \| number>` | - |
 | onChange | 选中集合变化时的回调 | `(value: Array<string \| number>) => void` | - |
 
 `CheckboxGroupOption` 结构：`{ value: string \| number; label?: any; disabled?: boolean; extra?: any }`。
 
-> 注意事项：lotus 尚未实现 Semi 的 `CheckboxGroup.type="pureCard"/"card"` 卡片样式变体、`CheckboxGroup.optionLabelKey`/`optionValueKey` 自定义字段名映射。
+> 注意事项：lotus 尚未实现 `CheckboxGroup.optionLabelKey`/`optionValueKey` 自定义字段名映射、`addonId`/`extraId`（aria 关联 id，不传时自动生成）、`preventScroll`、命令式 `focus()`/`blur()`。
 
 ## Accessibility
 
