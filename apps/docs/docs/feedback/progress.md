@@ -42,8 +42,11 @@ import { Progress } from '@lotus/ripple';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | aria-label | 设置 aria-label 属性 | string | - |
+| aria-labelledby | 设置 aria-labelledby 属性 | string | - |
+| aria-valuetext | 显式覆盖 aria-valuetext；不传时若 `format` 返回字符串/数字会自动同步 | string | - |
 | class | 类名 | string | - |
 | direction | 线形进度条方向 | `horizontal` \| `vertical` | `horizontal` |
+| id | id 标识 | string | - |
 | format | 自定义文案渲染函数，返回值用于展示文案；若返回字符串/数字也会同步到 `aria-valuetext` | `(percent: number) => any` | 无 |
 | motion | 是否启用数值变化的 CSS 过渡动画 | boolean | `true` |
 | orbitStroke | 未完成部分（轨道）的颜色 | string | - |

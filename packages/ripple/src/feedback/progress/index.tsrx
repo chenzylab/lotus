@@ -28,7 +28,11 @@ export interface ProgressProps {
     motion?: boolean;
     style?: Record<string, any>;
     class?: string;
+    id?: string;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    /** 显式覆盖 aria-valuetext；不传时若 `format` 返回字符串/数字会自动同步。 */
+    'aria-valuetext'?: string;
 }
 
 const DEFAULT_FORMAT = (percent: number) => `${percent}%`;
@@ -55,7 +59,10 @@ export function Progress(&{
     motion = true,
     style,
     class: className,
+    id,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-valuetext': ariaValueTextProp,
 }: ProgressProps) @{
     // 数值变化的平滑过渡交给纯 CSS transition（.lotus-progress-track-inner
     // 的 width/height、.lotus-progress-circle-ring-inner 的 stroke-dashoffset），
@@ -96,12 +103,13 @@ export function Progress(&{
     // 占位——空字符串会被部分屏幕阅读器当成"显式覆盖为空白"而不是"未设置"，效果
     // 反而比不设置更差，所以用 undefined 让浏览器彻底忽略这个属性。
     let &[ariaValueText] = track<string | undefined>(() =>
-        typeof text === 'string' || typeof text === 'number' ? String(text) : undefined,
+        ariaValueTextProp ?? (typeof text === 'string' || typeof text === 'number' ? String(text) : undefined),
     );
 
     <>
         @if (type === 'line') {
             <div
+                id={id}
                 class={classes}
                 style={style}
                 role="progressbar"
@@ -110,6 +118,7 @@ export function Progress(&{
                 aria-valuenow={displayPercent}
                 aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
+                aria-labelledby={ariaLabelledBy}
             >
                 <div class="lotus-progress-track" style={orbitStroke ? { backgroundColor: orbitStroke } : {}} aria-hidden={true}>
                     <div
@@ -127,6 +136,7 @@ export function Progress(&{
             </div>
         } @if (type === 'circle') {
             <div
+                id={id}
                 class={classes}
                 style={style}
                 role="progressbar"
@@ -135,6 +145,7 @@ export function Progress(&{
                 aria-valuenow={displayPercent}
                 aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
+                aria-labelledby={ariaLabelledBy}
             >
                 <svg class="lotus-progress-circle-ring" height={resolvedWidth} width={resolvedWidth} aria-hidden={true}>
                     <circle

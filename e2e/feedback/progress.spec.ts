@@ -87,4 +87,11 @@ test.describe('Progress', () => {
     await button.click();
     await expect(noMotion).toHaveAttribute('aria-valuenow', '50');
   });
+
+  test('id/aria-labelledby/aria-valuetext：全部正确透传到 progressbar 元素（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const progress = page.locator('#progress-id-demo');
+    await expect(progress).toHaveAttribute('aria-labelledby', 'progress-labelledby-demo');
+    await expect(progress).toHaveAttribute('aria-valuetext', '自定义覆盖文案');
+  });
 });
