@@ -75,6 +75,22 @@ Button 提供三种尺寸：`large`、`default`、`small`。
 ../../src/demos/basic/button/group.tsrx
 ```
 
+### 多彩风格
+
+`colorful` 开启 AI 多彩风格，仅 `type="primary"`/`type="tertiary"` 有对应视觉效果，其余 `type` 静默无效果。
+
+```tsrx demo
+../../src/demos/basic/button/colorful.tsrx
+```
+
+### 去除水平内边距
+
+`noHorizontalPadding` 去除图标按钮的水平内边距，仅对设置了 `icon` 的按钮有效；可传 `true`（等效 `['left', 'right']`）、`"left"`、`"right"` 或数组精确控制去除哪一侧。
+
+```tsrx demo
+../../src/demos/basic/button/no-horizontal-padding.tsrx
+```
+
 ## API 参考
 
 ### Button
@@ -85,16 +101,22 @@ Button 提供三种尺寸：`large`、`default`、`small`。
 | block | 将按钮设置为块级按钮 | boolean | false |
 | children | 按钮内容 | any | - |
 | class | 类名 | string | - |
+| colorful | AI 多彩风格，仅 type=primary/tertiary 有对应样式 | boolean | false |
+| contentClassName | 内容区域（`.lotus-button-content`）单独类名 | string | - |
 | disabled | 禁用状态 | boolean | false |
 | htmlType | 原生 button 的 type 值，可选 button、reset、submit | string | "button" |
 | icon | 图标 | any | - |
 | iconPosition | 图标位置，可选 left、right | string | "left" |
 | loading | 加载状态 | boolean | false |
+| noHorizontalPadding | 去除水平内边距，仅对设置了 icon 的按钮有效。可传 `true`（等效 `['left','right']`）、`"left"`、`"right"` 或数组 | boolean \| string \| string[] | false |
 | size | 按钮大小，可选 large、default、small | string | "default" |
 | style | 自定义样式 | object | - |
 | theme | 按钮主题，可选 solid、borderless、light、outline | string | "light" |
 | type | 类型，可选 primary、secondary、tertiary、warning、danger | string | "primary" |
 | onClick | 单击事件 | `(event: MouseEvent) => void` | - |
+| onMouseDown | 鼠标按下事件 | `(event: MouseEvent) => void` | - |
+| onMouseEnter | 鼠标移入事件 | `(event: MouseEvent) => void` | - |
+| onMouseLeave | 鼠标移出事件 | `(event: MouseEvent) => void` | - |
 
 ### ButtonGroup
 

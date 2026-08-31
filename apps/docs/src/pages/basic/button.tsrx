@@ -9,6 +9,8 @@ import { ButtonIconDemo } from '../../demos/basic/button/icon.tsrx';
 import { ButtonDisabledDemo } from '../../demos/basic/button/disabled.tsrx';
 import { ButtonLoadingDemo } from '../../demos/basic/button/loading.tsrx';
 import { ButtonGroupDemo } from '../../demos/basic/button/group.tsrx';
+import { ColorfulButtonDemo } from '../../demos/basic/button/colorful.tsrx';
+import { NoHorizontalPaddingButtonDemo } from '../../demos/basic/button/no-horizontal-padding.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -28,6 +30,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/basic/button/disabled.tsrx': ButtonDisabledDemo,
     '../../src/demos/basic/button/loading.tsrx': ButtonLoadingDemo,
     '../../src/demos/basic/button/group.tsrx': ButtonGroupDemo,
+    '../../src/demos/basic/button/colorful.tsrx': ColorfulButtonDemo,
+    '../../src/demos/basic/button/no-horizontal-padding.tsrx': NoHorizontalPaddingButtonDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

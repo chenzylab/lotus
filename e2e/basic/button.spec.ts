@@ -92,4 +92,37 @@ test.describe('Button', () => {
     const borderless = page.getByRole('button', { name: 'primary borderless colorful' });
     await expect(borderless).toHaveCSS('background-clip', 'text');
   });
+
+  test('noHorizontalPadding：true 时左右 padding 均为 0，"left" 时只去左侧（对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const both = page.getByRole('button', { name: '无水平内边距按钮' });
+    await expect(both).toHaveCSS('padding-left', '0px');
+    await expect(both).toHaveCSS('padding-right', '0px');
+
+    const leftOnly = page.getByRole('button', { name: '仅去左侧内边距' });
+    await expect(leftOnly).toHaveCSS('padding-left', '0px');
+    await expect(leftOnly).not.toHaveCSS('padding-right', '0px');
+  });
+
+  test('contentClassName：内容 span 携带自定义类名，不影响外层 button 的 class', async ({ page }) => {
+    await page.goto('/');
+    const btn = page.getByRole('button', { name: '内容自定义类名按钮' });
+    await expect(btn.locator('.demo-button-content-marker')).toBeVisible();
+    await expect(btn).not.toHaveClass(/demo-button-content-marker/);
+  });
+
+  test('onMouseDown/onMouseEnter/onMouseLeave：鼠标事件正确透传给消费方', async ({ page }) => {
+    await page.goto('/');
+    const btn = page.getByRole('button', { name: '鼠标事件按钮' });
+    const log = page.getByLabel('鼠标事件日志');
+
+    await btn.hover();
+    await expect(log).toHaveText('mouseenter');
+
+    await btn.dispatchEvent('mousedown');
+    await expect(log).toHaveText('mousedown');
+
+    await page.mouse.move(0, 0);
+    await expect(log).toHaveText('mouseleave');
+  });
 });

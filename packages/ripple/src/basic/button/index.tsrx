@@ -20,7 +20,14 @@ export interface ButtonProps {
     /** AI 多彩风格（对齐 Semi `colorful`），仅 type=primary/tertiary 有对应样式，其余 type 静默无视觉效果。 */
     colorful?: boolean;
     htmlType?: ButtonHtmlType;
+    /** 去除水平方向内边距，仅对设置了 icon 的按钮有效（对齐 Semi）。true 等效 ['left','right']。 */
+    noHorizontalPadding?: boolean | 'left' | 'right' | ('left' | 'right')[];
+    /** 内容区域（`.lotus-button-content`）单独类名，不影响外层 `<button>` 的 class。 */
+    contentClassName?: string;
     onClick?: (event: MouseEvent) => void;
+    onMouseDown?: (event: MouseEvent) => void;
+    onMouseEnter?: (event: MouseEvent) => void;
+    onMouseLeave?: (event: MouseEvent) => void;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -57,7 +64,12 @@ export function Button(&{
     loading = false,
     colorful = false,
     htmlType = 'button',
+    noHorizontalPadding,
+    contentClassName,
     onClick,
+    onMouseDown,
+    onMouseEnter,
+    onMouseLeave,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -68,6 +80,15 @@ export function Button(&{
     });
 
     const isIconOnly = !!icon && !children;
+
+    let &[resolvedStyle] = track<Record<string, any> | undefined>(() => {
+        if (!icon || !noHorizontalPadding) return style;
+        const sides = noHorizontalPadding === true ? ['left', 'right'] : Array.isArray(noHorizontalPadding) ? noHorizontalPadding : [noHorizontalPadding];
+        const paddingOverrides: Record<string, string> = {};
+        if (sides.includes('left')) paddingOverrides.paddingLeft = '0px';
+        if (sides.includes('right')) paddingOverrides.paddingRight = '0px';
+        return { ...style, ...paddingOverrides };
+    });
 
     // classes 必须是派生 track——loading/disabled 由外部 props 直接读取本身是安全的
     // （见 specs/cross-cutting/foundation-adapter-pattern.md 关于"只读 props 的 const 安全"
@@ -95,11 +116,14 @@ export function Button(&{
         <button
             type={htmlType}
             class={classes}
-            style={style}
+            style={resolvedStyle}
             disabled={disabled}
             aria-label={ariaLabel}
             aria-busy={loading}
             onClick={(event: MouseEvent) => foundation.handleClick(() => onClick?.(event))}
+            onMouseDown={(event: MouseEvent) => onMouseDown?.(event)}
+            onMouseEnter={(event: MouseEvent) => onMouseEnter?.(event)}
+            onMouseLeave={(event: MouseEvent) => onMouseLeave?.(event)}
         >
             @if (loading) {
                 <span class="lotus-button-icon lotus-button-icon-left"><SpinnerIcon /></span>
@@ -109,7 +133,7 @@ export function Button(&{
                 }
             }
             @if (children) {
-                <span class="lotus-button-content">{children}</span>
+                <span class={['lotus-button-content', contentClassName ?? ''].filter(Boolean).join(' ')}>{children}</span>
             }
             @if (!loading && icon && iconPosition === 'right') {
                 <span class="lotus-button-icon lotus-button-icon-right">{icon}</span>

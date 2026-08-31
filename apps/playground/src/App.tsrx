@@ -317,6 +317,7 @@ export function App() @{
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
+    let &[buttonMouseEventLog] = track<string>('');
     let &[motionProgressPercent] = track<number>(30);
     let &[spinSpinning] = track<boolean>(true);
     let &[stepsCurrent] = track<number>(1);
@@ -717,6 +718,23 @@ export function App() @{
             <Button type="primary" theme="light" colorful>primary light colorful</Button>
             <Button type="primary" theme="borderless" colorful>primary borderless colorful</Button>
             <Button type="secondary" theme="solid" colorful>secondary colorful（应静默无效果）</Button>
+        </Space>
+
+        <Divider>Button：noHorizontalPadding / contentClassName / 鼠标事件透传</Divider>
+
+        <Space>
+            <Button icon={<IconTickCircle />} aria-label="无水平内边距按钮" noHorizontalPadding />
+            <Button icon={<IconTickCircle />} aria-label="仅去左侧内边距" noHorizontalPadding="left">仅左</Button>
+            <Button contentClassName="demo-button-content-marker" aria-label="内容自定义类名按钮">内容类名</Button>
+            <Button
+                aria-label="鼠标事件按钮"
+                onMouseDown={() => { buttonMouseEventLog = 'mousedown'; }}
+                onMouseEnter={() => { buttonMouseEventLog = 'mouseenter'; }}
+                onMouseLeave={() => { buttonMouseEventLog = 'mouseleave'; }}
+            >
+                悬停/按下我
+            </Button>
+            <TypographyText type="secondary" aria-label="鼠标事件日志">{buttonMouseEventLog}</TypographyText>
         </Space>
 
         <Divider>ButtonGroup</Divider>
