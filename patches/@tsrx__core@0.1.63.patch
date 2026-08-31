@@ -1,0 +1,28 @@
+diff --git a/src/plugin.js b/src/plugin.js
+index caaed4ea661e4bcc467b2892c162a76d7948f135..6ad2b2ceae3e2459d029b90b6c8b2f0f4321b65f 100644
+--- a/src/plugin.js
++++ b/src/plugin.js
+@@ -5373,7 +5373,22 @@ export function TSRXPlugin(config) {
+ 			parseBlock(createNewLexicalScope, node, exitStrict) {
+ 				const parent = this.#path.at(-1);
+ 
+-				if (this.#isNativeTemplateNode(parent) && this.#templateControlFlowBlockDepth > 0) {
++				// `@if`'s own body-parsing clears `#path` while tokenizing its body as
++				// code (not JSX text), so when a `@for` sits directly inside an `@if`
++				// branch, `#path` is empty here and `#isNativeTemplateNode(undefined)`
++				// is false — even though `#templateControlFlowBlockDepth` correctly
++				// signals "we're inside `@for`'s own body". That skipped this branch,
++				// falling through to plain acorn statement parsing, which wraps any
++				// nested control-flow directive (`@if`, `@for`, `@switch`) it finds in
++				// a bare `ExpressionStatement` around a synthetic JSXFragment — and
++				// esrap's `ts` printer (used for SSR output) has no JSXFragment
++				// visitor, so SSR builds fail with "Not implemented: JSXFragment"
++				// (client builds are unaffected). `#templateControlFlowBlockDepth` is
++				// exclusively and tightly scoped (set/reset in a `finally`) to exactly
++				// the window where a `@for`'s own header+body (or `@empty` clause) is
++				// being parsed, so relying on it alone carries no plain-JS-for-loop
++				// false-positive risk.
++				if (this.#templateControlFlowBlockDepth > 0) {
+ 					this.#templateControlFlowBlockDepth--;
+ 					try {
+ 						return this.#parseTemplateControlFlowBlock(createNewLexicalScope, node, exitStrict);

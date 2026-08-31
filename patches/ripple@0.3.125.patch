@@ -1,0 +1,28 @@
+diff --git a/src/runtime/index-server.js b/src/runtime/index-server.js
+index f9c6cdcca3a7bfed60a5afdde4e39deb02e5b55d..314eae6ad6b82265b22fd931375ea961bbcf4799 100644
+--- a/src/runtime/index-server.js
++++ b/src/runtime/index-server.js
+@@ -36,6 +36,23 @@ export const on = noop;
+ export const tick = noop;
+ export const flushSync = noop;
+ 
++/**
++ * `mount`/`hydrate` are client-only APIs. Some components (e.g. imperative
++ * singletons like Toast/Notification that lazily mount a portal root on
++ * first use) statically `import { mount } from 'ripple'` at module scope
++ * even though the call itself only ever executes in a real browser. A plain
++ * `noop` return value would silently produce `undefined` where callers
++ * expect an unmount function, so these throw instead — SSR must never
++ * actually invoke them, and a thrown error surfaces that violation loudly
++ * instead of masking it as a successful no-op.
++ */
++export function mount() {
++	throw new Error('[ripple] mount() cannot run during server-side rendering.');
++}
++export function hydrate() {
++	throw new Error('[ripple] hydrate() cannot run during server-side rendering.');
++}
++
+ export const RippleObject = globalThis.Object;
+ export const RippleArray = globalThis.Array;
+ export const RippleDate = globalThis.Date;
