@@ -8,6 +8,15 @@ export type InputSize = 'large' | 'default' | 'small';
 export type InputValidateStatus = 'default' | 'warning' | 'error';
 export type InputMode = 'text' | 'password';
 
+export interface InputApi {
+    /** 命令式聚焦原生 input（对齐 Semi 的 ref.current.focus()；Ripple 没有 ref
+     * 转发到自定义实例的机制，改用 getInputApi 回调获取，与 Cropper 的
+     * getCropperApi 同一模式）。`preventScroll` 透传给原生 focus() 的同名选项。 */
+    focus: (options?: { preventScroll?: boolean }) => void;
+    /** 命令式移出焦点，同上。 */
+    blur: () => void;
+}
+
 export interface InputProps {
     /** 原生 input 元素的 id，配合 Form.Field 渲染的 `<label for={field}>` 建立真正的语义关联。 */
     id?: string;
@@ -20,6 +29,7 @@ export interface InputProps {
     borderless?: boolean;
     showClear?: boolean;
     hideSuffix?: boolean;
+    clearIcon?: any;
     prefix?: any;
     suffix?: any;
     addonBefore?: any;
@@ -28,7 +38,16 @@ export interface InputProps {
     type?: string;
     composition?: boolean;
     maxLength?: number;
+    /** 自定义计算字符串长度（如按字节而非字符数统计），用于 maxLength 截断判断。 */
+    getValueLength?: (value: string) => number;
+    getInputApi?: (api: InputApi) => void;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    /** 显式覆盖 aria-invalid；不传时 validateStatus="error" 会自动推导为 "true"。 */
+    'aria-invalid'?: string;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-required'?: boolean;
     style?: Record<string, any>;
     class?: string;
     onChange?: (value: string, event: Event) => void;
@@ -36,6 +55,8 @@ export interface InputProps {
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onKeyDown?: (event: KeyboardEvent) => void;
+    onKeyUp?: (event: KeyboardEvent) => void;
+    onKeyPress?: (event: KeyboardEvent) => void;
     onEnterPress?: (event: KeyboardEvent) => void;
     onCompositionStart?: (event: CompositionEvent) => void;
     onCompositionEnd?: (event: CompositionEvent) => void;
@@ -53,6 +74,7 @@ export function Input(&{
     borderless = false,
     showClear = false,
     hideSuffix = false,
+    clearIcon,
     prefix,
     suffix,
     addonBefore,
@@ -61,7 +83,14 @@ export function Input(&{
     type = 'text',
     composition = false,
     maxLength,
+    getValueLength,
+    getInputApi,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalidProp,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-required': ariaRequired,
     style,
     class: className,
     onChange,
@@ -69,6 +98,8 @@ export function Input(&{
     onFocus,
     onBlur,
     onKeyDown,
+    onKeyUp,
+    onKeyPress,
     onEnterPress,
     onCompositionStart,
     onCompositionEnd,
@@ -76,6 +107,12 @@ export function Input(&{
 }: InputProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    let inputEl: HTMLInputElement | null = null;
+
+    getInputApi?.({
+        focus: (options) => inputEl?.focus(options),
+        blur: () => inputEl?.blur(),
+    });
 
     // 用 track() 而非普通 const，让受控身份能随 value 从 undefined 变为有值
     // （或反向变化，例如外部表单 reset 把值清回 undefined）而重新判定——
@@ -116,10 +153,12 @@ export function Input(&{
     let &[resolvedType] = track<string>(() => (isPasswordMode ? (state.eyeOpen ? 'text' : 'password') : type));
     let &[allowClear] = track<boolean>(() => InputFoundation.isAllowClear(displayValue, showClear, disabled, state.isFocus, state.isHovering));
 
+    const resolveValueLength = (text: string) => (getValueLength ? getValueLength(text) : text.length);
+
     const handleInputEvent = (event: Event) => {
         const target = event.target as HTMLInputElement;
         let nextValue = target.value;
-        if (maxLength !== undefined && nextValue.length > maxLength) {
+        if (maxLength !== undefined && resolveValueLength(nextValue) > maxLength) {
             nextValue = nextValue.slice(0, maxLength);
             target.value = nextValue;
         }
@@ -130,6 +169,10 @@ export function Input(&{
         onKeyDown?.(event);
         if (event.key === 'Enter') onEnterPress?.(event);
     };
+
+    let &[resolvedAriaInvalid] = track<string | undefined>(() =>
+        ariaInvalidProp ?? (validateStatus === 'error' ? 'true' : undefined),
+    );
 
     let &[classes] = track<string>(() =>
         [
@@ -160,18 +203,25 @@ export function Input(&{
                     <span class="lotus-input-prefix">{prefix}</span>
                 }
                 <input
+                    ref={(node: HTMLInputElement) => { inputEl = node; }}
                     id={id}
                     type={resolvedType}
                     class="lotus-input-native"
                     value={displayValue}
                     placeholder={placeholder}
                     disabled={disabled}
+                    aria-describedby={ariaDescribedBy}
+                    aria-errormessage={ariaErrorMessage}
+                    aria-invalid={resolvedAriaInvalid}
                     aria-label={ariaLabel}
-                    aria-invalid={validateStatus === 'error' ? 'true' : undefined}
+                    aria-labelledby={ariaLabelledBy}
+                    aria-required={ariaRequired}
                     onInput={handleInputEvent}
                     onFocus={(event: FocusEvent) => foundation.handleFocus(event, onFocus)}
                     onBlur={(event: FocusEvent) => foundation.handleBlur(event, onBlur)}
                     onKeyDown={handleKeyDownEvent}
+                    onKeyUp={(event: KeyboardEvent) => onKeyUp?.(event)}
+                    onKeyPress={(event: KeyboardEvent) => onKeyPress?.(event)}
                     onCompositionStart={(event: CompositionEvent) => foundation.handleCompositionStart(event, onCompositionStart)}
                     onCompositionUpdate={(event: CompositionEvent) => foundation.handleCompositionUpdate(event, onCompositionUpdate)}
                     onCompositionEnd={(event: CompositionEvent) => {
@@ -187,7 +237,7 @@ export function Input(&{
                         onMouseDown={(event: MouseEvent) => event.preventDefault()}
                         onClick={(event: MouseEvent) => foundation.handleClear(event, isControlled, onChange, onClear)}
                     >
-                        <IconClear />
+                        {clearIcon ?? <IconClear />}
                     </button>
                 }
                 @if (isPasswordMode) {

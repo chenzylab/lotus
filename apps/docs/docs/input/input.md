@@ -89,6 +89,14 @@ import { Input, TextArea } from '@lotus/ripple';
 ../../src/demos/input/input/textarea-count.tsrx
 ```
 
+### ARIA 属性 / 自定义清除图标 / 命令式 focus
+
+`aria-describedby`/`aria-labelledby`/`aria-required`/`aria-invalid` 均可显式传入（`aria-invalid` 不传时会按 `validateStatus="error"` 自动推导）；`clearIcon` 自定义清除按钮图标；`getValueLength` 自定义字符串长度计算规则（配合 `maxLength` 截断判断）；`getInputApi` 交出 `focus()`/`blur()` 命令式句柄。
+
+```tsrx demo
+../../src/demos/input/input/imperative.tsrx
+```
+
 ## API 参考
 
 ### Input
@@ -97,12 +105,20 @@ import { Input, TextArea } from '@lotus/ripple';
 | --- | --- | --- | --- |
 | addonAfter | 后置标签 | any | - |
 | addonBefore | 前置标签 | any | - |
+| aria-describedby | 设置 aria-describedby 属性 | string | - |
+| aria-errormessage | 设置 aria-errormessage 属性 | string | - |
+| aria-invalid | 显式覆盖 aria-invalid；不传时按 validateStatus="error" 自动推导 | string | - |
 | aria-label | 设置 aria-label 属性 | string | - |
+| aria-labelledby | 设置 aria-labelledby 属性 | string | - |
+| aria-required | 设置 aria-required 属性 | boolean | - |
 | borderless | 无边框模式 | boolean | false |
 | class | 类名 | string | - |
+| clearIcon | 自定义清除按钮图标 | any | - |
 | composition | 是否开启输入法模式，开启后输入法未确认期间不会触发 onChange，输入法确认后触发一次 onChange | boolean | false |
 | defaultValue | 输入框内容默认值 | string | - |
 | disabled | 是否禁用 | boolean | false |
+| getInputApi | 交出命令式 API（focus/blur） | `(api: InputApi) => void` | - |
+| getValueLength | 自定义计算字符串长度，用于 maxLength 截断判断 | `(value: string) => number` | - |
 | hideSuffix | 清除按钮与后缀标签并存时是否隐藏后缀标签 | boolean | false |
 | maxLength | 最大输入长度 | number | - |
 | mode | 输入框的模式，可选 password | string | "text" |
@@ -124,14 +140,28 @@ import { Input, TextArea } from '@lotus/ripple';
 | onEnterPress | 按下回车时的回调 | `(event: KeyboardEvent) => void` | - |
 | onFocus | 输入框 focus 时的回调 | `(event: FocusEvent) => void` | - |
 | onKeyDown | keydown 回调 | `(event: KeyboardEvent) => void` | - |
+| onKeyPress | keypress 回调 | `(event: KeyboardEvent) => void` | - |
+| onKeyUp | keyup 回调 | `(event: KeyboardEvent) => void` | - |
 
-> 注意事项：lotus 尚未实现 `getValueLength`（自定义计算字符串长度）、`clearIcon`（自定义清除图标节点，可用 `prefix`/`suffix` 的思路间接实现）、`preventScroll`；`maxLength` 直接做字符数截断，未对齐 Semi 的"可插拔长度计算规则"设计。
+### InputApi
+
+`getInputApi` 交出的命令式句柄，对齐 Semi 的 `ref.current.focus()`/`ref.current.blur()`。
+
+| 方法 | 说明 |
+| --- | --- |
+| focus(options?) | 命令式聚焦；`options.preventScroll` 透传给原生 focus() 的同名选项 |
+| blur() | 命令式移出焦点 |
 
 ### TextArea
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| aria-describedby | 设置 aria-describedby 属性 | string | - |
+| aria-errormessage | 设置 aria-errormessage 属性 | string | - |
+| aria-invalid | 设置 aria-invalid 属性 | string | - |
 | aria-label | 设置 aria-label 属性 | string | - |
+| aria-labelledby | 设置 aria-labelledby 属性 | string | - |
+| aria-required | 设置 aria-required 属性 | boolean | - |
 | autosize | 是否随内容自动调整高度，可传对象配置最小最大行数 | boolean \| `{ minRows?: number; maxRows?: number }` | false |
 | borderless | 无边框模式 | boolean | false |
 | class | 类名 | string | - |
@@ -139,6 +169,8 @@ import { Input, TextArea } from '@lotus/ripple';
 | cols | 默认列数 | number | - |
 | defaultValue | 输入框内容默认值 | string | - |
 | disabled | 禁用状态 | boolean | false |
+| getTextAreaApi | 交出命令式 API（focus/blur） | `(api: TextAreaApi) => void` | - |
+| getValueLength | 自定义计算字符串长度，用于 maxLength 截断判断与 maxCount 计数展示 | `(value: string) => number` | - |
 | maxCount | 设置字数限制并显示字数统计 | number | - |
 | maxLength | 最大输入长度 | number | - |
 | placeholder | 占位提示文字 | string | - |
@@ -158,16 +190,20 @@ import { Input, TextArea } from '@lotus/ripple';
 | onEnterPress | 按下回车的回调（Shift+Enter 不触发） | `(event: KeyboardEvent) => void` | - |
 | onFocus | focus 时的回调 | `(event: FocusEvent) => void` | - |
 | onKeyDown | keydown 回调 | `(event: KeyboardEvent) => void` | - |
+| onKeyPress | keypress 回调 | `(event: KeyboardEvent) => void` | - |
+| onKeyUp | keyup 回调 | `(event: KeyboardEvent) => void` | - |
 | onResize | autosize 导致高度变化时触发 | `(size: { height: number }) => void` | - |
 
-> 注意事项：lotus 尚未实现 `showLineNumber`（行号显示）、`getValueLength`、`InputGroup` 组合容器。`resize` 仅当显式传入时生效，未传时保留默认的 `vertical` 拖拽调整行为。
+> 注意事项：lotus 尚未实现 `showLineNumber`（行号显示）、`InputGroup` 组合容器。`resize` 仅当显式传入时生效，未传时保留默认的 `vertical` 拖拽调整行为。
 
-## Methods
+### TextAreaApi
 
-| 名称 | 描述 |
+`getTextAreaApi` 交出的命令式句柄，与 Input 的 `InputApi` 同一模式。
+
+| 方法 | 说明 |
 | --- | --- |
-| focus() | 获取焦点，可通过 `ref` 获取原生 DOM 节点后调用 |
-| blur() | 移出焦点，同上 |
+| focus(options?) | 命令式聚焦；`options.preventScroll` 透传给原生 focus() 的同名选项 |
+| blur() | 命令式移出焦点 |
 
 ## Accessibility
 

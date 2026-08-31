@@ -72,4 +72,39 @@ test.describe('Input', () => {
     await expect(errorInput).toHaveValue('错误状态');
     await expect(errorInput.locator('xpath=..')).toHaveClass(/lotus-input-status-error/);
   });
+
+  test('aria-*：describedby/labelledby/required/invalid 全部正确透传（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('带完整 ARIA 属性的输入框');
+    await expect(input).toHaveAttribute('aria-describedby', 'input-aria-hint');
+    await expect(input).toHaveAttribute('aria-labelledby', 'input-aria-label-el');
+    await expect(input).toHaveAttribute('aria-required', 'true');
+    await expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('clearIcon：自定义清除按钮图标替换默认图标（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('自定义清除图标输入框');
+    await input.click();
+    const clearButton = input.locator('xpath=..').locator('.lotus-input-clear');
+    await expect(clearButton).toBeVisible();
+    await expect(clearButton.locator('svg')).toBeVisible();
+  });
+
+  test('getValueLength：按自定义计算逻辑判断 maxLength 截断（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('getValueLength 输入框');
+    await input.fill('abcdefgh');
+    await expect(input).toHaveValue('abcde');
+  });
+
+  test('getInputApi：交出的 focus()/blur() 真实生效（对齐 Semi ref.current.focus()，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('getInputApi 输入框');
+    const group = input.locator('xpath=ancestor::*[contains(@class,"lotus-space")][1]');
+    await group.getByRole('button', { name: '聚焦' }).click();
+    await expect(input).toBeFocused();
+    await group.getByRole('button', { name: '失焦' }).click();
+    await expect(input).not.toBeFocused();
+  });
 });

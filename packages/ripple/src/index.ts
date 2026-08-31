@@ -83,6 +83,7 @@ export {
 export {
     Input,
     type InputProps,
+    type InputApi,
     type InputSize,
     type InputValidateStatus,
     type InputMode,
@@ -90,6 +91,7 @@ export {
 export {
     TextArea,
     type TextAreaProps,
+    type TextAreaApi,
 } from './input/text-area/index.tsrx';
 export {
     InputNumber,

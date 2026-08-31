@@ -12,6 +12,7 @@ import { InputControlledDemo } from '../../demos/input/input/controlled.tsrx';
 import { TextAreaBasicDemo } from '../../demos/input/input/textarea-basic.tsrx';
 import { TextAreaAutosizeDemo } from '../../demos/input/input/textarea-autosize.tsrx';
 import { TextAreaCountDemo } from '../../demos/input/input/textarea-count.tsrx';
+import { ImperativeInputDemo } from '../../demos/input/input/imperative.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -34,6 +35,7 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/input/textarea-basic.tsrx': TextAreaBasicDemo,
     '../../src/demos/input/input/textarea-autosize.tsrx': TextAreaAutosizeDemo,
     '../../src/demos/input/input/textarea-count.tsrx': TextAreaCountDemo,
+    '../../src/demos/input/input/imperative.tsrx': ImperativeInputDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

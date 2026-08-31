@@ -1,7 +1,7 @@
 import { track } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOption, FormApi, FieldRenderProps, CropperApi } from '@lotus/ripple';
+import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -314,6 +314,8 @@ function FormAgreeCheckbox(&{ value, disabled, onChange, 'aria-label': ariaLabel
 export function App() @{
     let &[inputControlledValue] = track<string>('受控初始值');
     let &[inputExternalControlledValue] = track<string>('初始值');
+    let inputImperativeApi: InputApi | null = null;
+    let textAreaImperativeApi: TextAreaApi | null = null;
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
     let &[progressPercent] = track<number>(30);
@@ -2757,6 +2759,32 @@ export function App() @{
             <Button onClick={() => { inputExternalControlledValue = inputExternalControlledValue + '!'; }}>追加感叹号</Button>
         </Space>
 
+        <Divider>Input：aria-* / clearIcon / getValueLength / getInputApi（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <Input
+                aria-label="带完整 ARIA 属性的输入框"
+                aria-describedby="input-aria-hint"
+                aria-labelledby="input-aria-label-el"
+                aria-required
+                aria-invalid="true"
+                defaultValue="ARIA 属性透传"
+            />
+            <Input clearIcon={<IconTickCircle />} showClear defaultValue="自定义清除图标" aria-label="自定义清除图标输入框" />
+            <Input
+                maxLength={5}
+                getValueLength={(v: string) => [...v].length}
+                defaultValue=""
+                placeholder="按 Unicode 码位计数，最多 5 个"
+                aria-label="getValueLength 输入框"
+            />
+            <Space>
+                <Input getInputApi={(api) => { inputImperativeApi = api; }} placeholder="命令式 focus/blur" aria-label="getInputApi 输入框" />
+                <Button onClick={() => inputImperativeApi?.focus()}>聚焦</Button>
+                <Button onClick={() => inputImperativeApi?.blur()}>失焦</Button>
+            </Space>
+        </Space>
+
         <Divider>TextArea：多行输入框</Divider>
 
         <Space vertical align="start">
@@ -2778,6 +2806,25 @@ export function App() @{
                 <TextArea value={textAreaControlledValue} onChange={(v: string) => { textAreaControlledValue = v; }} rows={3} aria-label="TextArea 外部受控示例" />
             </div>
             <Button onClick={() => { textAreaControlledValue = textAreaControlledValue + '\n新增一行'; }}>追加一行</Button>
+        </Space>
+
+        <Divider>TextArea：aria-* / getValueLength / getTextAreaApi（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '360px' }}>
+                <TextArea
+                    aria-label="带完整 ARIA 属性的多行输入框"
+                    aria-describedby="textarea-aria-hint"
+                    aria-required
+                    defaultValue="ARIA 属性透传"
+                    rows={2}
+                />
+            </div>
+            <Space>
+                <TextArea getTextAreaApi={(api) => { textAreaImperativeApi = api; }} rows={2} placeholder="命令式 focus/blur" aria-label="getTextAreaApi 多行输入框" />
+                <Button onClick={() => textAreaImperativeApi?.focus()}>聚焦</Button>
+                <Button onClick={() => textAreaImperativeApi?.blur()}>失焦</Button>
+            </Space>
         </Space>
 
         <Divider>Icons：@lotus/icons 验证图标</Divider>

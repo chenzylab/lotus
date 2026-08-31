@@ -5,6 +5,14 @@ import { IconClear } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
+export interface TextAreaApi {
+    /** 命令式聚焦原生 textarea（对齐 Semi 的 ref.current.focus()；与 Input 的
+     * getInputApi 同一模式）。`preventScroll` 透传给原生 focus() 的同名选项。 */
+    focus: (options?: { preventScroll?: boolean }) => void;
+    /** 命令式移出焦点，同上。 */
+    blur: () => void;
+}
+
 export interface TextAreaProps {
     /** 原生 textarea 元素的 id，配合 Form.Field 渲染的 `<label for={field}>` 建立真正的语义关联。 */
     id?: string;
@@ -19,18 +27,28 @@ export interface TextAreaProps {
     resize?: 'none' | 'both' | 'horizontal' | 'vertical';
     maxCount?: number;
     maxLength?: number;
+    /** 自定义计算字符串长度，用于 maxLength 截断判断与 maxCount 计数展示。 */
+    getValueLength?: (value: string) => number;
+    getTextAreaApi?: (api: TextAreaApi) => void;
     showClear?: boolean;
     borderless?: boolean;
     composition?: boolean;
     style?: Record<string, any>;
     textareaStyle?: Record<string, any>;
     class?: string;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    'aria-invalid'?: string;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-required'?: boolean;
     onChange?: (value: string, event: Event) => void;
     onClear?: (event: MouseEvent) => void;
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onKeyDown?: (event: KeyboardEvent) => void;
+    onKeyUp?: (event: KeyboardEvent) => void;
+    onKeyPress?: (event: KeyboardEvent) => void;
     onEnterPress?: (event: KeyboardEvent) => void;
     onCompositionStart?: (event: CompositionEvent) => void;
     onCompositionEnd?: (event: CompositionEvent) => void;
@@ -51,18 +69,27 @@ export function TextArea(&{
     resize,
     maxCount,
     maxLength,
+    getValueLength,
+    getTextAreaApi,
     showClear = false,
     borderless = false,
     composition = false,
     style,
     textareaStyle,
     class: className,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalidProp,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-required': ariaRequired,
     onChange,
     onClear,
     onFocus,
     onBlur,
     onKeyDown,
+    onKeyUp,
+    onKeyPress,
     onEnterPress,
     onCompositionStart,
     onCompositionEnd,
@@ -82,6 +109,11 @@ export function TextArea(&{
     });
     let &[textareaNode] = track<HTMLTextAreaElement | null>(null);
     let &[autoHeight] = track<number | null>(null);
+
+    getTextAreaApi?.({
+        focus: (options) => untrack(() => textareaNode)?.focus(options),
+        blur: () => untrack(() => textareaNode)?.blur(),
+    });
 
     const foundation = new TextAreaFoundation({
         getState: () => untrack(() => state),
@@ -117,10 +149,12 @@ export function TextArea(&{
         }
     });
 
+    const resolveValueLength = (text: string) => (getValueLength ? getValueLength(text) : text.length);
+
     const handleInputEvent = (event: Event) => {
         const target = event.target as HTMLTextAreaElement;
         let nextValue = target.value;
-        if (maxLength !== undefined && nextValue.length > maxLength) {
+        if (maxLength !== undefined && resolveValueLength(nextValue) > maxLength) {
             nextValue = nextValue.slice(0, maxLength);
             target.value = nextValue;
         }
@@ -167,12 +201,19 @@ export function TextArea(&{
                 rows={rows}
                 cols={cols}
                 style={mergedTextareaStyle}
+                aria-describedby={ariaDescribedBy}
+                aria-errormessage={ariaErrorMessage}
+                aria-invalid={ariaInvalidProp}
                 aria-label={ariaLabel}
+                aria-labelledby={ariaLabelledBy}
+                aria-required={ariaRequired}
                 ref={(node: HTMLTextAreaElement) => { textareaNode = node; }}
                 onInput={handleInputEvent}
                 onFocus={(event: FocusEvent) => foundation.handleFocus(event, onFocus)}
                 onBlur={(event: FocusEvent) => foundation.handleBlur(event, onBlur)}
                 onKeyDown={handleKeyDownEvent}
+                onKeyUp={(event: KeyboardEvent) => onKeyUp?.(event)}
+                onKeyPress={(event: KeyboardEvent) => onKeyPress?.(event)}
                 onCompositionStart={(event: CompositionEvent) => foundation.handleCompositionStart(event, onCompositionStart)}
                 onCompositionUpdate={(event: CompositionEvent) => foundation.handleCompositionUpdate(event, onCompositionUpdate)}
                 onCompositionEnd={(event: CompositionEvent) => {
@@ -193,7 +234,7 @@ export function TextArea(&{
                     </button>
                 }
                 @if (maxCount !== undefined) {
-                    <span class="lotus-textarea-count">{displayValue.length}/{maxCount}</span>
+                    <span class="lotus-textarea-count">{resolveValueLength(displayValue)}/{maxCount}</span>
                 }
             </div>
         </div>

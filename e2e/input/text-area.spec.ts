@@ -57,4 +57,21 @@ test.describe('TextArea', () => {
     await appendButton.click();
     await expect(externalControlled).toHaveValue('初始内容\n新增一行');
   });
+
+  test('aria-*：describedby/required 正确透传（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('带完整 ARIA 属性的多行输入框');
+    await expect(textarea).toHaveAttribute('aria-describedby', 'textarea-aria-hint');
+    await expect(textarea).toHaveAttribute('aria-required', 'true');
+  });
+
+  test('getTextAreaApi：交出的 focus()/blur() 真实生效（对齐 Semi ref.current.focus()，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('getTextAreaApi 多行输入框');
+    const group = textarea.locator('xpath=ancestor::*[contains(@class,"lotus-space")][1]');
+    await group.getByRole('button', { name: '聚焦' }).click();
+    await expect(textarea).toBeFocused();
+    await group.getByRole('button', { name: '失焦' }).click();
+    await expect(textarea).not.toBeFocused();
+  });
 });
