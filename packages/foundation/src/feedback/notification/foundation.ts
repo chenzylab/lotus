@@ -1,5 +1,6 @@
 export type NotificationPosition = 'top' | 'bottom' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 export type NotificationType = 'success' | 'warning' | 'error' | 'info' | 'default';
+export type NotificationTheme = 'normal' | 'light';
 
 export interface NotificationItem {
   id: string;
@@ -10,6 +11,22 @@ export interface NotificationItem {
   duration: number;
   showClose: boolean;
   icon?: any;
+  theme: NotificationTheme;
+  zIndex?: number;
+  onClick?: (event: MouseEvent) => void;
+  onClose?: () => void;
+  onCloseClick?: (id: string) => void;
+}
+
+/** `Notification.config` 全局默认值，未指定时组件自身默认值生效（对齐 Semi）。 */
+export interface NotificationGlobalConfig {
+  position?: NotificationPosition;
+  duration?: number;
+  top?: number | string;
+  bottom?: number | string;
+  left?: number | string;
+  right?: number | string;
+  zIndex?: number;
 }
 
 /**
@@ -51,9 +68,18 @@ export class NotificationListFoundation {
   }
 
   remove(id: string): void {
+    const item = this.list.find((n) => n.id === id);
     this.clearTimer(id);
     this.list = this.list.filter((n) => n.id !== id);
     this.emit();
+    item?.onClose?.();
+  }
+
+  /** 主动点击关闭按钮：先触发 onCloseClick，再走通用的 remove（会一并触发 onClose，对齐 Semi 两个回调都要触发的行为）。 */
+  closeByClick(id: string): void {
+    const item = this.list.find((n) => n.id === id);
+    item?.onCloseClick?.(id);
+    this.remove(id);
   }
 
   destroyAll(): void {

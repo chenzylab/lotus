@@ -2,6 +2,8 @@ import { Fragment, trackAsync } from 'ripple';
 import { DocsLayout } from '../../components/docs-layout.tsrx';
 import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { BasicNotificationDemo } from '../../demos/feedback/notification/basic.tsrx';
+import { ThemeNotificationDemo } from '../../demos/feedback/notification/theme.tsrx';
+import { CallbackNotificationDemo } from '../../demos/feedback/notification/callback.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -14,6 +16,8 @@ import { loadDoc } from server;
 
 const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/feedback/notification/basic.tsrx': BasicNotificationDemo,
+    '../../src/demos/feedback/notification/theme.tsrx': ThemeNotificationDemo,
+    '../../src/demos/feedback/notification/callback.tsrx': CallbackNotificationDemo,
 };
 
 export function NotificationDocPage() @{

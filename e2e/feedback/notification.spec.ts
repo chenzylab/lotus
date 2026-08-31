@@ -70,4 +70,30 @@ test.describe('Notification', () => {
     await expect(page.locator('.lotus-notification-root')).toHaveCount(1);
     await destroyBtn.click();
   });
+
+  test('theme=light：渲染出对应语义色的浅底 + 边框（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Notification（theme=light）', exact: true }).click();
+
+    const notification = page.locator('.lotus-notification-theme-light');
+    await expect(notification).toBeVisible();
+    await expect(notification).toHaveCSS('border-color', 'rgb(0, 100, 250)');
+  });
+
+  test('onClick/onClose/onCloseClick：点击卡片本身触发 onClick，点击关闭按钮先触发 onCloseClick 再触发 onClose（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Notification（onClick/onClose/onCloseClick）', exact: true }).click();
+
+    const notification = page.locator('.lotus-notification').first();
+    await notification.click({ position: { x: 5, y: 5 } });
+    expect(logs).toContain('notification onClick fired');
+    expect(logs).not.toContain('notification onClose fired');
+
+    await notification.getByRole('button', { name: '关闭' }).click();
+    expect(logs.some((log) => log.startsWith('notification onCloseClick fired: lotus-notification-'))).toBe(true);
+    expect(logs).toContain('notification onClose fired');
+  });
 });
