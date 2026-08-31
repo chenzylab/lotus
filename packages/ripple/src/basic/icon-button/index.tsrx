@@ -4,16 +4,24 @@ import type { ButtonType, ButtonTheme, ButtonSize, ButtonHtmlType } from '../but
 
 export type { ButtonType as IconButtonType, ButtonTheme as IconButtonTheme, ButtonSize as IconButtonSize };
 
+export type IconButtonHorizontalPaddingSide = 'left' | 'right';
+
 export interface IconButtonProps {
     icon: any;
+    /** 图标旁的文本内容；传了以后按钮不再是恒定正方形，走 Button 同款横向撑开布局（对齐 Semi）。 */
+    children?: any;
+    /** 有 `children` 时，图标相对文本的位置。 */
+    iconPosition?: 'left' | 'right';
     type?: ButtonType;
     theme?: ButtonTheme;
     size?: ButtonSize;
     disabled?: boolean;
     loading?: boolean;
     htmlType?: ButtonHtmlType;
+    noHorizontalPadding?: boolean | IconButtonHorizontalPaddingSide | IconButtonHorizontalPaddingSide[];
+    contentClassName?: string;
     onClick?: (event: MouseEvent) => void;
-    'aria-label': string;
+    'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
 }
@@ -36,17 +44,23 @@ function SpinnerIcon() {
 }
 
 /**
- * IconButton：纯图标按钮，是 Button 的语义化封装（正方形、无 children、强制 aria-label）。
+ * IconButton：Button 的图标语义化封装。默认无 `children` 时是恒定正方形的纯图标
+ * 按钮（强制 `aria-label`）；传入 `children` 后对齐 Semi——不再是恒定正方形，
+ * 走与 Button 相同的横向撑开布局，`iconPosition` 控制图标在文本左/右。
  * 不新建 Foundation——点击拦截逻辑与 Button 完全相同，直接复用 ButtonFoundation。
  */
 export function IconButton(&{
     icon,
+    children,
+    iconPosition = 'left',
     type = 'primary',
     theme = 'borderless',
     size = 'default',
     disabled = false,
     loading = false,
     htmlType = 'button',
+    noHorizontalPadding,
+    contentClassName,
     onClick,
     'aria-label': ariaLabel,
     style,
@@ -60,12 +74,24 @@ export function IconButton(&{
         setState: () => {},
     });
 
+    const isTextMode = !!children;
+
+    let &[resolvedStyle] = track<Record<string, any> | undefined>(() => {
+        if (!isTextMode || !noHorizontalPadding) return style;
+        const sides = noHorizontalPadding === true ? ['left', 'right'] : Array.isArray(noHorizontalPadding) ? noHorizontalPadding : [noHorizontalPadding];
+        const paddingOverrides: Record<string, string> = {};
+        if (sides.includes('left')) paddingOverrides.paddingLeft = '0px';
+        if (sides.includes('right')) paddingOverrides.paddingRight = '0px';
+        return { ...style, ...paddingOverrides };
+    });
+
     let &[classes] = track<string>(() =>
         [
             'lotus-icon-button',
             `lotus-icon-button-${type}`,
             `lotus-icon-button-theme-${theme}`,
             `lotus-icon-button-size-${size}`,
+            isTextMode ? 'lotus-icon-button-text-mode' : '',
             loading ? 'lotus-icon-button-loading' : '',
             disabled ? 'lotus-icon-button-disabled' : '',
             className ?? '',
@@ -78,7 +104,7 @@ export function IconButton(&{
         <button
             type={htmlType}
             class={classes}
-            style={style}
+            style={resolvedStyle}
             disabled={disabled}
             aria-label={ariaLabel}
             aria-busy={loading}
@@ -86,8 +112,15 @@ export function IconButton(&{
         >
             @if (loading) {
                 <span class="lotus-icon-button-icon"><SpinnerIcon /></span>
+            } @else {
+                @if (icon && (!isTextMode || iconPosition === 'left')) {
+                    <span class="lotus-icon-button-icon">{icon}</span>
+                }
             }
-            @if (!loading) {
+            @if (isTextMode) {
+                <span class={['lotus-icon-button-content', contentClassName ?? ''].filter(Boolean).join(' ')}>{children}</span>
+            }
+            @if (!loading && icon && isTextMode && iconPosition === 'right') {
                 <span class="lotus-icon-button-icon">{icon}</span>
             }
         </button>
@@ -108,9 +141,20 @@ export function IconButton(&{
                 transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
             }
 
+            .lotus-icon-button-text-mode {
+                width: auto;
+                gap: 6px;
+                padding: 0 var(--lotus-spacing-base);
+            }
+
             .lotus-icon-button-size-large {
                 width: var(--lotus-height-control-large);
                 height: var(--lotus-height-control-large);
+            }
+
+            .lotus-icon-button-size-large.lotus-icon-button-text-mode {
+                width: auto;
+                padding: 0 var(--lotus-spacing-base);
             }
 
             .lotus-icon-button-size-small {
@@ -118,10 +162,21 @@ export function IconButton(&{
                 height: var(--lotus-height-control-small);
             }
 
+            .lotus-icon-button-size-small.lotus-icon-button-text-mode {
+                width: auto;
+                padding: 0 var(--lotus-spacing-tight);
+            }
+
             .lotus-icon-button-icon {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
+            }
+
+            .lotus-icon-button-content {
+                display: inline-flex;
+                align-items: center;
+                white-space: nowrap;
             }
 
             /* ---- solid：实心背景，白字，語義色三態直接映射 hover/active ---- */

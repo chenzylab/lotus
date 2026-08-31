@@ -757,6 +757,15 @@ export function App() @{
             <IconButton icon={<IconSetting />} loading aria-label="加载中图标按钮" onClick={() => console.log('should not fire')} />
         </Space>
 
+        <Divider>IconButton：children + iconPosition（对齐 Semi，传了 children 后不再是恒定正方形）</Divider>
+
+        <Space>
+            <IconButton icon={<IconSetting />}>图标在左</IconButton>
+            <IconButton icon={<IconSetting />} iconPosition="right">图标在右</IconButton>
+            <IconButton icon={<IconSetting />} noHorizontalPadding="left">无左侧内边距</IconButton>
+            <IconButton icon={<IconSetting />} contentClassName="icon-button-custom-content">自定义内容类名</IconButton>
+        </Space>
+
         <Divider>IconButton：disabled 运行时动态切换（回归防护：非函数字面量 track() 固化快照会让 disabled 变化后点击回调永远被拦截，详见 specs 踩坑 #94）</Divider>
 
         <Space>

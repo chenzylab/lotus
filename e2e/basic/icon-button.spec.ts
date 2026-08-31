@@ -84,4 +84,35 @@ test.describe('IconButton', () => {
     expect(box).not.toBeNull();
     expect(box!.width).toBeCloseTo(box!.height, 0);
   });
+
+  test('children：传入文本后不再是恒定正方形，iconPosition 控制图标相对文本的位置（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+
+    const leftIcon = page.getByRole('button', { name: '图标在左' });
+    const box = await leftIcon.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThan(box!.height * 1.5);
+
+    const children = await leftIcon.evaluate((el) => Array.from(el.children).map((c) => c.className));
+    expect(children[0]).toContain('lotus-icon-button-icon');
+    expect(children[1]).toContain('lotus-icon-button-content');
+
+    const rightIcon = page.getByRole('button', { name: '图标在右' });
+    const rightChildren = await rightIcon.evaluate((el) => Array.from(el.children).map((c) => c.className));
+    expect(rightChildren[0]).toContain('lotus-icon-button-content');
+    expect(rightChildren[1]).toContain('lotus-icon-button-icon');
+  });
+
+  test('noHorizontalPadding：指定方向的内边距被清零（对齐 Semi，回归防护：与 Button 同一实现路径）', async ({ page }) => {
+    await page.goto('/');
+    const button = page.getByRole('button', { name: '无左侧内边距' });
+    await expect(button).toHaveCSS('padding-left', '0px');
+  });
+
+  test('contentClassName：透传给文本内容包裹层（对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const button = page.getByRole('button', { name: '自定义内容类名' });
+    const content = button.locator('.lotus-icon-button-content');
+    await expect(content).toHaveClass(/icon-button-custom-content/);
+  });
 });

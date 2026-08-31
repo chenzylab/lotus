@@ -3,6 +3,7 @@ import { DocsLayout } from '../../components/docs-layout.tsrx';
 import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { BasicIconButtonDemo } from '../../demos/basic/icon-button/basic.tsrx';
 import { StateIconButtonDemo } from '../../demos/basic/icon-button/state.tsrx';
+import { TextIconButtonDemo } from '../../demos/basic/icon-button/text.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -16,6 +17,7 @@ import { loadDoc } from server;
 const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/basic/icon-button/basic.tsrx': BasicIconButtonDemo,
     '../../src/demos/basic/icon-button/state.tsrx': StateIconButtonDemo,
+    '../../src/demos/basic/icon-button/text.tsrx': TextIconButtonDemo,
 };
 
 export function IconButtonDocPage() @{

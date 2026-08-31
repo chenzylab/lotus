@@ -36,7 +36,7 @@ import { HotKeys } from '@lotus/ripple';
 | aria-label | 传了 `onClick` 时提示徽标的可访问名称 | string | 无 |
 | class | 类名 | string | 无 |
 | content | 键位提示文案；不传则回退用 `hotKeys` 本身渲染 | string[] | 无 |
-| getListenerTarget | 监听目标，不传则监听 `document.body` | `() => HTMLElement` | 无 |
+| getListenerTarget | 监听目标 | `() => HTMLElement` | `document.body` |
 | hotKeys | 快捷键组合 | `HotKey[]` | 必填 |
 | preventDefault | 匹配成功时是否阻止默认行为 | boolean | `false` |
 | render | 自定义渲染内容；传 `null` 或返回 `null` 时不渲染任何节点 | `(() => any) \| any` | 无 |

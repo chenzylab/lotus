@@ -16,7 +16,7 @@
 ## Phase 1 — 基础层 + 核心表单 (Basic + 高频 Input)
 
 - [x] Button 按钮（含 AI 主题变体，对应官网 AIButton）
-- [x] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付；复用 ButtonFoundation，未做多色 icon fill 增强）
+- [x] IconButton 图标按钮（源码 `semi-ui/iconButton`，无独立文档页，随 Button 一并交付；复用 ButtonFoundation，未做多色 icon fill 增强。Semi 比对补记：`semi-ui/iconButton/index.tsx` 完整包装 `<Button>`（`return <Button {...otherProps}>`），支持 `children` 文本 + `iconPosition` + `noHorizontalPadding` + `contentClassName` 全部真实生效——此前误判这几个 prop 对 lotus"恒定正方形架构"无意义而不补，实际是判断依据有误（把"lotus 当前默认设计没有这个维度"等同于"Semi 该 prop 是死 prop"）；已补齐 `children`/`iconPosition`/`noHorizontalPadding`/`contentClassName`：无 `children` 时保持恒定正方形纯图标按钮，传入 `children` 后切换为与 Button 相同的横向撑开布局，`aria-label` 同步改为仅无 `children` 时必填）
 - [x] Icon 图标（含 AI 主题变体，对应官网 AIIcon；`@lotus/icons` 524 个 = Semi `semi-icons` 一手来源正式图标 523 个 + lotus 自有 `lotus_logo.svg` 1 个，`@lotus/icons-lab` 独立成包，84 个与一手来源 `semi-icons-lab` 完全对齐——此前"524 个正式+lab"这句表述容易误读成"524 已含 lab"，核实澄清：lab 图标不在这 524 之内，是单独一个包）
 - [x] Typography 字体排印
 - [x] Divider 分割线
