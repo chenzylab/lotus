@@ -7,6 +7,8 @@ import { TypographyParagraphDemo } from '../../demos/basic/typography/paragraph.
 import { TypographySizeDemo } from '../../demos/basic/typography/size.tsrx';
 import { TypographyCopyableDemo } from '../../demos/basic/typography/copyable.tsrx';
 import { TypographyEllipsisDemo } from '../../demos/basic/typography/ellipsis.tsrx';
+import { ComponentTypographyDemo } from '../../demos/basic/typography/component.tsrx';
+import { NumeralTypographyDemo } from '../../demos/basic/typography/numeral.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -24,6 +26,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/basic/typography/size.tsrx': TypographySizeDemo,
     '../../src/demos/basic/typography/copyable.tsrx': TypographyCopyableDemo,
     '../../src/demos/basic/typography/ellipsis.tsrx': TypographyEllipsisDemo,
+    '../../src/demos/basic/typography/component.tsrx': ComponentTypographyDemo,
+    '../../src/demos/basic/typography/numeral.tsrx': NumeralTypographyDemo,
 };
 
 // module server 生成的客户端桥接函数是异步 RPC 调用，loadDoc() 不能当同步值

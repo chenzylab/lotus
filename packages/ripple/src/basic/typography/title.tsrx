@@ -9,6 +9,8 @@ export interface TypographyTitleProps extends TypographySharedProps {
     children?: any;
     heading?: TitleHeading;
     weight?: TypographyWeight;
+    /** 自定义渲染元素，默认由 `heading` 决定（`h1`~`h6`），传入后覆盖默认标签（对齐 Semi）。 */
+    component?: string;
     'aria-label'?: string;
 }
 
@@ -17,6 +19,7 @@ export function TypographyTitle(&{
     heading = 1,
     type = 'primary',
     weight,
+    component,
     disabled = false,
     mark = false,
     delete: strikethrough = false,
@@ -33,6 +36,7 @@ export function TypographyTitle(&{
     const copyableConfig = resolveCopyableConfig(copyable);
     const isPlainText = typeof children === 'string';
     const ellipsisConfig = isPlainText ? resolveEllipsisConfig(ellipsis) : null;
+    const resolvedTag = component ?? `h${heading}`;
 
     const classes = sharedClasses(
         { type, disabled, mark, delete: strikethrough, underline, link, class: className },
@@ -45,43 +49,11 @@ export function TypographyTitle(&{
     const mergedStyle = { ...weightStyle(weight), ...style };
 
     <>
-        @if (heading === 1) {
-            <h1 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h1>
-        } @else if (heading === 2) {
-            <h2 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h2>
-        } @else if (heading === 3) {
-            <h3 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h3>
-        } @else if (heading === 4) {
-            <h4 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h4>
-        } @else if (heading === 5) {
-            <h5 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h5>
-        } @else {
-            <h6 class={classes} style={mergedStyle} aria-label={ariaLabel}>
-                @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
-                <span>{children}</span>
-                @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
-            </h6>
-        }
+        <{resolvedTag} class={classes} style={mergedStyle} aria-label={ariaLabel}>
+            @if (icon) { <span class="lotus-typography-icon">{icon}</span> }
+            <span>{children}</span>
+            @if (copyableConfig) { <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} /> }
+        </{resolvedTag}>
 
         <style>
             .lotus-typography {

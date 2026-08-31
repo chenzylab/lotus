@@ -3,14 +3,14 @@ title: Typography 排版
 category: 基础
 ---
 
-用于文本内容的展示，包含标题、文本、段落三个子组件。
+用于文本内容的展示，包含标题、文本、段落、数值格式化四个子组件。
 
 ## 代码演示
 
 ### 如何引入
 
 ```tsrx
-import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/ripple';
+import { TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral } from '@lotus/ripple';
 ```
 
 > 注意事项：Semi 官方用 `Typography.Title`/`Typography.Text`/`Typography.Paragraph` 静态属性写法，lotus 版本改为独立命名导出 `TypographyTitle`/`TypographyText`/`TypographyParagraph`（与 `Skeleton.Xxx` → `SkeletonXxx` 的处理方式一致，Ripple 没有等价的静态属性组合能力）。
@@ -63,6 +63,24 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 ../../src/demos/basic/typography/ellipsis.tsrx
 ```
 
+### 自定义渲染元素
+
+`component` 覆盖默认渲染标签：`Text` 默认 `span`，`Title` 默认由 `heading` 决定（`h1`~`h6`），`Paragraph` 默认 `p`。
+
+```tsrx demo
+../../src/demos/basic/typography/component.tsrx
+```
+
+### 数值格式化
+
+`Numeral` 是 `Text` 的特化版本，格式化字符串中的数字片段后渲染。`rule` 支持 `text`（默认，仅按 `precision` 截断不额外处理）、`numbers`（提取数字用逗号 join）、`bytes-decimal`/`bytes-binary`（字节单位换算）、`percentages`（百分比）、`exponential`（科学计数法）；`truncate` 控制截断方式（`round`/`ceil`/`floor`）；`parser` 传入时忽略以上规则，直接用自定义函数处理。
+
+> 注意事项：`children` 必须是纯字符串（`ellipsis`/`copyable` 的字符串限制同样适用于 `Numeral`，且更严格——`rule`/`precision` 依赖对内容做正则提取数字，非字符串场景直接透传原始 children 给 `Text`，不做格式化）。
+
+```tsrx demo
+../../src/demos/basic/typography/numeral.tsrx
+```
+
 ## API 参考
 
 ### Text
@@ -71,6 +89,7 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 | --- | --- | --- | --- |
 | children | 文本内容，`ellipsis`/`copyable` 生效时必须用 `children={'...'}` 显式传入字符串 | any | - |
 | code | 是否用 `code` 样式包裹 | boolean | false |
+| component | 自定义渲染元素，`link` 场景下固定渲染 `<a>`，忽略此项 | string | "span" |
 | copyable | 是否可拷贝 | boolean \| CopyableConfig | false |
 | delete | 添加删除线样式 | boolean | false |
 | disabled | 禁用文本 | boolean | false |
@@ -90,6 +109,7 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | children | 标题内容 | any | - |
+| component | 自定义渲染元素，覆盖 `heading` 决定的默认标签 | string | 由 heading 决定 |
 | copyable | 是否可拷贝 | boolean \| CopyableConfig | false |
 | delete | 添加删除线样式 | boolean | false |
 | disabled | 禁用文本 | boolean | false |
@@ -106,6 +126,7 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | children | 段落内容 | any | - |
+| component | 自定义渲染元素 | string | "p" |
 | copyable | 是否可拷贝 | boolean \| CopyableConfig | false |
 | delete | 添加删除线样式 | boolean | false |
 | disabled | 禁用文本 | boolean | false |
@@ -118,6 +139,18 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 | type | 文本类型 | string | "primary" |
 | underline | 添加下划线样式 | boolean | false |
 | onClick | 单击事件 | `(event: MouseEvent) => void` | - |
+
+### Numeral
+
+除以下数值格式化专属属性外，其余属性（`type`/`disabled`/`mark`/`code`/`delete`/`underline`/`strong`/`link`/`icon`/`copyable`/`ellipsis`/`size`/`weight`/`component`/`style`/`class`/`aria-label`）与 `Text` 完全一致（`Numeral` 是 `Text` 的特化版本）。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| children | 待格式化文本，必须是纯字符串 | string | - |
+| rule | 解析规则，可选 text、numbers、bytes-decimal、bytes-binary、percentages、exponential | string | "text" |
+| precision | 小数点后保留位数 | number | 0 |
+| truncate | 截断取整方式，可选 ceil、floor、round | string | "round" |
+| parser | 自定义数值解析函数，传入后忽略 rule/precision/truncate | `(value: string) => string` | - |
 
 ### EllipsisConfig
 
@@ -145,8 +178,6 @@ import { TypographyTitle, TypographyText, TypographyParagraph } from '@lotus/rip
 | onCopy | 复制回调 | `(event, content: string, succeeded: boolean) => void` | - |
 | render | 自定义渲染复制节点 | `(copied: boolean, doCopy: (event) => void) => any` | - |
 | successTip | 复制成功的展示内容 | any | - |
-
-> 注意事项：lotus 尚未实现 `Typography.Numeral` 数值组件——它依赖"递归扫描 children 中的数字文本并转换展示"，这种反射 children 结构的模式与 Ripple 的架构限制直接冲突（详见 `showTooltip`/`copyable` 那条 Notice 的同一根因）。
 
 ## Accessibility
 

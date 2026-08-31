@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CopyableFoundation, EllipsisFoundation, type CopyableState, type EllipsisState } from './foundation.js';
+import { CopyableFoundation, EllipsisFoundation, formatNumeral, type CopyableState, type EllipsisState } from './foundation.js';
 import type { Adapter } from '../../base/adapter.js';
 
 function createMockAdapter<S>(initial: S): Adapter<S> {
@@ -125,5 +125,41 @@ describe('EllipsisFoundation.toggleExpand', () => {
 
     foundation.toggleExpand();
     expect(adapter.getState().expanded).toBe(false);
+  });
+});
+
+describe('formatNumeral', () => {
+  it('rule=numbers, truncate=ceil, precision=2：提取数字向上取整到2位小数，用逗号 join（对齐 Semi 测试用例数值）', () => {
+    expect(formatNumeral('预期价格:1.555; 成本: -1; 盈利: 0.555', 'numbers', 2, 'ceil')).toBe('1.56,-1.00,0.56');
+  });
+
+  it('rule=exponential, truncate=floor, precision=2：科学计数法向下取整（对齐 Semi 测试用例数值）', () => {
+    expect(formatNumeral('Total revenue: $ 1992.15', 'exponential', 2, 'floor')).toBe('Total revenue: $ 1.99e+3');
+  });
+
+  it('自定义 parser 时忽略 rule/precision/truncate，直接调用 parser', () => {
+    expect(formatNumeral('Total revenue: $ 1992.15', 'exponential', 2, 'floor', (v) => v.replace(/[^\d.]/g, ''))).toBe(
+      '1992.15',
+    );
+  });
+
+  it('rule=text：非数字片段原样保留，数字片段按 precision 截断但不额外处理千分位', () => {
+    expect(formatNumeral('共 1234.5 件商品', 'text', 1, 'round')).toBe('共 1234.5 件商品');
+  });
+
+  it('rule=bytes-decimal：按 1000 进制换算单位', () => {
+    expect(formatNumeral('1500000', 'bytes-decimal', 2, 'round')).toBe('1.50 MB');
+  });
+
+  it('rule=bytes-binary：按 1024 进制换算单位', () => {
+    expect(formatNumeral('1048576', 'bytes-binary', 2, 'round')).toBe('1.00 MiB');
+  });
+
+  it('rule=percentages：乘以 100 并加 % 后缀', () => {
+    expect(formatNumeral('0.4567', 'percentages', 2, 'round')).toBe('45.67%');
+  });
+
+  it('precision 位数不足时补 0（truncatePrecision 尾部补零逻辑）', () => {
+    expect(formatNumeral('1.5', 'numbers', 3, 'round')).toBe('1.500');
   });
 });

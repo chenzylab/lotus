@@ -16,6 +16,8 @@ export interface TypographyParagraphProps extends TypographySharedProps {
     size?: Exclude<TypographySize, 'inherit'>;
     spacing?: ParagraphSpacing;
     strong?: boolean;
+    /** 自定义渲染元素，默认 `p`（对齐 Semi）。 */
+    component?: string;
     onClick?: (event: MouseEvent) => void;
     'aria-label'?: string;
 }
@@ -26,6 +28,7 @@ export function TypographyParagraph(&{
     type = 'primary',
     size = 'normal',
     spacing = 'normal',
+    component = 'p',
     disabled = false,
     mark = false,
     delete: strikethrough = false,
@@ -96,17 +99,17 @@ export function TypographyParagraph(&{
 
     <>
         @if (linkConfig) {
-            <p class={classes} style={mergedStyle} aria-label={ariaLabel}>
+            <{component} class={classes} style={mergedStyle} aria-label={ariaLabel}>
                 <a {...linkConfig}>
                     @if (icon) {
                         <span class="lotus-typography-icon">{icon}</span>
                     }
                     <span>{children}</span>
                 </a>
-            </p>
+            </{component}>
         } @else if (ellipsisConfig?.showTooltip && !expanded) {
             <Tooltip content={children} block>
-                <p
+                <{component}
                     class={classes}
                     style={mergedStyle}
                     aria-label={ariaLabel}
@@ -134,10 +137,10 @@ export function TypographyParagraph(&{
                     @if (copyableConfig) {
                         <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} nodeRef={(node: HTMLElement) => { copyNode = node; }} />
                     }
-                </p>
+                </{component}>
             </Tooltip>
         } @else {
-            <p
+            <{component}
                 class={classes}
                 style={mergedStyle}
                 aria-label={ariaLabel}
@@ -165,7 +168,7 @@ export function TypographyParagraph(&{
                 @if (copyableConfig) {
                     <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} nodeRef={(node: HTMLElement) => { copyNode = node; }} />
                 }
-            </p>
+            </{component}>
         }
 
         <style>

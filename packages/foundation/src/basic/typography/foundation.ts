@@ -89,3 +89,84 @@ export class EllipsisFoundation extends Foundation<EllipsisState> {
     this.setState({ expanded: !expanded });
   }
 }
+
+export type NumeralRule = 'text' | 'numbers' | 'bytes-decimal' | 'bytes-binary' | 'percentages' | 'exponential';
+export type NumeralTruncate = 'ceil' | 'floor' | 'round';
+
+const TRUNCATE_METHODS: Record<NumeralTruncate, (value: number) => number> = {
+  ceil: Math.ceil,
+  floor: Math.floor,
+  round: Math.round,
+};
+
+const BYTES_DECIMAL_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+const BYTES_BINARY_UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+
+/** 数字前缀不允许单独出现（如 "-" 单独一段不算数字），移植自 Semi formatNumeral.ts 的 extractNumbers 正则。 */
+function extractNumeralTokens(content: string): string[] {
+  const reg = /(-?[0-9]*\.?[0-9]+([eE]-?[0-9]+)?)|([^-\d.]+)/g;
+  return content.match(reg) ?? [];
+}
+
+function isNumeralToken(token: string): boolean {
+  return !(Number.isNaN(Number(token)) || token.replace(/\s+/g, '') === '');
+}
+
+function truncatePrecision(value: number, precision: number, truncate: NumeralTruncate): string {
+  const scaled = TRUNCATE_METHODS[truncate](value * 10 ** precision) / 10 ** precision;
+  const parts = scaled.toString().split('.');
+  if (parts.length === 1) return scaled.toFixed(precision);
+  const fracLength = parts[1]!.length;
+  if (fracLength < precision) return `${parts[0]}.${parts[1]}${'0'.repeat(precision - fracLength)}`;
+  return scaled.toString();
+}
+
+function applyRule(value: number, rule: NumeralRule, precision: number, truncate: NumeralTruncate): string {
+  switch (rule) {
+    case 'bytes-decimal': {
+      let v = value;
+      let i = 0;
+      while (v >= 1000) { v /= 1000; i++; }
+      return `${truncatePrecision(v, precision, truncate)} ${BYTES_DECIMAL_UNITS[i]}`;
+    }
+    case 'bytes-binary': {
+      let v = value;
+      let i = 0;
+      while (v >= 1024) { v /= 1024; i++; }
+      return `${truncatePrecision(v, precision, truncate)} ${BYTES_BINARY_UNITS[i]}`;
+    }
+    case 'percentages':
+      return `${truncatePrecision(value * 100, precision, truncate)}%`;
+    case 'exponential': {
+      const [mantissa, exponent] = value.toExponential(precision + 2).split('e');
+      return `${truncatePrecision(Number(mantissa), precision, truncate)}e${exponent}`;
+    }
+    default:
+      return truncatePrecision(value, precision, truncate);
+  }
+}
+
+/**
+ * 对齐 Semi `semi-foundation/typography/formatNumeral.ts` 的数值格式化算法（纯函数移植，
+ * 非逐行翻译：Semi 是 class + DFS 遍历 children 虚拟节点树，lotus 只需要格式化单一字符串
+ * ——children 遍历/递归格式化交给 Adapter 层处理，因为"虚拟 DOM 节点树"是 React 概念，
+ * Ripple 没有等价结构）。`rule='text'`/`'numbers'` 不查表直接走 truncatePrecision；
+ * 其余 rule 通过 applyRule 查表。
+ */
+export function formatNumeral(
+  content: string,
+  rule: NumeralRule,
+  precision: number,
+  truncate: NumeralTruncate,
+  parser?: (value: string) => string,
+): string {
+  if (parser) return parser(content);
+  const tokens = extractNumeralTokens(content);
+  if (rule === 'text') {
+    return tokens.map((t) => (isNumeralToken(t) ? truncatePrecision(Number(t), precision, truncate) : t)).join('');
+  }
+  if (rule === 'numbers') {
+    return tokens.filter(isNumeralToken).map((t) => truncatePrecision(Number(t), precision, truncate)).join(',');
+  }
+  return tokens.map((t) => (isNumeralToken(t) ? applyRule(Number(t), rule, precision, truncate) : t)).join('');
+}

@@ -13,6 +13,8 @@ export interface TypographyTextProps extends TypographySharedProps {
     children?: any;
     size?: TypographySize;
     weight?: TypographyWeight;
+    /** 自定义渲染元素，默认 `span`（对齐 Semi）。`link` 场景下固定渲染 `<a>`，忽略此项。 */
+    component?: string;
     onClick?: (event: MouseEvent) => void;
     'aria-label'?: string;
 }
@@ -29,6 +31,7 @@ export function TypographyText(&{
     type = 'primary',
     size = 'normal',
     weight,
+    component = 'span',
     disabled = false,
     mark = false,
     code = false,
@@ -141,7 +144,7 @@ export function TypographyText(&{
                 </span>
             </Tooltip>
         } @else {
-            <span
+            <{component}
                 class={classes}
                 style={mergedStyle}
                 aria-label={ariaLabel}
@@ -169,7 +172,7 @@ export function TypographyText(&{
                 @if (copyableConfig) {
                     <CopyableAction config={copyableConfig} textContent={isPlainText ? children : ''} nodeRef={(node: HTMLElement) => { copyNode = node; }} />
                 }
-            </span>
+            </{component}>
         }
 
         <style>

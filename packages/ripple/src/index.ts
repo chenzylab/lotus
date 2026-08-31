@@ -50,6 +50,7 @@ export {
 export { TypographyTitle, type TypographyTitleProps, type TitleHeading } from './basic/typography/title.tsrx';
 export { TypographyText, type TypographyTextProps } from './basic/typography/text.tsrx';
 export { TypographyParagraph, type TypographyParagraphProps, type ParagraphSpacing } from './basic/typography/paragraph.tsrx';
+export { TypographyNumeral, type TypographyNumeralProps, type NumeralRule, type NumeralTruncate } from './basic/typography/numeral.tsrx';
 export {
     type TypographyType,
     type TypographySize,

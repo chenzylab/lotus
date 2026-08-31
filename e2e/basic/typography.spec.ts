@@ -7,6 +7,20 @@ test.describe('Typography', () => {
     await expect(page.getByRole('heading', { level: 6, name: '六级标题' })).toBeVisible();
   });
 
+  test('component prop：Text/Title/Paragraph 均可覆盖默认渲染标签（对齐 Semi，回归防护：此前 lotus 完全没有实现，Title 固定 h1~h6、Text 固定 span、Paragraph 固定 p）', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByLabel('Text 渲染为 div')).toHaveJSProperty('tagName', 'DIV');
+    await expect(page.getByLabel('Title 渲染为 div')).toHaveJSProperty('tagName', 'DIV');
+    await expect(page.getByLabel('Paragraph 渲染为 span')).toHaveJSProperty('tagName', 'SPAN');
+  });
+
+  test('Numeral：数值格式化对齐 Semi 算法（回归防护：此前 lotus 完全没有 Typography.Numeral 组件）', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByLabel('百分比格式化')).toHaveText('45.67%');
+    await expect(page.getByLabel('字节格式化（十进制）')).toHaveText('1.50 MB');
+    await expect(page.getByLabel('科学计数法格式化')).toHaveText('Total revenue: $ 1.99e+3');
+  });
+
   test('Text copyable 点击复制图标后写入剪贴板，按钮切换为已复制状态', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto('/');
