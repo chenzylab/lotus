@@ -15,6 +15,10 @@ export interface TagInputFoundationOptions {
   separator: Separator;
   allowDuplicates: boolean;
   max?: number;
+  /** 单个标签片段（按 separator 拆分后的每一段）的最大字符数（对齐 Semi
+   * maxLength），超过时该次输入变更被拒绝（不写入 inputValue），触发
+   * onInputExceed。不限制标签总数，那是 max 的职责。 */
+  maxLength?: number;
 }
 
 export interface AddTagsResult {
@@ -53,13 +57,40 @@ export class TagInputFoundation extends Foundation<TagInputState> {
     this.setState({ inputValue: value });
   }
 
+  /** 校验一次输入变更是否合法（对齐 Semi _checkInputChangeValid）：把新旧
+   * 输入值都按 separator 拆分，逐段比较长度是否递增且超过 maxLength——
+   * 只在"某一段变长了且超限"时拒绝，允许在超长段内继续删除字符或编辑
+   * 未超限的其它段（对齐 Semi 语义，不是简单粗暴的整体长度限制）。
+   * 未配置 maxLength 时始终放行。返回 false 时调用方不应写入 inputValue，
+   * 应调用 onInputExceed(value) 通知。 */
+  checkInputMaxLength(nextValue: string, splitFn: (input: string, separator: Separator) => string[] = splitBySeparator): boolean {
+    if (this.opts.maxLength === undefined) return true;
+    const { inputValue } = this.getState();
+    const nextSegments = splitFn(nextValue, this.opts.separator);
+    const currentSegments = splitFn(inputValue, this.opts.separator);
+    const maxLen = Math.max(nextSegments.length, currentSegments.length);
+    for (let i = 0; i < maxLen; i++) {
+      const nextSegment = nextSegments[i];
+      const currentSegment = currentSegments[i];
+      if (nextSegment === undefined) continue;
+      const grew = currentSegment === undefined || nextSegment.length > currentSegment.length;
+      if (grew && nextSegment.length > this.opts.maxLength) return false;
+    }
+    return true;
+  }
+
   // ===================== 新增标签 =====================
 
-  /** Enter 提交 / addOnBlur 提交共用：拆分 → 去重 → max 裁剪 → 写回。inputValue 始终被清空（对齐 Semi：即便全部被过滤，输入框也清空）。 */
-  addTagsFromInput(isControlled: boolean): AddTagsResult | null {
+  /** Enter 提交 / addOnBlur 提交共用：拆分 → 去重 → max 裁剪 → 写回。inputValue 始终被清空（对齐 Semi：即便全部被过滤，输入框也清空）。
+   * splitFn 传入时覆盖默认按 separator 拆分的逻辑（对齐 Semi split，真机验证
+   * 发现的真实缺口：此前只有 checkInputMaxLength 接收了自定义拆分函数，
+   * 真正生成标签的这个方法却硬编码用 splitBySeparator，导致 split 配置了
+   * 却对提交结果不生效——输入按自定义分隔符输入的内容，Enter 后被当成
+   * 单一整串按默认 separator 找不到分隔符，产出空标签数组）。 */
+  addTagsFromInput(isControlled: boolean, splitFn: (input: string, separator: Separator) => string[] = splitBySeparator): AddTagsResult | null {
     const { tagsArray, inputValue } = this.getState();
     if (inputValue === '') return null;
-    const candidates = splitBySeparator(inputValue, this.opts.separator);
+    const candidates = splitFn(inputValue, this.opts.separator);
     const normalized = normalizeNewTags(candidates, tagsArray, this.opts.allowDuplicates);
     const { accepted, exceeded } = applyMaxCount(tagsArray.length, normalized, this.opts.max);
 

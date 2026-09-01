@@ -11,13 +11,14 @@ import {
     type WrapRect,
 } from '@lotus/foundation/base/sortable-drag';
 import { Tag } from '../../show/tag/index.tsrx';
-import { Popover } from '../../show/popover/index.tsrx';
+import { Popover, type PopoverProps } from '../../show/popover/index.tsrx';
 import { IconClear, IconHandle } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
 export type TagInputSize = 'small' | 'default' | 'large';
 export type TagInputValidateStatus = 'default' | 'error' | 'warning';
+export type TagInputRestTagsPopoverProps = Omit<PopoverProps, 'children' | 'content'>;
 
 export interface TagInputProps {
     value?: string[];
@@ -28,6 +29,13 @@ export interface TagInputProps {
     onAdd?: (addedValue: string[]) => void;
     onRemove?: (removedValue: string, index: number) => void;
     onExceed?: (value: string[]) => void;
+    /** 单个标签片段超过 maxLength 时的回调（对齐 Semi onInputExceed）。 */
+    onInputExceed?: (value: string) => void;
+    onFocus?: (event: FocusEvent) => void;
+    onBlur?: (event: FocusEvent) => void;
+    /** 原生 keydown 事件透传通知（对齐 Semi onKeyDown），在 Foundation 已处理
+     * Enter/Backspace 之后仍会触发，供调用方扩展额外快捷键。 */
+    onKeyDown?: (event: KeyboardEvent) => void;
     disabled?: boolean;
     size?: TagInputSize;
     validateStatus?: TagInputValidateStatus;
@@ -35,14 +43,38 @@ export interface TagInputProps {
     separator?: Separator;
     allowDuplicates?: boolean;
     max?: number;
+    /** 单个标签片段（按 separator 拆分后的每一段）的最大字符数（对齐 Semi
+     * maxLength），不限制标签总数。 */
+    maxLength?: number;
+    /** 自定义拆分函数，覆盖默认按 separator 拆分的逻辑（对齐 Semi split）。 */
+    split?: (originString: string, separator: Separator) => string[];
     maxTagCount?: number;
     showRestTagsPopover?: boolean;
+    /** 折叠气泡 Popover 的透传配置（对齐 Semi restTagsPopoverProps），
+     * `children`/`content` 由 TagInput 自己控制，不接受外部覆盖。 */
+    restTagsPopoverProps?: TagInputRestTagsPopoverProps;
+    /** 点击折叠气泡本身是否展开剩余标签（对齐 Semi expandRestTagsOnClick，
+     * 默认 true——lotus 独立于 Semi"隐式耦合在 active 全局态"设计的
+     * restExpanded 开关只有点击气泡才会触发，false 时点击气泡不再展开，
+     * 仅保留 hover Popover 预览）。 */
+    expandRestTagsOnClick?: boolean;
+    /** 标签内容超出时是否显示省略提示（对齐 Semi showContentTooltip，默认
+     * true，复用 Tag 内部 Typography.Paragraph 的 ellipsis 能力）。 */
+    showContentTooltip?: boolean;
+    /** 自定义单个标签的渲染（对齐 Semi renderTagItem），接收
+     * (value, index, onClose)，onClose 需调用方自行绑定到关闭触发点。 */
+    renderTagItem?: (value: string, index: number, onClose: () => void) => any;
     addOnBlur?: boolean;
     showClear?: boolean;
+    /** 自定义清除按钮图标（对齐 Semi clearIcon）。 */
+    clearIcon?: any;
     draggable?: boolean;
     prefix?: any;
     suffix?: any;
     autoFocus?: boolean;
+    /** autoFocus 聚焦时是否阻止浏览器自动滚动到视口（对齐 Semi
+     * preventScroll，透传给原生 focus() 的同名选项）。 */
+    preventScroll?: boolean;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -87,6 +119,10 @@ export function TagInput(&{
     onAdd,
     onRemove,
     onExceed,
+    onInputExceed,
+    onFocus,
+    onBlur,
+    onKeyDown,
     disabled = false,
     size = 'default',
     validateStatus = 'default',
@@ -94,14 +130,22 @@ export function TagInput(&{
     separator = ',',
     allowDuplicates = true,
     max,
+    maxLength,
+    split,
     maxTagCount,
     showRestTagsPopover = true,
+    restTagsPopoverProps,
+    expandRestTagsOnClick = true,
+    showContentTooltip = true,
+    renderTagItem,
     addOnBlur = false,
     showClear = false,
+    clearIcon,
     draggable = false,
     prefix,
     suffix,
     autoFocus = false,
+    preventScroll,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -117,7 +161,7 @@ export function TagInput(&{
         inputValue: isInputControlled ? inputValueProp! : '',
     });
 
-    const foundationOpts = { separator, allowDuplicates, max };
+    const foundationOpts = { separator, allowDuplicates, max, maxLength };
     const foundation = new TagInputFoundation(
         {
             getState: () => untrack(() => state),
@@ -126,14 +170,15 @@ export function TagInput(&{
         foundationOpts,
     );
 
-    // separator/allowDuplicates/max 运行时可能变化，addTagsFromInput 内部
-    // 直接读 this.opts 做拆分/去重/裁剪——不同步会永远沿用挂载时刻的旧配置
+    // separator/allowDuplicates/max/maxLength 运行时可能变化，addTagsFromInput
+    // 内部直接读 this.opts 做拆分/去重/裁剪——不同步会永远沿用挂载时刻的旧配置
     // （对齐 Slider RTL opts 固化踩坑 #98 的修复方式：修改共享的 opts 对象
     // 引用，不重新构造 Foundation）。
     effect(() => {
         foundationOpts.separator = separator;
         foundationOpts.allowDuplicates = allowDuplicates;
         foundationOpts.max = max;
+        foundationOpts.maxLength = maxLength;
     });
 
     effect(() => {
@@ -150,18 +195,29 @@ export function TagInput(&{
     let inputNode: HTMLInputElement | null = null;
     let &[restExpanded] = track<boolean>(false);
 
+    effect(() => {
+        if (!autoFocus || disabled) return;
+        untrack(() => inputNode?.focus(preventScroll !== undefined ? { preventScroll } : undefined));
+    });
+
     function emitInputChange(v: string) {
         onInputChange?.(v);
     }
 
     function handleInput(event: Event) {
-        const v = (event.target as HTMLInputElement).value;
+        const input = event.target as HTMLInputElement;
+        const v = input.value;
+        if (!foundation.checkInputMaxLength(v, split)) {
+            input.value = untrack(() => state).inputValue;
+            onInputExceed?.(v);
+            return;
+        }
         foundation.setInputValue(v);
         emitInputChange(v);
     }
 
     function commitInput() {
-        const result = foundation.addTagsFromInput(isControlled);
+        const result = foundation.addTagsFromInput(isControlled, split);
         emitInputChange('');
         if (!result) return;
         if (result.exceeded.length > 0) onExceed?.(result.exceeded);
@@ -172,22 +228,28 @@ export function TagInput(&{
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-        if (disabled) return;
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (untrack(() => state).inputValue !== '') commitInput();
-            return;
+        if (!disabled) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (untrack(() => state).inputValue !== '') commitInput();
+            } else if (event.key === 'Backspace') {
+                const result = foundation.removeLastTag(isControlled);
+                if (result) {
+                    onRemove?.(result.removed, result.index);
+                    onChange?.(result.tagsArray);
+                }
+            }
         }
-        if (event.key === 'Backspace') {
-            const result = foundation.removeLastTag(isControlled);
-            if (!result) return;
-            onRemove?.(result.removed, result.index);
-            onChange?.(result.tagsArray);
-        }
+        onKeyDown?.(event);
     }
 
-    function handleBlur() {
+    function handleBlur(event: FocusEvent) {
         if (addOnBlur && untrack(() => state).inputValue !== '') commitInput();
+        onBlur?.(event);
+    }
+
+    function handleFocus(event: FocusEvent) {
+        onFocus?.(event);
     }
 
     function handleRemoveTag(index: number) {
@@ -206,7 +268,7 @@ export function TagInput(&{
 
     function focusInput() {
         if (disabled) return;
-        inputNode?.focus();
+        inputNode?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
     }
 
     // ===================== maxTagCount 折叠 =====================
@@ -216,6 +278,7 @@ export function TagInput(&{
     let &[visibleTags] = track<string[]>(() => (showFolded ? foldResult.visible : state.tagsArray));
 
     function toggleRestExpanded() {
+        if (!expandRestTagsOnClick) return;
         untrack(() => { restExpanded = !restExpanded; });
     }
 
@@ -343,23 +406,31 @@ export function TagInput(&{
                                 <IconHandle />
                             </span>
                         }
-                        <Tag
-                            color="white"
-                            type="light"
-                            size={size === 'large' ? 'default' : size}
-                            closable={!disabled}
-                            visible={true}
-                            onClose={() => handleRemoveTag(ti)}
-                            aria-label={!disabled ? locale.TagInput.closableTag(item) : locale.TagInput.plainTag(item)}
-                        >
-                            {item}
-                        </Tag>
+                        {renderTagItem ? renderTagItem(item, ti, () => handleRemoveTag(ti)) : (
+                            <Tag
+                                color="white"
+                                type="light"
+                                size={size === 'large' ? 'default' : size}
+                                closable={!disabled}
+                                visible={true}
+                                onClose={() => handleRemoveTag(ti)}
+                                aria-label={!disabled ? locale.TagInput.closableTag(item) : locale.TagInput.plainTag(item)}
+                            >
+                                <span
+                                    class={showContentTooltip ? 'lotus-tag-input-tag-text lotus-tag-input-tag-text-ellipsis' : 'lotus-tag-input-tag-text'}
+                                    title={showContentTooltip ? item : undefined}
+                                >
+                                    {item}
+                                </span>
+                            </Tag>
+                        )}
                     </span>
                 }
                 @if (showFolded) {
                     @if (showRestTagsPopover) {
                         <Popover
                             trigger="hover"
+                            {...(restTagsPopoverProps ?? {})}
                             content={
                                 <div class="lotus-tag-input-rest-popover">
                                     @for (const item of foldResult.rest; index ri; key item) {
@@ -398,10 +469,10 @@ export function TagInput(&{
                     value={state.inputValue}
                     placeholder={state.tagsArray.length === 0 ? placeholder : undefined}
                     disabled={disabled}
-                    autofocus={autoFocus}
                     aria-label={locale.TagInput.inputLabel}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
+                    onFocus={handleFocus}
                     onBlur={handleBlur}
                     ref={(node: HTMLInputElement) => { inputNode = node; }}
                 />
@@ -415,7 +486,7 @@ export function TagInput(&{
                     onClick={handleClear}
                     onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClear(); } }}
                 >
-                    <IconClear />
+                    {clearIcon ?? <IconClear />}
                 </span>
             }
             @if (suffix) {
@@ -487,6 +558,17 @@ export function TagInput(&{
                 display: inline-flex;
                 align-items: center;
                 transition: transform 0.15s ease;
+                max-width: 200px;
+            }
+
+            .lotus-tag-input-tag-text-ellipsis {
+                display: inline-block;
+                min-width: 0;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                vertical-align: bottom;
             }
 
             .lotus-tag-input-drag-handle {

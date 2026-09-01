@@ -79,6 +79,14 @@ describe('TagInputFoundation', () => {
       expect(result?.added).toEqual([]);
       expect(getState().inputValue).toBe('');
     });
+
+    it('传入自定义 splitFn（对齐 Semi split）：覆盖默认按 separator 拆分的逻辑（回归防护：此前只有 checkInputMaxLength 接收自定义拆分函数，addTagsFromInput 硬编码用默认 splitBySeparator，导致 split 配置了却对提交结果不生效——按空格输入的内容 Enter 后被当成默认逗号分隔的单一整串，产出空标签数组）', () => {
+      const { foundation, getState } = createFoundation({}, { inputValue: 'foo bar baz' });
+      const bySpace = (input: string) => input.split(' ').filter(Boolean);
+      const result = foundation.addTagsFromInput(false, bySpace);
+      expect(result?.tagsArray).toEqual(['foo', 'bar', 'baz']);
+      expect(getState().tagsArray).toEqual(['foo', 'bar', 'baz']);
+    });
   });
 
   describe('removeLastTag', () => {
@@ -157,6 +165,49 @@ describe('TagInputFoundation', () => {
       const { foundation, getState } = createFoundation();
       foundation.syncTagsArray(['x', 'y']);
       expect(getState().tagsArray).toEqual(['x', 'y']);
+    });
+  });
+
+  describe('checkInputMaxLength', () => {
+    it('未配置 maxLength：始终放行', () => {
+      const { foundation } = createFoundation({}, { inputValue: 'a' });
+      expect(foundation.checkInputMaxLength('aaaaaaaaaa')).toBe(true);
+    });
+
+    it('单段长度未超限：放行', () => {
+      const { foundation } = createFoundation({ maxLength: 5 }, { inputValue: 'ab' });
+      expect(foundation.checkInputMaxLength('abc')).toBe(true);
+    });
+
+    it('单段长度超限（变长）：拒绝', () => {
+      const { foundation } = createFoundation({ maxLength: 3 }, { inputValue: 'abc' });
+      expect(foundation.checkInputMaxLength('abcd')).toBe(false);
+    });
+
+    it('已超限段内删除字符（变短）：放行，不因为仍然超限而拒绝', () => {
+      // 对齐 Semi 语义：只拒绝"变长且超限"，允许在超长段内继续编辑/删除。
+      const { foundation } = createFoundation({ maxLength: 3 }, { inputValue: 'abcd' });
+      expect(foundation.checkInputMaxLength('abc')).toBe(true);
+    });
+
+    it('多段（按 separator 拆分）：只有变长的那一段超限才拒绝，其它段不受影响', () => {
+      const { foundation } = createFoundation({ maxLength: 3, separator: ',' }, { inputValue: 'ab,cd' });
+      // 第二段 'cd' -> 'cde'，长度 3，未超限，放行。
+      expect(foundation.checkInputMaxLength('ab,cde')).toBe(true);
+      // 第二段 'cd' -> 'cdef'，长度 4，超限，拒绝。
+      expect(foundation.checkInputMaxLength('ab,cdef')).toBe(false);
+    });
+
+    it('新增一段且该段超限：拒绝', () => {
+      const { foundation } = createFoundation({ maxLength: 2, separator: ',' }, { inputValue: 'ab' });
+      expect(foundation.checkInputMaxLength('ab,cde')).toBe(false);
+    });
+
+    it('自定义 splitFn：按自定义拆分函数的分段结果校验（对齐 split prop）', () => {
+      const { foundation } = createFoundation({ maxLength: 2 }, { inputValue: 'a|b' });
+      const customSplit = (input: string) => input.split('|');
+      expect(foundation.checkInputMaxLength('a|bcd', customSplit)).toBe(false);
+      expect(foundation.checkInputMaxLength('a|bc', customSplit)).toBe(true);
     });
   });
 });

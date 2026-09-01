@@ -194,6 +194,7 @@ export {
     type TagInputProps,
     type TagInputSize,
     type TagInputValidateStatus,
+    type TagInputRestTagsPopoverProps,
 } from './input/tag-input/index.tsrx';
 export {
     PinCode,

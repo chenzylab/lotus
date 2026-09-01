@@ -144,4 +144,92 @@ test.describe('TagInput', () => {
     await page.waitForTimeout(300);
     await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
   });
+
+  test('maxLength：单个标签片段超过最大字符数时该次输入被拒绝，触发 onInputExceed', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput maxLength 示例', { exact: true });
+    const input = root.getByLabel('标签输入框', { exact: true });
+
+    await input.fill('abcd');
+    await expect(input).toHaveValue('abcd');
+
+    await input.fill('abcde');
+    await expect(input).toHaveValue('abcd');
+    await expect(page.getByLabel('TagInput maxLength 超限日志', { exact: true })).toHaveText('超限：abcde');
+  });
+
+  test('renderTagItem：自定义标签渲染生效，替换默认 Tag 外观', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput renderTagItem 示例', { exact: true });
+    const tags = root.locator('.lotus-tag-content');
+    await expect(tags.nth(0)).toHaveText('★ custom-a');
+    await expect(tags.nth(1)).toHaveText('★ custom-b');
+  });
+
+  test('showContentTooltip=false：长标签内容完整显示，不省略不带 title', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput showContentTooltip 关闭示例', { exact: true });
+    const text = root.locator('.lotus-tag-input-tag-text').first();
+    await expect(text).toHaveText('这是一个很长很长的标签内容');
+    await expect(text).not.toHaveAttribute('title');
+    await expect(text).not.toHaveClass(/lotus-tag-input-tag-text-ellipsis/);
+  });
+
+  test('showContentTooltip 默认 true：标签内容带 title 属性，省略类生效', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput 基础', { exact: true });
+    const text = root.locator('.lotus-tag-input-tag-text').first();
+    await expect(text).toHaveAttribute('title', '苹果');
+    await expect(text).toHaveClass(/lotus-tag-input-tag-text-ellipsis/);
+  });
+
+  test('clearIcon：自定义清除按钮图标覆盖默认 IconClear', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput clearIcon 与事件透传示例', { exact: true });
+    const clearBtn = root.locator('.lotus-tag-input-clear');
+    await expect(clearBtn).toBeVisible();
+    await expect(clearBtn.locator('svg')).toBeVisible();
+  });
+
+  test('onKeyDown/onFocus/onBlur：原生事件透传给外部回调', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput clearIcon 与事件透传示例', { exact: true });
+    const input = root.getByLabel('标签输入框', { exact: true });
+
+    await input.click();
+    await expect(page.getByLabel('TagInput focus/blur 日志', { exact: true })).toHaveText('聚焦');
+
+    await input.press('a');
+    await expect(page.getByLabel('TagInput keydown 日志', { exact: true })).toHaveText('按键：a');
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByLabel('TagInput focus/blur 日志', { exact: true })).toHaveText('失焦');
+  });
+
+  test('split：自定义拆分函数覆盖默认按 separator 拆分的逻辑（回归防护：此前 addTagsFromInput 硬编码用默认拆分，split 配置了却对提交结果不生效，产出空标签数组）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput split 自定义拆分示例', { exact: true });
+    const input = root.getByLabel('标签输入框', { exact: true });
+
+    await input.fill('foo bar baz');
+    await input.press('Enter');
+
+    const tags = root.locator('.lotus-tag-content');
+    await expect(tags).toHaveCount(3);
+    await expect(tags.nth(0)).toHaveText('foo');
+    await expect(tags.nth(1)).toHaveText('bar');
+    await expect(tags.nth(2)).toHaveText('baz');
+  });
+
+  test('expandRestTagsOnClick=false：点击折叠气泡不展开剩余标签', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput expandRestTagsOnClick 关闭示例', { exact: true });
+    await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
+    const restButton = root.locator('.lotus-tag-input-rest');
+    await expect(restButton).toHaveText('+3');
+
+    await restButton.click();
+    await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
+    await expect(restButton).toHaveText('+3');
+  });
 });

@@ -458,6 +458,9 @@ export function App() @{
     let &[tagInputFoldValue] = track<string[]>(['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6']);
     let &[tagInputDragValue] = track<string[]>(['red', 'green', 'blue', 'yellow']);
     let &[tagInputControlledValue] = track<string[]>(['a', 'b']);
+    let &[tagInputMaxLengthExceedLog] = track<string>('');
+    let &[tagInputKeyDownLog] = track<string>('');
+    let &[tagInputFocusBlurLog] = track<string>('');
     let &[pinCodeChangeLog] = track<string>('');
     let &[pinCodeCompleteLog] = track<string>('');
     let &[pinCodeControlledValue] = track<string>('123');
@@ -4422,6 +4425,76 @@ export function App() @{
                 value={['locked-a', 'locked-b']}
                 onChange={() => {}}
                 aria-label="TagInput 受控拒绝更新示例"
+            />
+        </div>
+
+        <Divider>TagInput：maxLength（单标签片段最大字符数，超限拒绝该次输入并触发 onInputExceed）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                maxLength={4}
+                onInputExceed={(v) => { tagInputMaxLengthExceedLog = `超限：${v}`; }}
+                aria-label="TagInput maxLength 示例"
+            />
+            <TypographyText type="secondary" aria-label="TagInput maxLength 超限日志">{tagInputMaxLengthExceedLog}</TypographyText>
+        </div>
+
+        <Divider>TagInput：renderTagItem 自定义标签渲染</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                defaultValue={['custom-a', 'custom-b']}
+                renderTagItem={(value, index, onClose) => (
+                    <Tag color="orange" onClose={onClose} closable>{`★ ${value}`}</Tag>
+                )}
+                aria-label="TagInput renderTagItem 示例"
+            />
+        </div>
+
+        <Divider>TagInput：showContentTooltip=false（长标签不省略不提示，对比默认 true 的省略行为）</Divider>
+
+        <div style={{ width: '200px' }}>
+            <TagInput
+                defaultValue={['这是一个很长很长的标签内容']}
+                showContentTooltip={false}
+                aria-label="TagInput showContentTooltip 关闭示例"
+            />
+        </div>
+
+        <Divider>TagInput：clearIcon 自定义清除图标 + onKeyDown/onFocus/onBlur 透传</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                defaultValue={['x', 'y']}
+                showClear
+                clearIcon={<IconClose />}
+                onKeyDown={(e) => { tagInputKeyDownLog = `按键：${e.key}`; }}
+                onFocus={() => { tagInputFocusBlurLog = '聚焦'; }}
+                onBlur={() => { tagInputFocusBlurLog = '失焦'; }}
+                aria-label="TagInput clearIcon 与事件透传示例"
+            />
+            <TypographyText type="secondary" aria-label="TagInput keydown 日志">{tagInputKeyDownLog}</TypographyText>
+            <TypographyText type="secondary" aria-label="TagInput focus/blur 日志">{tagInputFocusBlurLog}</TypographyText>
+        </div>
+
+        <Divider>TagInput：split 自定义拆分函数（按空格拆分，覆盖默认 separator 逻辑）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                split={(input) => input.split(' ').filter(Boolean)}
+                aria-label="TagInput split 自定义拆分示例"
+            />
+        </div>
+
+        <Divider>TagInput：restTagsPopoverProps + expandRestTagsOnClick=false（折叠气泡点击不展开，仅保留 hover 预览）</Divider>
+
+        <div style={{ width: '200px' }}>
+            <TagInput
+                defaultValue={['tag1', 'tag2', 'tag3', 'tag4', 'tag5']}
+                maxTagCount={2}
+                expandRestTagsOnClick={false}
+                restTagsPopoverProps={{ position: 'bottom' }}
+                aria-label="TagInput expandRestTagsOnClick 关闭示例"
             />
         </div>
 
