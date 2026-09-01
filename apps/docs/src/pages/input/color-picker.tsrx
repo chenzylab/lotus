@@ -4,6 +4,8 @@ import { DocDemoCard } from '../../components/doc-demo-card.tsrx';
 import { ColorPickerBasicDemo } from '../../demos/input/color-picker/basic.tsrx';
 import { ColorPickerPopoverDemo } from '../../demos/input/color-picker/popover.tsrx';
 import { ColorPickerNoAlphaDemo } from '../../demos/input/color-picker/no-alpha.tsrx';
+import { ColorPickerSlotsDemo } from '../../demos/input/color-picker/slots.tsrx';
+import { ColorPickerPopoverPropsDemo } from '../../demos/input/color-picker/popover-props.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -18,6 +20,8 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/color-picker/basic.tsrx': ColorPickerBasicDemo,
     '../../src/demos/input/color-picker/popover.tsrx': ColorPickerPopoverDemo,
     '../../src/demos/input/color-picker/no-alpha.tsrx': ColorPickerNoAlphaDemo,
+    '../../src/demos/input/color-picker/slots.tsrx': ColorPickerSlotsDemo,
+    '../../src/demos/input/color-picker/popover-props.tsrx': ColorPickerPopoverPropsDemo,
 };
 
 export function ColorPickerDocPage() @{

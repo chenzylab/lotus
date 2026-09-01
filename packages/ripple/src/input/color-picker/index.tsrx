@@ -10,7 +10,7 @@ import {
     type ColorValue,
     type HsvaColor,
 } from '@lotus/foundation/input/color-picker';
-import { Popover } from '../../show/popover/index.tsrx';
+import { Popover, type PopoverProps } from '../../show/popover/index.tsrx';
 import { IconButton } from '../../basic/icon-button/index.tsrx';
 import { IconEyedropper, IconChevronUpDown } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
@@ -25,6 +25,8 @@ interface ColorPickerPanelProps {
     alpha: boolean;
     eyeDropper: boolean;
     eyeDropperSupported: boolean;
+    topSlot?: any;
+    bottomSlot?: any;
     svHandlePos: { x: number; y: number };
     huePos: number;
     alphaPos: number;
@@ -53,6 +55,8 @@ function ColorPickerPanel(&{
     alpha,
     eyeDropper,
     eyeDropperSupported,
+    topSlot,
+    bottomSlot,
     svHandlePos,
     huePos,
     alphaPos,
@@ -78,6 +82,9 @@ function ColorPickerPanel(&{
 
     <>
     <div class="lotus-color-picker-panel" style={{ width: `${width}px` }} ref={(node: HTMLElement) => onPanelNode(node)}>
+        @if (topSlot) {
+            <div class="lotus-color-picker-top-slot">{topSlot}</div>
+        }
         <div
             class="lotus-color-picker-sv"
             style={{ width: `${width}px`, height: `${height}px`, background: hueBackgroundColor }}
@@ -190,6 +197,9 @@ function ColorPickerPanel(&{
                 onClick={onFormatToggle}
             />
         </div>
+        @if (bottomSlot) {
+            <div class="lotus-color-picker-bottom-slot">{bottomSlot}</div>
+        }
     </div>
 
     <style>
@@ -356,6 +366,12 @@ function ColorPickerPanel(&{
             outline: 2px solid var(--lotus-color-primary);
             outline-offset: -1px;
         }
+
+        .lotus-color-picker-top-slot,
+        .lotus-color-picker-bottom-slot {
+            display: flex;
+            flex-direction: column;
+        }
     </style>
     </>
 }
@@ -370,6 +386,14 @@ export interface ColorPickerProps {
     defaultFormat?: ColorFormat;
     eyeDropper?: boolean;
     usePopover?: boolean;
+    /** 面板顶部固定区域（对齐 Semi topSlot），如放置预设色板快捷入口。 */
+    topSlot?: any;
+    /** 面板底部固定区域（对齐 Semi bottomSlot）。 */
+    bottomSlot?: any;
+    /** `usePopover` 时透传给内部 Popover 的完整配置（对齐 Semi popoverProps），
+     * 可覆盖 position/spacing 等展示细节；`trigger`/`visible`/`content` 由
+     * ColorPicker 自身控制，传入这三个字段会被忽略。 */
+    popoverProps?: Omit<PopoverProps, 'trigger' | 'visible' | 'content' | 'children'>;
     className?: string;
     style?: Record<string, any>;
     children?: any;
@@ -465,6 +489,9 @@ export function ColorPicker(&{
     defaultFormat = 'hex',
     eyeDropper = true,
     usePopover = false,
+    topSlot,
+    bottomSlot,
+    popoverProps,
     className,
     style,
     children: triggerChildren,
@@ -712,6 +739,8 @@ export function ColorPicker(&{
         alpha,
         eyeDropper,
         eyeDropperSupported,
+        topSlot,
+        bottomSlot,
         svHandlePos,
         huePos,
         alphaPos,
@@ -737,10 +766,11 @@ export function ColorPicker(&{
         <div class={classes} style={style} role="group" aria-label={ariaLabel} ref={(node: HTMLElement) => { rootNode = node; }}>
             @if (usePopover) {
                 <Popover
+                    spacing={4}
+                    {...(popoverProps ?? {})}
                     trigger="custom"
                     visible={popoverVisible}
                     content={<ColorPickerPanel {...panelProps} />}
-                    spacing={4}
                 >
                     <ColorPickerTrigger
                         triggerChildren={triggerChildren}

@@ -4027,6 +4027,24 @@ export function App() @{
             />
         </div>
 
+        <Divider>ColorPicker：topSlot / bottomSlot（面板外层固定区域，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <ColorPicker
+                topSlot={<TypographyText type="secondary">常用色</TypographyText>}
+                bottomSlot={<TypographyText type="tertiary">提示：拖拽或输入数值调整颜色</TypographyText>}
+                aria-label="ColorPicker topSlot/bottomSlot 示例"
+            />
+        </div>
+
+        <Divider>ColorPicker：popoverProps（透传给内部 Popover 的配置，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <ColorPicker usePopover popoverProps={{ position: 'right' }} aria-label="ColorPicker popoverProps 示例">
+                <Button>右侧弹出</Button>
+            </ColorPicker>
+        </div>
+
         <Divider>Transfer：基础用法（type=list，含搜索/全选/禁用项）</Divider>
 
         <div>

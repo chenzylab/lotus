@@ -238,4 +238,23 @@ test.describe('ColorPicker', () => {
     await page.waitForTimeout(300);
     await expect(hexInput).toHaveValue('#2eafe6');
   });
+
+  test('topSlot/bottomSlot：面板外层固定区域正确渲染（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('ColorPicker topSlot/bottomSlot 示例', { exact: true });
+    await expect(root.locator('.lotus-color-picker-top-slot')).toHaveText('常用色');
+    await expect(root.locator('.lotus-color-picker-bottom-slot')).toHaveText('提示：拖拽或输入数值调整颜色');
+  });
+
+  test('popoverProps：透传给内部 Popover 的配置正确生效，不影响自身开关状态（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    // Popover 内容通过 Portal 渲染到 document.body，脱离了 ColorPicker
+    // 根节点（aria-label 所在容器）的 DOM 子树，面板定位需在 page 级别；
+    // 页面上其它非 popover 形式的 ColorPicker 常驻渲染面板，用数量差值
+    // 断言这次点击新增的那一个。
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: '右侧弹出' });
+    const before = await page.locator('.lotus-color-picker-panel').count();
+    await trigger.click();
+    await expect(page.locator('.lotus-color-picker-panel')).toHaveCount(before + 1);
+  });
 });
