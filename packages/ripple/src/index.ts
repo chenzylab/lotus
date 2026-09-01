@@ -104,8 +104,11 @@ export {
 } from './input/input-number/index.tsrx';
 export {
     Select,
+    SelectOption,
+    SelectOptGroup,
     type SelectProps,
-    type SelectOption,
+    type SelectOptionData,
+    type SelectOptionListEntry,
     type SelectSize,
     type SelectValidateStatus,
 } from './input/select/index.tsrx';

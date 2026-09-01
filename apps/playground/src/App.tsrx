@@ -1,7 +1,7 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOption, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi } from '@lotus/ripple';
+import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -80,22 +80,27 @@ const CROPPER_DEMO_SRC =
         ),
     );
 
-const businessLineOptions: SelectOption[] = [
+const businessLineOptions: SelectOptionData[] = [
     { value: 'douyin', label: '抖音' },
     { value: 'ulikecam', label: '轻颜相机' },
     { value: 'jianying', label: '剪映', disabled: true },
     { value: 'xigua', label: '西瓜视频' },
 ];
 
-const genderOptions: SelectOption[] = [
+const genderOptions: SelectOptionData[] = [
     { value: 'male', label: '男' },
     { value: 'female', label: '女' },
 ];
 
-const largeSelectOptionList: SelectOption[] = Array.from({ length: 10000 }, (_, i) => ({
+const largeSelectOptionList: SelectOptionData[] = Array.from({ length: 10000 }, (_, i) => ({
     value: `option-${i}`,
     label: `选项 ${i}`,
 }));
+
+const groupedSelectOptionList: SelectOptionListEntry[] = [
+    { label: '短视频', options: [{ value: 'douyin', label: '抖音' }, { value: 'xigua', label: '西瓜视频' }] },
+    { label: '影像工具', options: [{ value: 'ulikecam', label: '轻颜相机' }, { value: 'jianying', label: '剪映', disabled: true }] },
+];
 
 function lineTabList(): TabItem[] {
     return [
@@ -359,6 +364,9 @@ export function App() @{
     let &[radioGroupControlledValue] = track<string | number>('A');
     let &[inputNumberControlledValue] = track<number>(0);
     let &[selectControlledValue] = track<string>('douyin');
+    let &[selectEventLog] = track<string>('');
+    let &[selectMultipleMaxValue] = track<Array<string | number>>([]);
+    let &[selectLoading] = track<boolean>(false);
     let &[cascaderControlledValue] = track<Array<string | number>>(['zhejiang', 'hangzhou', 'xihu']);
     let &[cascaderMultipleValue] = track<Array<Array<string | number>>>([]);
     let &[cascaderChangeLog] = track<string>('');
@@ -3257,6 +3265,69 @@ export function App() @{
                 />
             </div>
             <Button onClick={() => { selectControlledValue = selectControlledValue === 'douyin' ? 'xigua' : 'douyin'; }}>切换 Select</Button>
+        </Space>
+
+        <Divider>Select：分组（optionList 数据驱动方式，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '200px' }}>
+            <Select optionList={groupedSelectOptionList} placeholder="请选择" aria-label="Select 分组 optionList 示例" />
+        </div>
+
+        <Divider>Select：分组（SelectOption/SelectOptGroup 组合式声明，对齐 Semi Select.Option/Select.OptGroup，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '200px' }}>
+            <Select placeholder="请选择" aria-label="Select 分组 JSX 示例">
+                <SelectOptGroup label="短视频">
+                    <SelectOption value="douyin" label="抖音" />
+                    <SelectOption value="xigua" label="西瓜视频" />
+                </SelectOptGroup>
+                <SelectOptGroup label="影像工具">
+                    <SelectOption value="ulikecam" label="轻颜相机" />
+                    <SelectOption value="jianying" label="剪映" disabled />
+                </SelectOptGroup>
+            </Select>
+        </div>
+
+        <Divider>Select：max + maxTagCount（多选上限 + tag 折叠，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '280px' }}>
+                <Select
+                    optionList={largeSelectOptionList.slice(0, 6)}
+                    multiple
+                    max={3}
+                    value={selectMultipleMaxValue}
+                    onChange={(v) => { if (Array.isArray(v)) selectMultipleMaxValue = v; }}
+                    onSelect={(v) => { selectEventLog = `onSelect: ${v}`; }}
+                    onDeselect={(v) => { selectEventLog = `onDeselect: ${v}`; }}
+                    onExceed={() => { selectEventLog = 'onExceed: 已达上限 3 项'; }}
+                    placeholder="最多选 3 项"
+                    aria-label="Select max 示例"
+                />
+            </div>
+            <div style={{ width: '280px' }}>
+                <Select
+                    optionList={largeSelectOptionList.slice(0, 6)}
+                    multiple
+                    maxTagCount={2}
+                    defaultValue={['option-0', 'option-1', 'option-2', 'option-3']}
+                    placeholder="请选择"
+                    aria-label="Select maxTagCount 示例"
+                />
+            </div>
+            <span>{selectEventLog}</span>
+        </Space>
+
+        <Divider>Select：loading / emptyContent（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} loading={selectLoading} placeholder="请选择" aria-label="Select loading 示例" />
+            </div>
+            <Button onClick={() => { selectLoading = !selectLoading; }}>切换 loading</Button>
+            <div style={{ width: '200px' }}>
+                <Select optionList={[]} emptyContent="暂无可选业务线" aria-label="Select emptyContent 示例" />
+            </div>
         </Space>
 
         <Divider>Cascader：单选（非叶子节点点击展开下一级）</Divider>

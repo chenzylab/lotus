@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SelectFoundation, filterSelectOptions, type SelectState } from './foundation.js';
+import { SelectFoundation, filterSelectOptions, flattenSelectOptions, isSelectOptionGroup, type SelectState } from './foundation.js';
 import type { Adapter } from '../../base/adapter.js';
 
 function createMockAdapter(initial: Omit<SelectState, 'searchInput'> & { searchInput?: string }): Adapter<SelectState> & { _raw: () => SelectState } {
@@ -219,5 +219,121 @@ describe('filterSelectOptions', () => {
   it('label 缺失时回退用 value 做字符串匹配', () => {
     const noLabel = [{ value: 'plain-text' }];
     expect(filterSelectOptions(noLabel, 'plain', true).map((o) => o.value)).toEqual(['plain-text']);
+  });
+});
+
+describe('SelectFoundation.selectMultiple with max', () => {
+  it('未达上限时正常新增并触发 onSelect', () => {
+    const adapter = createMockAdapter({ value: ['a'] });
+    const foundation = new SelectFoundation(adapter);
+    const onChange = vi.fn();
+    const onSelect = vi.fn();
+
+    foundation.selectMultiple('b', false, onChange, { max: 2, onSelect });
+
+    expect(adapter._raw().value).toEqual(['a', 'b']);
+    expect(onChange).toHaveBeenCalledWith(['a', 'b']);
+    expect(onSelect).toHaveBeenCalledWith('b');
+  });
+
+  it('已达上限时新增被拦截，触发 onExceed，不调用 onChange', () => {
+    const adapter = createMockAdapter({ value: ['a', 'b'] });
+    const foundation = new SelectFoundation(adapter);
+    const onChange = vi.fn();
+    const onExceed = vi.fn();
+
+    foundation.selectMultiple('c', false, onChange, { max: 2, onExceed });
+
+    expect(adapter._raw().value).toEqual(['a', 'b']);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(onExceed).toHaveBeenCalled();
+  });
+
+  it('已达上限时取消选中仍然允许，触发 onDeselect', () => {
+    const adapter = createMockAdapter({ value: ['a', 'b'] });
+    const foundation = new SelectFoundation(adapter);
+    const onChange = vi.fn();
+    const onDeselect = vi.fn();
+
+    foundation.selectMultiple('a', false, onChange, { max: 2, onDeselect });
+
+    expect(adapter._raw().value).toEqual(['b']);
+    expect(onDeselect).toHaveBeenCalledWith('a');
+  });
+});
+
+describe('SelectFoundation.removeMultipleValue triggers onDeselect', () => {
+  it('移除时触发 onDeselect 回调', () => {
+    const adapter = createMockAdapter({ value: ['a', 'b'] });
+    const foundation = new SelectFoundation(adapter);
+    const onChange = vi.fn();
+    const onDeselect = vi.fn();
+
+    foundation.removeMultipleValue('a', false, onChange, onDeselect);
+
+    expect(onDeselect).toHaveBeenCalledWith('a');
+  });
+});
+
+describe('SelectFoundation.selectSingle triggers onSelect', () => {
+  it('选中时同时触发 onChange 和 onSelect', () => {
+    const adapter = createMockAdapter({ value: 'a' });
+    const foundation = new SelectFoundation(adapter);
+    const onChange = vi.fn();
+    const onSelect = vi.fn();
+
+    foundation.selectSingle('b', false, onChange, onSelect);
+
+    expect(onChange).toHaveBeenCalledWith('b');
+    expect(onSelect).toHaveBeenCalledWith('b');
+  });
+});
+
+describe('SelectFoundation.resolveVisibleTags', () => {
+  const items = [{ value: 'a' }, { value: 'b' }, { value: 'c' }, { value: 'd' }];
+
+  it('maxTagCount 未设置时不折叠，返回全部', () => {
+    const result = SelectFoundation.resolveVisibleTags(items, undefined);
+    expect(result.visible).toEqual(items);
+    expect(result.restCount).toBe(0);
+  });
+
+  it('maxTagCount 为 0 时不折叠', () => {
+    const result = SelectFoundation.resolveVisibleTags(items, 0);
+    expect(result.visible).toEqual(items);
+    expect(result.restCount).toBe(0);
+  });
+
+  it('已选数量未超出 maxTagCount 时不折叠', () => {
+    const result = SelectFoundation.resolveVisibleTags(items.slice(0, 2), 3);
+    expect(result.visible).toEqual(items.slice(0, 2));
+    expect(result.restCount).toBe(0);
+  });
+
+  it('超出 maxTagCount 时截断，返回剩余数量与剩余项', () => {
+    const result = SelectFoundation.resolveVisibleTags(items, 2);
+    expect(result.visible).toEqual(items.slice(0, 2));
+    expect(result.restCount).toBe(2);
+    expect(result.rest).toEqual(items.slice(2));
+  });
+});
+
+describe('isSelectOptionGroup / flattenSelectOptions', () => {
+  const flatOption = { value: 'a', label: 'A' };
+  const group = { label: '分组一', options: [{ value: 'b', label: 'B' }, { value: 'c', label: 'C' }] };
+
+  it('isSelectOptionGroup 正确区分扁平项和分组项', () => {
+    expect(isSelectOptionGroup(flatOption)).toBe(false);
+    expect(isSelectOptionGroup(group)).toBe(true);
+  });
+
+  it('flattenSelectOptions 展平混合的扁平项与分组项', () => {
+    const result = flattenSelectOptions([flatOption, group]);
+    expect(result.map((o) => o.value)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('flattenSelectOptions 对全扁平数组保持原样', () => {
+    const result = flattenSelectOptions([flatOption, { value: 'x', label: 'X' }]);
+    expect(result.map((o) => o.value)).toEqual(['a', 'x']);
   });
 });

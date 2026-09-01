@@ -1,4 +1,4 @@
-import { Select, type SelectOption } from '../../input/select/index.tsrx';
+import { Select, type SelectOptionData } from '../../input/select/index.tsrx';
 import type { SelectValue } from '@lotus/foundation/input/select';
 import { Button, type ButtonProps } from '../../basic/button/index.tsrx';
 import { RadioGroup, type RadioGroupOption } from '../../input/radio/group.tsrx';
@@ -12,7 +12,7 @@ import { RadioGroup, type RadioGroupOption } from '../../input/radio/group.tsrx'
  */
 
 export interface ConfigureSelectProps {
-    optionList?: SelectOption[];
+    optionList?: SelectOptionData[];
     value?: SelectValue | SelectValue[];
     onChange?: (value: SelectValue | SelectValue[] | undefined) => void;
     placeholder?: string;

@@ -1,8 +1,8 @@
 import { track } from 'ripple';
 import { Select, Button, Space } from '@lotus/ripple';
-import type { SelectOption } from '@lotus/ripple';
+import type { SelectOptionData } from '@lotus/ripple';
 
-const options: SelectOption[] = [
+const options: SelectOptionData[] = [
     { value: 'douyin', label: '抖音' },
     { value: 'xigua', label: '西瓜视频' },
 ];

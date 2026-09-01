@@ -15,6 +15,26 @@ export interface SelectFilterableOption {
   disabled?: boolean;
 }
 
+/** 组合式 `<Select.OptGroup>` 声明产出的分组结构（对齐 Semi：分组仅
+ * JSX children 声明支持，`optionList` 数组本身不支持分组——一手源码核对
+ * `getOptionsFromChildren`，`optionList` 分支直接平铺成单个无标题组）。 */
+export interface SelectOptionGroup<T> {
+  label: any;
+  options: T[];
+}
+
+export type SelectOptionOrGroup<T> = T | SelectOptionGroup<T>;
+
+export function isSelectOptionGroup<T>(entry: SelectOptionOrGroup<T>): entry is SelectOptionGroup<T> {
+  return typeof entry === 'object' && entry !== null && 'options' in entry && Array.isArray((entry as SelectOptionGroup<T>).options);
+}
+
+/** 展平分组结构为扁平选项序列——键盘导航/filter/虚拟滚动/回显统一基于
+ * 展平后的序列，分组信息只在渲染时体现为组标题分隔。 */
+export function flattenSelectOptions<T>(entries: SelectOptionOrGroup<T>[]): T[] {
+  return entries.flatMap((entry) => (isSelectOptionGroup(entry) ? entry.options : [entry]));
+}
+
 /** 对齐 Semi `filter` prop 语义：`false`/未设置不过滤；`true` 走内置的
  * label 大小写不敏感包含匹配；函数则完全交给调用方判断。来源：
  * `semi-foundation/select/foundation.ts` `_filterOption`（一手来源核对，
@@ -59,26 +79,58 @@ export class SelectFoundation extends Foundation<SelectState> {
     this.setState({ searchInput: '' });
   }
 
-  selectSingle(itemValue: SelectValue, isControlled: boolean, onChange?: (value: SelectValue) => void): void {
+  selectSingle(
+    itemValue: SelectValue,
+    isControlled: boolean,
+    onChange?: (value: SelectValue) => void,
+    onSelect?: (value: SelectValue) => void,
+  ): void {
     if (!isControlled) {
       this.setState({ value: itemValue });
     }
     onChange?.(itemValue);
+    onSelect?.(itemValue);
   }
 
-  selectMultiple(itemValue: SelectValue, isControlled: boolean, onChange?: (value: SelectValue[]) => void): void {
+  /**
+   * `max` 对齐 Semi：仅在"新增选中"（非取消选中）且已达上限时才拦截，
+   * 通过 `onExceed` 通知调用方，不触发 onChange/state 变更。取消选中永远
+   * 允许（否则用户会卡在无法减少选中项的状态）。
+   */
+  selectMultiple(
+    itemValue: SelectValue,
+    isControlled: boolean,
+    onChange?: (value: SelectValue[]) => void,
+    options?: { max?: number; onExceed?: () => void; onSelect?: (value: SelectValue) => void; onDeselect?: (value: SelectValue) => void },
+  ): void {
     const { value } = this.getState();
     const current = Array.isArray(value) ? value : [];
     const exists = current.includes(itemValue);
+
+    if (!exists && options?.max !== undefined && current.length >= options.max) {
+      options.onExceed?.();
+      return;
+    }
+
     const next = exists ? current.filter((v) => v !== itemValue) : [...current, itemValue];
 
     if (!isControlled) {
       this.setState({ value: next });
     }
     onChange?.(next);
+    if (exists) {
+      options?.onDeselect?.(itemValue);
+    } else {
+      options?.onSelect?.(itemValue);
+    }
   }
 
-  removeMultipleValue(itemValue: SelectValue, isControlled: boolean, onChange?: (value: SelectValue[]) => void): void {
+  removeMultipleValue(
+    itemValue: SelectValue,
+    isControlled: boolean,
+    onChange?: (value: SelectValue[]) => void,
+    onDeselect?: (value: SelectValue) => void,
+  ): void {
     const { value } = this.getState();
     const current = Array.isArray(value) ? value : [];
     const next = current.filter((v) => v !== itemValue);
@@ -87,6 +139,7 @@ export class SelectFoundation extends Foundation<SelectState> {
       this.setState({ value: next });
     }
     onChange?.(next);
+    onDeselect?.(itemValue);
   }
 
   clear(multiple: boolean, isControlled: boolean, onChange?: (value: SelectValue | SelectValue[] | undefined) => void): void {
@@ -103,5 +156,22 @@ export class SelectFoundation extends Foundation<SelectState> {
 
   static isMultipleChecked(value: SelectValue | SelectValue[] | undefined, itemValue: SelectValue): boolean {
     return Array.isArray(value) && value.includes(itemValue);
+  }
+
+  /** 多选 tag 折叠：`maxTagCount` 未设置/<=0 或已选数量未超出时不折叠，
+   * 返回全部；否则截断为前 N 个可见 tag + 剩余数量（对齐 Semi
+   * maxTagCount/ellipsisTrigger 折叠为 "+N" 的行为）。 */
+  static resolveVisibleTags<T extends { value: SelectValue }>(
+    items: T[],
+    maxTagCount: number | undefined,
+  ): { visible: T[]; restCount: number; rest: T[] } {
+    if (!maxTagCount || maxTagCount <= 0 || items.length <= maxTagCount) {
+      return { visible: items, restCount: 0, rest: [] };
+    }
+    return {
+      visible: items.slice(0, maxTagCount),
+      restCount: items.length - maxTagCount,
+      rest: items.slice(maxTagCount),
+    };
   }
 }

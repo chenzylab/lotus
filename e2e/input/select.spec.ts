@@ -212,4 +212,93 @@ test.describe('Select', () => {
     await options.first().click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('打开面板默认高亮第一个可选项（defaultActiveFirstOption，对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 基本示例', { exact: true });
+
+    await trigger.click();
+    const activeId = await trigger.getAttribute('aria-activedescendant');
+    expect(activeId).toBeTruthy();
+    await expect(page.locator(`#${activeId}`)).toHaveText('抖音');
+  });
+
+  test('分组（optionList 数据驱动方式）：渲染组标题，组内选项可正常选中（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 分组 optionList 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await expect(page.locator('.lotus-select-group-label')).toHaveCount(2);
+    await expect(page.locator('.lotus-select-group-label').first()).toHaveText('短视频');
+
+    await page.getByRole('option', { name: '西瓜视频' }).click();
+    await expect(trigger).toHaveText('西瓜视频');
+  });
+
+  test('分组（SelectOption/SelectOptGroup 组合式声明）：渲染组标题，组内选项可正常选中（对齐 Semi Select.Option/Select.OptGroup，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select 分组 JSX 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await expect(page.locator('.lotus-select-group-label')).toHaveCount(2);
+    await expect(page.locator('.lotus-select-group-label').nth(1)).toHaveText('影像工具');
+
+    await page.getByRole('option', { name: '轻颜相机' }).click();
+    await expect(trigger).toHaveText('轻颜相机');
+  });
+
+  test('max：达上限后新增选中被拦截并触发 onExceed，取消选中后可再次选中（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select max 示例', { exact: true });
+    const eventLog = page.locator('text=/^onSelect:|^onDeselect:|^onExceed:/');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await page.getByRole('option', { name: '选项 0' }).click();
+    await page.getByRole('option', { name: '选项 1' }).click();
+    await page.getByRole('option', { name: '选项 2' }).click();
+    await expect(eventLog).toHaveText('onSelect: option-2');
+
+    await page.getByRole('option', { name: '选项 3' }).click();
+    await expect(eventLog).toHaveText('onExceed: 已达上限 3 项');
+
+    await page.getByRole('option', { name: '选项 0' }).click();
+    await expect(eventLog).toHaveText('onDeselect: option-0');
+
+    await page.getByRole('option', { name: '选项 3' }).click();
+    await expect(eventLog).toHaveText('onSelect: option-3');
+  });
+
+  test('maxTagCount：多选已选 tag 超出后折叠为 "+N"（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select maxTagCount 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+
+    const tags = trigger.locator('.lotus-select-tag');
+    await expect(tags).toHaveCount(3);
+    await expect(trigger.locator('.lotus-select-tag-rest')).toHaveText('+2');
+  });
+
+  test('loading：渲染中显示 loading 指示，替代选项列表（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select loading 示例', { exact: true });
+    const toggleButton = page.getByRole('button', { name: '切换 loading' });
+    await trigger.scrollIntoViewIfNeeded();
+
+    await toggleButton.click();
+    await trigger.click();
+    await expect(page.locator('.lotus-select-loading')).toBeVisible();
+    await expect(page.locator('.lotus-select-list')).toHaveCount(0);
+  });
+
+  test('emptyContent：自定义空状态内容替代默认纯文本（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select emptyContent 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await expect(page.locator('.lotus-select-empty')).toHaveText('暂无可选业务线');
+  });
 });
