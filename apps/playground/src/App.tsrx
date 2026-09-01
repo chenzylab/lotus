@@ -4319,6 +4319,110 @@ export function App() @{
             </Button>
         </div>
 
+        <Divider>Transfer：renderSourceItem/renderSelectedItem 自定义渲染（含 onChange/onRemove 回调，对齐 Semi，此前 lotus 完全没有验证过）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                draggable
+                renderSourceItem={(item) => (
+                    <div onClick={item.onChange} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <Checkbox checked={item.checked} aria-label={`自定义源项 ${item.label}`} />
+                        <span>★ {item.label}</span>
+                    </div>
+                )}
+                renderSelectedItem={(item) => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                        <span
+                            role="button"
+                            aria-label={`拖拽手柄 ${item.label}`}
+                            onMouseDown={item.dragHandleOnMouseDown}
+                            style={{ cursor: 'grab' }}
+                        >
+                            ☰
+                        </span>
+                        <span style={{ flex: '1' }}>◆ {item.label}</span>
+                        <Button size="small" theme="borderless" onClick={item.onRemove} aria-label={`移除 ${item.label}`}>移除</Button>
+                    </div>
+                )}
+                aria-label="Transfer renderItem 自定义示例"
+            />
+        </div>
+
+        <Divider>Transfer：inputProps/treeProps 配置透传（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                inputProps={{ maxLength: 10 }}
+                aria-label="Transfer inputProps 示例"
+            />
+        </div>
+
+        <div>
+            <Transfer
+                type="treeList"
+                dataSource={treeDemoData}
+                treeProps={{ defaultExpandAll: true }}
+                aria-label="Transfer treeProps 示例"
+            />
+        </div>
+
+        <Divider>Transfer：renderSourceHeader/renderSelectedHeader 自定义头部（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                renderSourceHeader={(info) => (
+                    <div style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }} aria-label="自定义源头部">
+                        <span>共 {info.num} 项</span>
+                        @if (info.showButton) {
+                            <Button size="small" onClick={info.onAllClick}>{info.allChecked ? '取消全选' : '全选'}</Button>
+                        }
+                    </div>
+                )}
+                renderSelectedHeader={(info) => (
+                    <div style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between' }} aria-label="自定义已选头部">
+                        <span>已选 {info.length} 项</span>
+                        @if (info.length > 0) {
+                            <Button size="small" onClick={info.onClear}>清空</Button>
+                        }
+                    </div>
+                )}
+                aria-label="Transfer renderHeader 自定义示例"
+            />
+        </div>
+
+        <Divider>Transfer：renderSourcePanel/renderSelectedPanel 完全自定义面板（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <Transfer
+                dataSource={transferListData}
+                renderSourcePanel={(props) => (
+                    <div style={{ width: '240px', border: '1px dashed var(--lotus-color-border)', padding: '12px' }} aria-label="自定义源面板">
+                        <div>自定义面板：{props.visibleData.length} 项可选</div>
+                        @for (const item of props.visibleData; index sci) {
+                            <div onClick={() => props.onSelectOrRemove(item)} style={{ cursor: 'pointer' }}>
+                                {props.selectedItems.has(item.key) ? '☑' : '☐'} {item.label}
+                            </div>
+                        }
+                    </div>
+                )}
+                renderSelectedPanel={(props) => (
+                    <div style={{ width: '240px', border: '1px dashed var(--lotus-color-border)', padding: '12px' }} aria-label="自定义已选面板">
+                        <div>自定义面板：已选 {props.selectedData.length} 项</div>
+                        @for (const item of props.selectedData; index spi) {
+                            <div>
+                                {item.label}
+                                <Button size="small" theme="borderless" onClick={() => props.onRemove(item)}>×</Button>
+                            </div>
+                        }
+                    </div>
+                )}
+                aria-label="Transfer renderPanel 自定义示例"
+            />
+        </div>
+
         <Divider>Upload：基础用法（listType=list，点击触发，customRequest 模拟上传）</Divider>
 
         <div>

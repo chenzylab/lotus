@@ -13,12 +13,12 @@ import {
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { calcTargetIndex, getDragOffset, type ItemRect, type SortableDragState } from '@lotus/foundation/base/sortable-drag';
 import { Checkbox } from '../checkbox/index.tsrx';
-import { Input } from '../input/index.tsrx';
+import { Input, type InputProps } from '../input/index.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
 import { Spin } from '../../feedback/spin/index.tsrx';
 import { Empty } from '../../show/empty/index.tsrx';
 import { Pagination } from '../../navigation/pagination/index.tsrx';
-import { Tree, type TreeNodeData } from '../../navigation/tree/index.tsrx';
+import { Tree, type TreeNodeData, type TreeProps } from '../../navigation/tree/index.tsrx';
 import { IconSearch, IconClose, IconHandle } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -43,6 +43,23 @@ export interface TransferPaginationConfig {
     onPageChange?: (page: number) => void;
 }
 
+export interface TransferRenderSourceItem extends ResolvedDataItem {
+    checked: boolean;
+    onChange: () => void;
+}
+
+export interface TransferSourceHeaderInfo {
+    num: number;
+    showButton: boolean;
+    allChecked: boolean;
+    onAllClick: () => void;
+}
+
+export interface TransferSelectedHeaderInfo {
+    length: number;
+    onClear: () => void;
+}
+
 export interface TransferProps {
     dataSource?: TransferDataSource;
     type?: TransferType;
@@ -56,12 +73,40 @@ export interface TransferProps {
     pagination?: TransferPaginationConfig;
     showPath?: boolean;
     emptyContent?: TransferEmptyContent;
+    /** 透传给左侧搜索框的 Input props（对齐 Semi inputProps），value/onChange/
+     * placeholder/disabled 仍由 Transfer 自己控制，不接受外部覆盖。 */
+    inputProps?: Omit<InputProps, 'value' | 'onChange' | 'placeholder' | 'disabled'>;
+    /** 透传给 treeList 模式内部 Tree 组件的 props（对齐 Semi treeProps），
+     * value/onChange 由 Transfer 自己控制，不接受外部覆盖。 */
+    treeProps?: Omit<TreeProps, 'value' | 'onChange' | 'treeData'>;
     onChange?: (values: Array<string | number>, items: ResolvedDataItem[]) => void;
     onSelect?: (item: ResolvedDataItem) => void;
     onDeselect?: (item: ResolvedDataItem) => void;
     onSearch?: (input: string) => void;
-    renderSourceItem?: (item: ResolvedDataItem & { checked: boolean }) => any;
-    renderSelectedItem?: (item: ResolvedDataItem) => any;
+    renderSourceItem?: (item: TransferRenderSourceItem) => any;
+    renderSelectedItem?: (item: TransferRenderSelectedItem) => any;
+    /** 完全自定义左侧（源）面板渲染，替换整个面板（含头部/搜索框/列表），
+     * 对齐 Semi renderSourcePanel。 */
+    renderSourcePanel?: (props: {
+        visibleData: ResolvedDataItem[];
+        selectedItems: Map<string | number, ResolvedDataItem>;
+        inputValue: string;
+        onSearch: (input: string) => void;
+        onAllClick: () => void;
+        onSelectOrRemove: (item: ResolvedDataItem) => void;
+        allChecked: boolean;
+        loading: boolean;
+    }) => any;
+    /** 完全自定义右侧（已选）面板渲染，替换整个面板，对齐 Semi renderSelectedPanel。 */
+    renderSelectedPanel?: (props: {
+        selectedData: ResolvedDataItem[];
+        onClear: () => void;
+        onRemove: (item: ResolvedDataItem) => void;
+    }) => any;
+    /** 自定义左侧面板头部渲染，对齐 Semi renderSourceHeader。 */
+    renderSourceHeader?: (info: TransferSourceHeaderInfo) => any;
+    /** 自定义右侧面板头部渲染，对齐 Semi renderSelectedHeader。 */
+    renderSelectedHeader?: (info: TransferSelectedHeaderInfo) => any;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -111,15 +156,13 @@ interface SourceItemProps {
     checked: boolean;
     disabled: boolean;
     onToggle: (item: ResolvedDataItem) => void;
-    renderSourceItem?: (item: ResolvedDataItem & { checked: boolean }) => any;
+    renderSourceItem?: (item: ResolvedDataItem & { checked: boolean; onChange: () => void }) => any;
 }
 
 function SourceItem(&{ item, checked, disabled, onToggle, renderSourceItem }: SourceItemProps) @{
     <>
     <div class="lotus-transfer-source-item" role="listitem">
-        @if (renderSourceItem) {
-            <div onClick={() => onToggle(item)}>{renderSourceItem({ ...item, checked })}</div>
-        } @else {
+        {renderSourceItem ? renderSourceItem({ ...item, checked, onChange: () => onToggle(item) }) : (
             <Checkbox
                 checked={checked}
                 disabled={disabled}
@@ -128,7 +171,7 @@ function SourceItem(&{ item, checked, disabled, onToggle, renderSourceItem }: So
             >
                 {itemLabel(item)}
             </Checkbox>
-        }
+        )}
     </div>
 
     <style>
@@ -145,6 +188,18 @@ function SourceItem(&{ item, checked, disabled, onToggle, renderSourceItem }: So
     </>
 }
 
+export interface TransferRenderSelectedItem extends ResolvedDataItem {
+    onRemove: () => void;
+    /** 拖拽手柄的 onMouseDown 处理函数，draggable=true 时非 undefined——
+     * 绑到调用方渲染的任意元素上即可让该元素成为拖拽触发点（对齐 Semi
+     * sortableHandle 语义，但用直接暴露事件处理函数而非"返回可渲染组件的
+     * 工厂函数"这种 Ripple 不支持的 render-prop 模式）。 */
+    dragHandleOnMouseDown?: (event: MouseEvent) => void;
+    /** treeList 模式 + showPath 时的完整路径（对齐 Semi fullPath），
+     * 其余场景为 undefined。与 item.path 同源，命名对齐 Semi。 */
+    fullPath?: ResolvedDataItem['path'];
+}
+
 interface SelectedItemProps {
     item: ResolvedDataItem;
     showPath: boolean;
@@ -153,7 +208,7 @@ interface SelectedItemProps {
     dragOffset: number;
     onRemove: (item: ResolvedDataItem) => void;
     onDragStart: (event: MouseEvent) => void;
-    renderSelectedItem?: (item: ResolvedDataItem) => any;
+    renderSelectedItem?: (item: TransferRenderSelectedItem) => any;
     itemRef?: (node: HTMLElement) => void;
 }
 
@@ -178,9 +233,12 @@ function SelectedItem(&{
         role="listitem"
         ref={(node: HTMLElement) => itemRef?.(node)}
     >
-        @if (renderSelectedItem) {
-            {renderSelectedItem(item)}
-        } @else {
+        {renderSelectedItem ? renderSelectedItem({
+            ...item,
+            onRemove: () => onRemove(item),
+            dragHandleOnMouseDown: draggable ? onDragStart : undefined,
+            fullPath: showPath ? item.path : undefined,
+        }) : (
             <>
                 @if (draggable) {
                     <span
@@ -202,7 +260,7 @@ function SelectedItem(&{
                     <IconClose />
                 </span>
             </>
-        }
+        )}
     </div>
 
     <style>
@@ -279,12 +337,18 @@ export function Transfer(&{
     pagination,
     showPath = false,
     emptyContent = {},
+    inputProps,
+    treeProps,
     onChange,
     onSelect,
     onDeselect,
     onSearch,
     renderSourceItem,
     renderSelectedItem,
+    renderSourcePanel,
+    renderSelectedPanel,
+    renderSourceHeader,
+    renderSelectedHeader,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -492,19 +556,38 @@ export function Transfer(&{
     <>
         <div class={classes} style={style} aria-label={ariaLabel}>
             <div class="lotus-transfer-panel lotus-transfer-panel-left">
-                <div class="lotus-transfer-header">
-                    <span class="lotus-transfer-header-title">{locale.Transfer.itemCount(visibleData.length)}</span>
-                    @if (selectAllStatus.showButton && type !== 'treeList') {
-                        <Button theme="borderless" type="tertiary" size="small" onClick={handleAllClick} disabled={disabled}>
-                            {selectAllStatus.allChecked ? locale.Transfer.clearAll : locale.Transfer.selectAll}
-                        </Button>
-                    }
-                </div>
+                {renderSourcePanel ? renderSourcePanel({
+                    visibleData,
+                    selectedItems: state.selectedItems,
+                    inputValue: state.inputValue,
+                    onSearch: handleSearchInput,
+                    onAllClick: handleAllClick,
+                    onSelectOrRemove: handleToggle,
+                    allChecked: selectAllStatus.allChecked,
+                    loading,
+                }) : (
+                <>
+                {renderSourceHeader ? renderSourceHeader({
+                    num: visibleData.length,
+                    showButton: selectAllStatus.showButton && type !== 'treeList',
+                    allChecked: selectAllStatus.allChecked,
+                    onAllClick: handleAllClick,
+                }) : (
+                    <div class="lotus-transfer-header">
+                        <span class="lotus-transfer-header-title">{locale.Transfer.itemCount(visibleData.length)}</span>
+                        @if (selectAllStatus.showButton && type !== 'treeList') {
+                            <Button theme="borderless" type="tertiary" size="small" onClick={handleAllClick} disabled={disabled}>
+                                {selectAllStatus.allChecked ? locale.Transfer.clearAll : locale.Transfer.selectAll}
+                            </Button>
+                        }
+                    </div>
+                )}
                 @if (filter !== false && type !== 'treeList') {
                     <div class="lotus-transfer-search" role="search" aria-label={locale.Transfer.filterLabel}>
                         <Input
                             prefix={<IconSearch />}
                             showClear
+                            {...(inputProps ?? {})}
                             placeholder={locale.Transfer.searchPlaceholder}
                             value={state.inputValue}
                             disabled={disabled}
@@ -520,6 +603,7 @@ export function Transfer(&{
                             <Empty description={emptyContent.left ?? locale.Transfer.emptyLeft} />
                         } @else {
                             <Tree
+                                {...(treeProps ?? {})}
                                 treeData={treeNodes}
                                 multiple
                                 value={treeCheckedKeys}
@@ -559,17 +643,30 @@ export function Transfer(&{
                         />
                     </div>
                 }
+                </>
+                )}
             </div>
 
             <div class="lotus-transfer-panel lotus-transfer-panel-right">
-                <div class="lotus-transfer-header">
-                    <span class="lotus-transfer-header-title">{locale.Transfer.itemCountSelected(selectedList.length)}</span>
-                    @if (selectedList.length > 0) {
-                        <Button theme="borderless" type="tertiary" size="small" disabled={disabled} onClick={() => { const result = foundation.handleAll(false, isControlled); emitChange(result); }}>
-                            {locale.Transfer.clear}
-                        </Button>
-                    }
-                </div>
+                {renderSelectedPanel ? renderSelectedPanel({
+                    selectedData: selectedList,
+                    onClear: () => { const result = foundation.handleAll(false, isControlled); emitChange(result); },
+                    onRemove: handleToggle,
+                }) : (
+                <>
+                {renderSelectedHeader ? renderSelectedHeader({
+                    length: selectedList.length,
+                    onClear: () => { const result = foundation.handleAll(false, isControlled); emitChange(result); },
+                }) : (
+                    <div class="lotus-transfer-header">
+                        <span class="lotus-transfer-header-title">{locale.Transfer.itemCountSelected(selectedList.length)}</span>
+                        @if (selectedList.length > 0) {
+                            <Button theme="borderless" type="tertiary" size="small" disabled={disabled} onClick={() => { const result = foundation.handleAll(false, isControlled); emitChange(result); }}>
+                                {locale.Transfer.clear}
+                            </Button>
+                        }
+                    </div>
+                )}
                 <div class="lotus-transfer-body">
                     @if (selectedList.length === 0) {
                         <Empty description={emptyContent.right ?? locale.Transfer.emptyRight} />
@@ -619,6 +716,8 @@ export function Transfer(&{
                         </div>
                     }
                 </div>
+                </>
+                )}
             </div>
         </div>
 

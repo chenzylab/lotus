@@ -145,4 +145,59 @@ test.describe('Transfer', () => {
     await toggleButton.click();
     await expect(root.locator('.lotus-transfer-panel-right .lotus-transfer-header-title')).toHaveText('2 项已选');
   });
+
+  test('renderSourceItem/renderSelectedItem：自定义渲染生效，onChange/onRemove/dragHandleOnMouseDown 回调可用（回归防护：@if/@else 分支体内单一插值这个 tsrx 编译器缺陷曾导致自定义渲染内容完全空白，改用三元表达式修复；同时 onChange/onRemove 是这次调研新补的真实缺口——此前 renderSourceItem 只接收 checked、renderSelectedItem 完全不接收任何回调，自定义渲染后彻底失去选中/移除能力）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Transfer renderItem 自定义示例', { exact: true });
+    const sourceItems = root.locator('.lotus-transfer-source-item');
+    await expect(sourceItems.first()).toHaveText('★ 苹果');
+
+    await sourceItems.first().locator('div').first().click();
+    const selectedItems = root.locator('.lotus-transfer-selected-item');
+    await expect(selectedItems).toHaveCount(1);
+    await expect(selectedItems.first()).toContainText('◆ 苹果');
+    await expect(root.getByLabel('拖拽手柄 苹果', { exact: true })).toBeVisible();
+
+    await root.getByLabel('移除 苹果', { exact: true }).click();
+    await expect(selectedItems).toHaveCount(0);
+  });
+
+  test('inputProps：透传给搜索框，maxLength 生效', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Transfer inputProps 示例', { exact: true });
+    const input = root.locator('input').first();
+    await input.fill('12345678901234567890');
+    await expect(input).toHaveValue('1234567890');
+  });
+
+  test('treeProps：透传给内部 Tree 组件，defaultExpandAll 生效', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Transfer treeProps 示例', { exact: true });
+    await expect(root.locator('[aria-expanded="true"]').first()).toBeVisible();
+  });
+
+  test('renderSourceHeader/renderSelectedHeader：自定义头部渲染，全选/清空回调正确触发', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Transfer renderHeader 自定义示例', { exact: true });
+    const sourceHeader = root.getByLabel('自定义源头部', { exact: true });
+    const selectedHeader = root.getByLabel('自定义已选头部', { exact: true });
+    await expect(sourceHeader).toContainText('共 5 项');
+    await expect(selectedHeader).toContainText('已选 0 项');
+
+    await sourceHeader.getByRole('button', { name: '全选' }).click();
+    await expect(selectedHeader).toContainText(/已选 [1-9]\d* 项/);
+  });
+
+  test('renderSourcePanel/renderSelectedPanel：完全自定义面板渲染，选中/移除回调正确触发', async ({ page }) => {
+    await page.goto('/');
+    const sourcePanel = page.getByLabel('自定义源面板', { exact: true });
+    const selectedPanel = page.getByLabel('自定义已选面板', { exact: true });
+    await expect(sourcePanel).toContainText('5 项可选');
+
+    await sourcePanel.locator('div', { hasText: '苹果' }).last().click();
+    await expect(selectedPanel).toContainText('已选 1 项');
+
+    await selectedPanel.getByRole('button', { name: '×' }).click();
+    await expect(selectedPanel).toContainText('已选 0 项');
+  });
 });

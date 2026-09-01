@@ -35,6 +35,14 @@ import { Transfer } from '@lotus/ripple';
 ../../src/demos/input/transfer/draggable.tsrx
 ```
 
+### 自定义渲染
+
+`renderSourceItem`/`renderSelectedItem` 自定义单项渲染（分别收到 `onChange`/`onRemove`/`dragHandleOnMouseDown` 回调，自行决定绑到哪个元素上）；`renderSourceHeader`/`renderSelectedHeader` 自定义头部；`renderSourcePanel`/`renderSelectedPanel` 完全替换整个面板。
+
+```tsrx demo
+../../src/demos/input/transfer/render-custom.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -47,11 +55,17 @@ import { Transfer } from '@lotus/ripple';
 | draggable | 已选列表是否支持拖拽排序 | boolean | `false` |
 | emptyContent | 左/右栏及搜索无结果时的自定义展示内容 | `{ left?: any; right?: any; search?: any }` | - |
 | filter | 是否开启搜索：`true` 走内置 label 包含匹配，函数则自定义匹配逻辑；`type="treeList"` 时搜索固定走 `Tree` 自身的 `filterTreeNode` | `boolean \| ((input: string, item: ResolvedDataItem) => boolean)` | - |
+| inputProps | 透传给左侧搜索框的 Input props（`value`/`onChange`/`placeholder`/`disabled` 仍由 Transfer 自己控制） | `Omit<InputProps, 'value' \| 'onChange' \| 'placeholder' \| 'disabled'>` | - |
 | loading | 是否展示加载态 | boolean | `false` |
 | pagination | 左侧列表分页配置 | `{ currentPage?; defaultCurrentPage?; pageSize?; onPageChange? }` | - |
-| renderSelectedItem | 自定义已选项渲染 | `(item: ResolvedDataItem) => any` | - |
-| renderSourceItem | 自定义可选项渲染 | `(item: ResolvedDataItem & { checked: boolean }) => any` | - |
+| renderSelectedHeader | 自定义右侧面板头部渲染 | `(info: { length: number; onClear: () => void }) => any` | - |
+| renderSelectedItem | 自定义已选项渲染，收到 `onRemove`/`dragHandleOnMouseDown`（draggable 时非 undefined）/`fullPath`（showPath 时非 undefined） | `(item: ResolvedDataItem & { onRemove: () => void; dragHandleOnMouseDown?: (e: MouseEvent) => void; fullPath?: PathEntry[] }) => any` | - |
+| renderSelectedPanel | 完全自定义右侧（已选）面板渲染，替换整个面板 | `(props: { selectedData: ResolvedDataItem[]; onClear: () => void; onRemove: (item: ResolvedDataItem) => void }) => any` | - |
+| renderSourceHeader | 自定义左侧面板头部渲染 | `(info: { num: number; showButton: boolean; allChecked: boolean; onAllClick: () => void }) => any` | - |
+| renderSourceItem | 自定义可选项渲染，收到 `onChange` 回调 | `(item: ResolvedDataItem & { checked: boolean; onChange: () => void }) => any` | - |
+| renderSourcePanel | 完全自定义左侧（源）面板渲染，替换整个面板（含头部/搜索框/列表） | `(props: {...}) => any` | - |
 | showPath | 树形数据下已选项是否展示完整路径 | boolean | `false` |
+| treeProps | 透传给 `type="treeList"` 内部 Tree 组件的 props（`value`/`onChange`/`treeData` 仍由 Transfer 自己控制） | `Omit<TreeProps, 'value' \| 'onChange' \| 'treeData'>` | - |
 | type | 数据源结构类型 | `'list' \| 'groupList' \| 'treeList'` | `'list'` |
 | value | 受控的已选值数组 | `Array<string \| number>` | - |
 | virtualize | 已选列表虚拟滚动配置（数据量大时使用） | `{ height?: number; itemSize: number }` | - |
