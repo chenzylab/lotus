@@ -187,4 +187,25 @@ test.describe('ConfigProvider', () => {
 
     await toggleBtn.click();
   });
+
+  test('direction=rtl：Rating 键盘方向键增减方向镜像（对齐 Semi handleKeyDown 的 reverse 判断，RTL 下 ArrowRight 应减小值、ArrowLeft 应增大值，符合"往右操作应减小值"的 RTL 直觉；这是逻辑方向镜像，与上一条测试验证的纯视觉图标镜像是两回事）', async ({ page }) => {
+    await page.goto('/');
+    const toggleBtn = page.getByRole('button', { name: /切换到 rtl|切换到 ltr/ });
+    await toggleBtn.scrollIntoViewIfNeeded();
+    await toggleBtn.click();
+    await expect.poll(() => page.evaluate(() => document.documentElement.getAttribute('dir'))).toBe('rtl');
+
+    const rtlRating = page.getByLabel('ConfigProvider direction 示例 Rating');
+    await rtlRating.scrollIntoViewIfNeeded();
+    await rtlRating.focus();
+    await expect(rtlRating.locator('.lotus-rating-star-full')).toHaveCount(2);
+
+    await rtlRating.press('ArrowRight');
+    await expect(rtlRating.locator('.lotus-rating-star-full')).toHaveCount(1);
+
+    await rtlRating.press('ArrowLeft');
+    await expect(rtlRating.locator('.lotus-rating-star-full')).toHaveCount(2);
+
+    await toggleBtn.click();
+  });
 });

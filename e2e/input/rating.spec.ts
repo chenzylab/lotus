@@ -142,4 +142,29 @@ test.describe('Rating', () => {
     await page.waitForTimeout(300);
     await expect(group.locator('.lotus-rating-star-full')).toHaveCount(3);
   });
+
+  test('tooltips：hover 某颗星时展示对应下标的自定义提示文案（对齐 Semi tooltips）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating 提示文案示例', { exact: true });
+    const star2 = group.locator('.lotus-rating-star').nth(1);
+
+    await expect(page.getByRole('tooltip')).not.toBeVisible();
+    await star2.hover();
+    await expect(page.getByRole('tooltip')).toHaveText('bad');
+  });
+
+  test('getRatingApi：命令式 focus()/blur() 聚焦与失焦，onFocus/onBlur 回调同步触发（对齐 Semi ref.current.focus/blur）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating 命令式聚焦示例', { exact: true });
+    const focusLog = page.getByLabel('Rating 聚焦日志', { exact: true });
+
+    await expect(group).not.toBeFocused();
+    await page.getByRole('button', { name: '聚焦 Rating' }).click();
+    await expect(group).toBeFocused();
+    await expect(focusLog).toHaveText('focus');
+
+    await page.getByRole('button', { name: '失焦 Rating' }).click();
+    await expect(group).not.toBeFocused();
+    await expect(focusLog).toHaveText('blur');
+  });
 });

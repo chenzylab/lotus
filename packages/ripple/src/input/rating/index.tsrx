@@ -1,8 +1,19 @@
-import { track, untrack } from 'ripple';
+import { track, untrack, effect } from 'ripple';
 import { RatingFoundation, starFillState, type RatingState, type RatingFoundationOptions } from '@lotus/foundation/input/rating';
 import { IconStar } from '@lotus/icons';
+import { zhCN } from '@lotus/locale';
+import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { Tooltip } from '../../show/tooltip/index.tsrx';
 
 export type RatingSize = 'small' | 'default' | number;
+
+export interface RatingApi {
+    /** 命令式聚焦（对齐 Semi 的 ref.current.focus()，如挂载时自动聚焦之外
+     * 由外部触发聚焦的场景）；`preventScroll` 透传给原生 focus() 的同名选项。 */
+    focus: (options?: { preventScroll?: boolean }) => void;
+    /** 命令式移出焦点，同上。 */
+    blur: () => void;
+}
 
 export interface RatingProps {
     value?: number;
@@ -13,9 +24,22 @@ export interface RatingProps {
     disabled?: boolean;
     character?: any;
     size?: RatingSize;
+    /** 挂载后是否自动聚焦（对齐 Semi autoFocus），disabled 时不生效。 */
+    autoFocus?: boolean;
+    /** 每颗星 hover 时展示的自定义提示文案（对齐 Semi tooltips），数组下标
+     * 对应星的 index（0-based），不传或对应下标为空字符串时不展示提示。 */
+    tooltips?: string[];
+    getRatingApi?: (api: RatingApi) => void;
     onChange?: (value: number) => void;
     onHoverChange?: (value: number | undefined) => void;
+    onFocus?: (event: FocusEvent) => void;
+    onBlur?: (event: FocusEvent) => void;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    'aria-invalid'?: boolean;
+    'aria-required'?: boolean;
     style?: Record<string, any>;
     class?: string;
 }
@@ -41,12 +65,25 @@ export function Rating(&{
     disabled = false,
     character,
     size = 'default',
+    autoFocus = false,
+    tooltips,
+    getRatingApi,
     onChange,
     onHoverChange,
+    onFocus,
+    onBlur,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
     style,
     class: className,
 }: RatingProps) @{
+    const localeTracked = LocaleContext.get();
+    let &[locale] = track(() => localeTracked?.value ?? zhCN);
+
     const isControlled = value !== undefined;
 
     let &[state] = track<RatingState>({
@@ -55,7 +92,14 @@ export function Rating(&{
         clearedValue: null,
     });
 
-    const foundationOpts: RatingFoundationOptions = { count, allowHalf, allowClear };
+    const foundationOpts: RatingFoundationOptions = { count, allowHalf, allowClear, isRtl: untrack(() => locale).dir === 'rtl' };
+
+    // 方向是运行时可能切换的全局状态（ConfigProvider.direction 或 locale
+    // 切换），固化挂载时的方向会导致切换语言方向后键盘操作方向感知与
+    // 视觉镜像不再对应（同 Slider isRtl 已验证的既定同步模式）。
+    effect(() => {
+        foundationOpts.isRtl = locale.dir === 'rtl';
+    });
 
     const foundation = new RatingFoundation(
         {
@@ -64,6 +108,18 @@ export function Rating(&{
         },
         foundationOpts,
     );
+
+    let rootNode: HTMLElement | null = null;
+
+    getRatingApi?.({
+        focus: (options) => { if (!disabled) rootNode?.focus(options); },
+        blur: () => rootNode?.blur(),
+    });
+
+    effect(() => {
+        if (!autoFocus || disabled) return;
+        untrack(() => rootNode?.focus());
+    });
 
     let starNodes: Array<HTMLElement | null> = [];
 
@@ -109,6 +165,13 @@ export function Rating(&{
     let &[committedValue] = track<number>(() => (isControlled ? value! : state.value));
     let &[displayValue] = track<number>(() => (state.hoverValue === undefined ? committedValue : state.hoverValue));
 
+    // hoverIndex：当前 hover 预览值对应落在哪一颗星上（0-based），仅用于
+    // tooltips 的显隐判断——对齐 Semi `hoverValue - 1 === ind` 的语义，
+    // half 值（如 2.5）向上取整到第 3 颗星（index 2）展示提示。
+    let &[hoverIndex] = track<number | undefined>(() =>
+        state.hoverValue === undefined ? undefined : Math.ceil(state.hoverValue) - 1,
+    );
+
     let &[stars] = track<Array<{ index: number; fill: 'empty' | 'half' | 'full' }>>(() =>
         Array.from({ length: count }, (_v, index) => ({ index, fill: starFillState(displayValue, index, allowHalf) })),
     );
@@ -130,9 +193,17 @@ export function Rating(&{
             style={style}
             role="radiogroup"
             aria-label={ariaLabel}
+            aria-labelledby={ariaLabelledBy}
+            aria-describedby={ariaDescribedBy}
+            aria-errormessage={ariaErrorMessage}
+            aria-invalid={ariaInvalid}
+            aria-required={ariaRequired}
             tabIndex={disabled ? -1 : 0}
+            ref={(node: HTMLElement) => { rootNode = node; }}
             onKeyDown={handleKeyDown}
             onMouseLeave={handleMouseLeave}
+            onFocus={(e: FocusEvent) => onFocus?.(e)}
+            onBlur={(e: FocusEvent) => onBlur?.(e)}
         >
             @for (const star of stars; index si; key star.index) {
                 <li
@@ -146,13 +217,34 @@ export function Rating(&{
                     onMouseMove={(e: MouseEvent) => handleStarMouseMove(star.index, e)}
                     onClick={(e: MouseEvent) => handleStarClick(star.index, e)}
                 >
-                    <span class="lotus-rating-star-bg">{character ?? <IconStar />}</span>
-                    <span
-                        class="lotus-rating-star-fill-layer"
-                        style={{ width: star.fill === 'full' ? '100%' : star.fill === 'half' ? '50%' : '0%' }}
-                    >
-                        {character ?? <IconStar />}
-                    </span>
+                    @if (tooltips?.[star.index]) {
+                        <>
+                        <Tooltip
+                            trigger="custom"
+                            visible={hoverIndex === star.index}
+                            content={tooltips[star.index]}
+                            position="top"
+                        >
+                            <span class="lotus-rating-star-bg">{character ?? <IconStar />}</span>
+                            <span
+                                class="lotus-rating-star-fill-layer"
+                                style={{ width: star.fill === 'full' ? '100%' : star.fill === 'half' ? '50%' : '0%' }}
+                            >
+                                {character ?? <IconStar />}
+                            </span>
+                        </Tooltip>
+                        </>
+                    } @else {
+                        <>
+                        <span class="lotus-rating-star-bg">{character ?? <IconStar />}</span>
+                        <span
+                            class="lotus-rating-star-fill-layer"
+                            style={{ width: star.fill === 'full' ? '100%' : star.fill === 'half' ? '50%' : '0%' }}
+                        >
+                            {character ?? <IconStar />}
+                        </span>
+                        </>
+                    }
                 </li>
             }
         </ul>

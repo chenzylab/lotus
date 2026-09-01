@@ -169,6 +169,28 @@ describe('handleKeyDown', () => {
     expect(getState().hoverValue).toBeUndefined();
     expect(getState().clearedValue).toBeNull();
   });
+
+  it('isRtl=true 时 ArrowRight/ArrowUp 变为递减（对齐 Semi RTL 下"往右操作应减小值"的语义）', () => {
+    const { foundation, getState } = makeFoundation({ value: 2 }, { allowHalf: false, isRtl: true });
+    foundation.handleKeyDown('ArrowRight', false);
+    expect(getState().value).toBe(1);
+  });
+
+  it('isRtl=true 时 ArrowLeft/ArrowDown 变为递增', () => {
+    const { foundation, getState } = makeFoundation({ value: 2 }, { allowHalf: false, isRtl: true });
+    foundation.handleKeyDown('ArrowLeft', false);
+    expect(getState().value).toBe(3);
+  });
+
+  it('isRtl=true 时环绕逻辑不受影响（超过 count 归零、低于 0 跳到 count）', () => {
+    const { foundation: f1, getState: s1 } = makeFoundation({ value: 0 }, { count: 5, allowHalf: false, isRtl: true });
+    f1.handleKeyDown('ArrowRight', false);
+    expect(s1().value).toBe(5);
+
+    const { foundation: f2, getState: s2 } = makeFoundation({ value: 5 }, { count: 5, allowHalf: false, isRtl: true });
+    f2.handleKeyDown('ArrowLeft', false);
+    expect(s2().value).toBe(0);
+  });
 });
 
 describe('getStarFillState', () => {

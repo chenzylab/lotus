@@ -12,6 +12,11 @@ export interface RatingFoundationOptions {
   count: number;
   allowHalf: boolean;
   allowClear: boolean;
+  /** RTL 下键盘方向键的增减方向镜像（对齐 Semi foundation.ts handleKeyDown
+   * 的 reverse 判断：RTL 下 ArrowRight/ArrowUp 变为递减，ArrowLeft/
+   * ArrowDown 变为递增，符合"往右操作应减小值"的 RTL 直觉）。不影响鼠标
+   * 点击/hover——那两者直接基于像素位置换算，与阅读方向无关。 */
+  isRtl?: boolean;
 }
 
 function clampFraction(fraction: number): number {
@@ -117,15 +122,16 @@ export class RatingFoundation extends Foundation<RatingState> {
   handleKeyDown(key: string, isControlled: boolean): { value: number; changed: boolean } | null {
     const { value } = this.getState();
     const step = this.opts.allowHalf ? 0.5 : 1;
+    const reverse = this.opts.isRtl === true;
     let delta: number;
     switch (key) {
       case 'ArrowRight':
       case 'ArrowUp':
-        delta = step;
+        delta = reverse ? -step : step;
         break;
       case 'ArrowLeft':
       case 'ArrowDown':
-        delta = -step;
+        delta = reverse ? step : -step;
         break;
       default:
         return null;

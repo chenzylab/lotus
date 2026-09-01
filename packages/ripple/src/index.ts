@@ -158,6 +158,7 @@ export {
 } from './input/slider/index.tsrx';
 export {
     Rating,
+    type RatingApi,
     type RatingProps,
     type RatingSize,
 } from './input/rating/index.tsrx';

@@ -1,7 +1,7 @@
 import { track } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi } from '@lotus/ripple';
+import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -437,6 +437,8 @@ export function App() @{
     let &[ratingChangeLog] = track<string>('');
     let &[ratingHalfChangeLog] = track<string>('');
     let &[ratingControlledValue] = track<number>(3);
+    let &[ratingFocusLog] = track<string>('');
+    let ratingApiRef: RatingApi | null = null;
     let &[colorPickerChangeLog] = track<string>('');
     let &[colorPickerNoAlphaValue] = track<ColorValue>({
         hsva: { h: 200, s: 80, v: 90, a: 1 },
@@ -4110,6 +4112,29 @@ export function App() @{
             <Rating value={3} onChange={() => {}} aria-label="Rating 受控拒绝更新示例" />
         </div>
 
+        <Divider>Rating：tooltips 每颗星自定义提示文案（对齐 Semi tooltips）</Divider>
+
+        <div>
+            <Rating
+                tooltips={['terrible', 'bad', 'normal', 'good', 'great']}
+                aria-label="Rating 提示文案示例"
+            />
+        </div>
+
+        <Divider>Rating：getRatingApi 命令式聚焦 + onFocus/onBlur（对齐 Semi ref.current.focus/blur）</Divider>
+
+        <div>
+            <Rating
+                getRatingApi={(api) => { ratingApiRef = api; }}
+                onFocus={() => { ratingFocusLog = 'focus'; }}
+                onBlur={() => { ratingFocusLog = 'blur'; }}
+                aria-label="Rating 命令式聚焦示例"
+            />
+            <Button onClick={() => ratingApiRef?.focus()}>聚焦 Rating</Button>
+            <Button onClick={() => ratingApiRef?.blur()}>失焦 Rating</Button>
+            <TypographyText type="secondary" aria-label="Rating 聚焦日志">{ratingFocusLog}</TypographyText>
+        </div>
+
         <Divider>ColorPicker：基础用法（直接展开面板）</Divider>
 
         <div>
@@ -4814,6 +4839,9 @@ export function App() @{
                 </div>
                 <div style={{ marginTop: '12px', width: '280px' }}>
                     <DatePicker aria-label="ConfigProvider direction 示例 DatePicker" />
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                    <Rating defaultValue={2} aria-label="ConfigProvider direction 示例 Rating" />
                 </div>
                 <div style={{ marginTop: '12px', width: '400px', height: '160px' }}>
                     <Carousel
