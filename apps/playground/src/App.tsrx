@@ -387,6 +387,7 @@ export function App() @{
     let &[datePickerChangeLog] = track<string>('');
     let &[datePickerRangeChangeLog] = track<string>('');
     let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
+    let &[datePickerConfirmLog] = track<string>('');
     let &[sliderChangeLog] = track<string>('');
     let &[sliderRangeChangeLog] = track<string>('');
     let &[sliderControlledValue] = track<number>(30);
@@ -3850,6 +3851,80 @@ export function App() @{
             >
                 切换 DatePicker
             </Button>
+        </div>
+
+        <Divider>DatePicker：insetInput（面板内直接输入日期，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '260px' }}>
+                <DatePicker insetInput aria-label="DatePicker insetInput 基础示例" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <DatePicker type="dateRange" insetInput aria-label="DatePicker insetInput 范围示例" />
+            </div>
+            <div style={{ width: '320px' }}>
+                <DatePicker type="dateTime" insetInput aria-label="DatePicker insetInput 日期时间示例" />
+            </div>
+        </Space>
+
+        <Divider>DatePicker：topSlot / bottomSlot（面板外层固定区域，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                topSlot={<TypographyText type="secondary">常用日期</TypographyText>}
+                bottomSlot={<TypographyText type="tertiary">提示：点击日期选中</TypographyText>}
+                aria-label="DatePicker topSlot/bottomSlot 示例"
+            />
+        </div>
+
+        <Divider>DatePicker：density=compact（紧凑面板样式，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker density="compact" aria-label="DatePicker density 示例" />
+        </div>
+
+        <Divider>DatePicker：renderDate / renderFullDate（自定义日历格渲染，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                renderFullDate={(dayNumber, fullDate) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span>{dayNumber}</span>
+                        {fullDate.endsWith('-01') ? <span style={{ fontSize: '10px', color: 'var(--lotus-color-primary)' }}>始</span> : null}
+                    </div>
+                )}
+                aria-label="DatePicker renderFullDate 示例"
+            />
+        </div>
+
+        <Divider>DatePicker：disabledTimePicker / hideDisabledOptions（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker type="dateTime" disabledTimePicker aria-label="DatePicker disabledTimePicker 示例" />
+        </div>
+
+        <Divider>DatePicker：needConfirm + onCancel / onConfirm（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    type="dateTime"
+                    needConfirm
+                    onCancel={() => { datePickerConfirmLog = 'onCancel 触发'; }}
+                    onConfirm={(v) => { datePickerConfirmLog = `onConfirm 触发：${v ? (v as Date).toDateString() : 'null'}`; }}
+                    aria-label="DatePicker needConfirm 示例"
+                />
+            </div>
+            <span>{datePickerConfirmLog}</span>
+        </Space>
+
+        <Divider>DatePicker：triggerRender（完全自定义触发器，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <DatePicker
+                triggerRender={({ open }) => <Button>{open ? '收起日历' : '打开日历'}</Button>}
+                aria-label="DatePicker triggerRender 示例"
+            />
         </div>
 
         <Divider>Slider：基础用法</Divider>

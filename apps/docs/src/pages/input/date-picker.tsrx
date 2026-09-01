@@ -5,6 +5,10 @@ import { DatePickerBasicDemo } from '../../demos/input/date-picker/basic.tsrx';
 import { DatePickerRangeDemo } from '../../demos/input/date-picker/range.tsrx';
 import { DatePickerTypeVariantsDemo } from '../../demos/input/date-picker/type-variants.tsrx';
 import { DatePickerDisabledDatePresetsDemo } from '../../demos/input/date-picker/disabled-date-presets.tsrx';
+import { DatePickerInsetInputDemo } from '../../demos/input/date-picker/inset-input.tsrx';
+import { DatePickerSlotsDemo } from '../../demos/input/date-picker/slots.tsrx';
+import { DatePickerNeedConfirmDemo } from '../../demos/input/date-picker/need-confirm.tsrx';
+import { DatePickerTriggerRenderDemo } from '../../demos/input/date-picker/trigger-render.tsrx';
 
 module server {
     import { getDoc } from '../../lib/markdown';
@@ -20,6 +24,10 @@ const DEMO_COMPONENTS: Record<string, any> = {
     '../../src/demos/input/date-picker/range.tsrx': DatePickerRangeDemo,
     '../../src/demos/input/date-picker/type-variants.tsrx': DatePickerTypeVariantsDemo,
     '../../src/demos/input/date-picker/disabled-date-presets.tsrx': DatePickerDisabledDatePresetsDemo,
+    '../../src/demos/input/date-picker/inset-input.tsrx': DatePickerInsetInputDemo,
+    '../../src/demos/input/date-picker/slots.tsrx': DatePickerSlotsDemo,
+    '../../src/demos/input/date-picker/need-confirm.tsrx': DatePickerNeedConfirmDemo,
+    '../../src/demos/input/date-picker/trigger-render.tsrx': DatePickerTriggerRenderDemo,
 };
 
 export function DatePickerDocPage() @{

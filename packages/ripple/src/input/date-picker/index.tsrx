@@ -82,6 +82,55 @@ export interface DatePickerProps {
     secondStep?: number;
     startYear?: number;
     endYear?: number;
+    /** 面板内直接输入日期（分段 Input），而非只能点选（对齐 Semi insetInput）；
+     * 开启后触发器本身禁用，焦点转移到面板内输入框。 */
+    insetInput?: boolean;
+    /** 紧凑面板样式（对齐 Semi density）。 */
+    density?: 'default' | 'compact';
+    /** 完全自定义触发器渲染，替换默认 Input（对齐 Semi triggerRender）；
+     * 需自行处理点击展开等交互。 */
+    triggerRender?: (props: { value: DatePickerValue; placeholder: any; open: boolean; disabled: boolean }) => any;
+    /** 自定义单个日期格渲染内容（对齐 Semi renderDate），仅替换格内文案，不影响选中/禁用等状态样式。 */
+    renderDate?: (dayNumber: number | string, fullDate: string) => any;
+    /** 自定义单个日期格完整渲染（对齐 Semi renderFullDate），替换整个格子内容，
+     * 优先级高于 renderDate。 */
+    renderFullDate?: (dayNumber: number | string, fullDate: string, selectedDate: Date[]) => any;
+    /** dateTime/dateTimeRange 下禁止切换到时间面板（对齐 Semi disabledTimePicker）。 */
+    disabledTimePicker?: boolean;
+    /** 时间列表隐藏禁用项而非置灰显示（对齐 Semi hideDisabledOptions）。 */
+    hideDisabledOptions?: boolean;
+    /** dateTime/dateTimeRange 时批量透传时间列配置，逐项覆盖同名的顶层
+     * use12Hours/hourStep/minuteStep/secondStep/hideDisabledOptions/
+     * disabledHours/disabledMinutes/disabledSeconds（对齐 Semi timePickerOpts，
+     * 简化为 lotus 内部 TimeColumns 实际支持的字段子集）。 */
+    timePickerOpts?: {
+        use12Hours?: boolean;
+        hourStep?: number;
+        minuteStep?: number;
+        secondStep?: number;
+        hideDisabledOptions?: boolean;
+        disabledHours?: () => number[];
+        disabledMinutes?: (hour: number) => number[];
+        disabledSeconds?: (hour: number, minute: number) => number[];
+    };
+    /** needConfirm 模式下点击取消按钮时触发（对齐 Semi onCancel）。 */
+    onCancel?: () => void;
+    /** needConfirm 模式下点击确认按钮时触发（对齐 Semi onConfirm）。 */
+    onConfirm?: (value: DatePickerValue) => void;
+    /** 面板最外层顶部固定区域（对齐 Semi topSlot）。 */
+    topSlot?: any;
+    /** 面板最外层底部固定区域（对齐 Semi bottomSlot）。 */
+    bottomSlot?: any;
+    /** 浮层挂载的目标容器，不传则挂载在 Popover 默认位置（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 浮层层级（对齐 Semi zIndex），不传由 CSS 层级 token 控制。 */
+    zIndex?: number;
+    'aria-labelledby'?: string;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    'aria-invalid'?: boolean;
+    'aria-required'?: boolean;
+    id?: string;
     onChange?: (value: DatePickerValue, dateString: string | string[]) => void;
     onPanelChange?: (date: Date) => void;
     'aria-label'?: string;
@@ -180,6 +229,13 @@ interface MonthGridProps {
     disabledDate?: (date: Date, options?: DisabledDateOptions) => boolean;
     weekdayLabels: string[];
     onDayClick: (fullDate: string) => void;
+    /** 自定义单个日期格渲染内容，仅替换格内文案（对齐 Semi renderDate）。 */
+    renderDate?: (dayNumber: number | string, fullDate: string) => any;
+    /** 自定义单个日期格完整渲染，替换整个格子内容，优先级高于 renderDate
+     * （对齐 Semi renderFullDate）。 */
+    renderFullDate?: (dayNumber: number | string, fullDate: string, selectedDate: Date[]) => any;
+    /** 当前完整选中日期数组，透传给 renderFullDate（对齐 Semi）。 */
+    selectedDate?: Date[];
 }
 
 /**
@@ -205,6 +261,9 @@ function MonthGrid(&{
     disabledDate,
     weekdayLabels,
     onDayClick,
+    renderDate,
+    renderFullDate,
+    selectedDate = [],
 }: MonthGridProps) @{
     let &[table] = track(() => getMonthTable(pickerDate, weekStartsOn));
     let &[todayText] = track<string>(() => getTodayText());
@@ -280,7 +339,7 @@ function MonthGrid(&{
                                 onClick={() => handleClick(day)}
                                 onMouseEnter={() => handleHover(day)}
                             >
-                                {day.dayNumber}
+                                {(day.fullDate && renderFullDate) ? renderFullDate(day.dayNumber, day.fullDate, selectedDate) : (day.fullDate && renderDate) ? renderDate(day.dayNumber, day.fullDate) : day.dayNumber}
                             </div>
                         }
                     </div>
@@ -470,9 +529,29 @@ export function DatePicker(&{
     secondStep = 1,
     startYear,
     endYear,
+    insetInput = false,
+    density = 'default',
+    triggerRender,
+    renderDate,
+    renderFullDate,
+    disabledTimePicker = false,
+    hideDisabledOptions = false,
+    timePickerOpts,
+    onCancel,
+    onConfirm,
+    topSlot,
+    bottomSlot,
+    getPopupContainer,
+    zIndex,
     onChange,
     onPanelChange,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    'aria-describedby': ariaDescribedby,
+    'aria-errormessage': ariaErrormessage,
+    'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
+    id,
     style,
     class: className,
 }: DatePickerProps) @{
@@ -556,12 +635,12 @@ export function DatePicker(&{
         untrack(() => { hasBeenControlled = true; });
         if (isRange) {
             const pair = toRangePair(value);
-            untrack(() => { state = { ...state, rangeValue: pair }; foundation.syncPanelsFromRangeValue(pair); });
+            untrack(() => { state = { ...state, rangeValue: pair }; foundation.syncPanelsFromRangeValue(pair); if (insetInput) foundation.syncInsetInputFromValue(pair); });
         } else if (isYearOrMonth) {
             untrack(() => { foundation.initYearMonth(value); });
         } else {
             const v = multiple ? ((Array.isArray(value) ? value : []) as Date[]) : ((Array.isArray(value) ? value[0] : value) as Date | null);
-            untrack(() => { state = { ...state, value: v }; foundation.syncSelectedFromValue(v); });
+            untrack(() => { state = { ...state, value: v }; foundation.syncSelectedFromValue(v); if (insetInput) foundation.syncInsetInputFromValue(Array.isArray(v) ? v : [v]); });
         }
     });
 
@@ -577,6 +656,10 @@ export function DatePicker(&{
     }
 
     function emit(notifyValue: unknown) {
+        if (insetInput) {
+            const arr = Array.isArray(notifyValue) ? (notifyValue as Array<Date | null>) : [notifyValue as Date | null];
+            foundation.syncInsetInputFromValue(arr);
+        }
         if (!onChange) return;
         if (Array.isArray(notifyValue) && notifyValue.length === 0) {
             onChange(isRange ? [] : (multiple ? [] : null), isRange || multiple ? [] : '');
@@ -592,6 +675,10 @@ export function DatePicker(&{
     function handleTriggerClick() {
         if (disabled) return;
         if (untrack(() => state).visible) return;
+        if (insetInput) {
+            const s = untrack(() => state);
+            foundation.syncInsetInputFromValue(isRange ? s.rangeValue : (Array.isArray(s.value) ? s.value : [s.value]));
+        }
         foundation.open();
         notifyOpenChange(true);
     }
@@ -638,6 +725,30 @@ export function DatePicker(&{
         if (result?.shouldNotify) emit(result.notifyValue);
     }
 
+    function resolveDisabledTimeRules(panelType: PanelType): DisabledTimeRulesDP | undefined {
+        if (!disabledTime) return undefined;
+        const currentValue = isRange
+            ? untrack(() => state).rangeValue.filter((d): d is Date => d != null)
+            : (untrack(() => state).value as Date | Date[] | null);
+        return disabledTime(currentValue, panelType);
+    }
+
+    const effUse12Hours = timePickerOpts?.use12Hours ?? use12Hours;
+    const effHourStep = timePickerOpts?.hourStep ?? hourStep;
+    const effMinuteStep = timePickerOpts?.minuteStep ?? minuteStep;
+    const effSecondStep = timePickerOpts?.secondStep ?? secondStep;
+    const effHideDisabledOptions = timePickerOpts?.hideDisabledOptions ?? hideDisabledOptions;
+
+    function resolveTimeColumnDisabledHours(panelType: PanelType) {
+        return timePickerOpts?.disabledHours ?? resolveDisabledTimeRules(panelType)?.disabledHours;
+    }
+    function resolveTimeColumnDisabledMinutes(panelType: PanelType) {
+        return timePickerOpts?.disabledMinutes ?? resolveDisabledTimeRules(panelType)?.disabledMinutes;
+    }
+    function resolveTimeColumnDisabledSeconds(panelType: PanelType) {
+        return timePickerOpts?.disabledSeconds ?? resolveDisabledTimeRules(panelType)?.disabledSeconds;
+    }
+
     function switchMonth(switchType: 'prevMonth' | 'nextMonth' | 'prevYear' | 'nextYear', panelType: PanelType) {
         foundation.switchMonthOrYear(switchType, panelType, syncSwitchMonth, onPanelChange);
     }
@@ -645,17 +756,28 @@ export function DatePicker(&{
     function handleConfirm() {
         const result = foundation.commitCached(isControlled);
         if (result.shouldNotify) emit(result.notifyValue);
+        onConfirm?.(result.notifyValue as DatePickerValue);
         closePanel();
     }
 
     function handleCancel() {
         foundation.clearCached();
+        onCancel?.();
         closePanel();
     }
 
     function handleClear() {
         const result = foundation.clear(isControlled);
         emit(result.notifyValue);
+    }
+
+    /** insetInput 某一格改值：写入分段值并重新拼接，拼接后的完整字符串复用
+     * handleInputComplete 的解析+提交路径（对齐 Semi handleInsetInputChange
+     * 最终调用与手输 blur 同一套 parseInput 校验逻辑，不重复实现）。 */
+    function handleInsetInputPartChange(path: 'monthLeft.dateInput' | 'monthLeft.timeInput' | 'monthRight.dateInput' | 'monthRight.timeInput', value: string) {
+        const { insetInputStr } = foundation.handleInsetInputChange(path, value);
+        const result = foundation.handleInputComplete(insetInputStr, isControlled);
+        if (result?.shouldNotify) emit(result.notifyValue);
     }
 
     function handlePresetClick(item: PresetType) {
@@ -763,8 +885,21 @@ export function DatePicker(&{
 
     let &[effPlaceholder] = track<string>(() => placeholder ?? locale.DatePicker.placeholder[type]);
 
+    let &[insetInputPlaceholders] = track<{ datePlaceholder: string; timePlaceholder: string }>(() => foundation.getInsetInputPlaceholder());
+
+    /** renderFullDate 需要的当前完整选中日期数组（对齐 Semi selectedDate 参数）。 */
+    let &[selectedDateArray] = track<Date[]>(() => {
+        if (isRange) return (state.cachedRange ?? state.rangeValue).filter((d): d is Date => d != null);
+        const v = state.cachedValue ?? state.value;
+        return Array.isArray(v) ? v.filter((d): d is Date => d != null) : (v ? [v] : []);
+    });
+
     let &[classes] = track<string>(() =>
         ['lotus-date-picker', disabled ? 'lotus-date-picker-disabled' : '', className ?? ''].filter(Boolean).join(' '),
+    );
+
+    let &[panelClasses] = track<string>(() =>
+        ['lotus-date-picker-panel', density === 'compact' ? 'lotus-date-picker-panel-compact' : ''].filter(Boolean).join(' '),
     );
 
     function panelDisabledDate(d: Date, opts?: DisabledDateOptions) {
@@ -800,8 +935,48 @@ export function DatePicker(&{
                 position={position}
                 spacing={4}
                 closeOnEsc={false}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
                 content={
-                    <div class="lotus-date-picker-panel" data-type={type} ref={(node: HTMLElement) => { panelNode = node; }}>
+                    <div class={panelClasses} data-type={type} ref={(node: HTMLElement) => { panelNode = node; }}>
+                        @if (topSlot) {
+                            <div class="lotus-date-picker-top-slot">{topSlot}</div>
+                        }
+                        @if (insetInput && !isYearOrMonth) {
+                            <div class="lotus-date-picker-inset-input-wrapper">
+                                <Input
+                                    value={state.insetInputValue.monthLeft.dateInput}
+                                    placeholder={insetInputPlaceholders.datePlaceholder}
+                                    onChange={(v: string) => handleInsetInputPartChange('monthLeft.dateInput', v)}
+                                />
+                                @if (isDateTime) {
+                                    <Input
+                                        value={state.insetInputValue.monthLeft.timeInput}
+                                        disabled={!state.insetInputValue.monthLeft.dateInput}
+                                        placeholder={insetInputPlaceholders.timePlaceholder}
+                                        onChange={(v: string) => handleInsetInputPartChange('monthLeft.timeInput', v)}
+                                    />
+                                }
+                                @if (isRange) {
+                                    <>
+                                        <span class="lotus-date-picker-inset-input-separator">{rangeSeparator}</span>
+                                        <Input
+                                            value={state.insetInputValue.monthRight.dateInput}
+                                            placeholder={insetInputPlaceholders.datePlaceholder}
+                                            onChange={(v: string) => handleInsetInputPartChange('monthRight.dateInput', v)}
+                                        />
+                                        @if (isDateTime) {
+                                            <Input
+                                                value={state.insetInputValue.monthRight.timeInput}
+                                                disabled={!state.insetInputValue.monthRight.dateInput}
+                                                placeholder={insetInputPlaceholders.timePlaceholder}
+                                                onChange={(v: string) => handleInsetInputPartChange('monthRight.timeInput', v)}
+                                            />
+                                        }
+                                    </>
+                                }
+                            </div>
+                        }
                         @if (isYearOrMonth) {
                             <div class="lotus-date-picker-panel-body">
                                 @if (type === 'monthRange') {
@@ -843,11 +1018,14 @@ export function DatePicker(&{
                                                 <TimeColumns
                                                     date={state.monthLeft.showDate}
                                                     format="HH:mm:ss"
-                                                    use12Hours={use12Hours}
-                                                    hourStep={hourStep}
-                                                    minuteStep={minuteStep}
-                                                    secondStep={secondStep}
-                                                    hideDisabledOptions={false}
+                                                    use12Hours={effUse12Hours}
+                                                    hourStep={effHourStep}
+                                                    minuteStep={effMinuteStep}
+                                                    secondStep={effSecondStep}
+                                                    hideDisabledOptions={effHideDisabledOptions}
+                                                    disabledHours={resolveTimeColumnDisabledHours('left')}
+                                                    disabledMinutes={resolveTimeColumnDisabledMinutes('left')}
+                                                    disabledSeconds={resolveTimeColumnDisabledSeconds('left')}
                                                     hourLabel={locale.TimePicker.hourLabel}
                                                     minuteLabel={locale.TimePicker.minuteLabel}
                                                     secondLabel={locale.TimePicker.secondLabel}
@@ -887,11 +1065,19 @@ export function DatePicker(&{
                                                         disabledDate={disabledDate ? panelDisabledDate : undefined}
                                                         weekdayLabels={weekdayLabels}
                                                         onDayClick={(fd) => handleDayClick(fd, 'left')}
+                                                        renderDate={renderDate}
+                                                        renderFullDate={renderFullDate}
+                                                        selectedDate={selectedDateArray}
                                                     />
                                                     @if (isDateTime) {
                                                         <div class="lotus-date-picker-switch">
                                                             <button type="button" class="lotus-date-picker-switch-item lotus-date-picker-switch-item-active">{locale.DatePicker.today}</button>
-                                                            <button type="button" class="lotus-date-picker-switch-item" onClick={() => foundation.showTimePicker('left')}>{locale.DatePicker.now}</button>
+                                                            <button
+                                                                type="button"
+                                                                class={['lotus-date-picker-switch-item', disabledTimePicker ? 'lotus-date-picker-switch-item-disabled' : ''].filter(Boolean).join(' ')}
+                                                                disabled={disabledTimePicker}
+                                                                onClick={() => { if (!disabledTimePicker) foundation.showTimePicker('left'); }}
+                                                            >{locale.DatePicker.now}</button>
                                                         </div>
                                                     }
                                                 </>
@@ -905,11 +1091,14 @@ export function DatePicker(&{
                                                     <TimeColumns
                                                         date={state.monthRight.showDate}
                                                         format="HH:mm:ss"
-                                                        use12Hours={use12Hours}
-                                                        hourStep={hourStep}
-                                                        minuteStep={minuteStep}
-                                                        secondStep={secondStep}
-                                                        hideDisabledOptions={false}
+                                                        use12Hours={effUse12Hours}
+                                                        hourStep={effHourStep}
+                                                        minuteStep={effMinuteStep}
+                                                        secondStep={effSecondStep}
+                                                        hideDisabledOptions={effHideDisabledOptions}
+                                                        disabledHours={resolveTimeColumnDisabledHours('right')}
+                                                        disabledMinutes={resolveTimeColumnDisabledMinutes('right')}
+                                                        disabledSeconds={resolveTimeColumnDisabledSeconds('right')}
                                                         hourLabel={locale.TimePicker.hourLabel}
                                                         minuteLabel={locale.TimePicker.minuteLabel}
                                                         secondLabel={locale.TimePicker.secondLabel}
@@ -949,6 +1138,9 @@ export function DatePicker(&{
                                                             disabledDate={disabledDate ? panelDisabledDate : undefined}
                                                             weekdayLabels={weekdayLabels}
                                                             onDayClick={(fd) => handleDayClick(fd, 'right')}
+                                                            renderDate={renderDate}
+                                                            renderFullDate={renderFullDate}
+                                                            selectedDate={selectedDateArray}
                                                         />
                                                     </>
                                                 }
@@ -978,12 +1170,20 @@ export function DatePicker(&{
                                 <Button theme="solid" onClick={handleConfirm}>{locale.DatePicker.confirm}</Button>
                             </div>
                         }
+                        @if (bottomSlot) {
+                            <div class="lotus-date-picker-bottom-slot">{bottomSlot}</div>
+                        }
                     </div>
                 }
             >
-                @if (isRange) {
-                    <div class="lotus-date-picker-trigger lotus-date-picker-trigger-range" onClick={handleTriggerClick}>
+                @if (triggerRender) {
+                    <div class="lotus-date-picker-trigger" onClick={handleTriggerClick}>
+                        {triggerRender({ value: (isRange ? state.rangeValue : state.value) as DatePickerValue, placeholder: effPlaceholder, open: state.visible, disabled })}
+                    </div>
+                } @else if (isRange) {
+                    <div class={['lotus-date-picker-trigger', 'lotus-date-picker-trigger-range', insetInput ? 'lotus-date-picker-trigger-inset' : ''].filter(Boolean).join(' ')} onClick={handleTriggerClick}>
                         <Input
+                            id={id}
                             value={rangeLeftValue}
                             disabled={disabled}
                             size={size}
@@ -992,6 +1192,11 @@ export function DatePicker(&{
                             placeholder={effPlaceholder}
                             suffix={<IconCalendar />}
                             aria-label={ariaLabel}
+                            aria-labelledby={ariaLabelledby}
+                            aria-describedby={ariaDescribedby}
+                            aria-errormessage={ariaErrormessage}
+                            aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
+                            aria-required={ariaRequired}
                             onFocus={() => foundation.setRangeInputFocus('rangeStart')}
                             onBlur={(e) => handleInputBlur(`${(e.target as HTMLInputElement).value}${rangeSeparator}${rangeRightValue}`)}
                         />
@@ -1002,7 +1207,7 @@ export function DatePicker(&{
                             size={size}
                             validateStatus={validateStatus}
                             borderless={borderless}
-                            showClear={showClear}
+                            showClear={showClear && !insetInput}
                             placeholder={effPlaceholder}
                             onFocus={() => foundation.setRangeInputFocus('rangeEnd')}
                             onBlur={(e) => handleInputBlur(`${rangeLeftValue}${rangeSeparator}${(e.target as HTMLInputElement).value}`)}
@@ -1010,17 +1215,23 @@ export function DatePicker(&{
                         />
                     </div>
                 } @else {
-                    <div onClick={handleTriggerClick}>
+                    <div class={['lotus-date-picker-trigger', insetInput ? 'lotus-date-picker-trigger-inset' : ''].filter(Boolean).join(' ')} onClick={handleTriggerClick}>
                         <Input
+                            id={id}
                             value={displayValue}
                             disabled={disabled}
                             size={size}
                             validateStatus={validateStatus}
                             borderless={borderless}
-                            showClear={showClear}
+                            showClear={showClear && !insetInput}
                             placeholder={effPlaceholder}
                             suffix={<IconCalendar />}
                             aria-label={ariaLabel}
+                            aria-labelledby={ariaLabelledby}
+                            aria-describedby={ariaDescribedby}
+                            aria-errormessage={ariaErrormessage}
+                            aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
+                            aria-required={ariaRequired}
                             onBlur={(e) => handleInputBlur((e.target as HTMLInputElement).value)}
                             onClear={handleClear}
                         />
@@ -1045,9 +1256,33 @@ export function DatePicker(&{
                 color: var(--lotus-color-text-2);
             }
 
+            /* insetInput：trigger 视觉呈现为不可编辑（同 disabled 外观），但不使用
+               原生 disabled 属性——浏览器标准行为下 disabled 表单元素完全阻止鼠标
+               事件冒泡，会导致点击 trigger 无法打开面板（真机复现：insetInput 模式
+               下 Input 撑满容器无空隙，用户点击必然先命中 Input 本身）。改用
+               pointer-events:none 让点击穿透到外层 onClick 所在的 div，同时保留
+               灰底/not-allowed 光标的视觉禁用效果。 */
+            .lotus-date-picker-trigger-inset :global(.lotus-input-native) {
+                pointer-events: none;
+                background: var(--lotus-color-disabled-bg);
+                color: var(--lotus-color-disabled-text);
+                cursor: not-allowed;
+            }
+
             .lotus-date-picker-panel {
                 display: flex;
                 flex-direction: column;
+            }
+
+            .lotus-date-picker-panel-compact .lotus-date-picker-navigation,
+            .lotus-date-picker-panel-compact .lotus-date-picker-top-slot,
+            .lotus-date-picker-panel-compact .lotus-date-picker-bottom-slot,
+            .lotus-date-picker-panel-compact .lotus-date-picker-inset-input-wrapper {
+                padding: 4px;
+            }
+
+            .lotus-date-picker-panel-compact .lotus-date-picker-day {
+                font-size: var(--lotus-font-label-size);
             }
 
             .lotus-date-picker-container {
@@ -1126,8 +1361,41 @@ export function DatePicker(&{
                 font-weight: 600;
             }
 
+            .lotus-date-picker-switch-item-disabled {
+                cursor: not-allowed;
+                color: var(--lotus-color-disabled-text);
+            }
+
             .lotus-date-picker-yam-double {
                 display: flex;
+            }
+
+            .lotus-date-picker-top-slot,
+            .lotus-date-picker-bottom-slot {
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+            }
+
+            .lotus-date-picker-top-slot {
+                border-bottom: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-date-picker-bottom-slot {
+                border-top: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-date-picker-inset-input-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px;
+                border-bottom: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-date-picker-inset-input-separator {
+                color: var(--lotus-color-text-2);
+                flex-shrink: 0;
             }
 
             .lotus-date-picker-yam-footer {

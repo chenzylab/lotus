@@ -257,4 +257,103 @@ test.describe('DatePicker', () => {
     await buttons.nth(3).click();
     await expect(navText).not.toHaveText(before ?? '');
   });
+
+  test('insetInput：面板内直接输入日期，触发器视觉禁用但可点击展开（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    // 回归防护：触发器不能用原生 disabled 属性——浏览器标准行为下 disabled 表单
+    // 元素完全阻止鼠标事件冒泡，会导致点击 trigger 无法打开面板（真机复现）。
+    // 改用 pointer-events:none 达成同等的"不可手动编辑"效果，同时保留可点击性。
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker insetInput 基础示例', { exact: true });
+    await expect(trigger).toHaveCSS('pointer-events', 'none');
+
+    await trigger.locator('xpath=ancestor::div[contains(@class,"lotus-date-picker-trigger")]').click();
+    const insetInput = page.locator('.lotus-date-picker-inset-input-wrapper input').first();
+    await expect(insetInput).toBeVisible();
+
+    await insetInput.fill('2024-06-15');
+    await expect(trigger).toHaveValue('2024-06-15');
+  });
+
+  test('insetInput：dateRange 渲染两个日期输入框（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker insetInput 范围示例', { exact: true });
+    await trigger.locator('xpath=ancestor::div[contains(@class,"lotus-date-picker-trigger")]').click();
+
+    const inputs = page.locator('.lotus-date-picker-inset-input-wrapper').last().locator('input');
+    await expect(inputs).toHaveCount(2);
+  });
+
+  test('insetInput：dateTime 渲染日期段与时间段两个输入框（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker insetInput 日期时间示例', { exact: true });
+    await trigger.locator('xpath=ancestor::div[contains(@class,"lotus-date-picker-trigger")]').click();
+
+    const inputs = page.locator('.lotus-date-picker-inset-input-wrapper').last().locator('input');
+    await expect(inputs).toHaveCount(2);
+    await expect(inputs.first()).toHaveAttribute('placeholder', 'yyyy-MM-dd');
+    await expect(inputs.last()).toHaveAttribute('placeholder', 'HH:mm:ss');
+  });
+
+  test('topSlot/bottomSlot：面板外层固定区域正确渲染（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker topSlot/bottomSlot 示例', { exact: true });
+    await trigger.click();
+
+    await expect(page.locator('.lotus-date-picker-top-slot')).toHaveText('常用日期');
+    await expect(page.locator('.lotus-date-picker-bottom-slot')).toHaveText('提示：点击日期选中');
+  });
+
+  test('density=compact：面板携带紧凑样式 class（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker density 示例', { exact: true });
+    await trigger.click();
+
+    await expect(page.locator('.lotus-date-picker-panel')).toHaveClass(/lotus-date-picker-panel-compact/);
+  });
+
+  test('renderFullDate：自定义日历格完整渲染生效（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker renderFullDate 示例', { exact: true });
+    await trigger.click();
+
+    const firstDay = page.locator('.lotus-date-picker-day:not(.lotus-date-picker-day-empty)').first();
+    await expect(firstDay).toContainText('始');
+  });
+
+  test('disabledTimePicker：禁止切换到时间面板（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker disabledTimePicker 示例', { exact: true });
+    await trigger.click();
+
+    const timeSwitchItem = page.locator('.lotus-date-picker-switch-item-disabled');
+    await expect(timeSwitchItem).toBeVisible();
+    await timeSwitchItem.click({ force: true });
+    await expect(page.locator('.lotus-date-picker-panel .lotus-date-picker-day').first()).toBeVisible();
+  });
+
+  test('needConfirm + onCancel/onConfirm：确认提交携带选中值，取消触发 onCancel（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker needConfirm 示例', { exact: true });
+    const log = page.locator('text=/^onCancel 触发|^onConfirm 触发/');
+
+    await trigger.click();
+    await page.locator('.lotus-date-picker-panel .lotus-date-picker-day:not(.lotus-date-picker-day-empty)', { hasText: /^15$/ }).first().click();
+    await page.getByRole('button', { name: '确定' }).click();
+    await expect(log).toContainText('onConfirm 触发');
+
+    await trigger.click();
+    await page.getByRole('button', { name: '取消' }).click();
+    await expect(log).toHaveText('onCancel 触发');
+  });
+
+  test('triggerRender：完全自定义触发器渲染，点击切换展开态文案（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('DatePicker triggerRender 示例', { exact: true });
+    await expect(trigger).toHaveCount(0);
+
+    const openButton = page.getByRole('button', { name: '打开日历' });
+    await openButton.click();
+    await expect(page.getByRole('button', { name: '收起日历' })).toBeVisible();
+    await expect(page.locator('.lotus-date-picker-panel')).toBeVisible();
+  });
 });
