@@ -124,6 +124,7 @@ import { Input, TextArea } from '@lotus/ripple';
 | mode | 输入框的模式，可选 password | string | "text" |
 | placeholder | 占位提示文字 | string | - |
 | prefix | 前缀标签 | any | - |
+| readOnly | 是否只读，阻止编辑但不改变禁用态的视觉/交互（区别于 disabled，鼠标点击/聚焦仍可用） | boolean | false |
 | showClear | 输入框有内容且 hover 或 focus 时展示清除按钮 | boolean | false |
 | size | 输入框大小，可选 large、default、small | string | "default" |
 | style | 样式 | object | - |

@@ -98,6 +98,16 @@ test.describe('Input', () => {
     await expect(input).toHaveValue('abcde');
   });
 
+  test('readOnly：只读态阻止编辑但鼠标点击/聚焦仍可用（对齐 Semi readonly，回归防护：readonly={readOnly} 这个 JSX 属性名本身在 tsrx 编译器里有异常处理路径，曾完全不生效——用 ref+effect 手动赋值 readOnly property 绕过）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('readOnly 输入框');
+    await expect(input).toHaveJSProperty('readOnly', true);
+    await expect(input).toHaveValue('只读内容不可编辑');
+    await input.click();
+    await page.keyboard.type('追加内容');
+    await expect(input).toHaveValue('只读内容不可编辑');
+  });
+
   test('getInputApi：交出的 focus()/blur() 真实生效（对齐 Semi ref.current.focus()，此前 lotus 完全没有实现）', async ({ page }) => {
     await page.goto('/');
     const input = page.getByLabel('getInputApi 输入框');

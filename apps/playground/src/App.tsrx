@@ -427,6 +427,7 @@ export function App() @{
     let &[timePickerChangeLog] = track<string>('');
     let &[timePickerRangeChangeLog] = track<string>('');
     let &[timePickerControlledValue] = track<Date | null>(null);
+    let &[timePickerFocusBlurLog] = track<string>('');
     let &[datePickerChangeLog] = track<string>('');
     let &[datePickerRangeChangeLog] = track<string>('');
     let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
@@ -2863,6 +2864,7 @@ export function App() @{
                 <Button onClick={() => inputImperativeApi?.focus()}>聚焦</Button>
                 <Button onClick={() => inputImperativeApi?.blur()}>失焦</Button>
             </Space>
+            <Input readOnly defaultValue="只读内容不可编辑" aria-label="readOnly 输入框" />
         </Space>
 
         <Divider>TextArea：多行输入框</Divider>
@@ -2905,6 +2907,7 @@ export function App() @{
                 <Button onClick={() => textAreaImperativeApi?.focus()}>聚焦</Button>
                 <Button onClick={() => textAreaImperativeApi?.blur()}>失焦</Button>
             </Space>
+            <TextArea readonly rows={2} defaultValue="只读多行内容不可编辑" aria-label="readonly 多行输入框" />
         </Space>
 
         <Divider>Icons：@lotus/icons 验证图标</Divider>
@@ -3824,6 +3827,47 @@ export function App() @{
             >
                 切换 TimePicker
             </Button>
+        </div>
+
+        <Divider>TimePicker：triggerRender 自定义触发器 + inputReadOnly + clearIcon + insetLabel</Divider>
+
+        <div style={{ width: '240px' }} aria-label="TimePicker triggerRender 容器">
+            <TimePicker
+                triggerRender={({ value, placeholder, open }) => (
+                    <Button aria-label="TimePicker triggerRender 示例">
+                        {value || placeholder}（{open ? '展开' : '收起'}）
+                    </Button>
+                )}
+            />
+        </div>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                inputReadOnly={true}
+                clearIcon={<IconClose />}
+                insetLabel="时间"
+                defaultValue={(() => { const d = new Date(); d.setHours(9, 0, 0, 0); return d; })()}
+                aria-label="TimePicker inputReadOnly 示例"
+            />
+        </div>
+
+        <Divider>TimePicker：onFocus/onBlur + getPopupContainer/zIndex/stopPropagation</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                onFocus={() => { timePickerFocusBlurLog = '聚焦'; }}
+                onBlur={() => { timePickerFocusBlurLog = '失焦'; }}
+                zIndex={2000}
+                stopPropagation
+                aria-label="TimePicker 事件+浮层配置示例"
+            />
+            <TypographyText type="secondary" aria-label="TimePicker focus/blur 日志">{timePickerFocusBlurLog}</TypographyText>
+        </div>
+
+        <Divider>TimePicker：focusOnOpen（挂载后自动聚焦输入框，对齐 Semi）</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker focusOnOpen aria-label="TimePicker focusOnOpen 示例" />
         </div>
 
         <Divider>DatePicker：基础用法（type=date）</Divider>

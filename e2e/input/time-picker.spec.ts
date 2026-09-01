@@ -139,4 +139,75 @@ test.describe('TimePicker', () => {
     await input.press('Escape');
     await expect(page.locator('.lotus-time-picker-panel')).toHaveCount(0);
   });
+
+  test('triggerRender：完全自定义触发器渲染，替换默认 Input，open 状态随面板同步', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('TimePicker triggerRender 示例', { exact: true });
+    await expect(trigger).toHaveText(/收起/);
+
+    await trigger.click();
+    await expect(page.locator('.lotus-time-picker-panel')).toBeVisible();
+    await expect(trigger).toHaveText(/展开/);
+  });
+
+  test('inputReadOnly：只读态阻止编辑（回归防护：readonly={readOnly} 这个 JSX 属性名本身在 tsrx 编译器里有异常处理路径，Input 组件曾完全不生效）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker inputReadOnly 示例', { exact: true });
+    await expect(input).toHaveJSProperty('readOnly', true);
+  });
+
+  test('clearIcon：自定义清除按钮图标覆盖默认图标', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker inputReadOnly 示例', { exact: true });
+    const wrapper = input.locator('xpath=ancestor::div[contains(@class,"lotus-input-wrapper")]');
+    await wrapper.hover();
+    const clearButton = wrapper.locator('.lotus-input-clear');
+    await expect(clearButton).toBeVisible();
+    await expect(clearButton.locator('svg')).toBeVisible();
+  });
+
+  test('insetLabel：桥接到 Input prefix 展示内嵌标签文案', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker inputReadOnly 示例', { exact: true });
+    const wrapper = input.locator('xpath=ancestor::div[contains(@class,"lotus-input-wrapper")]');
+    await expect(wrapper.locator('.lotus-input-prefix')).toHaveText('时间');
+  });
+
+  test('onFocus/onBlur：原生焦点事件透传给外部回调', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker 事件+浮层配置示例', { exact: true });
+    await input.click();
+    await expect(page.getByLabel('TimePicker focus/blur 日志', { exact: true })).toHaveText('聚焦');
+
+    await input.blur();
+    await expect(page.getByLabel('TimePicker focus/blur 日志', { exact: true })).toHaveText('失焦');
+  });
+
+  test('zIndex：透传给浮层层级', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker 事件+浮层配置示例', { exact: true });
+    await input.click();
+
+    const panel = page.locator('.lotus-time-picker-panel');
+    await expect(panel).toBeVisible();
+    const floatingDiv = panel.locator('xpath=ancestor::div[contains(@style,"z-index")][1]');
+    await expect(floatingDiv).toHaveCSS('z-index', '2000');
+  });
+
+  test('stopPropagation：点击面板内部不冒泡触发外部关闭逻辑，面板保持打开', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker 事件+浮层配置示例', { exact: true });
+    await input.click();
+
+    const panel = page.locator('.lotus-time-picker-panel');
+    await expect(panel).toBeVisible();
+    await panel.click();
+    await expect(panel).toBeVisible();
+  });
+
+  test('focusOnOpen：挂载后自动聚焦输入框（对齐 Semi，实际语义是 focus()，不是打开面板——Semi 文档措辞有误导性）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker focusOnOpen 示例', { exact: true });
+    await expect(input).toBeFocused();
+  });
 });

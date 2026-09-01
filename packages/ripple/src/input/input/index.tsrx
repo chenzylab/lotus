@@ -23,6 +23,10 @@ export interface InputProps {
     value?: string;
     defaultValue?: string;
     disabled?: boolean;
+    /** 是否只读，透传给原生 input 的 readOnly（对齐 Semi readonly）——阻止
+     * 编辑但不改变禁用态的视觉/交互（区别于 disabled，鼠标点击/聚焦仍可用，
+     * 常用于阻止移动端软键盘弹出等场景）。 */
+    readOnly?: boolean;
     size?: InputSize;
     mode?: InputMode;
     validateStatus?: InputValidateStatus;
@@ -68,6 +72,7 @@ export function Input(&{
     value,
     defaultValue = '',
     disabled = false,
+    readOnly = false,
     size = 'default',
     mode = 'text',
     validateStatus = 'default',
@@ -112,6 +117,17 @@ export function Input(&{
     getInputApi?.({
         focus: (options) => inputEl?.focus(options),
         blur: () => inputEl?.blur(),
+    });
+
+    // readonly={readOnly} 这个 JSX 属性真机验证发现完全不生效（既不触发
+    // setAttribute/removeAttribute，也不触发原生 readOnly property 的
+    // setter——用 CDP 拦截两者均确认零调用，换一个无关属性名如
+    // data-readonly-test 则立即生效，说明问题精确定位在"readonly"这个
+    // 属性名本身在 tsrx 编译器里有异常处理路径，非泛化的动态属性问题）。
+    // 绕过方式：用 ref 拿到原生节点后直接走 effect 响应式赋值 property，
+    // 不经过 JSX 属性这条路径。
+    effect(() => {
+        if (inputEl) inputEl.readOnly = readOnly;
     });
 
     // 用 track() 而非普通 const，让受控身份能随 value 从 undefined 变为有值

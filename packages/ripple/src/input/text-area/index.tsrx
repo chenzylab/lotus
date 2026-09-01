@@ -115,6 +115,14 @@ export function TextArea(&{
         blur: () => untrack(() => textareaNode)?.blur(),
     });
 
+    // readonly={readonly} 这个 JSX 属性名真机验证发现完全不生效（与 Input
+    // 组件同一根因——tsrx 编译器对 readonly 这个具体属性名有异常处理路径，
+    // 详见 Input 组件同名注释），改用 ref+effect 直接赋值 property 绕过。
+    effect(() => {
+        const node = untrack(() => textareaNode);
+        if (node) node.readOnly = readonly;
+    });
+
     const foundation = new TextAreaFoundation({
         getState: () => untrack(() => state),
         setState: (patch: Partial<TextAreaState>) => { state = { ...state, ...patch }; },

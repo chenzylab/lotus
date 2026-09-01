@@ -37,6 +37,14 @@ import { TimePicker } from '@lotus/ripple';
 ../../src/demos/input/time-picker/disabled-options.tsrx
 ```
 
+### 自定义触发器与浮层配置
+
+`triggerRender` 完全自定义触发器渲染；`getPopupContainer`/`zIndex`/`dropdownMargin`/`stopPropagation` 控制浮层挂载容器、层级、间距与点击冒泡行为。
+
+```tsrx demo
+../../src/demos/input/time-picker/trigger-render.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -44,6 +52,7 @@ import { TimePicker } from '@lotus/ripple';
 | aria-label | 设置 aria-label 属性 | string | - |
 | borderless | 无边框模式 | boolean | `false` |
 | class | 类名 | string | - |
+| clearIcon | 自定义清除按钮图标 | any | - |
 | defaultOpen | 非受控模式下的默认展开状态 | boolean | `false` |
 | defaultValue | 非受控模式下的默认值 | `TimePickerValue \| [TimePickerValue, TimePickerValue]` | - |
 | disabled | 是否禁用 | boolean | `false` |
@@ -51,22 +60,34 @@ import { TimePicker } from '@lotus/ripple';
 | disabledMinutes | 按已选小时返回禁用的分钟数组 | `(hour: number) => number[]` | - |
 | disabledSeconds | 按已选小时/分钟返回禁用的秒数组 | `(hour: number, minute: number) => number[]` | - |
 | disabledTime | 按已选值整体返回禁用规则，仅 `timeRange` 生效，覆盖顶层 `disabledHours`/`disabledMinutes`/`disabledSeconds` | `(dates: Date[], panelType?: 'left' \| 'right') => DisabledTimeRules \| undefined` | - |
+| dropdownMargin | 浮层与触发器的间距微调，透传给 Popover spacing | number | - |
+| focusOnOpen | 挂载后是否自动聚焦输入框（实际语义是 focus()，不是打开面板） | boolean | `false` |
 | format | 输入框显示的时间格式 | string | - |
+| getPopupContainer | 浮层挂载的目标容器 | `() => HTMLElement \| null` | - |
 | hideDisabledOptions | 是否隐藏（而非置灰）禁用项 | boolean | `false` |
 | hourStep / minuteStep / secondStep | 时/分/秒滚轮步长 | number | - |
+| insetLabel | 内嵌标签文案，渲染在输入框内部（桥接到 Input 的 prefix） | any | - |
+| inputReadOnly | 输入框是否只读，阻止软键盘弹出等移动端场景 | boolean | `false` |
 | open | 受控的面板展开状态 | boolean | - |
 | placeholder | 占位提示文字 | string | - |
 | position | 下拉浮层弹出方向 | `FloatingPosition` | - |
+| preventScroll | 聚焦时是否阻止浏览器自动滚动到视口，配合 `focusOnOpen` 使用 | boolean | - |
 | rangeSeparator | 范围类型输入框内两端时间的分隔符 | string | - |
+| scrollItemProps | 原样透传给每一列（时/分/秒/AM-PM）ScrollItem 的 props | object | - |
 | showClear | 有选中值时展示清除按钮 | boolean | `false` |
 | size | 尺寸 | `small` \| `default` \| `large` | - |
+| stopPropagation | 浮层内容点击是否阻止事件冒泡到 document | boolean | `true` |
 | style | 自定义样式 | object | - |
+| triggerRender | 完全自定义触发器渲染，替换默认 Input | `(props: { value: string; placeholder: string; open: boolean; disabled: boolean }) => any` | - |
 | type | 选择器类型 | `'time' \| 'timeRange'` | `'time'` |
 | use12Hours | 是否使用 12 小时制（AM/PM） | boolean | `false` |
 | validateStatus | 校验状态，仅影响展示样式 | `'default' \| 'error' \| 'warning'` | - |
 | value | 受控值 | `TimePickerValue \| [TimePickerValue, TimePickerValue]` | - |
+| zIndex | 浮层层级 | number | - |
+| onBlur | 输入框失焦时的回调 | `(event: FocusEvent) => void` | - |
 | onChange | 值变化时的回调 | `(value: Date \| null \| [Date \| null, Date \| null]) => void` | - |
 | onClear | 点击清除按钮时的回调 | `() => void` | - |
+| onFocus | 输入框聚焦时的回调 | `(event: FocusEvent) => void` | - |
 | onOpenChange | 面板展开/收起时的回调 | `(open: boolean) => void` | - |
 
 `TimePickerValue` 结构：`Date \| string \| null`（字符串需符合 `HH:mm` 或 `HH:mm:ss` 格式）。

@@ -19,7 +19,7 @@ import { LocaleContext } from '../../other/config-provider/locale-context.js';
 import { Popover } from '../../show/popover/index.tsrx';
 import { Input, type InputSize, type InputValidateStatus } from '../input/index.tsrx';
 import { ScrollList } from '../../show/scroll-list/index.tsrx';
-import { ScrollItem, type ScrollListItemData } from '../../show/scroll-list/item.tsrx';
+import { ScrollItem, type ScrollItemProps, type ScrollListItemData } from '../../show/scroll-list/item.tsrx';
 import { IconClock } from '@lotus/icons';
 
 export type TimePickerType = 'time' | 'timeRange';
@@ -61,6 +61,32 @@ export interface TimePickerProps {
     rangeSeparator?: string;
     onChange?: (value: Date | null | [Date | null, Date | null]) => void;
     onClear?: () => void;
+    /** 完全自定义触发器渲染，替换默认 Input（对齐 Semi triggerRender）；
+     * 不传时用内置 Input 触发器。 */
+    triggerRender?: (props: { value: string; placeholder: string; open: boolean; disabled: boolean }) => any;
+    /** 浮层挂载的目标容器，不传则挂载在 Popover 默认位置（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement | null;
+    /** 浮层层级（对齐 Semi zIndex）。 */
+    zIndex?: number;
+    /** 浮层与触发器的间距微调（对齐 Semi dropdownMargin，透传给 Popover spacing）。 */
+    dropdownMargin?: number;
+    /** 浮层内容点击是否阻止事件冒泡到 document（对齐 Semi stopPropagation，默认 true）。 */
+    stopPropagation?: boolean;
+    /** 挂载时是否自动聚焦并全选输入框内容（对齐 Semi focusOnOpen）。 */
+    focusOnOpen?: boolean;
+    /** 聚焦时是否阻止浏览器自动滚动到视口，透传给原生 focus() 同名选项
+     * （对齐 Semi preventScroll，配合 focusOnOpen 使用）。 */
+    preventScroll?: boolean;
+    onFocus?: (event: FocusEvent) => void;
+    onBlur?: (event: FocusEvent) => void;
+    /** 自定义清除按钮图标（对齐 Semi clearIcon）。 */
+    clearIcon?: any;
+    /** 输入框是否只读，阻止软键盘弹出等移动端场景（对齐 Semi inputReadOnly）。 */
+    inputReadOnly?: boolean;
+    /** 内嵌标签文案，渲染在输入框内部（对齐 Semi insetLabel，桥接到 Input 的 prefix）。 */
+    insetLabel?: any;
+    /** 原样透传给每一列（时/分/秒/AM-PM）ScrollItem 的 props（对齐 Semi scrollItemProps）。 */
+    scrollItemProps?: Partial<ScrollItemProps<number | 'AM' | 'PM'>>;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -106,6 +132,7 @@ export interface ColumnsProps {
     pmText: string;
     triggerLabel: string;
     onSelect: (h: number, m: number, s: number) => void;
+    scrollItemProps?: Partial<ScrollItemProps<number | 'AM' | 'PM'>>;
     class?: string;
 }
 
@@ -131,6 +158,7 @@ export function TimeColumns(&{
     pmText,
     triggerLabel,
     onSelect,
+    scrollItemProps,
     class: className,
 }: ColumnsProps) @{
     let &[spec] = track(() => parseFormatSpec(format));
@@ -197,6 +225,7 @@ export function TimeColumns(&{
                 selectedIndex={isAM ? 0 : 1}
                 onSelect={handleAmPmSelect}
                 aria-label={triggerLabel}
+                {...(scrollItemProps ?? {})}
             />
         }
         @if (spec.showHour) {
@@ -206,6 +235,7 @@ export function TimeColumns(&{
                 selectedIndex={hourOptions.findIndex((o) => o.value === hourDisplay)}
                 onSelect={handleHourSelect}
                 aria-label={hourLabel}
+                {...(scrollItemProps ?? {})}
             />
         }
         @if (spec.showMinute) {
@@ -215,6 +245,7 @@ export function TimeColumns(&{
                 selectedIndex={minuteOptions.findIndex((o) => o.value === current.getMinutes())}
                 onSelect={handleMinuteSelect}
                 aria-label={minuteLabel}
+                {...(scrollItemProps ?? {})}
             />
         }
         @if (spec.showSecond) {
@@ -224,6 +255,7 @@ export function TimeColumns(&{
                 selectedIndex={secondOptions.findIndex((o) => o.value === current.getSeconds())}
                 onSelect={handleSecondSelect}
                 aria-label={secondLabel}
+                {...(scrollItemProps ?? {})}
             />
         }
     </ScrollList>
@@ -263,6 +295,19 @@ export function TimePicker(&{
     rangeSeparator = ' ~ ',
     onChange,
     onClear,
+    triggerRender,
+    getPopupContainer,
+    zIndex,
+    dropdownMargin,
+    stopPropagation = true,
+    focusOnOpen = false,
+    preventScroll,
+    onFocus,
+    onBlur,
+    clearIcon,
+    inputReadOnly = false,
+    insetLabel,
+    scrollItemProps,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -306,6 +351,18 @@ export function TimePicker(&{
 
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[panelNode] = track<HTMLElement | null>(null);
+    let inputApi: { focus: (options?: { preventScroll?: boolean }) => void; blur: () => void } | null = null;
+
+    // focusOnOpen 对齐 Semi TimeInput.componentDidMount：挂载后立即聚焦输入框
+    // （不是"打开面板"，Semi 文档措辞有误导性，实际代码是 focus()+select()，
+    // 调研已核实）。lotus Input 的 getInputApi 未暴露 select() 方法，只做
+    // 聚焦这一半——诚实的设计取舍，全选内容不是这个 prop 的核心价值。
+    effect(() => {
+        if (!focusOnOpen || disabled) return;
+        untrack(() => {
+            inputApi?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+        });
+    });
 
     function notify(pair: TimePickerPair) {
         onChange?.(isRange ? pair : pair[0]);
@@ -335,8 +392,13 @@ export function TimePicker(&{
         if (pair) notify(pair);
     }
 
-    function handleInputBlur() {
+    function handleInputBlur(event: FocusEvent) {
         commitDraftIfAny();
+        onBlur?.(event);
+    }
+
+    function handleInputFocus(event: FocusEvent) {
+        onFocus?.(event);
     }
 
     function handleClear() {
@@ -422,8 +484,11 @@ export function TimePicker(&{
                 trigger="custom"
                 visible={state.visible}
                 position={position}
-                spacing={4}
+                spacing={dropdownMargin ?? 4}
                 closeOnEsc={false}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
+                stopPropagation={stopPropagation}
                 content={
                     <div class="lotus-time-picker-panel" ref={(node: HTMLElement) => { panelNode = node; }}>
                         @if (isRange) {
@@ -449,6 +514,7 @@ export function TimePicker(&{
                                     pmText={locale.TimePicker.PM}
                                     triggerLabel={locale.TimePicker.begin}
                                     onSelect={(h, m, s) => handleColumnSelect(0, h, m, s)}
+                                    scrollItemProps={scrollItemProps}
                                     class="lotus-time-picker-list-left"
                                 />
                                 <TimeColumns
@@ -472,6 +538,7 @@ export function TimePicker(&{
                                     pmText={locale.TimePicker.PM}
                                     triggerLabel={locale.TimePicker.end}
                                     onSelect={(h, m, s) => handleColumnSelect(1, h, m, s)}
+                                    scrollItemProps={scrollItemProps}
                                     class="lotus-time-picker-list-right"
                                 />
                             </div>
@@ -497,26 +564,34 @@ export function TimePicker(&{
                                 pmText={locale.TimePicker.PM}
                                 triggerLabel={locale.TimePicker.hourLabel}
                                 onSelect={(h, m, s) => handleColumnSelect(0, h, m, s)}
+                                scrollItemProps={scrollItemProps}
                             />
                         }
                     </div>
                 }
             >
                 <div onClick={handleTriggerClick}>
-                    <Input
-                        value={displayValue}
-                        disabled={disabled}
-                        size={size}
-                        validateStatus={state.invalid ? 'error' : validateStatus}
-                        borderless={borderless}
-                        showClear={showClear}
-                        placeholder={effPlaceholder}
-                        suffix={<IconClock />}
-                        aria-label={ariaLabel}
-                        onChange={handleInputChange}
-                        onBlur={handleInputBlur}
-                        onClear={handleClear}
-                    />
+                    {triggerRender ? triggerRender({ value: displayValue, placeholder: effPlaceholder, open: state.visible, disabled }) : (
+                        <Input
+                            value={displayValue}
+                            disabled={disabled}
+                            readOnly={inputReadOnly}
+                            size={size}
+                            validateStatus={state.invalid ? 'error' : validateStatus}
+                            borderless={borderless}
+                            showClear={showClear}
+                            clearIcon={clearIcon}
+                            prefix={insetLabel}
+                            placeholder={effPlaceholder}
+                            suffix={<IconClock />}
+                            aria-label={ariaLabel}
+                            onChange={handleInputChange}
+                            onFocus={handleInputFocus}
+                            onBlur={handleInputBlur}
+                            onClear={handleClear}
+                            getInputApi={(api) => { inputApi = api; }}
+                        />
+                    )}
                 </div>
             </Popover>
         </div>

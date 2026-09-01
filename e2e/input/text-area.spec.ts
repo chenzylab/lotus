@@ -74,4 +74,14 @@ test.describe('TextArea', () => {
     await group.getByRole('button', { name: '失焦' }).click();
     await expect(textarea).not.toBeFocused();
   });
+
+  test('readonly：只读态阻止编辑但鼠标点击/聚焦仍可用（回归防护：readonly={readonly} 这个 JSX 属性名本身在 tsrx 编译器里有异常处理路径，与 Input 组件同一根因，曾完全不生效）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('readonly 多行输入框');
+    await expect(textarea).toHaveJSProperty('readOnly', true);
+    await expect(textarea).toHaveValue('只读多行内容不可编辑');
+    await textarea.click();
+    await page.keyboard.type('追加内容');
+    await expect(textarea).toHaveValue('只读多行内容不可编辑');
+  });
 });
