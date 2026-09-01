@@ -11,21 +11,32 @@ export interface CascadeResult {
  * 否则父节点及更高祖先全部标记半选（半选状态不需要继续判断，只要有一层
  * 兄弟未全选，更高层必然也不可能全选）。对齐 Semi `calcCheckedKeysForChecked`
  * 的算法结构。
+ *
+ * disabledKeys 传入时对齐 Semi disableStrictly 语义：本次操作的后代批量
+ * 选中范围排除 disabled 节点（它们的勾选状态完全独立，不受父节点操作
+ * 影响），冒泡判断"兄弟是否全部选中"时也把 disabled 兄弟视为不参与
+ * 计算（否则一个 disabled 兄弟永远未选中会导致父节点永远无法冒泡为
+ * 全选，堵死正常节点的级联路径）。
  */
 export function calcCheckedKeysForChecked(
   key: string,
   entities: KeyEntities,
   checkedKeys: Set<string>,
   halfCheckedKeys: Set<string>,
+  disabledKeys?: Set<string>,
 ): CascadeResult {
-  const descendantKeys = findDescendantKeys([key], entities, true);
+  const descendantKeys = disabledKeys
+    ? findDescendantKeys([key], entities, true).filter((k) => !disabledKeys.has(k))
+    : findDescendantKeys([key], entities, true);
   let nextChecked = new Set([...checkedKeys, key]);
   let nextHalfChecked = new Set(halfCheckedKeys);
 
   function bubbleUp(currentKey: string) {
     const entity = entities[currentKey];
     if (!entity?.parent) return;
-    const siblingKeys = findSiblingKeys(currentKey, entities, true);
+    const siblingKeys = disabledKeys
+      ? findSiblingKeys(currentKey, entities, true).filter((k) => !disabledKeys.has(k))
+      : findSiblingKeys(currentKey, entities, true);
     const allChecked = siblingKeys.every((k) => nextChecked.has(k));
     if (!allChecked) {
       const ancestorKeys = findAncestorKeys([currentKey], entities, false);
@@ -52,14 +63,21 @@ export function calcCheckedKeysForChecked(
  * 从自己开始向上逐层判断兄弟是否还有选中/半选——有则祖先链的"全选"
  * 降级为"半选"（不再递归，半选状态一次性标满整条祖先链）；兄弟全部
  * 未选中则父节点彻底清空并继续向上递归判断爷爷节点。
+ *
+ * disabledKeys 传入时同 calcCheckedKeysForChecked 的 disableStrictly 语义：
+ * 取消勾选不影响 disabled 后代（它们的状态独立），冒泡判断"兄弟是否还有
+ * 选中"时也排除 disabled 兄弟。
  */
 export function calcCheckedKeysForUnchecked(
   key: string,
   entities: KeyEntities,
   checkedKeys: Set<string>,
   halfCheckedKeys: Set<string>,
+  disabledKeys?: Set<string>,
 ): CascadeResult {
-  const descendantKeys = findDescendantKeys([key], entities, true);
+  const descendantKeys = disabledKeys
+    ? findDescendantKeys([key], entities, true).filter((k) => !disabledKeys.has(k))
+    : findDescendantKeys([key], entities, true);
   const nextChecked = new Set(checkedKeys);
   const nextHalfChecked = new Set(halfCheckedKeys);
   descendantKeys.forEach((k) => {
@@ -73,7 +91,9 @@ export function calcCheckedKeysForUnchecked(
     if (!parent) return;
     if (!nextChecked.has(parent.key) && !nextHalfChecked.has(parent.key)) return;
 
-    const siblingKeys = findSiblingKeys(currentKey, entities, true);
+    const siblingKeys = disabledKeys
+      ? findSiblingKeys(currentKey, entities, true).filter((k) => !disabledKeys.has(k))
+      : findSiblingKeys(currentKey, entities, true);
     const anyChecked = siblingKeys.some((k) => nextChecked.has(k) || nextHalfChecked.has(k));
     if (anyChecked) {
       const ancestorKeys = findAncestorKeys([currentKey], entities, false);

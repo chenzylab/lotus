@@ -419,6 +419,7 @@ export function App() @{
     let &[treeSelectControlledValue] = track<string>('dept-1-1-1');
     let &[treeSelectChangeLog] = track<string>('');
     let &[treeSelectLazyTreeData] = track<TreeNodeData[]>(treeSelectLazyData);
+    let &[treeSelectFocusBlurLog] = track<string>('');
     let &[autoCompleteSearchResult] = track<string[]>(autoCompleteAllCities);
     let &[autoCompleteChangeLog] = track<string>('');
     let &[autoCompleteControlledValue] = track<string>('北京');
@@ -3693,6 +3694,99 @@ export function App() @{
                 }}
                 aria-label="TreeSelect 懒加载"
             />
+        </div>
+
+        <Divider>TreeSelect：triggerRender + prefix/suffix/insetLabel + clearIcon</Divider>
+
+        <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div aria-label="TreeSelect triggerRender 容器">
+                <TreeSelect
+                    treeData={treeDemoData}
+                    placeholder="请选择员工"
+                    triggerRender={({ value, placeholder, open }) => (
+                        <Button aria-label="TreeSelect triggerRender 示例">{(value as string) || placeholder}（{open ? '展开' : '收起'}）</Button>
+                    )}
+                />
+            </div>
+            <TreeSelect
+                treeData={treeDemoData}
+                defaultValue="dept-1-1-1"
+                showClear
+                prefix="部门"
+                clearIcon={<IconClose />}
+                aria-label="TreeSelect prefix 与 clearIcon 示例"
+            />
+        </div>
+
+        <Divider>TreeSelect：renderSelectedItem 自定义标签 + showRestTagsPopover</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                maxTagCount={1}
+                showRestTagsPopover
+                defaultValue={['dept-1-1-1', 'dept-1-2-1', 'dept-2-1']}
+                renderSelectedItem={(node, { onClose }) => (
+                    <Tag color="orange" onClose={onClose} closable>{`★ ${node.label}`}</Tag>
+                )}
+                aria-label="TreeSelect renderSelectedItem 示例"
+            />
+        </div>
+
+        <Divider>TreeSelect：renderFullLabel 完全自定义整行渲染</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                renderFullLabel={({ className, onClick, checkStatus, data, onCheck }) => (
+                    <div class={className} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px' }} onClick={onClick}>
+                        <input type="checkbox" checked={checkStatus.checked} onChange={() => onCheck?.(new MouseEvent('click'))} aria-label={`自定义节点 ${data.label}`} />
+                        <span>{`🌳 ${data.label}`}</span>
+                    </div>
+                )}
+                aria-label="TreeSelect renderFullLabel 示例"
+            />
+        </div>
+
+        <Divider>TreeSelect：disableStrictly（勾选父节点时排除 disabled 后代）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                disableStrictly
+                aria-label="TreeSelect disableStrictly 示例"
+            />
+        </div>
+
+        <Divider>TreeSelect：expandAction + searchAutoFocus + showSearchClear + zIndex/stopPropagation</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                multiple
+                expandAction="click"
+                filterTreeNode
+                searchAutoFocus
+                showSearchClear
+                zIndex={2000}
+                stopPropagation
+                aria-label="TreeSelect expandAction 与事件示例"
+            />
+        </div>
+
+        <Divider>TreeSelect：onFocus/onBlur</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeDemoData}
+                onFocus={() => { treeSelectFocusBlurLog = '聚焦'; }}
+                onBlur={() => { treeSelectFocusBlurLog = '失焦'; }}
+                aria-label="TreeSelect onFocus-onBlur 示例"
+            />
+            <TypographyText type="secondary" aria-label="TreeSelect focus/blur 日志">{treeSelectFocusBlurLog}</TypographyText>
         </div>
 
         <Divider>AutoComplete：基础用法（onSearch 里自行过滤候选项，组件本身不做匹配）</Divider>

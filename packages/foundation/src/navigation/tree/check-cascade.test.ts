@@ -56,6 +56,28 @@ describe('calcCheckedKeysForChecked', () => {
     expect(result.halfCheckedKeys.has('a')).toBe(true);
   });
 
+  it('disableStrictly（对齐 Semi disableStrictly）：勾选父节点时排除 disabled 后代，disabled 节点不被联动选中', () => {
+    const entities = buildKeyEntities(TREE);
+    const disabledKeys = new Set(['a1a']);
+    const result = calcCheckedKeysForChecked('a1', entities, new Set(), new Set(), disabledKeys);
+
+    expect(result.checkedKeys.has('a1')).toBe(true);
+    expect(result.checkedKeys.has('a1b')).toBe(true);
+    expect(result.checkedKeys.has('a1a')).toBe(false);
+  });
+
+  it('disableStrictly：disabled 兄弟不参与"是否全部选中"的冒泡判断，非 disabled 兄弟全选时父节点仍能冒泡为全选', () => {
+    const entities = buildKeyEntities(TREE);
+    const disabledKeys = new Set(['a1a']);
+    // a1 的子节点是 a1a(disabled)/a1b；只勾选 a1b（未涉及 a1a），
+    // disabled 兄弟被排除在外后，a1b 是唯一需要判断的兄弟，理应冒泡全选。
+    const result = calcCheckedKeysForChecked('a1b', entities, new Set(), new Set(), disabledKeys);
+
+    expect(result.checkedKeys.has('a1b')).toBe(true);
+    expect(result.checkedKeys.has('a1')).toBe(true);
+    expect(result.halfCheckedKeys.has('a1')).toBe(false);
+  });
+
   it('不同顶层子树互不影响：勾选 b1 不影响 a 子树的状态', () => {
     const entities = buildKeyEntities(TREE);
     const result = calcCheckedKeysForChecked('b1', entities, new Set(), new Set());
@@ -113,6 +135,19 @@ describe('calcCheckedKeysForUnchecked', () => {
 
     expect(afterUncheckB.checkedKeys.size).toBe(0);
     expect(afterUncheckB.halfCheckedKeys.size).toBe(0);
+  });
+
+  it('disableStrictly：取消勾选父节点时不影响 disabled 后代的选中状态', () => {
+    const entities = buildKeyEntities(TREE);
+    const disabledKeys = new Set(['a1a']);
+    // 先手动构造一个"a1a 已选中（视为外部预设，与 disableStrictly 无关）
+    // + a1/a1b 也选中"的状态，模拟 disabled 节点本身可以有独立初始值。
+    const checked = new Set(['a1', 'a1a', 'a1b']);
+    const result = calcCheckedKeysForUnchecked('a1', entities, checked, new Set(), disabledKeys);
+
+    expect(result.checkedKeys.has('a1')).toBe(false);
+    expect(result.checkedKeys.has('a1b')).toBe(false);
+    expect(result.checkedKeys.has('a1a')).toBe(true);
   });
 });
 

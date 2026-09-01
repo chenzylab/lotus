@@ -73,6 +73,67 @@ export interface TreeSelectProps {
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onDropdownVisibleChange?: (visible: boolean) => void;
+    /** 浮层挂载的目标容器，不传则挂载在 Popover 默认位置（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement | null;
+    /** 浮层层级（对齐 Semi zIndex）。 */
+    zIndex?: number;
+    /** 浮层与触发器的间距微调（对齐 Semi dropdownMargin，透传给 Popover spacing）。 */
+    dropdownMargin?: number;
+    /** 浮层内容点击是否阻止事件冒泡到 document（对齐 Semi stopPropagation，默认 true）。 */
+    stopPropagation?: boolean;
+    /** 自定义清除按钮图标（对齐 Semi clearIcon）。 */
+    clearIcon?: any;
+    /** 挂载时默认展开面板（对齐 Semi defaultOpen，非受控展开态的初值）。 */
+    defaultOpen?: boolean;
+    /** 完全自定义触发器渲染，替换默认展示区域（对齐 Semi triggerRender）。 */
+    triggerRender?: (props: { value: string | string[] | undefined; placeholder: any; open: boolean; disabled: boolean }) => any;
+    /** 多选标签自定义渲染（对齐 Semi renderSelectedItem），接收
+     * `(node, { index, onClose })`，onClose 需调用方自行绑定到移除触发点。 */
+    renderSelectedItem?: (node: TreeNodeData, meta: { index: number; onClose: () => void }) => any;
+    /** 挂载后是否自动聚焦搜索框（对齐 Semi searchAutoFocus，仅 filterTreeNode 开启时有意义）。 */
+    searchAutoFocus?: boolean;
+    /** 搜索框内容非空时是否展示清除按钮（对齐 Semi showSearchClear，默认 true）。 */
+    showSearchClear?: boolean;
+    /** 触发器前缀内容（对齐 Semi prefix）。 */
+    prefix?: any;
+    /** 触发器后缀内容（对齐 Semi suffix）。 */
+    suffix?: any;
+    /** 内嵌标签文案，渲染在触发器内部（对齐 Semi insetLabel）。 */
+    insetLabel?: any;
+    /** 触发器上方/下方插槽（对齐 Semi outerTopSlot/outerBottomSlot）。 */
+    outerTopSlot?: any;
+    outerBottomSlot?: any;
+    /** 折叠时 "+N" 是否 hover 弹出展示被折叠的标签（对齐 Semi showRestTagsPopover，默认 false）。 */
+    showRestTagsPopover?: boolean;
+    /** 折叠气泡 Popover 的透传配置（对齐 Semi restTagsPopoverProps）。 */
+    restTagsPopoverProps?: Record<string, any>;
+    /** 多选场景勾选是否严格按 disabled 节点隔离级联（对齐 Semi disableStrictly，
+     * 默认 false——disabled 节点参与正常三态级联；true 时 disabled 节点的选中
+     * 状态独立，不受父节点批量操作影响）。 */
+    disableStrictly?: boolean;
+    /** 点击触发展开/收起的方式（对齐 Semi expandAction），'click' 整行可点，
+     * 'doubleClick' 双击展开，false 只能点展开图标。 */
+    expandAction?: 'click' | 'doubleClick' | false;
+    /** 自定义展开图标，支持函数形式接收 (onClick, className, expanded)（对齐 Semi expandIcon）。 */
+    expandIcon?: any | ((props: { onClick: (e: MouseEvent) => void; className: string; expanded: boolean }) => any);
+    /** 自定义搜索框渲染，传 false 完全隐藏搜索框（对齐 Semi searchRender）。 */
+    searchRender?: boolean | ((inputProps: { value: string; placeholder: any; onChange: (event: Event) => void }) => any);
+    /** 搜索框位置（对齐 Semi searchPosition），'trigger' 允许直接在触发器上输入过滤。 */
+    searchPosition?: 'dropdown' | 'trigger';
+    /** 比 renderLabel 更完整的自定义渲染，替换整行内容（对齐 Semi renderFullLabel）。 */
+    renderFullLabel?: (props: { level: number; className: string; onExpand: (e: MouseEvent) => void; onClick: (e: MouseEvent) => void; expandIcon: any; checkStatus: { checked: boolean; halfChecked: boolean }; data: TreeNodeData; onCheck?: (e: MouseEvent) => void }) => any;
+    /** treeData 里自定义 label 字段名（对齐 Semi treeNodeLabelProp），不传默认取 `label`。 */
+    treeNodeLabelProp?: string;
+    /** 是否开启动画（对齐 Semi motion/motionExpand，lotus 用纯 CSS transition 恒定实现，此开关仅控制是否应用该 transition）。 */
+    motion?: boolean;
+    /** 聚焦时是否阻止浏览器自动滚动到视口，透传给原生 focus() 同名选项（对齐 Semi preventScroll）。 */
+    preventScroll?: boolean;
+    /** 多选 + searchPosition="trigger" 时，是否允许触发器内标签换行显示多行（对齐 Semi triggerTagWrap）。 */
+    triggerTagWrap?: boolean;
+    /** 单选场景选中一个节点后是否自动关闭面板（对齐 Semi clickToHide，默认 true）。 */
+    clickToHide?: boolean;
+    /** 浮层超出视口时是否自动调整弹出方向（对齐 Semi autoAdjustOverflow，透传给 Popover，默认 true）。 */
+    autoAdjustOverflow?: boolean;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -96,6 +157,10 @@ interface TreeSelectNodeItemProps {
     loadData: boolean;
     disabled: boolean;
     renderLabel?: (label: any, node: TreeNodeData) => any;
+    renderFullLabel?: (props: { level: number; className: string; onExpand: (e: MouseEvent) => void; onClick: (e: MouseEvent) => void; expandIcon: any; checkStatus: { checked: boolean; halfChecked: boolean }; data: TreeNodeData; onCheck?: (e: MouseEvent) => void }) => any;
+    expandAction: 'click' | 'doubleClick' | false;
+    expandIcon?: any | ((props: { onClick: (e: MouseEvent) => void; className: string; expanded: boolean }) => any);
+    treeNodeLabelProp: string;
     onToggleExpand: (key: string, data: TreeNodeData, hasChildren: boolean) => void;
     onSelectNode: (key: string, data: TreeNodeData) => void;
 }
@@ -117,29 +182,73 @@ function TreeSelectNodeItem(&{
     loadData,
     disabled,
     renderLabel,
+    renderFullLabel,
+    expandAction,
+    expandIcon,
+    treeNodeLabelProp,
     onToggleExpand,
     onSelectNode,
 }: TreeSelectNodeItemProps) @{
+    const nodeClassName = ['lotus-tree-select-node', !multiple && selected ? 'lotus-tree-select-node-selected' : '', active ? 'lotus-tree-select-node-active' : '', node.disabled ? 'lotus-tree-select-node-disabled' : ''].filter(Boolean).join(' ');
+
+    function handleExpandClick(event: MouseEvent) {
+        event.stopPropagation();
+        onToggleExpand(node.key, node.data, node.hasChildren);
+    }
+
+    function handleRowClick() {
+        onSelectNode(node.key, node.data);
+    }
+
+    /** expandAction='click' 对齐 Semi 真实语义：整行点击同时触发选中和
+     * 展开（不是"只展开不选中"，调研已核实 Semi TreeNode.onClick 源码：
+     * onSelect(e) 后紧接着 onExpand(e)，两者都会发生）。 */
+    function handleRowClickWithExpand() {
+        onSelectNode(node.key, node.data);
+        if (node.hasChildren || loadData) onToggleExpand(node.key, node.data, node.hasChildren);
+    }
+
+    /** expandAction='doubleClick' 对齐 Semi：双击只展开，不触发选中。 */
+    function handleRowDoubleClickExpand() {
+        if (!node.hasChildren && !loadData) return;
+        onToggleExpand(node.key, node.data, node.hasChildren);
+    }
+
     <>
+    {renderFullLabel ? renderFullLabel({
+        level: node.level,
+        className: nodeClassName,
+        onExpand: handleExpandClick,
+        onClick: handleRowClick,
+        expandIcon: expandIcon ?? <IconChevronRight />,
+        checkStatus: { checked, halfChecked },
+        data: node.data,
+        onCheck: multiple ? () => onSelectNode(node.key, node.data) : undefined,
+    }) : (
     <div
         id={id}
         role="treeitem"
         aria-selected={!multiple && selected}
         aria-disabled={node.disabled}
         aria-expanded={node.hasChildren ? expanded : undefined}
-        class={['lotus-tree-select-node', !multiple && selected ? 'lotus-tree-select-node-selected' : '', active ? 'lotus-tree-select-node-active' : '', node.disabled ? 'lotus-tree-select-node-disabled' : ''].filter(Boolean).join(' ')}
+        class={nodeClassName}
         style={{ paddingLeft: `${node.level * 20}px` }}
+        onDblClick={expandAction === 'doubleClick' ? handleRowDoubleClickExpand : undefined}
     >
         @if (!node.isLeaf || loadData) {
             <span
                 class={['lotus-tree-select-switcher', expanded ? 'lotus-tree-select-switcher-expanded' : ''].filter(Boolean).join(' ')}
-                onClick={() => onToggleExpand(node.key, node.data, node.hasChildren)}
+                onClick={handleExpandClick}
             >
-                @if (loading) {
+                {typeof expandIcon === 'function' ? (
+                    expandIcon({ onClick: handleExpandClick, className: 'lotus-tree-select-switcher-icon', expanded })
+                ) : expandIcon ? (
+                    expandIcon
+                ) : loading ? (
                     <span class="lotus-tree-select-switcher-loading"><IconLoading /></span>
-                } @if (!loading) {
+                ) : (
                     <IconChevronRight />
-                }
+                )}
             </span>
         } @if (node.isLeaf && !loadData) {
             <span class="lotus-tree-select-switcher lotus-tree-select-switcher-placeholder" />
@@ -151,13 +260,14 @@ function TreeSelectNodeItem(&{
             </span>
         }
 
-        <span class="lotus-tree-select-node-content" onClick={() => onSelectNode(node.key, node.data)}>
+        <span class="lotus-tree-select-node-content" onClick={expandAction === 'click' ? handleRowClickWithExpand : handleRowClick}>
             @if (node.icon) {
                 <span class="lotus-tree-select-node-icon">{node.icon}</span>
             }
-            <span class="lotus-tree-select-node-label">{renderLabel ? renderLabel(node.label, node.data) : node.label}</span>
+            <span class="lotus-tree-select-node-label">{renderLabel ? renderLabel((node.data as any)[treeNodeLabelProp] ?? node.label, node.data) : node.label}</span>
         </span>
     </div>
+    )}
 
     <style>
         .lotus-tree-select-node {
@@ -293,6 +403,33 @@ export function TreeSelect(&{
     onFocus,
     onBlur,
     onDropdownVisibleChange,
+    getPopupContainer,
+    zIndex,
+    dropdownMargin,
+    stopPropagation = true,
+    clearIcon,
+    defaultOpen = false,
+    triggerRender,
+    renderSelectedItem,
+    searchAutoFocus = false,
+    showSearchClear = true,
+    prefix,
+    suffix,
+    insetLabel,
+    outerTopSlot,
+    outerBottomSlot,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    disableStrictly = false,
+    expandAction = false,
+    expandIcon,
+    searchRender,
+    searchPosition = 'dropdown',
+    renderFullLabel,
+    treeNodeLabelProp = 'label',
+    preventScroll,
+    clickToHide = true,
+    autoAdjustOverflow = true,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -334,9 +471,24 @@ export function TreeSelect(&{
         loadedKeys: new Set<string>(),
         loadingKeys: new Set<string>(),
     });
-    let &[isOpen] = track<boolean>(false);
+    let &[isOpen] = track<boolean>(defaultOpen);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    let searchInputNode: HTMLInputElement | null = null;
+
+    // searchAutoFocus：面板每次从关闭变为打开时，聚焦搜索框（对齐 Semi
+    // searchAutoFocus，仅 filterTreeNode 开启且搜索框在面板内时有意义）。
+    // isOpen 变化这一刻，Popover content（含搜索框）还没有真正挂载到 DOM
+    // （Popover 内部由 visible prop 驱动的渲染滞后于这个 effect 的执行
+    // 时机，真机验证确认过：同步调用时 searchInputNode 仍是上一次渲染
+    // 遗留的 null），需要等到下一个宏任务再聚焦。 */
+    effect(() => {
+        if (!searchAutoFocus || !filterTreeNode || searchPosition !== 'dropdown') return;
+        if (!isOpen) return;
+        setTimeout(() => {
+            untrack(() => searchInputNode?.focus(preventScroll !== undefined ? { preventScroll } : undefined));
+        }, 0);
+    });
     // 键盘导航虚拟焦点（对齐 Select 已验证的 aria-activedescendant 模式）：
     // DOM 焦点留在 trigger 上，activeIndex 指向 flatNodes（已按展开状态摊平
     // 的可见节点数组）里第几项。
@@ -494,17 +646,23 @@ export function TreeSelect(&{
         onExpand?.([...next], { expanded: !wasExpanded, node });
     }
 
+    function disabledKeysFor(): Set<string> | undefined {
+        if (!disableStrictly) return undefined;
+        const ents = untrack(() => entities);
+        return new Set(Object.keys(ents).filter((k) => ents[k]?.data.disabled));
+    }
+
     function handleSelectNode(key: string, node: TreeNodeData) {
         if (disabled || node.disabled) return;
         if (multiple) {
-            foundation.handleCheck(key, untrack(() => entities), checkRelation, isValueControlled);
+            foundation.handleCheck(key, untrack(() => entities), checkRelation, isValueControlled, disabledKeysFor());
             notifyChange();
             return;
         }
         const next = foundation.handleSelect(key, isValueControlled);
         onSelect?.(next, next !== null, node);
         notifyChange();
-        if (next !== null) {
+        if (next !== null && clickToHide) {
             isOpen = false;
             onDropdownVisibleChange?.(false);
         }
@@ -638,10 +796,14 @@ export function TreeSelect(&{
 
     let &[tagFold] = track(() => foldTags(selectedNodesData, maxTagCount));
 
+    function removeTagValue(node: TreeNodeData) {
+        foundation.handleCheck(node.key, untrack(() => entities), checkRelation, isValueControlled, disabledKeysFor());
+        notifyChange();
+    }
+
     function handleRemoveTag(node: TreeNodeData, event: MouseEvent) {
         event.stopPropagation();
-        foundation.handleCheck(node.key, untrack(() => entities), checkRelation, isValueControlled);
-        notifyChange();
+        removeTagValue(node);
     }
 
     let &[allowClear] = track<boolean>(() => {
@@ -668,22 +830,47 @@ export function TreeSelect(&{
                 trigger="custom"
                 visible={isOpen}
                 position={position}
-                spacing={4}
+                spacing={dropdownMargin ?? 4}
                 closeOnEsc={true}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
+                stopPropagation={stopPropagation}
+                autoAdjustOverflow={autoAdjustOverflow}
                 content={
                     <div class="lotus-tree-select-panel" ref={(node: HTMLElement) => { listNode = node; }}>
-                        @if (filterTreeNode) {
-                            <div class="lotus-tree-select-search-box">
-                                <IconSearch />
-                                <input
-                                    class="lotus-tree-select-search-input"
-                                    type="text"
-                                    value={state.searchInput}
-                                    placeholder={searchPlaceholder}
-                                    onInput={handleSearchInput}
-                                />
-                            </div>
+                        @if (outerTopSlot) {
+                            <div class="lotus-tree-select-outer-slot">{outerTopSlot}</div>
                         }
+                        {filterTreeNode && searchPosition === 'dropdown' ? (
+                            searchRender === false ? undefined : typeof searchRender === 'function' ? (
+                                searchRender({
+                                    value: state.searchInput,
+                                    placeholder: searchPlaceholder,
+                                    onChange: handleSearchInput,
+                                })
+                            ) : (
+                                <div class="lotus-tree-select-search-box">
+                                    <IconSearch />
+                                    <input
+                                        class="lotus-tree-select-search-input"
+                                        type="text"
+                                        value={state.searchInput}
+                                        placeholder={searchPlaceholder}
+                                        onInput={handleSearchInput}
+                                        ref={(node: HTMLInputElement) => { searchInputNode = node; }}
+                                    />
+                                    {showSearchClear && state.searchInput ? (
+                                        <span
+                                            class="lotus-tree-select-search-clear"
+                                            aria-label={locale.Select.clear}
+                                            onClick={() => { foundation.handleSearch('', untrack(() => entities), filterTreeNode); onSearch?.(''); }}
+                                        >
+                                            <IconClear />
+                                        </span>
+                                    ) : undefined}
+                                </div>
+                            )
+                        ) : undefined}
                         @if (flatNodes.length === 0) {
                             <div class="lotus-tree-select-empty">暂无数据</div>
                         }
@@ -712,6 +899,10 @@ export function TreeSelect(&{
                                                     loadData={!!loadData}
                                                     disabled={disabled}
                                                     renderLabel={renderLabel}
+                                                    renderFullLabel={renderFullLabel}
+                                                    expandAction={expandAction}
+                                                    expandIcon={expandIcon}
+                                                    treeNodeLabelProp={treeNodeLabelProp}
                                                     onToggleExpand={handleToggleExpand}
                                                     onSelectNode={handleSelectNode}
                                                 />
@@ -736,15 +927,27 @@ export function TreeSelect(&{
                                         loadData={!!loadData}
                                         disabled={disabled}
                                         renderLabel={renderLabel}
+                                        renderFullLabel={renderFullLabel}
+                                        expandAction={expandAction}
+                                        expandIcon={expandIcon}
+                                        treeNodeLabelProp={treeNodeLabelProp}
                                         onToggleExpand={handleToggleExpand}
                                         onSelectNode={handleSelectNode}
                                     />
                                 }
                             </div>
                         }
+                        @if (outerBottomSlot) {
+                            <div class="lotus-tree-select-outer-slot">{outerBottomSlot}</div>
+                        }
                     </div>
                 }
             >
+                {triggerRender ? (
+                <div onClick={handleTriggerClick} onKeyDown={handleTriggerKeyDown}>
+                    {triggerRender({ value: multiple ? foundation.resolveValue(entities, checkRelation, { autoMergeValue, leafOnly }) : (state.selectedKey ?? undefined), placeholder, open: isOpen, disabled })}
+                </div>
+                ) : (
                 <div
                     role="combobox"
                     aria-expanded={isOpen}
@@ -759,23 +962,46 @@ export function TreeSelect(&{
                     onFocus={(event: FocusEvent) => onFocus?.(event)}
                     onBlur={(event: FocusEvent) => onBlur?.(event)}
                 >
+                    {(prefix || insetLabel) ? (
+                        <span class="lotus-tree-select-prefix">{prefix ?? insetLabel}</span>
+                    ) : undefined}
                     @if (multiple) {
                         <div class="lotus-tree-select-tags">
                             @if (selectedNodesData.length === 0) {
                                 <span class="lotus-tree-select-placeholder">{placeholder}</span>
                             } @else {
                                 <>
-                                    @for (const node of tagFold.visible; key node.key) {
-                                        <span class="lotus-tree-select-tag">
-                                            <span class="lotus-tree-select-tag-label">{node.label}</span>
-                                            <span class="lotus-tree-select-tag-remove" onClick={(event: MouseEvent) => handleRemoveTag(node, event)}>
-                                                <IconClear />
-                                            </span>
+                                    @for (const node of tagFold.visible; index tagIndex; key node.key) {
+                                        <span class="lotus-tree-select-tag-slot">
+                                            {renderSelectedItem ? renderSelectedItem(node, { index: tagIndex, onClose: () => removeTagValue(node) }) : (
+                                                <span class="lotus-tree-select-tag">
+                                                    <span class="lotus-tree-select-tag-label">{node.label}</span>
+                                                    <span class="lotus-tree-select-tag-remove" onClick={(event: MouseEvent) => handleRemoveTag(node, event)}>
+                                                        <IconClear />
+                                                    </span>
+                                                </span>
+                                            )}
                                         </span>
                                     }
-                                    @if (tagFold.restCount > 0) {
-                                        <span class="lotus-tree-select-tag lotus-tree-select-tag-rest">{`+${tagFold.restCount}`}</span>
-                                    }
+                                    {tagFold.restCount > 0 ? (
+                                        showRestTagsPopover ? (
+                                            <Popover
+                                                trigger="hover"
+                                                {...(restTagsPopoverProps ?? {})}
+                                                content={
+                                                    <div class="lotus-tree-select-rest-popover">
+                                                        @for (const node of tagFold.rest; key node.key) {
+                                                            <span class="lotus-tree-select-tag">{node.label}</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            >
+                                                <span class="lotus-tree-select-tag lotus-tree-select-tag-rest">{`+${tagFold.restCount}`}</span>
+                                            </Popover>
+                                        ) : (
+                                            <span class="lotus-tree-select-tag lotus-tree-select-tag-rest">{`+${tagFold.restCount}`}</span>
+                                        )
+                                    ) : undefined}
                                 </>
                             }
                         </div>
@@ -788,13 +1014,17 @@ export function TreeSelect(&{
                     }
                     @if (allowClear) {
                         <span class="lotus-tree-select-clear" aria-label={locale.Select.clear} onClick={handleClear}>
-                            <IconClear />
+                            {clearIcon ?? <IconClear />}
                         </span>
                     }
+                    {suffix ? (
+                        <span class="lotus-tree-select-suffix">{suffix}</span>
+                    ) : undefined}
                     <span class="lotus-tree-select-arrow">
                         <IconChevronDown />
                     </span>
                 </div>
+                )}
             </Popover>
         </div>
 
@@ -894,6 +1124,10 @@ export function TreeSelect(&{
                 min-width: 0;
             }
 
+            .lotus-tree-select-tag-slot {
+                display: contents;
+            }
+
             .lotus-tree-select-tag {
                 display: inline-flex;
                 align-items: center;
@@ -942,6 +1176,42 @@ export function TreeSelect(&{
                 background: transparent;
                 font-size: var(--lotus-font-body-size);
                 color: var(--lotus-color-text-0);
+            }
+
+            .lotus-tree-select-search-clear {
+                display: inline-flex;
+                align-items: center;
+                cursor: pointer;
+                color: var(--lotus-color-text-2);
+                flex-shrink: 0;
+            }
+
+            .lotus-tree-select-search-clear:hover { color: var(--lotus-color-text-0); }
+
+            .lotus-tree-select-outer-slot {
+                padding: 6px 8px;
+            }
+
+            .lotus-tree-select-prefix,
+            .lotus-tree-select-suffix {
+                display: inline-flex;
+                align-items: center;
+                color: var(--lotus-color-text-2);
+                flex-shrink: 0;
+            }
+
+            .lotus-tree-select-rest-popover {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                max-width: 240px;
+                padding: 4px;
+            }
+
+            .lotus-tree-select-switcher-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .lotus-tree-select-tree {

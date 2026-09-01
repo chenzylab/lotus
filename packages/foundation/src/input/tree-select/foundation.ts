@@ -59,8 +59,16 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
   }
 
   /** related 模式：三态级联。unRelated 模式：纯粹的 Set 增删，互不联动。
-   * `isControlled` 语义同 `handleSelect`。 */
-  handleCheck(key: string, entities: KeyEntities, checkRelation: TreeSelectCheckRelation, isControlled: boolean): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
+   * `isControlled` 语义同 `handleSelect`。disabledKeys 传入且非空时按
+   * Semi disableStrictly 语义：级联范围排除 disabled 节点（它们的选中
+   * 状态独立于父节点操作）。 */
+  handleCheck(
+    key: string,
+    entities: KeyEntities,
+    checkRelation: TreeSelectCheckRelation,
+    isControlled: boolean,
+    disabledKeys?: Set<string>,
+  ): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
     if (checkRelation === 'unRelated') {
       const { independentCheckedKeys } = this.getState();
       const next = new Set(independentCheckedKeys);
@@ -73,8 +81,8 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
     const { checkedKeys, halfCheckedKeys } = this.getState();
     const isChecked = checkedKeys.has(key);
     const result = isChecked
-      ? calcCheckedKeysForUnchecked(key, entities, checkedKeys, halfCheckedKeys)
-      : calcCheckedKeysForChecked(key, entities, checkedKeys, halfCheckedKeys);
+      ? calcCheckedKeysForUnchecked(key, entities, checkedKeys, halfCheckedKeys, disabledKeys)
+      : calcCheckedKeysForChecked(key, entities, checkedKeys, halfCheckedKeys, disabledKeys);
     if (!isControlled) this.setState(result);
     return result;
   }
