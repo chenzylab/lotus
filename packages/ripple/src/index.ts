@@ -196,6 +196,7 @@ export {
 } from './input/tag-input/index.tsrx';
 export {
     PinCode,
+    type PinCodeApi,
     type PinCodeProps,
     type PinCodeSize,
     type PinCodeValidateStatus,

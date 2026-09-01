@@ -33,6 +33,14 @@ import { PinCode } from '@lotus/ripple';
 ../../src/demos/input/pin-code/validate-status.tsrx
 ```
 
+### 命令式 API
+
+通过 `getPinCodeApi` 拿到 `api` 引用，可在外部调用 `focus(index)`/`blur(index)` 命令式聚焦/失焦指定格（对齐 Semi `ref.current.focus(index)`/`blur(index)`，`index` 必填）。
+
+```tsrx demo
+../../src/demos/input/pin-code/pin-code-api.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -44,12 +52,20 @@ import { PinCode } from '@lotus/ripple';
 | defaultValue | 非受控模式下的默认值 | string | - |
 | disabled | 是否禁用 | boolean | `false` |
 | format | 允许输入的字符格式：数字 / 数字+字母 / 自定义正则或函数 | `'number' \| 'mixed' \| RegExp \| ((char: string) => boolean)` | `'number'` |
+| getPinCodeApi | 挂载时回调，传入 api 引用 | `(api: PinCodeApi) => void` | - |
 | size | 尺寸 | `'small' \| 'default' \| 'large'` | `'default'` |
 | style | 自定义样式 | object | - |
 | validateStatus | 校验状态，仅影响展示样式 | `'default' \| 'error' \| 'warning'` | `'default'` |
 | value | 受控值 | string | - |
 | onChange | 值变化时的回调 | `(value: string) => void` | - |
 | onComplete | 最后一格填入字符时的回调（不要求全部格都非空，只判断写入索引是否为末格） | `(value: string) => void` | - |
+
+### PinCodeApi
+
+| 方法 | 说明 |
+| --- | --- |
+| focus(index) | 命令式聚焦指定格，并把光标定位到该格内容末尾 |
+| blur(index) | 命令式移出指定格的焦点 |
 
 ## Accessibility
 

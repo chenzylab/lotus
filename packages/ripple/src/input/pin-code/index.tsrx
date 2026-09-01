@@ -10,6 +10,17 @@ import { LocaleContext } from '../../other/config-provider/locale-context.js';
 export type PinCodeSize = 'small' | 'default' | 'large';
 export type PinCodeValidateStatus = 'default' | 'error' | 'warning';
 
+export interface PinCodeApi {
+    /** 命令式聚焦指定格（对齐 Semi ref.current.focus(index)，比如校验失败后
+     * 聚焦第一格）。index 必填，忠实对齐 Semi 签名（Semi 源码 focus 没有
+     * 默认值分支，调研已核实），聚焦后同 Semi 一样把光标定位到该格内容
+     * 末尾（setSelectionRange(1,1)，避免全选态影响后续输入）。 */
+    focus: (index: number) => void;
+    /** 命令式移出指定格的焦点，对齐 Semi ref.current.blur(index)，index
+     * 同样必填。 */
+    blur: (index: number) => void;
+}
+
 export interface PinCodeProps {
     value?: string;
     defaultValue?: string;
@@ -21,6 +32,7 @@ export interface PinCodeProps {
     validateStatus?: PinCodeValidateStatus;
     onChange?: (value: string) => void;
     onComplete?: (value: string) => void;
+    getPinCodeApi?: (api: PinCodeApi) => void;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -68,6 +80,7 @@ export function PinCode(&{
     validateStatus = 'default',
     onChange,
     onComplete,
+    getPinCodeApi,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -117,6 +130,15 @@ export function PinCode(&{
 
     let cellNodes: Array<HTMLInputElement | null> = [];
     let composingIndex: number | null = null;
+
+    getPinCodeApi?.({
+        focus: (index) => {
+            const node = cellNodes[index];
+            node?.focus();
+            node?.setSelectionRange(1, 1);
+        },
+        blur: (index) => cellNodes[index]?.blur(),
+    });
 
     function emitChange(valueList: string[]) {
         onChange?.(valueList.join(''));

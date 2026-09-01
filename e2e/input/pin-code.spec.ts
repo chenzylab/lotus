@@ -134,4 +134,17 @@ test.describe('PinCode', () => {
     await firstCell.pressSequentially('a');
     await expect(firstCell).toHaveValue('a');
   });
+
+  test('getPinCodeApi：命令式 focus(index)/blur(index) 聚焦与失焦指定格（对齐 Semi ref.current.focus/blur）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('PinCode 命令式聚焦示例', { exact: true });
+    const thirdCell = root.getByLabel('第 3 位，共 4 位', { exact: true });
+
+    await expect(thirdCell).not.toBeFocused();
+    await page.getByRole('button', { name: '聚焦第 3 格' }).click();
+    await expect(thirdCell).toBeFocused();
+
+    await page.getByRole('button', { name: '失焦第 3 格' }).click();
+    await expect(thirdCell).not.toBeFocused();
+  });
 });
