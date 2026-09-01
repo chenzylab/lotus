@@ -166,7 +166,7 @@ test.describe('Cascader', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('搜索：无匹配结果时展示空状态', async ({ page }) => {
+  test('搜索：无匹配结果时展示空状态（回归防护：此前误用清除按钮文案"清除"，正确文案应为空状态提示"暂无匹配结果"）', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('Cascader 搜索', { exact: true });
     await trigger.click();
@@ -174,6 +174,7 @@ test.describe('Cascader', () => {
 
     await expect(page.locator('.lotus-cascader-search-item')).toHaveCount(0);
     await expect(page.locator('.lotus-cascader-empty')).toBeVisible();
+    await expect(page.locator('.lotus-cascader-empty')).toHaveText('暂无匹配结果');
   });
 
   test('懒加载：点击非叶子节点异步追加子节点，加载中显示 loading 态', async ({ page }) => {
@@ -255,5 +256,93 @@ test.describe('Cascader', () => {
 
     await items.first().click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('clickToSelect：多选时点击行文字本身即可勾选（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader clickToSelect 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await page.getByRole('menuitem', { name: '浙江' }).click();
+    const checkbox = page.getByRole('menuitem', { name: '浙江' }).getByRole('checkbox');
+    await expect(checkbox).toBeChecked();
+  });
+
+  test('enableLeafClick：多选时仅叶子节点点击行才勾选，非叶子节点点击行只展开（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader enableLeafClick 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await page.getByRole('menuitem', { name: '浙江' }).click();
+    const nonLeafCheckbox = page.getByRole('menuitem', { name: '浙江' }).getByRole('checkbox');
+    await expect(nonLeafCheckbox).not.toBeChecked();
+
+    await page.getByRole('menuitem', { name: '杭州' }).click();
+    await page.getByRole('menuitem', { name: '西湖区' }).click();
+    const leafCheckbox = page.getByRole('menuitem', { name: '西湖区' }).getByRole('checkbox');
+    await expect(leafCheckbox).toBeChecked();
+  });
+
+  test('max：达上限后新增勾选被拦截并触发 onExceed（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader max 示例', { exact: true });
+    const exceedLog = page.locator('text=/^onExceed:/');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await page.getByRole('menuitem', { name: '浙江' }).click();
+    await page.getByRole('menuitem', { name: '杭州' }).click();
+    await page.getByRole('menuitem', { name: '西湖区' }).click();
+    await page.getByRole('menuitem', { name: '滨江区' }).click();
+
+    await page.getByRole('menuitem', { name: '宁波' }).click();
+    await page.getByRole('menuitem', { name: '鄞州区' }).click();
+    await expect(exceedLog).toHaveText('onExceed: 已达上限 2 项');
+  });
+
+  test('maxTagCount：多选已选 tag 超出后折叠为 "+N"（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader maxTagCount 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+
+    const tags = trigger.locator('.lotus-cascader-tag');
+    const restTag = trigger.locator('.lotus-cascader-tag-rest');
+    await expect(tags).toHaveCount(3);
+    await expect(restTag).toBeVisible();
+  });
+
+  test('disableStrictly：已勾选节点无法通过删除 tag 取消勾选（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader disableStrictly 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+
+    const tag = trigger.locator('.lotus-cascader-tag');
+    await expect(tag).toHaveCount(1);
+    await tag.locator('.lotus-cascader-tag-remove').click();
+    await expect(tag).toHaveCount(1);
+  });
+
+  test('emptyContent：自定义搜索空状态内容替代默认纯文本（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader emptyContent 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    await page.locator('.lotus-cascader-search-input').fill('不存在的地区xyz');
+    await expect(page.locator('.lotus-cascader-empty')).toHaveText('没有找到匹配的地区');
+  });
+
+  test('displayProp：自定义已选路径展示字段（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader displayProp 示例', { exact: true });
+    await expect(trigger).toContainText('zhejiang / hangzhou / xihu');
+  });
+
+  test('displayRender：完全自定义已选路径渲染（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader displayRender 示例', { exact: true });
+    await expect(trigger).toContainText('已选：浙江 / 杭州 / 西湖区');
   });
 });

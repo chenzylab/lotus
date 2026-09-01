@@ -156,6 +156,42 @@ describe('handleMultipleCheck', () => {
     expect(getState().checkedKeys.size).toBe(0);
     expect(getState().halfCheckedKeys.size).toBe(0);
   });
+
+  it('disableStrictly：已勾选节点再次点击不会被取消勾选', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['zhejiang', 'hangzhou', 'xihu']);
+    foundation.handleMultipleCheck(key, entities, 'related', false, { disableStrictly: true });
+    expect(getState().checkedKeys.has(key)).toBe(true);
+
+    foundation.handleMultipleCheck(key, entities, 'related', false, { disableStrictly: true });
+    expect(getState().checkedKeys.has(key)).toBe(true);
+  });
+
+  it('disableStrictly：未勾选节点仍可正常勾选', () => {
+    const entities = buildCascaderEntities(DATA);
+    const { foundation, getState } = makeFoundation();
+    const key = joinValuePath(['jiangsu', 'nanjing']);
+    foundation.handleMultipleCheck(key, entities, 'related', false, { disableStrictly: true });
+    expect(getState().checkedKeys.has(key)).toBe(true);
+  });
+});
+
+describe('CascaderFoundation.resolveVisibleTags', () => {
+  const items = [{ key: 'a' }, { key: 'b' }, { key: 'c' }, { key: 'd' }];
+
+  it('maxTagCount 未设置时不折叠，返回全部', () => {
+    const result = CascaderFoundation.resolveVisibleTags(items, undefined);
+    expect(result.visible).toEqual(items);
+    expect(result.restCount).toBe(0);
+  });
+
+  it('超出 maxTagCount 时截断，返回剩余数量与剩余项', () => {
+    const result = CascaderFoundation.resolveVisibleTags(items, 2);
+    expect(result.visible).toEqual(items.slice(0, 2));
+    expect(result.restCount).toBe(2);
+    expect(result.rest).toEqual(items.slice(2));
+  });
 });
 
 describe('syncCheckedKeysFromValue', () => {
@@ -228,5 +264,20 @@ describe('handleLoadStart / handleLoadEnd', () => {
     foundation.handleLoadEnd('k1', false);
     expect(getState().loadingKeys.has('k1')).toBe(false);
     expect(getState().loadedKeys.has('k1')).toBe(false);
+  });
+
+  it('loadEnd 成功时返回值携带新增的 newLoadedKeys（对齐 Semi onLoad 回调参数）', () => {
+    const { foundation } = makeFoundation();
+    foundation.handleLoadStart('k1');
+    const result = foundation.handleLoadEnd('k1', true);
+    expect(result.newLoadedKeys).toEqual(new Set(['k1']));
+    expect(result.loadedKeys.has('k1')).toBe(true);
+  });
+
+  it('loadEnd 失败时返回值 newLoadedKeys 为空集合', () => {
+    const { foundation } = makeFoundation();
+    foundation.handleLoadStart('k1');
+    const result = foundation.handleLoadEnd('k1', false);
+    expect(result.newLoadedKeys.size).toBe(0);
   });
 });

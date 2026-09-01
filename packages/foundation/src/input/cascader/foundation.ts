@@ -87,15 +87,27 @@ export class CascaderFoundation extends Foundation<CascaderState> {
   /** 多选勾选切换：三态级联计算 + 同步展开该节点路径（对齐 Semi 点击即联动展开下一级）。
    * `checkRelation='unRelated'` 时绕开三态级联，只做当前 key 的单点增删。
    * `isControlled` 语义同 `handleSingleSelect`——受控时不写 checkedKeys/halfCheckedKeys，
-   * 返回值仍然是"若这次操作被接受，结果会是什么"，供调用方传给 onChange。 */
+   * 返回值仍然是"若这次操作被接受，结果会是什么"，供调用方传给 onChange。
+   *
+   * `disableStrictly` 为 true 时已勾选节点不可取消勾选（对齐 Semi/TreeSelect
+   * 同名 prop 语义），此时 isChecked 分支直接短路返回当前态、不触发变更。
+   * `max` 限制的是折叠后的外部 value 路径数（`resolveValue` 的产出），不是
+   * 内部 checkedKeys 原始数量——调用方需在拿到结果后自行用 resolveValue 折叠
+   * 一次做判断，Foundation 层不感知 autoMergeValue/leafOnly 这些展示层选项，
+   * 因此 max 超限判断放在 Adapter 层（组件层）而非这里。 */
   handleMultipleCheck(
     key: string,
     entities: CascaderEntities,
     checkRelation: 'related' | 'unRelated',
     isControlled: boolean,
+    options?: { disableStrictly?: boolean },
   ): { checkedKeys: Set<string>; halfCheckedKeys: Set<string> } {
     const { checkedKeys, halfCheckedKeys } = this.getState();
     const isChecked = checkedKeys.has(key);
+
+    if (options?.disableStrictly && isChecked) {
+      return { checkedKeys: new Set(checkedKeys), halfCheckedKeys: new Set(halfCheckedKeys) };
+    }
 
     if (checkRelation === 'unRelated') {
       const nextChecked = new Set(checkedKeys);
@@ -144,11 +156,27 @@ export class CascaderFoundation extends Foundation<CascaderState> {
     this.setState({ loadingKeys: new Set([...loadingKeys, key]) });
   }
 
-  handleLoadEnd(key: string, success: boolean): void {
+  /** 返回值携带本次调用新增的 loadedKeys（对齐 Semi `onLoad(newLoadedKeys, data)`
+   * 的 `newLoadedKeys` 参数）——加载失败时返回空集合，调用方不应触发 onLoad。 */
+  handleLoadEnd(key: string, success: boolean): { loadedKeys: Set<string>; newLoadedKeys: Set<string> } {
     const { loadingKeys, loadedKeys } = this.getState();
     const nextLoading = new Set(loadingKeys);
     nextLoading.delete(key);
     const nextLoaded = success ? new Set([...loadedKeys, key]) : loadedKeys;
     this.setState({ loadingKeys: nextLoading, loadedKeys: nextLoaded });
+    return { loadedKeys: nextLoaded, newLoadedKeys: success ? new Set([key]) : new Set() };
+  }
+
+  /** 多选 tag 折叠：对齐 Select 的 `resolveVisibleTags` 同一算法（纯函数，
+   * 独立实现避免 Cascader Foundation 反向依赖 Select Foundation）。 */
+  static resolveVisibleTags<T>(items: T[], maxTagCount: number | undefined): { visible: T[]; restCount: number; rest: T[] } {
+    if (!maxTagCount || maxTagCount <= 0 || items.length <= maxTagCount) {
+      return { visible: items, restCount: 0, rest: [] };
+    }
+    return {
+      visible: items.slice(0, maxTagCount),
+      restCount: items.length - maxTagCount,
+      rest: items.slice(maxTagCount),
+    };
   }
 }

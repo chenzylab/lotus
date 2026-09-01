@@ -116,6 +116,7 @@ export {
     Cascader,
     type CascaderProps,
     type CascaderNodeData,
+    type CascaderEntity,
     type CascaderSize,
     type CascaderValidateStatus,
     type CascaderCheckRelation,

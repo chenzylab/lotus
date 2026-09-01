@@ -4,6 +4,7 @@ import {
     buildCascaderEntities,
     computeColumns,
     computeCascaderSearchResult,
+    collapseCheckedKeysToValuePaths,
     isLeafEntity,
     joinValuePath,
     type CascaderState,
@@ -24,7 +25,7 @@ import { Spin } from '../../feedback/spin/index.tsrx';
 export type CascaderSize = 'large' | 'default' | 'small';
 export type CascaderValidateStatus = 'default' | 'warning' | 'error';
 export type CascaderCheckRelation = 'related' | 'unRelated';
-export type { CascaderNodeData };
+export type { CascaderNodeData, CascaderEntity };
 
 type ValuePath = Array<string | number>;
 
@@ -50,6 +51,19 @@ export interface CascaderProps {
     leafOnly?: boolean;
     /** 多选三态级联开关，'unRelated' 时选中态互相独立，默认 'related'。 */
     checkRelation?: CascaderCheckRelation;
+    /** 多选：已勾选节点是否禁止被再次点击取消勾选（对齐 Semi/TreeSelect
+     * 同名 prop），默认 false。 */
+    disableStrictly?: boolean;
+    /** 多选：叶子节点点击行本身（非 checkbox）即可勾选，默认 false（对齐 Semi）。 */
+    enableLeafClick?: boolean;
+    /** 多选：任意节点点击行本身即可勾选（优先级高于 enableLeafClick），默认
+     * false（对齐 Semi）。 */
+    clickToSelect?: boolean;
+    /** 多选最多可选项数（按折叠后的外部 value 路径数计算），达上限后新增
+     * 勾选被拦截并触发 onExceed（对齐 Semi）。 */
+    max?: number;
+    /** 多选已选 tag 数量超出后折叠为 "+N"，0/不传表示不折叠（对齐 Semi）。 */
+    maxTagCount?: number;
     /** 是否开启搜索，true 用内置路径文本匹配，函数则完全交给调用方判断。 */
     filterTreeNode?: CascaderFilterTreeNode;
     /** 搜索结果是否只保留叶子节点路径，默认 true。 */
@@ -57,6 +71,27 @@ export interface CascaderProps {
     searchPlaceholder?: any;
     /** 路径展示分隔符，默认 ' / '。 */
     separator?: string;
+    /** 自定义空状态内容（搜索无匹配结果时），替代默认纯文本 locale（对齐 Semi
+     * emptyContent）。 */
+    emptyContent?: any;
+    /** 单选已选路径的展示字段名：默认展示每级 label 用 separator 拼接，指定
+     * 后改为读取每级节点 data 上对应字段（对齐 Semi displayProp）。 */
+    displayProp?: string;
+    /** 单选已选路径完全自定义渲染，优先级高于 displayProp（对齐 Semi
+     * displayRender）。 */
+    displayRender?: (selectedPathLabel: string, entities: CascaderEntity[]) => any;
+    /** 完全自定义触发器渲染，替换默认 combobox 触发框（对齐 Semi
+     * triggerRender）；需自行处理点击展开等交互。 */
+    triggerRender?: (props: { value: ValuePath | ValuePath[] | undefined; placeholder: any; open: boolean; disabled: boolean }) => any;
+    /** 下拉面板最外层顶部固定区域（对齐 Semi topSlot）。 */
+    topSlot?: any;
+    /** 下拉面板最外层底部固定区域（对齐 Semi bottomSlot）。 */
+    bottomSlot?: any;
+    /** 浮层挂载的目标容器，不传则挂载在 Popover 默认位置（对齐 Semi
+     * getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 浮层层级（对齐 Semi zIndex），不传由 CSS 层级 token 控制。 */
+    zIndex?: number;
     /** 大数据量场景下开启单列固定行高虚拟滚动（对齐 Select 已验证的实现模式，
      * 复用同一份 `base/virtual-list.ts` 纯算法）——每一级列各自独立虚拟化，
      * 因为 Cascader 是多列联动、每列的选项数量可能都很大。 */
@@ -71,7 +106,18 @@ export interface CascaderProps {
     onBlur?: (event: FocusEvent) => void;
     onDropdownVisibleChange?: (visible: boolean) => void;
     onLoadError?: (entity: { value: string | number; label: any; valuePath: ValuePath }, error: unknown) => void;
+    /** 异步加载成功后触发，携带本次新增的 loaded key 集合与刚加载完的节点
+     * 数据（对齐 Semi onLoad(newLoadedKeys, data)）。 */
+    onLoad?: (newLoadedKeys: Set<string>, data: { value: string | number; label: any; valuePath: ValuePath }) => void;
+    /** 多选达到 max 上限、新增勾选被拦截时触发（对齐 Semi onExceed）。 */
+    onExceed?: () => void;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    'aria-invalid'?: boolean;
+    'aria-required'?: boolean;
+    id?: string;
     style?: Record<string, any>;
     class?: string;
 }
@@ -217,10 +263,23 @@ export function Cascader(&{
     autoMergeValue = true,
     leafOnly = false,
     checkRelation = 'related',
+    disableStrictly = false,
+    enableLeafClick = false,
+    clickToSelect = false,
+    max,
+    maxTagCount,
     filterTreeNode = false,
     filterLeafOnly = true,
     searchPlaceholder,
     separator = ' / ',
+    emptyContent,
+    displayProp,
+    displayRender,
+    triggerRender,
+    topSlot,
+    bottomSlot,
+    getPopupContainer,
+    zIndex,
     virtualize,
     loadData,
     onChange,
@@ -230,7 +289,15 @@ export function Cascader(&{
     onBlur,
     onDropdownVisibleChange,
     onLoadError,
+    onLoad,
+    onExceed,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    'aria-describedby': ariaDescribedby,
+    'aria-errormessage': ariaErrormessage,
+    'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
+    id,
     style,
     class: className,
 }: CascaderProps) @{
@@ -388,11 +455,15 @@ export function Cascader(&{
         const s = untrack(() => state);
         if (s.loadingKeys.has(entity.key) || s.loadedKeys.has(entity.key)) return;
         foundation.handleLoadStart(entity.key);
-        loadData({ value: entity.data.value, label: entity.data.label, valuePath: entity.valuePath })
-            .then(() => { foundation.handleLoadEnd(entity.key, true); })
+        const loadedEntityInfo = { value: entity.data.value, label: entity.data.label, valuePath: entity.valuePath };
+        loadData(loadedEntityInfo)
+            .then(() => {
+                const result = foundation.handleLoadEnd(entity.key, true);
+                onLoad?.(result.newLoadedKeys, loadedEntityInfo);
+            })
             .catch((error: unknown) => {
                 foundation.handleLoadEnd(entity.key, false);
-                onLoadError?.({ value: entity.data.value, label: entity.data.label, valuePath: entity.valuePath }, error);
+                onLoadError?.(loadedEntityInfo, error);
             });
     }
 
@@ -405,7 +476,17 @@ export function Cascader(&{
     function handleItemSelect(entity: CascaderEntity) {
         if (entity.data.disabled) return;
         if (multiple) {
-            foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation, isControlled);
+            const currentEntities = untrack(() => entities);
+            const wasChecked = untrack(() => state).checkedKeys.has(entity.key);
+            if (!wasChecked && max !== undefined) {
+                const preview = foundation.handleMultipleCheck(entity.key, currentEntities, checkRelation, true, { disableStrictly });
+                const previewPaths = collapseCheckedKeysToValuePaths(preview.checkedKeys, currentEntities, { autoMergeValue, leafOnly });
+                if (previewPaths.length > max) {
+                    onExceed?.();
+                    return;
+                }
+            }
+            foundation.handleMultipleCheck(entity.key, currentEntities, checkRelation, isControlled, { disableStrictly });
             notifyChange();
             triggerLoad(entity);
             return;
@@ -419,13 +500,17 @@ export function Cascader(&{
         if (!result.canClose) triggerLoad(entity);
     }
 
-    // 多选模式下点击行本身（非 checkbox）永远只展开路径，不勾选——勾选由
-    // Checkbox 自己的 onChange 独立触发。对齐 Semi handleSingleSelect：多选时
-    // 先 activeKeys=path，只有 clickToSelect（lotus 未实现该增强）或
-    // isLeaf&&enableLeafClick 才会让点击行同时触发勾选，默认两者都是 false，
-    // 即默认配置下点文字=展开、点 checkbox=勾选，两个交互互不干扰。
+    // 多选模式下点击行本身（非 checkbox）默认只展开路径，不勾选——勾选由
+    // Checkbox 自己的 onChange 独立触发。对齐 Semi handleSingleSelect：
+    // clickToSelect 时任意节点点击行都同时触发勾选（优先级最高）；
+    // enableLeafClick 时仅叶子节点点击行触发勾选；两者都为 false（默认）时
+    // 点文字=展开、点 checkbox=勾选，两个交互互不干扰。
     function handleColumnItemClick(entity: CascaderEntity) {
         if (multiple) {
+            const leaf = isLeafEntity(entity);
+            if (clickToSelect || (enableLeafClick && leaf)) {
+                handleItemSelect(entity);
+            }
             handleItemActivate(entity);
             return;
         }
@@ -588,17 +673,29 @@ export function Cascader(&{
         return entity.valuePath.length ? untrack(() => entities)[key]!.data.label : '';
     });
 
-    let &[displayPathLabel] = track<string>(() => {
-        if (multiple) return '';
+    let &[selectedPathEntities] = track<CascaderEntity[]>(() => {
+        if (multiple) return [];
         const key = state.selectedKey;
-        if (!key) return '';
+        if (!key) return [];
         let node: CascaderEntity | null = entities[key] ?? null;
-        const labels: any[] = [];
+        const chain: CascaderEntity[] = [];
         while (node) {
-            labels.unshift(node.data.label);
+            chain.unshift(node);
             node = node.parent;
         }
-        return labels.join(separator);
+        return chain;
+    });
+
+    let &[displayPathLabel] = track<string>(() => {
+        if (!displayProp) return selectedPathEntities.map((e) => e.data.label).join(separator);
+        return selectedPathEntities.map((e) => (e.data as any)[displayProp] ?? e.data.label).join(separator);
+    });
+
+    // 已选路径展示内容优先级：displayRender（完全自定义）> displayProp（自定义
+    // 字段）> 默认按 label 用 separator 拼接（对齐 Semi）。
+    let &[resolvedDisplayContent] = track<any>(() => {
+        if (displayRender) return displayRender(displayPathLabel, selectedPathEntities);
+        return displayPathLabel;
     });
 
     let &[selectedTags] = track<CascaderEntity[]>(() => {
@@ -608,6 +705,11 @@ export function Cascader(&{
             .filter((e): e is CascaderEntity => !!e);
     });
 
+    // 多选 tag 折叠：对齐 Select 已验证的 maxTagCount 折叠展示模式。
+    let &[visibleTagsResult] = track<{ visible: CascaderEntity[]; restCount: number }>(() =>
+        CascaderFoundation.resolveVisibleTags(selectedTags, maxTagCount),
+    );
+
     let &[allowClear] = track<boolean>(() => {
         if (disabled || !showClear) return false;
         return multiple ? selectedTags.length > 0 : !!state.selectedKey;
@@ -615,7 +717,8 @@ export function Cascader(&{
 
     function handleRemoveTag(entity: CascaderEntity, event: MouseEvent) {
         event.stopPropagation();
-        foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation, isControlled);
+        if (disableStrictly) return;
+        foundation.handleMultipleCheck(entity.key, untrack(() => entities), checkRelation, isControlled, { disableStrictly });
         notifyChange();
     }
 
@@ -640,8 +743,13 @@ export function Cascader(&{
                 position={position}
                 spacing={4}
                 closeOnEsc={true}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
                 content={
                     <div class="lotus-cascader-panel" ref={(node: HTMLElement) => { listNode = node; }}>
+                        @if (topSlot) {
+                            <div class="lotus-cascader-top-slot">{topSlot}</div>
+                        }
                         @if (filterTreeNode) {
                             <div class="lotus-cascader-search-box">
                                 <IconSearch />
@@ -657,7 +765,7 @@ export function Cascader(&{
                         @if (isSearching) {
                             <ul class="lotus-cascader-search-list" role="listbox">
                                 @if (searchResults.length === 0) {
-                                    <li class="lotus-cascader-empty">{locale.Select.clear}</li>
+                                    <li class="lotus-cascader-empty">{emptyContent ?? locale.Select.emptyText}</li>
                                 }
                                 @for (const item of searchResults; key item.key) {
                                     <li
@@ -729,54 +837,74 @@ export function Cascader(&{
                                 }
                             </div>
                         }
+                        @if (bottomSlot) {
+                            <div class="lotus-cascader-bottom-slot">{bottomSlot}</div>
+                        }
                     </div>
                 }
             >
-                <div
-                    role="combobox"
-                    aria-expanded={isOpen}
-                    aria-haspopup="listbox"
-                    aria-label={ariaLabel}
-                    aria-disabled={disabled}
-                    aria-activedescendant={isOpen && activeCoord ? itemDomId(activeCoord.col, activeCoord.row) : undefined}
-                    tabIndex={disabled ? -1 : 0}
-                    class="lotus-cascader-trigger"
-                    onClick={handleTriggerClick}
-                    onKeyDown={handleTriggerKeyDown}
-                    onFocus={(event: FocusEvent) => onFocus?.(event)}
-                    onBlur={(event: FocusEvent) => onBlur?.(event)}
-                >
-                    @if (multiple) {
-                        <div class="lotus-cascader-tags">
-                            @if (selectedTags.length === 0) {
-                                <span class="lotus-cascader-placeholder">{placeholder}</span>
-                            } @else {
-                                @for (const entity of selectedTags; key entity.key) {
-                                    <span class="lotus-cascader-tag">
-                                        <span class="lotus-cascader-tag-label">{entity.data.label}</span>
-                                        <span class="lotus-cascader-tag-remove" onClick={(event: MouseEvent) => handleRemoveTag(entity, event)}>
-                                            <IconClear />
-                                        </span>
-                                    </span>
+                @if (triggerRender) {
+                    <div onClick={handleTriggerClick} onKeyDown={handleTriggerKeyDown}>
+                        {triggerRender({ value, placeholder, open: isOpen, disabled })}
+                    </div>
+                } @else {
+                    <div
+                        id={id}
+                        role="combobox"
+                        aria-expanded={isOpen}
+                        aria-haspopup="listbox"
+                        aria-label={ariaLabel}
+                        aria-labelledby={ariaLabelledby}
+                        aria-describedby={ariaDescribedby}
+                        aria-errormessage={ariaErrormessage}
+                        aria-invalid={ariaInvalid}
+                        aria-required={ariaRequired}
+                        aria-disabled={disabled}
+                        aria-activedescendant={isOpen && activeCoord ? itemDomId(activeCoord.col, activeCoord.row) : undefined}
+                        tabIndex={disabled ? -1 : 0}
+                        class="lotus-cascader-trigger"
+                        onClick={handleTriggerClick}
+                        onKeyDown={handleTriggerKeyDown}
+                        onFocus={(event: FocusEvent) => onFocus?.(event)}
+                        onBlur={(event: FocusEvent) => onBlur?.(event)}
+                    >
+                        @if (multiple) {
+                            <div class="lotus-cascader-tags">
+                                @if (selectedTags.length === 0) {
+                                    <span class="lotus-cascader-placeholder">{placeholder}</span>
+                                } @else {
+                                    <>
+                                        @for (const entity of visibleTagsResult.visible; key entity.key) {
+                                            <span class="lotus-cascader-tag">
+                                                <span class="lotus-cascader-tag-label">{entity.data.label}</span>
+                                                <span class="lotus-cascader-tag-remove" onClick={(event: MouseEvent) => handleRemoveTag(entity, event)}>
+                                                    <IconClear />
+                                                </span>
+                                            </span>
+                                        }
+                                        @if (visibleTagsResult.restCount > 0) {
+                                            <span class="lotus-cascader-tag lotus-cascader-tag-rest">+{visibleTagsResult.restCount}</span>
+                                        }
+                                    </>
                                 }
-                            }
-                        </div>
-                    } @else {
-                        @if (displayText) {
-                            <span class="lotus-cascader-value" title={displayPathLabel}>{displayPathLabel}</span>
+                            </div>
                         } @else {
-                            <span class="lotus-cascader-placeholder">{placeholder}</span>
+                            @if (displayText) {
+                                <span class="lotus-cascader-value" title={displayPathLabel}>{resolvedDisplayContent}</span>
+                            } @else {
+                                <span class="lotus-cascader-placeholder">{placeholder}</span>
+                            }
                         }
-                    }
-                    @if (allowClear) {
-                        <span class="lotus-cascader-clear" aria-label={locale.Select.clear} onClick={handleClear}>
-                            <IconClear />
+                        @if (allowClear) {
+                            <span class="lotus-cascader-clear" aria-label={locale.Select.clear} onClick={handleClear}>
+                                <IconClear />
+                            </span>
+                        }
+                        <span class="lotus-cascader-arrow">
+                            <IconChevronDown />
                         </span>
-                    }
-                    <span class="lotus-cascader-arrow">
-                        <IconChevronDown />
-                    </span>
-                </div>
+                    </div>
+                }
             </Popover>
         </div>
 
@@ -966,6 +1094,24 @@ export function Cascader(&{
                 padding: 6px 8px;
                 color: var(--lotus-color-text-3);
                 font-size: var(--lotus-font-body-size);
+            }
+
+            .lotus-cascader-tag-rest {
+                color: var(--lotus-color-text-2);
+                cursor: default;
+            }
+
+            .lotus-cascader-top-slot,
+            .lotus-cascader-bottom-slot {
+                padding: 6px 8px;
+            }
+
+            .lotus-cascader-top-slot {
+                border-bottom: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-cascader-bottom-slot {
+                border-top: 1px solid var(--lotus-color-border);
             }
         </style>
     </>

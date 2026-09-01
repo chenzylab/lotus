@@ -370,6 +370,8 @@ export function App() @{
     let &[cascaderControlledValue] = track<Array<string | number>>(['zhejiang', 'hangzhou', 'xihu']);
     let &[cascaderMultipleValue] = track<Array<Array<string | number>>>([]);
     let &[cascaderChangeLog] = track<string>('');
+    let &[cascaderMaxValue] = track<Array<Array<string | number>>>([]);
+    let &[cascaderExceedLog] = track<string>('');
     let &[cascaderLazyTreeData] = track<CascaderNodeData[]>(cascaderLazyData);
     let &[treeSelectControlledValue] = track<string>('dept-1-1-1');
     let &[treeSelectChangeLog] = track<string>('');
@@ -3439,6 +3441,83 @@ export function App() @{
                 aria-label="Cascader 懒加载"
             />
         </div>
+
+        <Divider>Cascader：clickToSelect / enableLeafClick（点击行本身即可勾选，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '280px' }}>
+                <Cascader treeData={cascaderRegionData} multiple clickToSelect placeholder="clickToSelect：点任意行即勾选" aria-label="Cascader clickToSelect 示例" />
+            </div>
+            <div style={{ width: '280px' }}>
+                <Cascader treeData={cascaderRegionData} multiple enableLeafClick placeholder="enableLeafClick：仅叶子行可勾选" aria-label="Cascader enableLeafClick 示例" />
+            </div>
+        </Space>
+
+        <Divider>Cascader：max + maxTagCount（多选上限 + tag 折叠，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '280px' }}>
+                <Cascader
+                    treeData={cascaderRegionData}
+                    multiple
+                    clickToSelect
+                    max={2}
+                    value={cascaderMaxValue}
+                    onChange={(v) => { if (Array.isArray(v) && (v.length === 0 || Array.isArray(v[0]))) cascaderMaxValue = v as Array<Array<string | number>>; }}
+                    onExceed={() => { cascaderExceedLog = 'onExceed: 已达上限 2 项'; }}
+                    placeholder="最多选 2 个叶子节点"
+                    leafOnly
+                    aria-label="Cascader max 示例"
+                />
+            </div>
+            <div style={{ width: '320px' }}>
+                <Cascader
+                    treeData={cascaderRegionData}
+                    multiple
+                    clickToSelect
+                    leafOnly
+                    maxTagCount={2}
+                    defaultValue={[['zhejiang', 'hangzhou', 'xihu'], ['zhejiang', 'hangzhou', 'binjiang'], ['zhejiang', 'ningbo', 'yinzhou'], ['jiangsu', 'nanjing', 'xuanwu']]}
+                    aria-label="Cascader maxTagCount 示例"
+                />
+            </div>
+            <span>{cascaderExceedLog}</span>
+        </Space>
+
+        <Divider>Cascader：disableStrictly（已勾选节点不可取消勾选，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderRegionData}
+                multiple
+                clickToSelect
+                disableStrictly
+                defaultValue={[['zhejiang', 'hangzhou', 'xihu']]}
+                aria-label="Cascader disableStrictly 示例"
+            />
+        </div>
+
+        <Divider>Cascader：emptyContent（自定义搜索空状态，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader treeData={cascaderRegionData} filterTreeNode emptyContent="没有找到匹配的地区" placeholder="搜索一个不存在的地区试试" aria-label="Cascader emptyContent 示例" />
+        </div>
+
+        <Divider>Cascader：displayProp / displayRender（自定义已选路径展示，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '280px' }}>
+                <Cascader treeData={cascaderRegionData} defaultValue={['zhejiang', 'hangzhou', 'xihu']} displayProp="value" aria-label="Cascader displayProp 示例" />
+            </div>
+            <div style={{ width: '280px' }}>
+                <Cascader
+                    treeData={cascaderRegionData}
+                    defaultValue={['zhejiang', 'hangzhou', 'xihu']}
+                    displayRender={(pathLabel) => `已选：${pathLabel}`}
+                    aria-label="Cascader displayRender 示例"
+                />
+            </div>
+        </Space>
 
         <Divider>TreeSelect：单选</Divider>
 
