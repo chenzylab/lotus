@@ -270,3 +270,150 @@ describe('FormFoundation', () => {
     expect(getState().values).toEqual({ username: '', age: undefined, businessLine: undefined });
   });
 });
+
+describe('FormFoundation.unregisterField keepState', () => {
+  it('keepState 未设置（默认 false）时卸载清除 values/errors/touched', () => {
+    const { foundation, getState } = createFoundation({ values: { username: 'semi' }, errors: { username: '格式不对' }, touched: { username: true }, validating: {} });
+    foundation.registerField('username', {});
+    foundation.unregisterField('username');
+
+    expect(getState().values.username).toBeUndefined();
+    expect(getState().errors.username).toBeUndefined();
+    expect(getState().touched.username).toBeUndefined();
+  });
+
+  it('keepState=true 时卸载保留 values/errors/touched', () => {
+    const { foundation, getState } = createFoundation({ values: { username: 'semi' }, errors: { username: '格式不对' }, touched: { username: true }, validating: {} });
+    foundation.registerField('username', { keepState: true });
+    foundation.unregisterField('username');
+
+    expect(getState().values.username).toBe('semi');
+    expect(getState().errors.username).toBe('格式不对');
+    expect(getState().touched.username).toBe(true);
+  });
+});
+
+describe('FormFoundation.setValue convert', () => {
+  it('未配置 convert 时原样写入', () => {
+    const { foundation, getState } = createFoundation();
+    foundation.registerField('username', {});
+    foundation.setValue('username', 'semi');
+    expect(getState().values.username).toBe('semi');
+  });
+
+  it('配置 convert 时写入转换后的值', () => {
+    const { foundation, getState } = createFoundation();
+    foundation.registerField('username', { convert: (v) => String(v).toUpperCase() });
+    foundation.setValue('username', 'semi');
+    expect(getState().values.username).toBe('SEMI');
+  });
+
+  it('convert 转换后的值同步传给 onValueChange 回调', () => {
+    const { foundation } = createFoundation();
+    foundation.registerField('username', { convert: (v) => String(v).toUpperCase() });
+    const onValueChange = vi.fn();
+    foundation.setValue('username', 'semi', onValueChange);
+    expect(onValueChange).toHaveBeenCalledWith({ username: 'SEMI' }, { username: 'SEMI' });
+  });
+});
+
+describe('FormFoundation 只读查询方法', () => {
+  it('getInitValues 返回 Form 挂载时的完整快照', () => {
+    const { foundation } = createFoundation({ values: { username: 'semi', age: 25 }, errors: {}, touched: {}, validating: {} });
+    expect(foundation.getInitValues()).toEqual({ username: 'semi', age: 25 });
+  });
+
+  it('getInitValue 返回单个字段的初始值', () => {
+    const { foundation } = createFoundation({ values: { username: 'semi' }, errors: {}, touched: {}, validating: {} });
+    expect(foundation.getInitValue('username')).toBe('semi');
+  });
+
+  it('getFormState 返回完整当前状态', () => {
+    const { foundation, getState } = createFoundation();
+    expect(foundation.getFormState()).toEqual(getState());
+  });
+
+  it('getTouched 返回字段的 touched 状态，未设置时为 false', () => {
+    const { foundation } = createFoundation({ values: {}, errors: {}, touched: { username: true }, validating: {} });
+    expect(foundation.getTouched('username')).toBe(true);
+    expect(foundation.getTouched('age')).toBe(false);
+  });
+
+  it('getError 返回字段的当前错误信息', () => {
+    const { foundation } = createFoundation({ values: {}, errors: { username: '不能为空' }, touched: {}, validating: {} });
+    expect(foundation.getError('username')).toBe('不能为空');
+    expect(foundation.getError('age')).toBeUndefined();
+  });
+
+  it('getFieldExist 反映字段当前是否已注册', () => {
+    const { foundation } = createFoundation();
+    expect(foundation.getFieldExist('username')).toBe(false);
+    foundation.registerField('username', {});
+    expect(foundation.getFieldExist('username')).toBe(true);
+    foundation.unregisterField('username');
+    expect(foundation.getFieldExist('username')).toBe(false);
+  });
+});
+
+describe('FormFoundation ArrayField 路径记法（field 名形如 contacts[0]）', () => {
+  it('registerField 用路径写入数组元素', () => {
+    const { foundation, getState } = createFoundation({ values: { contacts: ['张三'] }, errors: {}, touched: {}, validating: {} });
+    foundation.registerField('contacts[0]', {});
+    expect(getState().values.contacts).toEqual(['张三']);
+  });
+
+  it('setValue 用路径读写数组元素，不影响数组其它项', () => {
+    const { foundation, getState } = createFoundation({ values: { contacts: ['张三', '李四'] }, errors: {}, touched: {}, validating: {} });
+    foundation.registerField('contacts[0]', {});
+    foundation.registerField('contacts[1]', {});
+    foundation.setValue('contacts[0]', '王五');
+    expect(getState().values.contacts).toEqual(['王五', '李四']);
+  });
+
+  it('setValue 对新增的数组索引路径正确创建数组', () => {
+    const { foundation, getState } = createFoundation();
+    foundation.registerField('contacts[0]', {});
+    foundation.setValue('contacts[0]', '张三');
+    expect(getState().values.contacts).toEqual(['张三']);
+  });
+
+  it('setValue 支持嵌套对象字段路径（如 contacts[0].name）', () => {
+    const { foundation, getState } = createFoundation();
+    foundation.registerField('contacts[0].name', {});
+    foundation.setValue('contacts[0].name', '张三');
+    expect(getState().values.contacts).toEqual([{ name: '张三' }]);
+  });
+
+  it('unregisterField 对 ArrayField 行内路径字段（形如 contacts[0]）豁免清值，不影响数组内容（回归防护：此前无条件清值，remove(index) 删除非尾部行时，Ripple 按 key 复用后续行 Field 组件实例、field prop 从 contacts[2] 变为 contacts[1]，与刚好卸载的旧 contacts[1] 实例操作同一路径，卸载清值会把复用实例刚写入的新值冲掉，界面上表现为删除中间行后其余行值错乱丢失）', () => {
+    const { foundation, getState } = createFoundation({ values: { contacts: ['张三', '李四'] }, errors: {}, touched: {}, validating: {} });
+    foundation.registerField('contacts[0]', {});
+    foundation.registerField('contacts[1]', {});
+    foundation.unregisterField('contacts[0]');
+    expect(getState().values.contacts).toEqual(['张三', '李四']);
+  });
+
+  it('unregisterField 对 ArrayField 行内路径字段仍清理 errors/touched（只豁免 values）', () => {
+    const { foundation, getState } = createFoundation({ values: { contacts: ['张三'] }, errors: { 'contacts[0]': '不能为空' }, touched: { 'contacts[0]': true }, validating: {} });
+    foundation.registerField('contacts[0]', {});
+    foundation.unregisterField('contacts[0]');
+    expect(getState().values.contacts).toEqual(['张三']);
+    expect(getState().errors['contacts[0]']).toBeUndefined();
+    expect(getState().touched['contacts[0]']).toBeUndefined();
+  });
+
+  it('validateField 对路径字段正确读取当前值参与校验', async () => {
+    const { foundation } = createFoundation({ values: { contacts: ['taken'] }, errors: {}, touched: {}, validating: {} });
+    foundation.registerField('contacts[0]', { rules: [{ required: true }] });
+    const error = await foundation.validateField('contacts[0]');
+    expect(error).toBeUndefined();
+  });
+
+  it('普通字段名（不含路径分隔符）行为与改动前完全等价', () => {
+    const { foundation, getState } = createFoundation();
+    foundation.registerField('username', {});
+    foundation.setValue('username', 'semi');
+    expect(getState().values.username).toBe('semi');
+    foundation.unregisterField('username');
+    expect(getState().values.username).toBeUndefined();
+  });
+});

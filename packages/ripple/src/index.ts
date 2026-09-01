@@ -203,13 +203,21 @@ export {
 export {
     Form,
     Field,
+    Slot,
+    ArrayField,
     type FormProps,
     type FormApi,
+    type FormLayout,
     type FieldProps,
     type FieldRenderProps,
+    type FieldValidateStatus,
+    type SlotProps,
+    type ArrayFieldProps,
+    type ArrayFieldRenderProps,
     type FormRule,
     type FormValues,
     type FormErrors,
+    type FormMessages,
 } from './input/form/index.tsrx';
 export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
 export {

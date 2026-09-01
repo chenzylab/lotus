@@ -6,6 +6,58 @@ export interface FormValues {
   [field: string]: FieldValue;
 }
 
+/** 把 `a.b[0].c` 形式的路径字符串拆成 `['a', 'b', 0, 'c']` 段（数字段转为
+ * number，用于数组索引），对齐 Semi/lodash 的路径记法——供 ArrayField 场景
+ * 的字段名（如 `contacts[0]`）读写嵌套在 values 里的数组/对象值。纯路径
+ * 解析，不引入 lodash 作为运行时依赖（对齐项目"基础能力自研"约定，参照
+ * lodash get/set 的路径语义自行实现，只覆盖 Form 场景实际用到的
+ * `.`/`[index]` 两种记法，不做完整的 lodash path 语法兼容）。 */
+function toPathSegments(path: string): Array<string | number> {
+  const segments: Array<string | number> = [];
+  const regex = /[^.[\]]+/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(path)) !== null) {
+    const token = match[0];
+    segments.push(/^\d+$/.test(token) ? Number(token) : token);
+  }
+  return segments;
+}
+
+/** 路径不存在时返回 undefined，不抛错（对齐 lodash get 的容错行为）。 */
+function getByPath(obj: FormValues, path: string): FieldValue {
+  const segments = toPathSegments(path);
+  let current: any = obj;
+  for (const segment of segments) {
+    if (current == null) return undefined;
+    current = current[segment];
+  }
+  return current;
+}
+
+/** 沿路径逐层浅拷贝容器（对象/数组）后设置目标值，不改变原始 obj 引用
+ * （Ripple 的响应式依赖收集要求新旧引用不同才会触发重算，同 Form 现有
+ * setValue 对顶层 values 的浅拷贝写法一致，这里把浅拷贝延伸到路径经过的
+ * 每一层容器）。中间层不存在时按下一段是否为数字新建数组/对象。 */
+function setByPath(obj: FormValues, path: string, value: FieldValue): FormValues {
+  const segments = toPathSegments(path);
+  if (segments.length === 0) return obj;
+  function recur(current: any, index: number): any {
+    const segment = segments[index]!;
+    const isLast = index === segments.length - 1;
+    const container: any = Array.isArray(current) ? current.slice() : { ...(current ?? {}) };
+    if (isLast) {
+      container[segment] = value;
+      return container;
+    }
+    const nextSegmentIsIndex = typeof segments[index + 1] === 'number';
+    const existingChild = container[segment];
+    const child = existingChild != null ? existingChild : (nextSegmentIsIndex ? [] : {});
+    container[segment] = recur(child, index + 1);
+    return container;
+  }
+  return recur(obj, 0) as FormValues;
+}
+
 export interface FormErrors {
   [field: string]: string | undefined;
 }
@@ -41,6 +93,12 @@ export interface FormRule {
 
 interface FieldConfig {
   rules?: FormRule[];
+  /** 字段卸载后是否保留其值/校验态（对齐 Semi keepState），默认 false——
+   * 卸载即从 values/errors/touched/validating 里清除，同 Semi 默认行为。 */
+  keepState?: boolean;
+  /** 值写入 formState 前的转换函数（对齐 Semi convert），如字符串转大写。
+   * 只影响写入 formState 的值，不影响传给具体输入控件展示的原始输入。 */
+  convert?: (value: FieldValue) => FieldValue;
 }
 
 /**
@@ -109,7 +167,10 @@ export class FormFoundation extends Foundation<FormState> {
   // 而不是只恢复"曾经通过 registerField 传了 initValue"的字段，否则没有单独
   // 声明 initValue、只吃 Form 级 initValues 的字段（例如本例中的 age/
   // businessLine）reset 时不会被清空。
-  private readonly initValues: FormValues;
+  // 不再是 readonly——ArrayField 场景下 registerField 用 setByPath 沿路径
+  // 重新生成整个 initValues 对象（setByPath 不做原地修改），不是简单的
+  // 顶层 key 赋值，因此需要能重新绑定这个引用本身。
+  private initValues: FormValues;
 
   constructor(adapter: Adapter<FormState>) {
     super(adapter);
@@ -119,21 +180,65 @@ export class FormFoundation extends Foundation<FormState> {
   registerField(field: string, config: FieldConfig, initValue?: FieldValue): void {
     this.fields.set(field, config);
     const { values } = this.getState();
-    if (initValue !== undefined && values[field] === undefined) {
-      this.initValues[field] = initValue;
-      this.setState({ values: { ...values, [field]: initValue } });
+    if (initValue !== undefined && getByPath(values, field) === undefined) {
+      this.initValues = setByPath(this.initValues, field, initValue);
+      this.setState({ values: setByPath(values, field, initValue) });
     }
   }
 
+  /** 卸载时按 keepState 决定是否清除该字段的 values/errors/touched（对齐 Semi
+   * unRegister：默认卸载即清除，keepState=true 时保留供重新挂载复用）。
+   * values 走路径写 undefined（field 可能是 `contacts[0]` 这种 ArrayField
+   * 行内路径，指向数组元素/嵌套对象字段，不能直接 delete 顶层 key）；
+   * errors/touched 仍按完整路径字符串本身当扁平 key（这两个 map 不需要真的
+   * 是嵌套结构，只要求同一个 field 名读写一致）。不动 validating——这是
+   * lotus 独有于 Semi 的新增状态，其生命周期完全由 validateField 自己管理
+   * （写回前检查 this.fields.has(field) 已经保证卸载后过期的异步结果不会
+   * 误写，不需要在这里额外清理，也不应该清理：清理会影响"卸载时刻
+   * validating 状态原样保留"这一行为，与卸载后是否触发新校验是两回事）。
+   *
+   * ArrayField 行内路径字段（`xxx[数字]` 形如 `contacts[1]`）默认也不清
+   * values——真机验证发现的真实 bug：ArrayField.remove(index) 删除非尾部
+   * 行时，Ripple 按 key 复用后续行的 Field 组件实例，该实例的 field prop
+   * 从 `contacts[2]` 变为 `contacts[1]`，同时刚好有另一个 `contacts[1]`
+   * 旧实例（原本渲染"被删除那一行的下一行"之前的内容）触发卸载——两者
+   * 操作的是同一个路径字符串，卸载清值会把复用实例刚写入的新值冲掉。
+   * ArrayField 的行内字段名本身只是"当前位置"而非稳定标识，数组内容的
+   * 增删已经由 ArrayField 通过 setValue 整体维护，行内 Field 卸载不代表
+   * 这个位置的数据真的要被删除，语义上等价于 Semi `inArrayField` 时忽略
+   * keepState 语义的反面：直接豁免清值，而不需要 Field 显式声明
+   * keepState（ArrayField 调用方不需要为行内 Field 手动加 keepState）。 */
   unregisterField(field: string): void {
+    const config = this.fields.get(field);
     this.fields.delete(field);
+    if (config?.keepState) return;
+    const isArrayFieldRowPath = /\[\d+\]/.test(field);
+    const { values, errors, touched } = this.getState();
+    const nextErrors = { ...errors };
+    const nextTouched = { ...touched };
+    delete nextErrors[field];
+    delete nextTouched[field];
+    if (isArrayFieldRowPath) {
+      this.setState({ errors: nextErrors, touched: nextTouched });
+      return;
+    }
+    this.setState({ values: setByPath(values, field, undefined), errors: nextErrors, touched: nextTouched });
   }
 
   setValue(field: string, value: FieldValue, onValueChange?: (values: FormValues, changed: FormValues) => void): void {
+    const config = this.fields.get(field);
+    const converted = config?.convert ? config.convert(value) : value;
     const { values } = this.getState();
-    const nextValues = { ...values, [field]: value };
+    const nextValues = setByPath(values, field, converted);
     this.setState({ values: nextValues });
-    onValueChange?.(nextValues, { [field]: value });
+    onValueChange?.(nextValues, { [field]: converted });
+  }
+
+  /** 按路径读取字段当前值（对齐 Semi formApi.getValue，支持 ArrayField 场景
+   * 的 `contacts[0]` 路径记法）。Adapter 层（Field/ArrayField/formApi）应
+   * 统一通过这个方法读值，不直接访问 state.values[field]。 */
+  getValue(field: string): FieldValue {
+    return getByPath(this.getState().values, field);
   }
 
   setTouched(field: string, isTouched: boolean): void {
@@ -150,7 +255,7 @@ export class FormFoundation extends Foundation<FormState> {
       this.setState({ validating: { ...validating, [field]: true } });
     }
     const { values } = this.getState();
-    const error = rules ? await validateRules(values[field], values, rules, messages) : undefined;
+    const error = rules ? await validateRules(getByPath(values, field), values, rules, messages) : undefined;
     // 字段在异步校验（validator 规则的 await）挂起期间可能已经卸载
     // （Field 组件的清理 effect 调用 unregisterField 从 this.fields 里删除）。
     // 若不判断直接写回，一个过期的 Promise 会在字段早已不存在时把 error/
@@ -201,6 +306,34 @@ export class FormFoundation extends Foundation<FormState> {
   reset(onReset?: () => void): void {
     this.setState({ values: { ...this.initValues }, errors: {}, touched: {}, validating: {} });
     onReset?.();
+  }
+
+  /** Form 挂载时刻的完整初始值快照（含所有字段，不局限于已注册字段），
+   * reset() 恢复的正是这份快照（对齐 Semi formApi.getInitValues）。 */
+  getInitValues(): FormValues {
+    return { ...this.initValues };
+  }
+
+  getInitValue(field: string): FieldValue {
+    return getByPath(this.initValues, field);
+  }
+
+  getFormState(): FormState {
+    return this.getState();
+  }
+
+  getTouched(field: string): boolean {
+    return this.getState().touched[field] ?? false;
+  }
+
+  getError(field: string): string | undefined {
+    return this.getState().errors[field];
+  }
+
+  /** 字段是否已通过 registerField 注册（对齐 Semi formApi.getFieldExist），
+   * 用于动态字段数组等场景判断某个 field key 当前是否真实挂载。 */
+  getFieldExist(field: string): boolean {
+    return this.fields.has(field);
   }
 }
 

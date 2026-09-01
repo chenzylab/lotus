@@ -2,6 +2,7 @@ import { Context, type Tracked } from 'ripple';
 import type { FormFoundation, FormState, FormRule, FormMessages } from '@lotus/foundation/input/form';
 
 export type LabelPosition = 'top' | 'left';
+export type FormLayout = 'vertical' | 'horizontal';
 
 /**
  * Form 下发给所有 Field 的共享上下文。`state` 是响应式的 FormState 快照

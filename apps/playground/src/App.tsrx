@@ -1,7 +1,7 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi } from '@lotus/ripple';
+import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -255,6 +255,49 @@ function FormAgeInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ar
             placeholder="请输入年龄"
         />
     );
+}
+
+function FormContactNameInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <Input
+            id={id}
+            value={value ?? ''}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="联系人姓名"
+        />
+    );
+}
+
+function FormScrollAgeInput(&{ id, value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
+    return (
+        <InputNumber
+            id={id}
+            value={value}
+            disabled={disabled}
+            onChange={(v) => onChange(v)}
+            onBlur={onBlur}
+            aria-label={ariaLabel}
+            placeholder="滚动定位年龄示例"
+        />
+    );
+}
+
+function FormContactsArrayFieldContent(&{ arrayFields, add, addWithInitValue }: ArrayFieldRenderProps) @{
+    <Space vertical align="start" style={{ width: '100%', gap: '8px' }}>
+        @for (const item of arrayFields; key item.key) {
+            <Space>
+                <Field field={item.field} noLabel Comp={FormContactNameInput} />
+                <Button onClick={item.remove}>删除</Button>
+            </Space>
+        }
+        <Space>
+            <Button onClick={() => add()}>新增联系人</Button>
+            <Button onClick={() => addWithInitValue('预填联系人')}>新增并预填</Button>
+        </Space>
+    </Space>
 }
 
 function FormBusinessLineSelect(&{ value, disabled, onChange, onBlur, 'aria-label': ariaLabel }: FieldRenderProps) {
@@ -520,6 +563,9 @@ export function App() @{
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let linkageFormApiRef: FormApi | undefined;
+    let arrayFieldFormApiRef: FormApi | undefined;
+    let &[arrayFieldSubmitResult] = track<string>('');
+    let scrollFormApiRef: FormApi | undefined;
 
     function handleLinkageValueChange(_values: Record<string, unknown>, changed: Record<string, unknown>) {
         if ('sex' in changed) {
@@ -4585,6 +4631,74 @@ export function App() @{
             >
                 <Field field="sex" label="性别" Comp={FormGenderSelect} />
                 <Field field="note" label="备注" Comp={FormNoteInput} />
+            </Form>
+        </div>
+
+        <Divider>Form：ArrayField（动态增删字段数组，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '400px' }}>
+            <Form
+                initValues={{ contacts: ['张三'] }}
+                getFormApi={(api) => { arrayFieldFormApiRef = api; }}
+                onSubmit={(values) => { arrayFieldSubmitResult = `提交成功：${JSON.stringify(values)}`; }}
+            >
+                <ArrayField field="contacts" Comp={FormContactsArrayFieldContent} />
+                <Button htmlType="submit">提交联系人</Button>
+            </Form>
+            @if (arrayFieldSubmitResult) {
+                <div style={{ marginTop: '12px' }}>{arrayFieldSubmitResult}</div>
+            }
+        </div>
+
+        <Divider>Form：Slot（不绑定字段名的纯布局占位，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Form initValues={{}}>
+                <Slot label="说明">
+                    <TypographyText type="secondary">这是一段不属于任何字段的说明文字，但复用了 Field 的 label/控件两栏布局。</TypographyText>
+                </Slot>
+            </Form>
+        </div>
+
+        <Divider>Form：extraText / validateStatus 覆盖 / layout（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Form initValues={{ nickname: '' }} layout="horizontal">
+                <Field
+                    field="nickname"
+                    label="昵称"
+                    extraText="昵称将展示给其他用户"
+                    validateStatus="warning"
+                    Comp={FormUsernameInput}
+                />
+            </Form>
+        </div>
+
+        <Divider>Form：trigger=mount + scrollToField/scrollToError（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Form
+                initValues={{ scrollBusinessLine: undefined, scrollAge: undefined }}
+                getFormApi={(api) => { scrollFormApiRef = api; }}
+            >
+                <Field
+                    field="scrollBusinessLine"
+                    label="业务线（trigger=mount 示例）"
+                    trigger={['mount', 'blur']}
+                    rules={[{ required: true, message: '挂载时已触发校验：业务线不能为空' }]}
+                    Comp={FormBusinessLineSelect}
+                />
+                <div style={{ height: '200px' }} />
+                <Field
+                    field="scrollAge"
+                    label="年龄（trigger=mount 示例）"
+                    rules={[{ required: true, message: '年龄不能为空' }]}
+                    Comp={FormScrollAgeInput}
+                />
+                <Space>
+                    <Button onClick={() => scrollFormApiRef?.scrollToField('scrollAge')}>滚动到年龄字段</Button>
+                    <Button onClick={() => scrollFormApiRef?.scrollToError()}>滚动到第一个错误字段</Button>
+                </Space>
             </Form>
         </div>
 

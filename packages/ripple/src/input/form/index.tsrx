@@ -2,12 +2,17 @@ import { track, untrack, effect } from 'ripple';
 import { FormFoundation, type FormState, type FormValues, type FormErrors, type FormMessages } from '@lotus/foundation/input/form';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
-import { FormContext, type LabelPosition } from './form-context.js';
+import { FormContext, type LabelPosition, type FormLayout } from './form-context.js';
 
 export type { FormRule, FormMessages } from '@lotus/foundation/input/form';
 export type { FormValues, FormErrors } from '@lotus/foundation/input/form';
 export { Field } from './field.tsrx';
-export type { FieldProps, FieldRenderProps } from './field.tsrx';
+export type { FieldProps, FieldRenderProps, FieldValidateStatus } from './field.tsrx';
+export type { FormLayout } from './form-context.js';
+export { Slot } from './slot.tsrx';
+export type { SlotProps } from './slot.tsrx';
+export { ArrayField } from './array-field.tsrx';
+export type { ArrayFieldProps, ArrayFieldRenderProps } from './array-field.tsrx';
 
 export interface FormApi {
   getValues: () => FormValues;
@@ -17,6 +22,17 @@ export interface FormApi {
   validate: (fields?: string[]) => Promise<FormErrors>;
   submitForm: () => Promise<void>;
   reset: () => void;
+  /** Form 挂载时刻的完整初始值快照（对齐 Semi formApi.getInitValues）。 */
+  getInitValues: () => FormValues;
+  getInitValue: (field: string) => unknown;
+  getFormState: () => FormState;
+  getTouched: (field: string) => boolean;
+  getError: (field: string) => string | undefined;
+  getFieldExist: (field: string) => boolean;
+  /** 滚动到指定字段（对齐 Semi formApi.scrollToField）。 */
+  scrollToField: (field: string, options?: ScrollIntoViewOptions) => void;
+  /** 滚动到第一个当前有错误的字段（对齐 Semi formApi.scrollToError）。 */
+  scrollToError: (options?: ScrollIntoViewOptions) => void;
 }
 
 export interface FormProps {
@@ -27,6 +43,12 @@ export interface FormProps {
   /** 统一配置 Field 中 label 的位置，可选 'top'/'left'。 */
   labelPosition?: LabelPosition;
   labelWidth?: string | number;
+  /** Form 整体布局方向（对齐 Semi layout），影响字段间距节奏；不同于
+   * labelPosition（后者控制单个字段内部 label 与控件的排列）。 */
+  layout?: FormLayout;
+  /** 校验失败（onSubmitFail 触发）后是否自动滚动到第一个错误字段（对齐
+   * Semi autoScrollToError）。 */
+  autoScrollToError?: boolean;
   /** Form 挂载时回调，将 formApi 作为参数传入，可用于在外部保存引用以便后续调用
    * `formApi.setValue`/`formApi.validate`/`formApi.reset` 等（对齐 Semi 的
    * `getFormApi`；Ripple 没有 `Form.useForm()` 这类脱离组件树创建实例的机制，
@@ -46,6 +68,8 @@ export function Form(&{
     disabled = false,
     labelPosition = 'top',
     labelWidth,
+    layout = 'vertical',
+    autoScrollToError = false,
     getFormApi,
     onValueChange,
     onSubmit,
@@ -66,9 +90,22 @@ export function Form(&{
         setState: (patch: Partial<FormState>) => { state = { ...state, ...patch }; },
     });
 
+    let rootNode: HTMLElement | null = null;
+
+    function scrollToField(field: string, options?: ScrollIntoViewOptions) {
+        const target = rootNode?.querySelector(`[data-field="${field}"]`);
+        target?.scrollIntoView(options ?? { block: 'center', behavior: 'smooth' });
+    }
+
+    function scrollToError(options?: ScrollIntoViewOptions) {
+        const errors = untrack(() => state).errors;
+        const firstErrorField = Object.keys(errors).find((field) => errors[field]);
+        if (firstErrorField) scrollToField(firstErrorField, options);
+    }
+
     const formApi: FormApi = {
         getValues: () => untrack(() => state).values,
-        getValue: (field: string) => untrack(() => state).values[field],
+        getValue: (field: string) => foundation.getValue(field),
         setValue: (field: string, value: unknown) => foundation.setValue(field, value, onValueChange),
         setValues: (values: FormValues) => {
             Object.entries(values).forEach(([field, value]) => foundation.setValue(field, value, onValueChange));
@@ -85,8 +122,19 @@ export function Form(&{
                 return errors;
             });
         },
-        submitForm: () => foundation.submit(onSubmit, onSubmitFail, untrack(() => messages)),
+        submitForm: () => foundation.submit(onSubmit, (errors, values) => {
+            onSubmitFail?.(errors, values);
+            if (autoScrollToError) scrollToError();
+        }, untrack(() => messages)),
         reset: () => foundation.reset(onReset),
+        getInitValues: () => foundation.getInitValues(),
+        getInitValue: (field: string) => foundation.getInitValue(field),
+        getFormState: () => foundation.getFormState(),
+        getTouched: (field: string) => foundation.getTouched(field),
+        getError: (field: string) => foundation.getError(field),
+        getFieldExist: (field: string) => foundation.getFieldExist(field),
+        scrollToField,
+        scrollToError,
     };
     getFormApi?.(formApi);
 
@@ -116,7 +164,10 @@ export function Form(&{
 
     const handleSubmit = (event: SubmitEvent) => {
         event.preventDefault();
-        foundation.submit(onSubmit, onSubmitFail, untrack(() => messages));
+        foundation.submit(onSubmit, (errors, values) => {
+            onSubmitFail?.(errors, values);
+            if (autoScrollToError) scrollToError();
+        }, untrack(() => messages));
     };
 
     const handleReset = (event: Event) => {
@@ -124,12 +175,17 @@ export function Form(&{
         foundation.reset(onReset);
     };
 
+    let &[classes] = track<string>(() =>
+        ['lotus-form', `lotus-form-${layout}`, className ?? ''].filter(Boolean).join(' '),
+    );
+
     <>
     <form
-        class={['lotus-form', className ?? ''].filter(Boolean).join(' ')}
+        class={classes}
         style={style}
         onSubmit={handleSubmit}
         onReset={handleReset}
+        ref={(node: HTMLElement) => { rootNode = node; }}
     >
         {children}
     </form>
@@ -139,6 +195,10 @@ export function Form(&{
             display: flex;
             flex-direction: column;
             gap: var(--lotus-spacing-default);
+        }
+
+        .lotus-form-horizontal {
+            gap: var(--lotus-spacing-tight);
         }
     </style>
     </>

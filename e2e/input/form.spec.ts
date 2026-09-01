@@ -123,4 +123,99 @@ test.describe('Form', () => {
     await page.getByRole('option', { name: '女' }).click();
     await expect(noteInput).toHaveValue('Hi female!');
   });
+
+  test.describe('ArrayField', () => {
+    const contactInput = (page: import('@playwright/test').Page, index: number) =>
+      page.locator(`#contacts\\[${index}\\]`);
+    const deleteButtonInRow = (page: import('@playwright/test').Page, index: number) =>
+      page.locator(`[data-field="contacts\\[${index}\\]"]`).locator('..').getByRole('button', { name: '删除' });
+
+    test('初始值正确渲染（回归：initValues 里的数组值曾因路径解析缺失渲染为空）', async ({ page }) => {
+      await page.goto('/');
+      await expect(contactInput(page, 0)).toHaveValue('张三');
+    });
+
+    test('新增一行后已有行的值保持不变（回归：render-prop 模式曾导致 arrayFields 传不到子级 Field，全部渲染出 undefined 的 field 名）', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: '新增联系人' }).click();
+
+      await expect(contactInput(page, 0)).toHaveValue('张三');
+      await expect(contactInput(page, 1)).toHaveValue('');
+    });
+
+    test('新增并预填：新行直接带初始值', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: '新增并预填' }).click();
+
+      await expect(contactInput(page, 1)).toHaveValue('预填联系人');
+    });
+
+    test('删除中间行：其余行的值正确保留、不发生错位（回归：Ripple keyed @for 复用组件实例时 props 不会响应式更新，删除中间行后被复用实例的值曾停留在旧数据，界面上表现为其余行值被清空）', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: '新增联系人' }).click();
+      await page.getByRole('button', { name: '新增联系人' }).click();
+      await contactInput(page, 1).fill('B');
+      await contactInput(page, 2).fill('C');
+
+      await deleteButtonInRow(page, 1).click();
+
+      await expect(contactInput(page, 0)).toHaveValue('张三');
+      await expect(contactInput(page, 1)).toHaveValue('C');
+      await expect(page.locator('input[id^="contacts["]')).toHaveCount(2);
+    });
+
+    test('删除首行：剩余行整体前移、值不丢失（回归：unregisterField 在 Field 卸载的 teardown 上下文里读到 Ripple old_values 锁定的过期 state 快照，曾把刚 setValue 写入的新数组值覆盖回旧值）', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: '新增联系人' }).click();
+      await contactInput(page, 1).fill('B');
+
+      await deleteButtonInRow(page, 0).click();
+
+      await expect(page.locator('input[id^="contacts["]')).toHaveCount(1);
+      await expect(contactInput(page, 0)).toHaveValue('B');
+    });
+
+    test('提交联系人：values 里的数组内容与界面一致', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: '新增联系人' }).click();
+      await contactInput(page, 1).fill('李四');
+
+      await page.getByRole('button', { name: '提交联系人' }).click();
+
+      await expect(page.getByText('提交成功：{"contacts":["张三","李四"]}')).toBeVisible();
+    });
+  });
+
+  test('Slot：不绑定字段名的纯布局占位，渲染 label 与内容但不参与表单状态', async ({ page }) => {
+    await page.goto('/');
+    const slot = page.locator('.lotus-form-field', { hasText: '说明' });
+
+    await expect(slot.getByText('这是一段不属于任何字段的说明文字，但复用了 Field 的 label/控件两栏布局。')).toBeVisible();
+  });
+
+  test('extraText / validateStatus 覆盖 / layout：extraText 常驻显示，layout=horizontal 生效于 form 根元素', async ({ page }) => {
+    await page.goto('/');
+    const nicknameField = page.locator('.lotus-form-field', { hasText: '昵称' });
+
+    await expect(nicknameField.getByText('昵称将展示给其他用户')).toBeVisible();
+    await expect(nicknameField.locator('xpath=ancestor::form')).toHaveClass(/lotus-form-horizontal/);
+  });
+
+  test('trigger=mount：字段挂载后立即触发一次校验，无需等待 blur', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.getByText('挂载时已触发校验：业务线不能为空')).toBeVisible();
+  });
+
+  test('scrollToField / scrollToError：按钮驱动页面滚动到目标字段', async ({ page }) => {
+    await page.goto('/');
+    const ageInput = page.getByPlaceholder('滚动定位年龄示例');
+
+    await expect(ageInput).not.toBeInViewport();
+    await page.getByRole('button', { name: '滚动到年龄字段' }).click();
+    await expect(ageInput).toBeInViewport();
+
+    await page.getByRole('button', { name: '滚动到第一个错误字段' }).click();
+    await expect(page.getByLabel('业务线（trigger=mount 示例）')).toBeInViewport();
+  });
 });
