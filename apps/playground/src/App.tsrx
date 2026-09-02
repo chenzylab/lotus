@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -1120,6 +1120,52 @@ export function App() @{
                 <div id="anchor-section-1" style={{ height: '250px' }}>第一节内容</div>
                 <div id="anchor-section-2" style={{ height: '250px' }}>第二节内容</div>
                 <div id="anchor-section-3" style={{ height: '250px' }}>第三节内容</div>
+            </div>
+        </div>
+
+        <Divider>Anchor：AnchorLink 声明式写法 + disabled + targetOffset + railTheme=muted + size=small + position=right</Divider>
+
+        <div style={{ display: 'flex', gap: '24px', flexDirection: 'row-reverse' }}>
+            <Anchor
+                getContainer={() => document.getElementById('anchor-scroll-container-2')!}
+                targetOffset={20}
+                railTheme="muted"
+                size="small"
+                position="right"
+                onChange={(current) => console.log('anchor declarative changed', current)}
+                aria-label="锚点导航声明式"
+            >
+                <AnchorLink href="#anchor2-section-1" title="一号" />
+                <AnchorLink href="#anchor2-section-2" title="二号（禁用）" disabled />
+                <AnchorLink href="#anchor2-section-3" title="三号" />
+            </Anchor>
+            <div id="anchor-scroll-container-2" style={{ width: '400px', height: '200px', overflowY: 'auto', border: '1px solid var(--lotus-color-border)', padding: '12px' }}>
+                <div id="anchor2-section-1" style={{ height: '250px' }}>一号内容</div>
+                <div id="anchor2-section-2" style={{ height: '250px' }}>二号内容</div>
+                <div id="anchor2-section-3" style={{ height: '250px' }}>三号内容</div>
+            </div>
+        </div>
+
+        <Divider>Anchor：autoCollapse + showTooltip（长标题）+ 声明式嵌套推导层级</Divider>
+
+        <div style={{ display: 'flex', gap: '24px' }}>
+            <Anchor
+                getContainer={() => document.getElementById('anchor-scroll-container-3')!}
+                autoCollapse
+                showTooltip
+                aria-label="锚点导航折叠"
+            >
+                <AnchorLink href="#anchor3-section-1" title="这是一个非常长非常长非常长的标题用于验证省略与tooltip">
+                    <AnchorLink href="#anchor3-section-1-1" title="子项 1-1" />
+                    <AnchorLink href="#anchor3-section-1-2" title="子项 1-2" />
+                </AnchorLink>
+                <AnchorLink href="#anchor3-section-2" title="第二节" />
+            </Anchor>
+            <div id="anchor-scroll-container-3" style={{ width: '400px', height: '200px', overflowY: 'auto', border: '1px solid var(--lotus-color-border)', padding: '12px' }}>
+                <div id="anchor3-section-1" style={{ height: '150px' }}>第一节内容</div>
+                <div id="anchor3-section-1-1" style={{ height: '150px' }}>子项 1-1 内容</div>
+                <div id="anchor3-section-1-2" style={{ height: '150px' }}>子项 1-2 内容</div>
+                <div id="anchor3-section-2" style={{ height: '150px' }}>第二节内容</div>
             </div>
         </div>
 

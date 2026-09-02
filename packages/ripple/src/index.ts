@@ -539,8 +539,10 @@ export {
 } from './navigation/back-top/index.tsrx';
 export {
     Anchor,
+    AnchorLink,
     type AnchorProps,
     type AnchorLinkInput,
+    type AnchorLinkProps,
 } from './navigation/anchor/index.tsrx';
 export {
     Tree,
