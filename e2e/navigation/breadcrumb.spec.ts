@@ -55,4 +55,14 @@ test.describe('Breadcrumb', () => {
 
     expect(logs).toContain('breadcrumb clicked 组件');
   });
+
+  test('activeIndex：指定非最后一项为当前页，覆盖默认的"最后一项即当前页"语义', async ({ page }) => {
+    await page.goto('/');
+    const breadcrumb = page.locator('[aria-label="Breadcrumb activeIndex 示例"]');
+    const items = breadcrumb.locator('.lotus-breadcrumb-item');
+
+    await expect(items.nth(1)).toHaveAttribute('aria-current', 'page');
+    await expect(items.nth(1)).toContainText('组件（当前页）');
+    await expect(items.last()).not.toHaveAttribute('aria-current', 'page');
+  });
 });

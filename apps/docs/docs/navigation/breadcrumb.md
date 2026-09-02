@@ -86,6 +86,14 @@ Breadcrumb 支持通过 `routes` 传入路由对象 `{ name, path, href, icon }`
 ../../src/demos/navigation/breadcrumb/route-object.tsrx
 ```
 
+### 指定当前页
+
+`activeIndex` 指定哪一项是"当前页"，不传则默认最后一项。
+
+```tsrx demo
+../../src/demos/navigation/breadcrumb/active-index.tsrx
+```
+
 ## API 参考
 
 ### Breadcrumb
@@ -93,6 +101,7 @@ Breadcrumb 支持通过 `routes` 传入路由对象 `{ name, path, href, icon }`
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | routes | 路由信息，由路由对象或字符串组成的数组 | `Array<Route \| string>` | - |
+| activeIndex | 指定哪一项是"当前页"（`aria-current="page"` + 高亮样式），不传则默认最后一项 | number | - |
 | autoCollapse | 是否超出 maxItemCount 后自动折叠 | boolean | `true` |
 | compact | 显示尺寸，是否紧凑 | boolean | `true` |
 | maxItemCount | 超出多少个进行自动折叠 | number | `4` |

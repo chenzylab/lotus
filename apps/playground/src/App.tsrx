@@ -2774,6 +2774,10 @@ export function App() @{
         <div style={{ marginTop: '12px', marginBottom: '8px' }}>从中间截断</div>
         <Breadcrumb showTooltip={{ ellipsisPos: 'middle' }} routes={['首页', '当这个页面标题很长很长很长时需要省略', '详情页']} />
 
+        <Divider>Breadcrumb：activeIndex（指定非最后一项为当前页）</Divider>
+
+        <Breadcrumb activeIndex={1} routes={['首页', '组件（当前页）', '导航', '面包屑']} aria-label="Breadcrumb activeIndex 示例" />
+
         <Divider>Skeleton：基础元素</Divider>
 
         <Space>

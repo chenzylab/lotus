@@ -64,13 +64,16 @@ export class BreadcrumbFoundation extends Foundation<BreadcrumbState> {
    * 折叠态切换为展开态时，曾经渲染过的项与新增项的相对顺序错乱，
    * 详见 specs/cross-cutting/foundation-adapter-pattern.md 踩坑记录）。
    */
+  /** `activeIndex` 未传时按 Semi 默认语义——最后一项视为"当前页"
+   * （`aria-current="page"` + 高亮样式）；传入后改为该显式索引。 */
   static buildDisplayItems(
     routes: NormalizedRoute[],
     collapsedRange: [number, number] | null,
     restRoutes: NormalizedRoute[],
+    activeIndex?: number,
   ): Array<{ type: 'route'; route: NormalizedRoute; index: number; isLast: boolean } | { type: 'more'; restRoutes: NormalizedRoute[] }> {
     const items: Array<{ type: 'route'; route: NormalizedRoute; index: number; isLast: boolean } | { type: 'more'; restRoutes: NormalizedRoute[] }> = [];
-    const lastIndex = routes.length - 1;
+    const activeAt = activeIndex ?? routes.length - 1;
     routes.forEach((route, index) => {
       if (collapsedRange && index === collapsedRange[0]) {
         items.push({ type: 'more', restRoutes });
@@ -78,7 +81,7 @@ export class BreadcrumbFoundation extends Foundation<BreadcrumbState> {
       if (collapsedRange && index >= collapsedRange[0] && index <= collapsedRange[1]) {
         return;
       }
-      items.push({ type: 'route', route, index, isLast: index === lastIndex });
+      items.push({ type: 'route', route, index, isLast: index === activeAt });
     });
     return items;
   }

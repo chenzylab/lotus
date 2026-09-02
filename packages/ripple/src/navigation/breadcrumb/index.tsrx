@@ -26,6 +26,8 @@ export interface BreadcrumbProps {
     separator?: any;
     /** 超出多少级自动折叠，默认 4。 */
     maxItemCount?: number;
+    /** 指定哪一项是"当前页"（`aria-current="page"` + 高亮样式），默认最后一项。 */
+    activeIndex?: number;
     /** 是否超出 maxItemCount 后自动折叠，默认 true。 */
     autoCollapse?: boolean;
     /** 省略号区域渲染类型，`default` 显示省略号图标点击展开，`popover` 悬浮展示折叠项列表。 */
@@ -77,6 +79,7 @@ export function Breadcrumb(&{
     compact = true,
     separator = '/',
     maxItemCount = 4,
+    activeIndex,
     autoCollapse = true,
     moreType = 'default',
     renderMore,
@@ -106,7 +109,7 @@ export function Breadcrumb(&{
     let &[displayItems] = track(() => {
         const range = collapsedRange;
         const restRoutes = range ? normalizedRoutes.slice(range[0], range[1] + 1) : [];
-        return BreadcrumbFoundation.buildDisplayItems(normalizedRoutes, range, restRoutes);
+        return BreadcrumbFoundation.buildDisplayItems(normalizedRoutes, range, restRoutes, activeIndex);
     });
 
     const classes = ['lotus-breadcrumb', compact ? 'lotus-breadcrumb-compact' : 'lotus-breadcrumb-loose', className ?? '']

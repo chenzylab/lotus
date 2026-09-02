@@ -100,6 +100,13 @@ describe('BreadcrumbFoundation.buildDisplayItems', () => {
     const flags = items.map((it) => (it.type === 'route' ? it.isLast : false));
     expect(flags).toEqual([false, false, true]);
   });
+
+  it('传入 activeIndex 时按显式索引标记当前页，不再默认最后一项', () => {
+    const routes = routesOf(3);
+    const items = BreadcrumbFoundation.buildDisplayItems(routes, null, [], 1);
+    const flags = items.map((it) => (it.type === 'route' ? it.isLast : false));
+    expect(flags).toEqual([false, true, false]);
+  });
 });
 
 describe('BreadcrumbFoundation.toggleExpand', () => {
