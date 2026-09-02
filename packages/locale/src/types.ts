@@ -102,6 +102,7 @@ export interface UploadLocale {
   dragAreaLabel: string;
   uploadButton: string;
   fileListLabel: string;
+  clear: string;
 }
 
 export interface ColorPickerLocale {

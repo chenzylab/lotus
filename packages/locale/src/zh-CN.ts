@@ -96,6 +96,7 @@ const zhCN: LocaleShape = {
     dragAreaLabel: '拖拽或点击上传文件',
     uploadButton: '上传文件',
     fileListLabel: '已上传文件',
+    clear: '清空文件列表',
   },
   ColorPicker: {
     saturationValue: '饱和度与明度',

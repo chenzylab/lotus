@@ -32,11 +32,38 @@ export interface CustomRequestArgs {
     onError: (message?: string) => void;
 }
 
+export type ValidateStatus = 'default' | 'error' | 'warning' | 'success';
+export type PromptPosition = 'left' | 'right' | 'bottom';
+
+export interface AfterUploadResult {
+    autoRemove?: boolean;
+    status?: FileItem['status'];
+    validateMessage?: string;
+    name?: string;
+    url?: string;
+}
+
+export interface RenderFileItemProps {
+    fileInstance?: File;
+    name: string;
+    percent: number;
+    size: number;
+    status: FileItem['status'];
+    uid: string;
+    url?: string;
+    validateMessage?: string;
+    onRemove: () => void;
+    onRetry: () => void;
+    onReplace: () => void;
+    onPreviewClick: () => void;
+}
+
 export interface UploadProps {
     action: string;
     headers?: UploadHeaders | ((file: FileItem) => UploadHeaders);
     data?: Record<string, unknown> | ((file: FileItem) => Record<string, unknown>);
     name?: string;
+    fileName?: string;
     accept?: string;
     multiple?: boolean;
     limit?: number;
@@ -48,12 +75,34 @@ export interface UploadProps {
     listType?: ListType;
     uploadTrigger?: UploadTrigger;
     draggable?: boolean;
+    directory?: boolean;
+    capture?: boolean | 'user' | 'environment';
     dragMainText?: string;
     dragSubText?: string;
+    dragIcon?: any;
     showRetry?: boolean;
     showReplace?: boolean;
+    showClear?: boolean;
+    showTooltip?: boolean;
+    showPicInfo?: boolean;
+    showUploadList?: boolean;
+    picWidth?: string | number;
+    picHeight?: string | number;
+    itemStyle?: Record<string, any>;
+    hotSpotLocation?: 'start' | 'end';
+    prompt?: any;
+    promptPosition?: PromptPosition;
+    validateStatus?: ValidateStatus;
+    validateMessage?: any;
     withCredentials?: boolean;
+    timeout?: number;
+    addOnPasting?: boolean;
     beforeUpload?: (file: File, fileItem: FileItem) => boolean | BeforeUploadResult | Promise<boolean | BeforeUploadResult>;
+    beforeRemove?: (file: FileItem, fileList: FileItem[]) => boolean | Promise<boolean>;
+    beforeClear?: (fileList: FileItem[]) => boolean | Promise<boolean>;
+    transformFile?: (file: File) => FileItem;
+    previewFile?: (props: RenderFileItemProps) => any;
+    renderFileItem?: (props: RenderFileItemProps) => any;
     customRequest?: (args: CustomRequestArgs) => void;
     onChange?: (fileList: FileItem[]) => void;
     onSuccess?: (response: unknown, file: FileItem) => void;
@@ -63,6 +112,14 @@ export interface UploadProps {
     onRetry?: (file: FileItem) => void;
     onExceed?: (files: File[]) => void;
     onAcceptInvalid?: (files: File[]) => void;
+    onClear?: () => void;
+    onDrop?: (event: DragEvent, files: File[], fileList: FileItem[]) => void;
+    onFileChange?: (files: File[]) => void;
+    onOpenFileDialog?: () => void;
+    onPreviewClick?: (file: FileItem) => void;
+    onSizeError?: (file: FileItem, fileList: FileItem[]) => void;
+    onPastingError?: (error: Error) => void;
+    afterUpload?: (args: { response: unknown; file: FileItem; fileList: FileItem[] }) => AfterUploadResult | void;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -82,8 +139,10 @@ function resolveData(data: UploadProps['data'], item: FileItem): Record<string, 
     return typeof data === 'function' ? data(item) : data;
 }
 
-/** 内置 XHR 上传：FormData 拼装 + headers 设置 + onprogress/onload/onerror 监听。 */
-function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').LocaleShape) {
+/** 内置 XHR 上传：FormData 拼装 + headers 设置 + onprogress/onload/onerror 监听。
+ * timeout 真正接到 xhr.timeout——Semi 声明了这个 prop 但从未接入 xhr（dead
+ * prop），这里主动修正。 */
+function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').LocaleShape, timeout?: number) {
     const formData = new FormData();
     if (args.data) {
         for (const key of Object.keys(args.data)) {
@@ -95,6 +154,7 @@ function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').Loca
     const xhr = new XMLHttpRequest();
     xhr.open('POST', args.action, true);
     xhr.withCredentials = !!args.withCredentials;
+    if (timeout !== undefined) xhr.timeout = timeout;
     if (args.headers) {
         for (const key of Object.keys(args.headers)) {
             xhr.setRequestHeader(key, args.headers[key]!);
@@ -114,6 +174,7 @@ function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').Loca
         }
     };
     xhr.onerror = () => args.onError(locale.Upload.networkError);
+    xhr.ontimeout = () => args.onError(locale.Upload.networkError);
     xhr.send(formData);
 }
 
@@ -122,10 +183,38 @@ interface FileCardProps {
     listType: ListType;
     showRetry: boolean;
     showReplace: boolean;
+    showTooltip: boolean;
+    showPicInfo: boolean;
+    picWidth?: string | number;
+    picHeight?: string | number;
+    itemStyle?: Record<string, any>;
+    hotSpotLocation: 'start' | 'end';
     disabled: boolean;
+    renderFileItem?: (props: RenderFileItemProps) => any;
+    previewFile?: (props: RenderFileItemProps) => any;
     onRemove: (item: FileItem) => void;
     onRetryClick: (item: FileItem) => void;
     onReplaceClick: (item: FileItem) => void;
+    onPreviewClick: (item: FileItem) => void;
+}
+
+function toRenderFileItemProps(item: FileItem, handlers: {
+    onRemove: () => void;
+    onRetry: () => void;
+    onReplace: () => void;
+    onPreviewClick: () => void;
+}): RenderFileItemProps {
+    return {
+        fileInstance: item.fileInstance,
+        name: item.name,
+        percent: item.percent,
+        size: item.size,
+        status: item.status,
+        uid: item.uid,
+        url: item.url,
+        validateMessage: item.validateMessage,
+        ...handlers,
+    };
 }
 
 function statusLabel(status: FileItem['status'], locale: import('@lotus/locale').LocaleShape): string {
@@ -136,14 +225,40 @@ function statusLabel(status: FileItem['status'], locale: import('@lotus/locale')
     return locale.Upload.statusWaiting;
 }
 
-function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove, onRetryClick, onReplaceClick }: FileCardProps) @{
+function FileCard(&{
+    item, listType, showRetry, showReplace, showTooltip, showPicInfo, picWidth, picHeight, itemStyle,
+    hotSpotLocation, disabled, renderFileItem, previewFile, onRemove, onRetryClick, onReplaceClick, onPreviewClick,
+}: FileCardProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
+    const renderProps = toRenderFileItemProps(item, {
+        onRemove: () => onRemove(item),
+        onRetry: () => onRetryClick(item),
+        onReplace: () => onReplaceClick(item),
+        onPreviewClick: () => onPreviewClick(item),
+    });
+
     <>
-    <div class={['lotus-upload-file-card', `lotus-upload-file-card-${listType}`, `lotus-upload-file-card-${item.status}`].join(' ')} role="listitem">
-        <div class="lotus-upload-file-thumbnail">
-            @if (isImageFile(item) && item.fileInstance) {
+    @if (renderFileItem) {
+        <div class="lotus-upload-file-card-custom" role="listitem" style={itemStyle}>
+            <span style="display:contents">{renderFileItem(renderProps)}</span>
+        </div>
+    } @else {
+    <div
+        class={['lotus-upload-file-card', `lotus-upload-file-card-${listType}`, `lotus-upload-file-card-${item.status}`].join(' ')}
+        role="listitem"
+        style={{ ...(picWidth !== undefined ? { width: typeof picWidth === 'number' ? `${picWidth}px` : picWidth } : {}), ...itemStyle }}
+    >
+        <div
+            class="lotus-upload-file-thumbnail"
+            style={picHeight !== undefined ? { height: typeof picHeight === 'number' ? `${picHeight}px` : picHeight } : undefined}
+            title={showTooltip ? item.name : undefined}
+            onClick={() => onPreviewClick(item)}
+        >
+            @if (previewFile) {
+                <span class="lotus-upload-preview-slot" style="display:contents">{previewFile(renderProps)}</span>
+            } @else if (isImageFile(item) && item.fileInstance) {
                 <img
                     class="lotus-upload-file-thumbnail-img"
                     src={URL.createObjectURL(item.fileInstance)}
@@ -157,13 +272,15 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
             }
         </div>
         <div class="lotus-upload-file-info">
-            <div class="lotus-upload-file-name" title={item.name}>{item.name}</div>
-            <div class="lotus-upload-file-meta">
-                <span class="lotus-upload-file-size">{formatFileSize(item.size)}</span>
-                @if (item.status === 'uploadFail' || item.status === 'validateFail') {
-                    <span class="lotus-upload-file-error-msg">{item.validateMessage ?? statusLabel(item.status, locale)}</span>
-                }
-            </div>
+            <div class="lotus-upload-file-name" title={showTooltip ? item.name : undefined}>{item.name}</div>
+            @if (listType !== 'picture' || showPicInfo) {
+                <div class="lotus-upload-file-meta">
+                    <span class="lotus-upload-file-size">{formatFileSize(item.size)}</span>
+                    @if (item.status === 'uploadFail' || item.status === 'validateFail') {
+                        <span class="lotus-upload-file-error-msg">{item.validateMessage ?? statusLabel(item.status, locale)}</span>
+                    }
+                </div>
+            }
             @if (item.status === 'uploading') {
                 <Progress
                     percent={item.percent}
@@ -173,7 +290,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
                 />
             }
         </div>
-        <div class="lotus-upload-file-actions">
+        <div class={['lotus-upload-file-actions', `lotus-upload-file-actions-${hotSpotLocation}`].join(' ')}>
             @if (showRetry && item.status === 'uploadFail') {
                 <IconButton
                     icon={<IconRefresh />}
@@ -207,6 +324,7 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
             />
         </div>
     </div>
+    }
 
     <style>
         .lotus-upload-file-card {
@@ -274,6 +392,14 @@ function FileCard(&{ item, listType, showRetry, showReplace, disabled, onRemove,
             flex-shrink: 0;
         }
 
+        .lotus-upload-file-actions-start {
+            order: -1;
+        }
+
+        .lotus-upload-file-card-custom {
+            display: contents;
+        }
+
         .lotus-upload-file-card-picture {
             flex-direction: column;
             width: 96px;
@@ -308,6 +434,7 @@ export function Upload(&{
     headers,
     data,
     name = 'file',
+    fileName,
     accept,
     multiple = false,
     limit,
@@ -319,12 +446,34 @@ export function Upload(&{
     listType = 'list',
     uploadTrigger = 'auto',
     draggable = false,
+    directory = false,
+    capture,
     dragMainText,
     dragSubText,
+    dragIcon,
     showRetry = true,
     showReplace = false,
+    showClear = false,
+    showTooltip = true,
+    showPicInfo = false,
+    showUploadList = true,
+    picWidth,
+    picHeight,
+    itemStyle,
+    hotSpotLocation = 'end',
+    prompt,
+    promptPosition = 'right',
+    validateStatus = 'default',
+    validateMessage,
     withCredentials = false,
+    timeout,
+    addOnPasting = false,
     beforeUpload,
+    beforeRemove,
+    beforeClear,
+    transformFile,
+    previewFile,
+    renderFileItem,
     customRequest,
     onChange,
     onSuccess,
@@ -334,6 +483,14 @@ export function Upload(&{
     onRetry,
     onExceed,
     onAcceptInvalid,
+    onClear,
+    onDrop,
+    onFileChange,
+    onOpenFileDialog,
+    onPreviewClick,
+    onSizeError,
+    onPastingError,
+    afterUpload,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -377,7 +534,7 @@ export function Upload(&{
         if (!item.fileInstance) return;
         const args: CustomRequestArgs = {
             file: item.fileInstance,
-            fileName: name,
+            fileName: fileName ?? name,
             data: resolveData(data, item),
             headers: resolveHeaders(headers, item),
             action,
@@ -388,7 +545,8 @@ export function Upload(&{
                 if (result) emitChange(result.fileList);
             },
             onSuccess: (response) => {
-                const result = foundation.handleSuccess(item.uid, response, isControlled);
+                const afterResult = afterUpload?.({ response, file: item, fileList: untrack(() => state.fileList) }) ?? undefined;
+                const result = foundation.handleSuccess(item.uid, response, isControlled, afterResult as any);
                 onSuccess?.(response, item);
                 if (result) emitChange(result.fileList);
             },
@@ -399,7 +557,7 @@ export function Upload(&{
             },
         };
         if (customRequest) customRequest(args);
-        else xhrUpload(args, locale);
+        else xhrUpload(args, locale, timeout);
     }
 
     async function maybeStartUpload(item: FileItem) {
@@ -418,12 +576,14 @@ export function Upload(&{
 
     function handleFilesSelected(files: File[]) {
         if (disabled || files.length === 0) return;
+        onFileChange?.(files);
         const { matched, rejected } = foundation.filterByAccept(files);
         if (rejected.length > 0) onAcceptInvalid?.(rejected);
         if (matched.length === 0) return;
-        const result = foundation.addFiles(matched, isControlled);
+        const result = foundation.addFiles(matched, isControlled, transformFile);
         if (result.exceeded.length > 0) onExceed?.(files);
         emitChange(result.fileList);
+        for (const invalid of result.sizeInvalid) onSizeError?.(invalid, result.fileList);
         for (const item of result.added) {
             if (item.status === 'uploading') maybeStartUpload(item);
         }
@@ -449,6 +609,7 @@ export function Upload(&{
 
     function openFileDialog() {
         if (disabled) return;
+        onOpenFileDialog?.();
         inputNode?.click();
     }
 
@@ -478,12 +639,28 @@ export function Upload(&{
         foundation.setDragAreaStatus('default');
         if (disabled) return;
         const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
+        onDrop?.(event, files, untrack(() => state.fileList));
         handleFilesSelected(files);
     }
 
-    function handleRemove(item: FileItem) {
+    async function handleRemove(item: FileItem) {
+        if (beforeRemove) {
+            const allowed = await beforeRemove(item, untrack(() => state.fileList));
+            if (allowed === false) return;
+        }
         const nextList = foundation.remove(item.uid, isControlled);
         onRemove?.(item, nextList);
+        emitChange(nextList);
+    }
+
+    async function handleClear() {
+        const currentList = untrack(() => state.fileList);
+        if (beforeClear) {
+            const allowed = await beforeClear(currentList);
+            if (allowed === false) return;
+        }
+        const nextList = foundation.clear(isControlled);
+        onClear?.();
         emitChange(nextList);
     }
 
@@ -499,8 +676,31 @@ export function Upload(&{
         replaceInputNode?.click();
     }
 
+    function handlePreviewClick(item: FileItem) {
+        onPreviewClick?.(item);
+    }
+
+    effect(() => {
+        if (!addOnPasting) return;
+        const handlePaste = (event: ClipboardEvent) => {
+            if (untrack(() => disabled)) return;
+            const items = event.clipboardData?.items;
+            if (!items) return;
+            const files: File[] = [];
+            for (const clipItem of Array.from(items)) {
+                if (clipItem.kind !== 'file') continue;
+                const file = clipItem.getAsFile();
+                if (file) files.push(file);
+            }
+            if (files.length === 0) return;
+            handleFilesSelected(files);
+        };
+        document.body.addEventListener('paste', handlePaste as EventListener);
+        return () => document.body.removeEventListener('paste', handlePaste as EventListener);
+    });
+
     let &[classes] = track<string>(() =>
-        ['lotus-upload', disabled ? 'lotus-upload-disabled' : '', className ?? ''].filter(Boolean).join(' '),
+        ['lotus-upload', `lotus-upload-validate-${validateStatus}`, disabled ? 'lotus-upload-disabled' : '', className ?? ''].filter(Boolean).join(' '),
     );
 
     let &[dragAreaClasses] = track<string>(() =>
@@ -515,9 +715,16 @@ export function Upload(&{
                 accept={accept}
                 multiple={multiple}
                 disabled={disabled}
+                capture={capture === true ? true : capture || undefined}
                 tabIndex={-1}
                 onChange={handleInputChange}
-                ref={(node: HTMLInputElement) => { inputNode = node; }}
+                ref={(node: HTMLInputElement) => {
+                    inputNode = node;
+                    if (directory) {
+                        node.setAttribute('webkitdirectory', '');
+                        node.setAttribute('directory', '');
+                    }
+                }}
             />
             <input
                 type="file"
@@ -529,42 +736,80 @@ export function Upload(&{
                 ref={(node: HTMLInputElement) => { replaceInputNode = node; }}
             />
 
-            @if (draggable) {
-                <div
-                    class={dragAreaClasses}
-                    role="button"
-                    tabIndex={disabled ? -1 : 0}
-                    aria-label={ariaLabel ?? locale.Upload.dragAreaLabel}
-                    aria-disabled={disabled}
-                    onClick={openFileDialog}
-                    onKeyDown={handleTriggerKeyDown}
-                    onDragEnter={handleDragEnter}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                >
-                    <div class="lotus-upload-drag-icon"><IconUpload /></div>
-                    <div class="lotus-upload-drag-main-text">{dragMainText ?? locale.Upload.dragMainText}</div>
-                    @if (dragSubText) {
-                        <div class="lotus-upload-drag-sub-text">{dragSubText}</div>
-                    }
-                </div>
-            } @else {
-                <div
-                    class="lotus-upload-trigger"
-                    role="button"
-                    tabIndex={disabled ? -1 : 0}
-                    aria-label={ariaLabel ?? locale.Upload.uploadButton}
-                    aria-disabled={disabled}
-                    onClick={openFileDialog}
-                    onKeyDown={handleTriggerKeyDown}
-                >
-                    <IconUpload />
-                    <span>{locale.Upload.uploadButton}</span>
-                </div>
+            @if (promptPosition === 'left' && prompt) {
+                <div class="lotus-upload-prompt lotus-upload-prompt-left">{prompt}</div>
             }
 
-            @if (listType !== 'none' && state.fileList.length > 0) {
+            <div class="lotus-upload-trigger-row">
+                @if (draggable) {
+                    <div
+                        class={dragAreaClasses}
+                        role="button"
+                        tabIndex={disabled ? -1 : 0}
+                        aria-label={ariaLabel ?? locale.Upload.dragAreaLabel}
+                        aria-disabled={disabled}
+                        onClick={openFileDialog}
+                        onKeyDown={handleTriggerKeyDown}
+                        onDragEnter={handleDragEnter}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        <div class="lotus-upload-drag-icon">
+                            @if (dragIcon) {
+                                <span style="display:contents">{dragIcon}</span>
+                            } @else {
+                                <IconUpload />
+                            }
+                        </div>
+                        <div class="lotus-upload-drag-main-text">{dragMainText ?? locale.Upload.dragMainText}</div>
+                        @if (dragSubText) {
+                            <div class="lotus-upload-drag-sub-text">{dragSubText}</div>
+                        }
+                    </div>
+                } @else {
+                    <div
+                        class="lotus-upload-trigger"
+                        role="button"
+                        tabIndex={disabled ? -1 : 0}
+                        aria-label={ariaLabel ?? locale.Upload.uploadButton}
+                        aria-disabled={disabled}
+                        onClick={openFileDialog}
+                        onKeyDown={handleTriggerKeyDown}
+                    >
+                        <IconUpload />
+                        <span>{locale.Upload.uploadButton}</span>
+                    </div>
+                }
+                @if (promptPosition === 'right' && prompt) {
+                    <div class="lotus-upload-prompt lotus-upload-prompt-right">{prompt}</div>
+                }
+            </div>
+
+            @if (promptPosition === 'bottom' && prompt) {
+                <div class="lotus-upload-prompt lotus-upload-prompt-bottom">{prompt}</div>
+            }
+
+            @if (validateStatus === 'error' && validateMessage) {
+                <div class="lotus-upload-validate-message">{validateMessage}</div>
+            }
+
+            @if (showUploadList && listType !== 'none' && state.fileList.length > 0) {
+                <>
+                <div class="lotus-upload-file-list-header">
+                    <span class="lotus-upload-file-list-title">{locale.Upload.fileListLabel}</span>
+                    @if (showClear) {
+                        <IconButton
+                            icon={<IconClose />}
+                            theme="borderless"
+                            type="tertiary"
+                            size="small"
+                            disabled={disabled}
+                            aria-label={locale.Upload.clear}
+                            onClick={handleClear}
+                        />
+                    }
+                </div>
                 <div class={['lotus-upload-file-list', `lotus-upload-file-list-${listType}`].join(' ')} role="list" aria-label={locale.Upload.fileListLabel}>
                     @for (const item of state.fileList; index fi; key item.uid) {
                         <FileCard
@@ -572,13 +817,23 @@ export function Upload(&{
                             listType={listType}
                             showRetry={showRetry}
                             showReplace={showReplace}
+                            showTooltip={showTooltip}
+                            showPicInfo={showPicInfo}
+                            picWidth={picWidth}
+                            picHeight={picHeight}
+                            itemStyle={itemStyle}
+                            hotSpotLocation={hotSpotLocation}
                             disabled={disabled}
+                            renderFileItem={renderFileItem}
+                            previewFile={previewFile}
                             onRemove={handleRemove}
                             onRetryClick={handleRetryClick}
                             onReplaceClick={handleReplaceClick}
+                            onPreviewClick={handlePreviewClick}
                         />
                     }
                 </div>
+                </>
             }
         </div>
 
@@ -591,6 +846,38 @@ export function Upload(&{
 
             .lotus-upload-input {
                 display: none;
+            }
+
+            .lotus-upload-trigger-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .lotus-upload-prompt {
+                font-size: var(--lotus-font-caption-size);
+                color: var(--lotus-color-text-2);
+            }
+
+            .lotus-upload-validate-error .lotus-upload-trigger,
+            .lotus-upload-validate-error .lotus-upload-drag-area {
+                border-color: var(--lotus-color-danger, #d94711);
+            }
+
+            .lotus-upload-validate-message {
+                font-size: var(--lotus-font-caption-size);
+                color: var(--lotus-color-danger, #d94711);
+            }
+
+            .lotus-upload-file-list-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .lotus-upload-file-list-title {
+                font-size: var(--lotus-font-caption-size);
+                color: var(--lotus-color-text-2);
             }
 
             .lotus-upload-trigger {

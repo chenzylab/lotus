@@ -147,4 +147,53 @@ test.describe('Upload', () => {
     await expect(root.locator('.lotus-upload-file-card')).toHaveCount(1);
     await expect(root.locator('.lotus-upload-file-name')).toHaveText('readonly.png');
   });
+
+  test('validateStatus=error + prompt：展示校验错误信息与提示文案', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload beforeRemove 示例', { exact: true });
+    await expect(root.locator('.lotus-upload-validate-message')).toHaveText('至少上传一个文件');
+    await expect(root.locator('.lotus-upload-prompt-bottom')).toHaveText('支持 jpg/png，单个文件不超过 5MB');
+  });
+
+  test('showClear + beforeRemove + onPreviewClick + onSizeError：完整的高级钩子链路', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload beforeRemove 示例', { exact: true });
+    const log = page.getByLabel('Upload 高级事件日志', { exact: true });
+    const filePath = makeTempFile('e2e-upload-advanced.txt', 'advanced hooks');
+    await root.locator('input[type="file"]').first().setInputFiles(filePath);
+
+    await expect(root.locator('.lotus-upload-file-list-header')).toBeVisible();
+    const clearBtn = root.getByLabel('清空文件列表', { exact: true });
+    await expect(clearBtn).toBeVisible();
+
+    await root.locator('.lotus-upload-file-thumbnail').click();
+    await expect(log).toContainText('预览：e2e-upload-advanced.txt');
+
+    await root.getByLabel('移除 e2e-upload-advanced.txt', { exact: true }).click();
+    await expect(log).toContainText('尝试移除：e2e-upload-advanced.txt');
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(0);
+
+    const bigFilePath = path.join(os.tmpdir(), 'e2e-upload-advanced-big.bin');
+    fs.writeFileSync(bigFilePath, Buffer.alloc(6 * 1024 * 1024, 0));
+    await root.locator('input[type="file"]').first().setInputFiles(bigFilePath);
+    await expect(log).toContainText('文件过大：e2e-upload-advanced-big.bin');
+  });
+
+  test('renderFileItem：完全自定义文件项渲染，替换默认卡片', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload renderFileItem 示例', { exact: true });
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(0);
+    await expect(root.locator('.lotus-upload-file-card-custom')).toContainText('★ report.pdf（success）');
+    await root.locator('.lotus-upload-file-card-custom button').click();
+    await expect(root.locator('.lotus-upload-file-card-custom')).toHaveCount(0);
+  });
+
+  test('picture：showPicInfo 默认关闭时不展示文件名/大小 meta 信息', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload 图片墙', { exact: true });
+    const pngPath = makeTempPng('e2e-upload-picinfo.png');
+    await root.locator('input[type="file"]').first().setInputFiles(pngPath);
+    const card = root.locator('.lotus-upload-file-card').last();
+    await expect(card.locator('.lotus-upload-file-meta')).toHaveCount(0);
+  });
 });

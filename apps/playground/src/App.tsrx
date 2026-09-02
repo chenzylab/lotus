@@ -455,6 +455,11 @@ export function App() @{
     let &[uploadDragFileList] = track<FileItem[]>([]);
     let &[uploadPictureFileList] = track<FileItem[]>([]);
     let &[uploadChangeLog] = track<string>('');
+    let &[uploadAdvancedFileList] = track<FileItem[]>([]);
+    let &[uploadAdvancedLog] = track<string>('');
+    let &[uploadCustomFileList] = track<FileItem[]>([
+        { uid: 'custom-1', name: 'report.pdf', size: 20480, status: 'success', percent: 100 },
+    ]);
     let &[tagInputValue] = track<string[]>(['苹果', '香蕉']);
     let &[tagInputChangeLog] = track<string>('');
     let &[tagInputFoldValue] = track<string[]>(['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6']);
@@ -4592,6 +4597,49 @@ export function App() @{
                 disabled
                 defaultFileList={[{ uid: 'd1', name: 'readonly.png', size: 2048, status: 'success', percent: 100 }]}
                 aria-label="Upload 禁用"
+            />
+        </div>
+
+        <Divider>Upload：beforeRemove/beforeClear/showClear/validateStatus/prompt</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                multiple
+                showClear
+                maxSize={5000}
+                validateStatus="error"
+                validateMessage="至少上传一个文件"
+                prompt="支持 jpg/png，单个文件不超过 5MB"
+                promptPosition="bottom"
+                fileList={uploadAdvancedFileList}
+                onChange={(list) => { uploadAdvancedFileList = list; }}
+                beforeRemove={(file) => { uploadAdvancedLog = `尝试移除：${file.name}`; return true; }}
+                beforeClear={() => { uploadAdvancedLog = '尝试清空'; return true; }}
+                onClear={() => { uploadAdvancedLog = '已清空'; }}
+                onSizeError={(file) => { uploadAdvancedLog = `文件过大：${file.name}`; }}
+                onPreviewClick={(file) => { uploadAdvancedLog = `预览：${file.name}`; }}
+                aria-label="Upload beforeRemove 示例"
+            />
+            <TypographyText type="secondary" aria-label="Upload 高级事件日志">{uploadAdvancedLog}</TypographyText>
+        </div>
+
+        <Divider>Upload：renderFileItem 自定义文件项渲染</Divider>
+
+        <div>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                fileList={uploadCustomFileList}
+                onChange={(list) => { uploadCustomFileList = list; }}
+                renderFileItem={(props) => (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', border: '1px dashed var(--lotus-color-primary)' }}>
+                        <span>★ {props.name}（{props.status}）</span>
+                        <Button size="small" theme="borderless" onClick={props.onRemove}>移除</Button>
+                    </div>
+                )}
+                aria-label="Upload renderFileItem 示例"
             />
         </div>
 

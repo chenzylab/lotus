@@ -4,6 +4,7 @@ import {
   applyLimit,
   matchAccept,
   type FileItem,
+  type FileStatus,
   type BeforeUploadResult,
   type DragAreaStatus,
   type UploadTrigger,
@@ -76,15 +77,22 @@ export class UploadFoundation extends Foundation<UploadState> {
    * onChange 拒绝这次变化时 UI 会永久停留在操作产生的中间态（与 Cascader/
    * Rating 同一根因，详见 specs 踩坑 #100）。返回值不受影响，供 .tsrx 层
    * 计算 onChange 载荷、判断是否需要发起上传。 */
-  addFiles(files: File[], isControlled: boolean): { fileList: FileItem[]; added: FileItem[]; exceeded: FileItem[] } {
+  addFiles(
+    files: File[],
+    isControlled: boolean,
+    transformFile?: (file: File) => FileItem,
+  ): { fileList: FileItem[]; added: FileItem[]; exceeded: FileItem[]; sizeInvalid: FileItem[] } {
     const { fileList } = this.getState();
     const built = files.map((file) =>
-      buildFileItem(file, { maxSize: this.opts.maxSize, minSize: this.opts.minSize, uploadTrigger: this.opts.uploadTrigger }),
+      transformFile
+        ? transformFile(file)
+        : buildFileItem(file, { maxSize: this.opts.maxSize, minSize: this.opts.minSize, uploadTrigger: this.opts.uploadTrigger }),
     );
+    const sizeInvalid = built.filter((item) => item.status === 'validateFail');
     const { fileList: nextList, exceeded } = applyLimit(fileList, built, this.opts.limit);
     if (!isControlled) this.setState({ fileList: nextList });
     const added = nextList.filter((item) => built.some((b) => b.uid === item.uid));
-    return { fileList: nextList, added, exceeded };
+    return { fileList: nextList, added, exceeded, sizeInvalid };
   }
 
   // ===================== beforeUpload 决议 =====================
@@ -131,8 +139,25 @@ export class UploadFoundation extends Foundation<UploadState> {
     return this.patchFile(uid, { status: 'uploading', percent: Math.min(100, Math.max(0, percent)) }, isControlled);
   }
 
-  handleSuccess(uid: string, response: unknown, isControlled: boolean): { fileList: FileItem[]; item: FileItem } | null {
-    return this.patchFile(uid, { status: 'success', percent: 100, response }, isControlled);
+  handleSuccess(
+    uid: string,
+    response: unknown,
+    isControlled: boolean,
+    afterUploadResult?: { autoRemove?: boolean; status?: FileStatus; validateMessage?: string; name?: string; url?: string },
+  ): { fileList: FileItem[]; item: FileItem | null } | null {
+    const patch: Partial<FileItem> = { status: 'success', percent: 100, response };
+    if (afterUploadResult?.status) patch.status = afterUploadResult.status;
+    if (afterUploadResult?.validateMessage) patch.validateMessage = afterUploadResult.validateMessage;
+    if (afterUploadResult?.name) patch.name = afterUploadResult.name;
+    if (afterUploadResult?.url) patch.url = afterUploadResult.url;
+    if (afterUploadResult?.autoRemove) {
+      const { fileList } = this.getState();
+      const item = fileList.find((f) => f.uid === uid) ?? null;
+      const nextList = fileList.filter((f) => f.uid !== uid);
+      if (!isControlled) this.setState({ fileList: nextList });
+      return { fileList: nextList, item: item ? { ...item, ...patch } : null };
+    }
+    return this.patchFile(uid, patch, isControlled);
   }
 
   handleError(uid: string, message: string | undefined, isControlled: boolean): { fileList: FileItem[]; item: FileItem } | null {
@@ -180,8 +205,9 @@ export class UploadFoundation extends Foundation<UploadState> {
     return { fileList: nextList, replaced };
   }
 
-  clear(isControlled: boolean): void {
+  clear(isControlled: boolean): FileItem[] {
     if (!isControlled) this.setState({ fileList: [] });
+    return [];
   }
 
   // ===================== 拖拽悬停态 =====================

@@ -106,6 +106,7 @@ const enUS: LocaleShape = {
     dragAreaLabel: 'Drag and drop or click to upload files',
     uploadButton: 'Upload file',
     fileListLabel: 'Uploaded files',
+    clear: 'Clear file list',
   },
   ColorPicker: {
     saturationValue: 'Saturation and value',
