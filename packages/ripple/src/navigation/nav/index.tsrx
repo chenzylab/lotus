@@ -75,10 +75,27 @@ export interface NavProps {
     style?: Record<string, any>;
     bodyStyle?: Record<string, any>;
     class?: string;
+    /** SubNav 悬浮展开浮层（折叠态/水平模式）挂载的目标容器。 */
+    getPopupContainer?: () => HTMLElement | null;
+    /** 悬浮触发展开的延迟（ms），默认 50。 */
+    subNavOpenDelay?: number;
+    /** 悬浮收起的延迟（ms），默认 50。 */
+    subNavCloseDelay?: number;
+    /** 自定义展开图标，替换默认的 IconChevronDown/IconChevronRight。 */
+    expandIcon?: any;
+    /** 透传给内部 Popover 的额外配置。 */
+    subDropdownProps?: Record<string, any>;
+    /** 展开/收起动画开关，默认 true。 */
+    subNavMotion?: boolean;
+    /** 折叠态下单项 Tooltip 的显示延迟（ms），默认 50。 */
+    tooltipShowDelay?: number;
+    /** 折叠态下单项 Tooltip 的隐藏延迟（ms），默认 50。 */
+    tooltipHideDelay?: number;
     onSelect?: (data: OnSelectData) => void;
     onOpenChange?: (data: OnOpenChangeData) => void;
     onCollapseChange?: (isCollapsed: boolean) => void;
     onClick?: (data: { itemKey: ItemKey; isOpen: boolean }) => void;
+    'aria-label'?: string;
 }
 
 /**
@@ -199,10 +216,19 @@ export function Nav(&{
     style,
     bodyStyle,
     class: className,
+    getPopupContainer,
+    subNavOpenDelay = 50,
+    subNavCloseDelay = 50,
+    expandIcon,
+    subDropdownProps,
+    subNavMotion = true,
+    tooltipShowDelay = 50,
+    tooltipHideDelay = 50,
     onSelect,
     onOpenChange,
     onCollapseChange,
     onClick,
+    'aria-label': ariaLabel,
 }: NavProps) @{
     const isSelectedKeysControlled = selectedKeysProp !== undefined;
     const isOpenKeysControlled = openKeysProp !== undefined;
@@ -255,6 +281,14 @@ export function Nav(&{
         onItemClick: handleItemClick,
         onSubNavToggle: handleSubNavToggle,
         onCollapseToggle: handleCollapseToggle,
+        getPopupContainer,
+        subNavOpenDelay,
+        subNavCloseDelay,
+        expandIcon,
+        subDropdownProps,
+        subNavMotion,
+        tooltipShowDelay,
+        tooltipHideDelay,
     }));
     NavContext.set(contextTracked);
 
@@ -266,7 +300,7 @@ export function Nav(&{
     );
 
     <>
-        <nav class={classes} style={style} role="navigation">
+        <nav class={classes} style={style} role="navigation" aria-label={ariaLabel}>
             @if (normalizedItems.length > 0) {
                 <>
                     @if (header != null) {

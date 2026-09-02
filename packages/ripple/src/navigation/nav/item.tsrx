@@ -65,6 +65,8 @@ export function NavItem(&{
     let &[selectedKeys] = track(() => contextTracked?.value.selectedKeys ?? []);
     let &[mode] = track(() => contextTracked?.value.mode ?? 'vertical');
     let &[limitIndent] = track(() => contextTracked?.value.limitIndent ?? true);
+    let &[tooltipShowDelay] = track(() => contextTracked?.value.tooltipShowDelay ?? 50);
+    let &[tooltipHideDelay] = track(() => contextTracked?.value.tooltipHideDelay ?? 50);
 
     let &[selected] = track(() => itemKey != null && selectedKeys.includes(itemKey));
 
@@ -122,7 +124,7 @@ export function NavItem(&{
             onKeyDown={handleKeyPress}
         >
             @if (shouldShowTooltip) {
-                <Tooltip content={text} position="right" trigger="hover">
+                <Tooltip content={text} position="right" trigger="hover" mouseEnterDelay={tooltipShowDelay} mouseLeaveDelay={tooltipHideDelay}>
                     @if (typeof link === 'string') {
                         <a class="lotus-nav-item-link" href={link} tabIndex={-1} {...(linkOptions ?? {})}>
                             <NavItemContent text={text} icon={icon} indent={indent} isInSubNav={isInSubNav} placeholderCount={placeholderCount} />

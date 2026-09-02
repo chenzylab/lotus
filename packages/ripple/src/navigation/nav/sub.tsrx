@@ -13,6 +13,8 @@ export interface NavSubProps {
     indent?: boolean;
     level?: number;
     maxHeight?: number;
+    /** 单个 SubNav 级别的 Popover 额外配置，优先级高于 Nav 的 subDropdownProps。 */
+    dropdownProps?: Record<string, any>;
     onMouseEnter?: (event: MouseEvent) => void;
     onMouseLeave?: (event: MouseEvent) => void;
     style?: Record<string, any>;
@@ -24,11 +26,13 @@ export interface NavSubProps {
  * `@if` 条件判断在非 `@{}` 组件函数体内失效），详见 footer.tsrx 的 DefaultCollapseButton
  * 注释与 specs/cross-cutting/foundation-adapter-pattern.md 踩坑 #20。
  */
-function SubNavTitleContent(&{ text, icon, indent, isOpen, toggleIconPosition, showChevron, useChevronRight }: { text: any; icon: any; indent?: boolean; isOpen: boolean; toggleIconPosition: string; showChevron: boolean; useChevronRight: boolean }) @{
+function SubNavTitleContent(&{ text, icon, indent, isOpen, toggleIconPosition, showChevron, useChevronRight, expandIcon }: { text: any; icon: any; indent?: boolean; isOpen: boolean; toggleIconPosition: string; showChevron: boolean; useChevronRight: boolean; expandIcon?: any }) @{
     <>
         @if (toggleIconPosition === 'left' && showChevron) {
             <i class={['lotus-nav-item-icon', 'lotus-nav-subnav-toggle', !useChevronRight && isOpen ? 'lotus-nav-subnav-toggle-open' : ''].filter(Boolean).join(' ')}>
-                @if (useChevronRight) {
+                @if (expandIcon) {
+                    <span style="display:contents">{expandIcon}</span>
+                } @else if (useChevronRight) {
                     <IconChevronRight />
                 } @else {
                     <IconChevronDown />
@@ -43,7 +47,9 @@ function SubNavTitleContent(&{ text, icon, indent, isOpen, toggleIconPosition, s
         }
         @if (toggleIconPosition === 'right' && showChevron) {
             <i class={['lotus-nav-item-icon', 'lotus-nav-subnav-toggle', !useChevronRight && isOpen ? 'lotus-nav-subnav-toggle-open' : ''].filter(Boolean).join(' ')}>
-                @if (useChevronRight) {
+                @if (expandIcon) {
+                    <span style="display:contents">{expandIcon}</span>
+                } @else if (useChevronRight) {
                     <IconChevronRight />
                 } @else {
                     <IconChevronDown />
@@ -62,6 +68,7 @@ export function NavSub(&{
     indent = false,
     level = 0,
     maxHeight = 999,
+    dropdownProps,
     onMouseEnter,
     onMouseLeave,
     style,
@@ -74,6 +81,12 @@ export function NavSub(&{
     let &[openKeys] = track(() => contextTracked?.value.openKeys ?? []);
     let &[toggleIconPosition] = track(() => contextTracked?.value.toggleIconPosition ?? 'right');
     let &[isInSubNav] = track(() => contextTracked?.value.isInSubNav ?? false);
+    let &[getPopupContainer] = track(() => contextTracked?.value.getPopupContainer);
+    let &[subNavOpenDelay] = track(() => contextTracked?.value.subNavOpenDelay ?? 50);
+    let &[subNavCloseDelay] = track(() => contextTracked?.value.subNavCloseDelay ?? 50);
+    let &[expandIcon] = track(() => contextTracked?.value.expandIcon);
+    let &[subDropdownProps] = track(() => contextTracked?.value.subDropdownProps);
+    let &[resolvedDropdownProps] = track(() => dropdownProps ?? subDropdownProps ?? {});
 
     let &[isOpen] = track(() => itemKey != null && openKeys.includes(itemKey));
 
@@ -127,6 +140,10 @@ export function NavSub(&{
                 <Popover
                     trigger="hover"
                     position={mode === 'horizontal' && !isInSubNav ? 'bottom' : 'rightTop'}
+                    mouseEnterDelay={subNavOpenDelay}
+                    mouseLeaveDelay={subNavCloseDelay}
+                    getPopupContainer={getPopupContainer}
+                    {...resolvedDropdownProps}
                     content={
                         <ul class="lotus-nav-subnav-popover-list" role="menu">
                             {children}
@@ -140,7 +157,7 @@ export function NavSub(&{
                         aria-expanded={isOpen}
                         class={classes}
                     >
-                        <SubNavTitleContent text={text} icon={icon} indent={indent} isOpen={isOpen} toggleIconPosition={toggleIconPosition} showChevron={showChevron} useChevronRight={useChevronRight} />
+                        <SubNavTitleContent text={text} icon={icon} indent={indent} isOpen={isOpen} toggleIconPosition={toggleIconPosition} showChevron={showChevron} useChevronRight={useChevronRight} expandIcon={expandIcon} />
                     </div>
                 </Popover>
             } @else {

@@ -159,7 +159,9 @@ Nav 组件提供了几个受控属性，配合各种回调，可以很轻松地�
 | defaultIsCollapsed | 默认是否处于收起状态，仅 `mode = "vertical"` 时有效 | boolean | false |
 | defaultOpenKeys | 初始打开的子导航 `itemKey` 数组，仅 `mode = "vertical"` 且侧边栏处于展开状态时有效 | ItemKey[] | [] |
 | defaultSelectedKeys | 初始选中的导航项 `itemKey` 数组 | ItemKey[] | [] |
+| expandIcon | 自定义展开图标，替换默认的箭头图标 | any | - |
 | footer | 底部区域配置对象，详见 [NavFooter](#NavFooter) | object | - |
+| getPopupContainer | SubNav 悬浮展开浮层（折叠态/水平模式）挂载的目标容器 | `() => HTMLElement \| null` | - |
 | header | 头部区域配置对象，详见 [NavHeader](#NavHeader) | object | - |
 | isCollapsed | 是否处于收起状态的受控属性，仅 `mode = "vertical"` 时有效 | boolean | - |
 | items | 导航项目列表，每一项可以继续带有 items 属性。如果为 string 数组，则会取每一项作为 text 和 itemKey | `NavItemInput[]` | - |
@@ -170,11 +172,19 @@ Nav 组件提供了几个受控属性，配合各种回调，可以很轻松地�
 | renderWrapper | 自定义导航项外层组件 | `(data) => any` | - |
 | selectedKeys | 受控的导航项 `itemKey` 数组，配合 `onSelect` 回调控制导航项选择 | ItemKey[] | - |
 | style | 最外层元素的自定义样式 | object | - |
+| subDropdownProps | 透传给内部悬浮浮层（Popover）的额外配置 | object | - |
+| subNavCloseDelay | SubNav 悬浮收起的延迟（ms） | number | `50` |
+| subNavMotion | SubNav 展开/收起动画开关 | boolean | `true` |
+| subNavOpenDelay | SubNav 悬浮触发展开的延迟（ms） | number | `50` |
 | toggleIconPosition | 带有子导航项的父级导航项箭头位置，可选 `left` 或 `right` | string | `right` |
+| tooltipHideDelay | 折叠态下单项 Tooltip 的隐藏延迟（ms） | number | `50` |
+| tooltipShowDelay | 折叠态下单项 Tooltip 的显示延迟（ms） | number | `50` |
 | onClick | 点击任意导航项时触发 | `({ itemKey, isOpen }) => void` | - |
 | onCollapseChange | 收起状态变化时的回调 | `(isCollapsed) => void` | - |
 | onOpenChange | 切换某个子导航项目显隐状态时触发 | `({ itemKey, openKeys, isOpen }) => void` | - |
 | onSelect | 选中某个可选中导航项目时触发 | `({ itemKey, selectedKeys, isOpen }) => void` | - |
+
+> 明确不做：`multiple`/`onDeselect`——已核对 Semi 源码确认这两项都是 Semi 自己的 dead prop（propTypes 声明了但实现从未消费），不作为已验证能力照搬。
 
 ### NavItem
 
@@ -196,6 +206,7 @@ Nav 组件提供了几个受控属性，配合各种回调，可以很轻松地�
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | disabled | 是否禁用 | boolean | false |
+| dropdownProps | 单个 SubNav 级别的悬浮浮层（Popover）额外配置，优先级高于 Nav 的 `subDropdownProps` | object | - |
 | icon | 导航项目图标 | any | - |
 | indent | 如果 icon 为空，是否保留其占位，仅对一级导航生效 | boolean | false |
 | itemKey | 导航项目唯一 key | ItemKey | - |

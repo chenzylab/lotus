@@ -2832,6 +2832,21 @@ export function App() @{
             <Nav items={verticalNavItems} defaultSelectedKeys={['home']} isCollapsed={true} />
         </div>
 
+        <Divider>Nav：折叠态 + getPopupContainer + subNavOpenDelay/subNavCloseDelay + expandIcon</Divider>
+
+        <div id="nav-popup-container" style={{ width: '60px', height: '360px', border: '1px solid var(--lotus-color-border)', position: 'relative' }}>
+            <Nav
+                items={verticalNavItems}
+                defaultSelectedKeys={['home']}
+                isCollapsed={true}
+                getPopupContainer={() => document.getElementById('nav-popup-container')}
+                subNavOpenDelay={0}
+                subNavCloseDelay={0}
+                expandIcon={<span aria-label="自定义展开图标">▸</span>}
+                aria-label="Nav 折叠态高级配置示例"
+            />
+        </div>
+
         <Divider>Nav：水平模式（mode=horizontal）</Divider>
 
         <div style={{ border: '1px solid var(--lotus-color-border)' }}>

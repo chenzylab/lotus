@@ -48,7 +48,7 @@ test.describe('Nav', () => {
 
   test('isCollapsed 时容器带 collapsed class', async ({ page }) => {
     await page.goto('/');
-    const collapsedNav = page.locator('.lotus-nav-collapsed');
+    const collapsedNav = page.locator('.lotus-nav-collapsed').first();
     await expect(collapsedNav).toBeVisible();
   });
 
@@ -86,5 +86,21 @@ test.describe('Nav', () => {
     const level2IconCount = await level2Item.locator('.lotus-nav-item-icon').count();
 
     expect(level2IconCount).toBeGreaterThan(level1IconCount);
+  });
+
+  test('getPopupContainer：折叠态 SubNav 悬浮浮层挂载到指定容器；expandIcon：自定义展开图标生效', async ({ page }) => {
+    await page.goto('/');
+    const nav = page.locator('[aria-label="Nav 折叠态高级配置示例"]');
+    const container = page.locator('#nav-popup-container');
+
+    const componentsItem = nav.getByRole('button', { name: '组件' });
+    await componentsItem.hover();
+
+    const popover = container.locator('.lotus-nav-subnav-popover-list');
+    await expect(popover).toBeVisible();
+    await expect(popover).toContainText('基础组件');
+
+    // 折叠态下二级子导航（嵌套子导航）箭头朝右且显示自定义 expandIcon。
+    await expect(popover.getByLabel('自定义展开图标').first()).toBeVisible();
   });
 });
