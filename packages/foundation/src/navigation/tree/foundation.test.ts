@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TreeFoundation, type TreeState } from './foundation.js';
+import { TreeFoundation, createInitialTreeState, type TreeState } from './foundation.js';
 import { buildKeyEntities, type TreeNodeData } from './tree-data.js';
 import type { Adapter } from '../../base/adapter.js';
 
@@ -24,15 +24,7 @@ function createMockAdapter(initial: TreeState): { adapter: Adapter<TreeState>; g
 }
 
 function initialState(): TreeState {
-  return {
-    expandedKeys: new Set(),
-    checkedKeys: new Set(),
-    halfCheckedKeys: new Set(),
-    selectedKey: null,
-    searchInput: '',
-    loadedKeys: new Set(),
-    loadingKeys: new Set(),
-  };
+  return createInitialTreeState();
 }
 
 describe('TreeFoundation', () => {

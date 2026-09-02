@@ -151,6 +151,19 @@ const treeDemoData: TreeNodeData[] = [
     },
 ];
 
+const treeDragData: TreeNodeData[] = [
+    { key: 'drag-1', label: '拖拽节点 1' },
+    { key: 'drag-2', label: '拖拽节点 2' },
+    { key: 'drag-3', label: '拖拽节点 3' },
+];
+
+const treeVirtualData: TreeNodeData[] = Array.from({ length: 1000 }, (_v, i) => ({ key: `virtual-${i}`, label: `虚拟节点 ${i + 1}` }));
+
+const treeLazyControlledData: TreeNodeData[] = [
+    { key: 'lazy-ctrl-1', label: '受控懒加载节点 1' },
+    { key: 'lazy-ctrl-2', label: '受控懒加载节点 2' },
+];
+
 const transferListData = [
     { key: 'a1', label: '苹果' },
     { key: 'a2', label: '香蕉' },
@@ -420,6 +433,12 @@ export function App() @{
     let &[treeSelectChangeLog] = track<string>('');
     let &[treeSelectLazyTreeData] = track<TreeNodeData[]>(treeSelectLazyData);
     let &[treeSelectFocusBlurLog] = track<string>('');
+    let &[treeUnRelatedLog] = track<string>('');
+    let &[treeDisableStrictlyLog] = track<string>('');
+    let &[treeDirectoryLog] = track<string>('');
+    let &[treeDragLog] = track<string>('');
+    let &[treeChangeWithObjectLog] = track<string>('');
+    let &[treeLoadedKeysControlled] = track<string[]>([]);
     let &[autoCompleteSearchResult] = track<string[]>(autoCompleteAllCities);
     let &[autoCompleteChangeLog] = track<string>('');
     let &[autoCompleteControlledValue] = track<string>('北京');
@@ -1198,6 +1217,117 @@ export function App() @{
                     onLoad={(loadedKeys, node) => console.log('tree load', loadedKeys, node)}
                     aria-label="懒加载 Tree"
                 />
+            </div>
+
+            <div>
+                <TypographyText type="secondary">checkRelation=unRelated（三态解除，选中状态互相独立）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    multiple
+                    checkRelation="unRelated"
+                    defaultExpandAll
+                    onChange={(value) => { treeUnRelatedLog = `unRelated change: ${JSON.stringify(value)}`; }}
+                    aria-label="Tree checkRelation unRelated"
+                />
+                <TypographyText type="secondary" aria-label="Tree unRelated 事件日志">{treeUnRelatedLog}</TypographyText>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">disableStrictly（级联隔离 disabled 后代）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    multiple
+                    disableStrictly
+                    defaultExpandAll
+                    onChange={(value) => { treeDisableStrictlyLog = `disableStrictly change: ${JSON.stringify(value)}`; }}
+                    aria-label="Tree disableStrictly"
+                />
+                <TypographyText type="secondary" aria-label="Tree disableStrictly 事件日志">{treeDisableStrictlyLog}</TypographyText>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">directory（文件夹风格图标）+ expandAction=click（整行点击同时展开选中）+ showLine</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    directory
+                    expandAction="click"
+                    showLine
+                    defaultExpandedKeys={['dept-1']}
+                    onSelect={(key) => { treeDirectoryLog = `directory select: ${key}`; }}
+                    aria-label="Tree directory"
+                />
+                <TypographyText type="secondary" aria-label="Tree directory 事件日志">{treeDirectoryLog}</TypographyText>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">renderFullLabel（完全自定义整行渲染）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    defaultExpandedKeys={['dept-1']}
+                    renderFullLabel={(props) => (
+                        <div class={props.className} style={{ ...props.style, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={props.onClick}>
+                            <span onClick={props.onExpand}>{props.expandStatus.expanded ? '▼' : '▶'}</span>
+                            <span>★ {props.data.label}</span>
+                        </div>
+                    )}
+                    aria-label="Tree renderFullLabel"
+                />
+            </div>
+
+            <div>
+                <TypographyText type="secondary">draggable（拖拽排序，onDrop 打印结果）</TypographyText>
+                <Tree
+                    treeData={treeDragData}
+                    draggable
+                    defaultExpandAll
+                    onDrop={(info) => { treeDragLog = `drop: dragNode=${info.dragNode?.label}, target=${info.node.label}, dropToGap=${info.dropToGap}`; }}
+                    aria-label="Tree draggable"
+                />
+                <TypographyText type="secondary" aria-label="Tree draggable 事件日志">{treeDragLog}</TypographyText>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">virtualize（虚拟滚动，1000 节点）</TypographyText>
+                <Tree
+                    treeData={treeVirtualData}
+                    virtualize={{ height: 240, itemSize: 32 }}
+                    aria-label="Tree virtualize"
+                />
+            </div>
+
+            <div style={{ width: '280px' }}>
+                <TypographyText type="secondary">searchRender=false（隐藏内置搜索框）+ treeNodeFilterProp（自定义搜索匹配字段）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    filterTreeNode
+                    searchRender={false}
+                    defaultExpandAll
+                    aria-label="Tree searchRender false"
+                />
+            </div>
+
+            <div style={{ width: '280px' }}>
+                <TypographyText type="secondary">onChangeWithObject（onChange 回调传节点对象而非 key）</TypographyText>
+                <Tree
+                    treeData={treeDemoData}
+                    defaultExpandedKeys={['dept-1']}
+                    onChangeWithObject
+                    onChange={(value) => { treeChangeWithObjectLog = `onChangeWithObject: ${JSON.stringify(value)}`; }}
+                    aria-label="Tree onChangeWithObject"
+                />
+                <TypographyText type="secondary" aria-label="Tree onChangeWithObject 事件日志">{treeChangeWithObjectLog}</TypographyText>
+            </div>
+
+            <div style={{ width: '280px' }}>
+                <TypographyText type="secondary">loadedKeys 受控（外部按钮标记节点为已加载，展开不再触发 loadData）</TypographyText>
+                <Tree
+                    treeData={treeLazyControlledData}
+                    loadData={loadTreeChildren}
+                    loadedKeys={treeLoadedKeysControlled}
+                    onLoad={(loadedKeys) => { treeLoadedKeysControlled = loadedKeys; }}
+                    aria-label="Tree loadedKeys 受控"
+                />
+                <Button size="small" onClick={() => { treeLoadedKeysControlled = ['lazy-ctrl-1']; }}>标记节点 1 为已加载</Button>
             </div>
         </Space>
 

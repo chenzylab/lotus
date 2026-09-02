@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildKeyEntities, type TreeNodeData } from '../../navigation/tree/tree-data.js';
+import { buildKeyEntities, type TreeNodeData } from './tree-data.js';
 import { normalizeCheckedKeysToValue } from './value.js';
 
 const DATA: TreeNodeData[] = [

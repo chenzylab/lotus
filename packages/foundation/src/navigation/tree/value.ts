@@ -1,4 +1,4 @@
-import type { KeyEntities } from '../../navigation/tree/tree-data.js';
+import type { KeyEntities } from './tree-data.js';
 
 function isLeafKey(key: string, entities: KeyEntities): boolean {
   const entity = entities[key];

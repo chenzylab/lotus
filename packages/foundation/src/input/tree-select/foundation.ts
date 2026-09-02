@@ -3,13 +3,13 @@ import { calcCheckedKeysForChecked, calcCheckedKeysForUnchecked, calcCheckedKeys
 import { toggleExpanded } from '../../navigation/tree/expand.js';
 import { computeSearchResult, type FilterTreeNode, type SearchResult } from '../../navigation/tree/search.js';
 import type { KeyEntities } from '../../navigation/tree/tree-data.js';
-import { normalizeCheckedKeysToValue } from './value.js';
+import { normalizeCheckedKeysToValue } from '../../navigation/tree/value.js';
 
 export * from '../../navigation/tree/tree-data.js';
 export * from '../../navigation/tree/check-cascade.js';
 export * from '../../navigation/tree/search.js';
 export * from '../../navigation/tree/expand.js';
-export * from './value.js';
+export * from '../../navigation/tree/value.js';
 export * from './tag-fold.js';
 
 export type TreeSelectCheckRelation = 'related' | 'unRelated';
