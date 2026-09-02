@@ -425,6 +425,7 @@ export function App() @{
     let &[autoCompleteControlledValue] = track<string>('北京');
     let &[autoCompleteLoading] = track<boolean>(false);
     let &[autoCompleteLoadingResult] = track<string[]>([]);
+    let &[autoCompleteAdvancedLog] = track<string>('');
     let &[timePickerChangeLog] = track<string>('');
     let &[timePickerRangeChangeLog] = track<string>('');
     let &[timePickerControlledValue] = track<Date | null>(null);
@@ -3865,6 +3866,33 @@ export function App() @{
                     }, 500);
                 }}
                 aria-label="AutoComplete loading"
+            />
+        </div>
+
+        <Divider>AutoComplete：triggerRender + renderSelectedItem + onSelectWithObject + dropdownMatchSelectWidth</Divider>
+
+        <div style={{ width: '160px' }}>
+            <AutoComplete
+                data={autoCompleteAllCities}
+                dropdownMatchSelectWidth
+                renderSelectedItem={(option) => `已选：${option.label}`}
+                onSelectWithObject
+                onSelect={(option) => { autoCompleteAdvancedLog = `onSelect: ${JSON.stringify(option)}`; }}
+                placeholder="窄输入框，面板应等宽"
+                aria-label="AutoComplete 高级示例"
+            />
+            <TypographyText type="secondary" aria-label="AutoComplete 高级事件日志">{autoCompleteAdvancedLog}</TypographyText>
+        </div>
+
+        <div style={{ width: '280px', marginTop: '8px' }}>
+            <AutoComplete
+                data={autoCompleteAllCities}
+                triggerRender={({ inputValue, open }) => (
+                    <Button aria-label="AutoComplete triggerRender 示例">
+                        {(inputValue as string) || '点击选择城市'}（{open ? '展开' : '收起'}）
+                    </Button>
+                )}
+                onSelect={(v) => { autoCompleteAdvancedLog = `triggerRender onSelect: ${JSON.stringify(v)}`; }}
             />
         </div>
 

@@ -16,6 +16,12 @@ export type AutoCompleteSize = InputSize;
 export type AutoCompleteValidateStatus = InputValidateStatus;
 export type { AutoCompleteValue, AutoCompleteDataItem };
 
+export interface AutoCompleteTriggerRenderProps {
+    inputValue: AutoCompleteValue;
+    value: AutoCompleteOptionItem[];
+    open: boolean;
+}
+
 export interface AutoCompleteProps {
     data?: AutoCompleteDataItem[];
     value?: AutoCompleteValue;
@@ -26,6 +32,7 @@ export interface AutoCompleteProps {
     validateStatus?: AutoCompleteValidateStatus;
     borderless?: boolean;
     showClear?: boolean;
+    clearIcon?: any;
     position?: FloatingPosition;
     /** 打开面板时默认高亮第一个候选项，回车可直接选中，默认 false（对齐 Semi）。 */
     defaultActiveFirstOption?: boolean;
@@ -33,14 +40,44 @@ export interface AutoCompleteProps {
     emptyContent?: any;
     /** 自定义候选项渲染。 */
     renderItem?: (option: AutoCompleteOptionItem) => any;
+    /** 选中候选项后回填 input 的自定义转换，必须返回 string（对齐 Semi）。 */
+    renderSelectedItem?: (option: AutoCompleteOptionItem) => string;
+    /** 完全自定义触发器渲染，替换默认的 Input。 */
+    triggerRender?: (props: AutoCompleteTriggerRenderProps) => any;
+    id?: string;
+    autoFocus?: boolean;
+    /** onSelect 回调传 option 全量对象还是仅 value，默认 false（对齐 Semi）。 */
+    onSelectWithObject?: boolean;
+    getPopupContainer?: () => HTMLElement | null;
+    zIndex?: number;
+    stopPropagation?: boolean;
+    autoAdjustOverflow?: boolean;
+    motion?: boolean;
+    mouseEnterDelay?: number;
+    mouseLeaveDelay?: number;
+    /** 下拉面板最小宽度是否对齐触发器宽度，默认 true（对齐 Semi）。 */
+    dropdownMatchSelectWidth?: boolean;
+    dropdownClassName?: string;
+    dropdownStyle?: Record<string, any>;
+    maxHeight?: string | number;
+    prefix?: any;
+    suffix?: any;
+    insetLabel?: any;
+    insetLabelId?: string;
     onChange?: (value: AutoCompleteValue) => void;
     onSearch?: (inputValue: AutoCompleteValue) => void;
-    onSelect?: (option: AutoCompleteOptionItem) => void;
+    onSelect?: (option: AutoCompleteOptionItem | AutoCompleteValue) => void;
     onClear?: () => void;
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onDropdownVisibleChange?: (visible: boolean) => void;
+    onKeyDown?: (event: KeyboardEvent) => void;
     'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-invalid'?: boolean;
+    'aria-errormessage'?: string;
+    'aria-describedby'?: string;
+    'aria-required'?: boolean;
     style?: Record<string, any>;
     class?: string;
 }
@@ -70,11 +107,29 @@ export function AutoComplete(&{
     validateStatus = 'default',
     borderless = false,
     showClear = false,
+    clearIcon,
     position = 'bottomLeft',
     defaultActiveFirstOption = false,
     loading = false,
     emptyContent,
     renderItem,
+    renderSelectedItem,
+    triggerRender,
+    id,
+    autoFocus = false,
+    onSelectWithObject = false,
+    getPopupContainer,
+    zIndex = 1030,
+    stopPropagation = false,
+    autoAdjustOverflow = true,
+    dropdownMatchSelectWidth = true,
+    dropdownClassName,
+    dropdownStyle,
+    maxHeight = 300,
+    prefix,
+    suffix,
+    insetLabel,
+    insetLabelId,
     onChange,
     onSearch,
     onSelect,
@@ -82,7 +137,13 @@ export function AutoComplete(&{
     onFocus,
     onBlur,
     onDropdownVisibleChange,
+    onKeyDown,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    'aria-invalid': ariaInvalid,
+    'aria-errormessage': ariaErrormessage,
+    'aria-describedby': ariaDescribedby,
+    'aria-required': ariaRequired,
     style,
     class: className,
 }: AutoCompleteProps) @{
@@ -96,6 +157,7 @@ export function AutoComplete(&{
     });
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
+    let &[triggerMinWidth] = track<number | null>(null);
 
     const foundation = new AutoCompleteFoundation({
         getState: () => untrack(() => state),
@@ -123,8 +185,8 @@ export function AutoComplete(&{
 
     function handleOptionSelect(option: AutoCompleteOptionItem, index: number) {
         if (option.disabled) return;
-        const value = foundation.handleSelect(option, index, isControlled);
-        onSelect?.(option);
+        const value = foundation.handleSelect(option, index, isControlled, renderSelectedItem);
+        onSelect?.(onSelectWithObject ? option : option.value);
         onChange?.(value);
     }
 
@@ -149,6 +211,7 @@ export function AutoComplete(&{
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+        onKeyDown?.(event);
         if (disabled) return;
         if (event.key === 'ArrowDown') {
             event.preventDefault();
@@ -212,6 +275,23 @@ export function AutoComplete(&{
         return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
     });
 
+    // dropdownMatchSelectWidth：面板打开时把触发器实测宽度写入 state，
+    // 供面板容器设置 min-width（对齐 Semi getTriggerWidth/setOptionWrapperWidth）。
+    effect(() => {
+        if (!dropdownMatchSelectWidth) return;
+        if (!state.visible) return;
+        const root = untrack(() => rootNode);
+        if (!root) return;
+        untrack(() => { triggerMinWidth = root.getBoundingClientRect().width; });
+    });
+
+    effect(() => {
+        if (!autoFocus) return;
+        const root = untrack(() => rootNode);
+        const inputEl = root?.querySelector('input') as HTMLInputElement | null;
+        inputEl?.focus();
+    });
+
     let &[displayValue] = track<string>(() => String(state.inputValue ?? ''));
 
     let &[classes] = track<string>(() =>
@@ -219,15 +299,27 @@ export function AutoComplete(&{
     );
 
     <>
-        <div class={classes} style={style} ref={(node: HTMLElement) => { rootNode = node; }} onKeyDown={handleKeyDown}>
+        <div class={classes} style={style} id={id} ref={(node: HTMLElement) => { rootNode = node; }} onKeyDown={handleKeyDown}>
             <Popover
                 trigger="custom"
                 visible={state.visible && (loading || options.length > 0 || emptyContent !== undefined)}
                 position={position}
                 spacing={4}
                 closeOnEsc={false}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
+                stopPropagation={stopPropagation}
+                autoAdjustOverflow={autoAdjustOverflow}
                 content={
-                    <div class="lotus-auto-complete-panel" ref={(node: HTMLElement) => { listNode = node; }}>
+                    <div
+                        class={['lotus-auto-complete-panel', dropdownClassName ?? ''].filter(Boolean).join(' ')}
+                        style={{
+                            ...(dropdownMatchSelectWidth && triggerMinWidth !== null ? { minWidth: `${triggerMinWidth}px` } : {}),
+                            maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+                            ...dropdownStyle,
+                        }}
+                        ref={(node: HTMLElement) => { listNode = node; }}
+                    >
                         @if (loading) {
                             <div class="lotus-auto-complete-loading"><Spin size="small" /></div>
                         } @else {
@@ -259,22 +351,36 @@ export function AutoComplete(&{
                     </div>
                 }
             >
-                <div onClick={handleTriggerClick}>
-                    <Input
-                        value={displayValue}
-                        disabled={disabled}
-                        size={size}
-                        validateStatus={validateStatus}
-                        borderless={borderless}
-                        showClear={showClear}
-                        placeholder={placeholder}
-                        aria-label={ariaLabel}
-                        onChange={handleInputChange}
-                        onFocus={handleInputFocus}
-                        onBlur={handleInputBlur}
-                        onClear={handleInputClear}
-                    />
-                </div>
+                @if (triggerRender) {
+                    <div onClick={handleTriggerClick} tabIndex={-1}>
+                        <span style="display:contents">{triggerRender({ inputValue: state.inputValue, value: options.filter((o) => String(o.value) === String(state.inputValue)), open: state.visible })}</span>
+                    </div>
+                } @else {
+                    <div onClick={handleTriggerClick}>
+                        <Input
+                            value={displayValue}
+                            disabled={disabled}
+                            size={size}
+                            validateStatus={validateStatus}
+                            borderless={borderless}
+                            showClear={showClear}
+                            clearIcon={clearIcon}
+                            placeholder={placeholder}
+                            prefix={prefix ?? insetLabel}
+                            suffix={suffix}
+                            aria-label={ariaLabel}
+                            aria-labelledby={ariaLabelledby}
+                            aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
+                            aria-errormessage={ariaErrormessage}
+                            aria-describedby={ariaDescribedby}
+                            aria-required={ariaRequired}
+                            onChange={handleInputChange}
+                            onFocus={handleInputFocus}
+                            onBlur={handleInputBlur}
+                            onClear={handleInputClear}
+                        />
+                    </div>
+                }
             </Popover>
         </div>
 

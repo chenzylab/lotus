@@ -119,4 +119,37 @@ test.describe('AutoComplete', () => {
     await page.locator('body').click({ position: { x: 10, y: 10 } });
     await expect(page.locator('.lotus-auto-complete-panel')).toHaveCount(0);
   });
+
+  test('renderSelectedItem + onSelectWithObject + dropdownMatchSelectWidth：自定义回填、事件携带全量对象、面板宽度对齐触发器', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('AutoComplete 高级示例', { exact: true });
+    const log = page.getByLabel('AutoComplete 高级事件日志', { exact: true });
+
+    await input.click();
+    const panel = page.locator('.lotus-auto-complete-panel');
+    const root = page.locator('.lotus-auto-complete').filter({ has: input });
+    const rootBox = await root.boundingBox();
+    const panelBox = await panel.boundingBox();
+    expect(panelBox!.width).toBeCloseTo(rootBox!.width, 0);
+
+    await panel.locator('.lotus-auto-complete-option').first().click();
+    await expect(input).toHaveValue('已选：北京');
+    await expect(log).toContainText('"value":"北京"');
+    await expect(log).toContainText('"label":"北京"');
+  });
+
+  test('triggerRender：完全自定义触发器渲染，仍可打开面板并完成选中', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('AutoComplete triggerRender 示例', { exact: true });
+    await expect(trigger).toContainText('收起');
+
+    await trigger.click();
+    await expect(trigger).toContainText('展开');
+    const panel = page.locator('.lotus-auto-complete-panel').last();
+    await expect(panel.locator('.lotus-auto-complete-option')).toHaveCount(10);
+
+    await panel.locator('.lotus-auto-complete-option').first().click();
+    await expect(trigger).toContainText('北京');
+    await expect(trigger).toContainText('收起');
+  });
 });

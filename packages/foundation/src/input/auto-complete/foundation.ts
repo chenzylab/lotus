@@ -112,14 +112,22 @@ export class AutoCompleteFoundation extends Foundation<AutoCompleteState> {
 
   /** 选中候选项：受控模式下不自动回填 inputValue（交给外部通过 onChange
    * 决定是否接受这个建议值），非受控模式下直接回填——对齐 Semi 的核心语义
-   * "AutoComplete 允许自由文本，选中只是给一个建议"。总是关闭浮层。 */
-  handleSelect(option: AutoCompleteOptionItem, optionIndex: number, isControlled: boolean): AutoCompleteValue {
+   * "AutoComplete 允许自由文本，选中只是给一个建议"。总是关闭浮层。
+   * `renderSelectedItem` 指定时用它算回填值（对齐 Semi handleSelect：
+   * 优先用 renderSelectedItem(option) 而非 option.value）。 */
+  handleSelect(
+    option: AutoCompleteOptionItem,
+    optionIndex: number,
+    isControlled: boolean,
+    renderSelectedItem?: (option: AutoCompleteOptionItem) => string,
+  ): AutoCompleteValue {
+    const inputValue = renderSelectedItem ? renderSelectedItem(option) : option.value;
     if (!isControlled) {
-      this.setState({ inputValue: option.value, visible: false, focusIndex: optionIndex });
+      this.setState({ inputValue, visible: false, focusIndex: optionIndex });
     } else {
       this.setState({ visible: false, focusIndex: optionIndex });
     }
-    return option.value;
+    return inputValue;
   }
 
   handleArrowKey(options: AutoCompleteOptionItem[], direction: 1 | -1, defaultActiveFirstOption: boolean): void {
