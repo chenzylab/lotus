@@ -1074,6 +1074,17 @@ export function App() @{
                 aria-label="基础分页器（受控）"
             />
             <Pagination total={500} defaultCurrentPage={10} size="small" aria-label="小尺寸分页器（省略号截断）" />
+            <Pagination
+                total={500}
+                defaultCurrentPage={10}
+                prevText="上一页"
+                nextText="下一页"
+                popoverPosition="bottom"
+                aria-label="Pagination prevText/nextText/popoverPosition 示例"
+            />
+            <Pagination total={30} defaultCurrentPage={1} hideOnSinglePage aria-label="Pagination hideOnSinglePage 多页示例" />
+            <Pagination total={5} defaultCurrentPage={1} hideOnSinglePage aria-label="Pagination hideOnSinglePage 单页隐藏示例" />
+            <Pagination total={500} defaultCurrentPage={10} size="small" hoverShowPageSelect aria-label="Pagination hoverShowPageSelect 紧凑布局示例" />
         </Space>
 
         <Divider>Popconfirm</Divider>

@@ -4,10 +4,13 @@ import {
     getTotalPageNumber,
     computeCurrentPageAfterPageSizeChange,
     clampCurrentPage,
+    computeRestPageLists,
     type PageListItem,
 } from '@lotus/foundation/navigation/pagination';
 import { Select } from '../../input/select/index.tsrx';
+import { Popover } from '../../show/popover/index.tsrx';
 import { IconChevronLeft, IconChevronRight } from '@lotus/icons';
+import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
 
@@ -25,6 +28,19 @@ export interface PaginationProps {
     size?: PaginationSize;
     disabled?: boolean;
     preventPageChangeOnPageSizeChange?: boolean;
+    /** 自定义上一页按钮文案，替换默认图标。 */
+    prevText?: any;
+    /** 自定义下一页按钮文案，替换默认图标。 */
+    nextText?: any;
+    /** 只有一页时整个组件不渲染（与 showSizeChanger 同时使用时不生效，对齐 Semi）。 */
+    hideOnSinglePage?: boolean;
+    /** 省略号 hover 展开的完整页码列表 Popover 层级。 */
+    popoverZIndex?: number;
+    /** 省略号 hover 展开的完整页码列表 Popover 弹出方向。 */
+    popoverPosition?: FloatingPosition;
+    /** size="small" 模式下是否用"当前页/总页数"的紧凑文本替换数字按钮列表，
+     * hover 时弹出 Popover 页码选择列表（对齐 Semi renderSmallPage）。 */
+    hoverShowPageSelect?: boolean;
     onChange?: (currentPage: number, pageSize: number) => void;
     onPageChange?: (currentPage: number) => void;
     onPageSizeChange?: (pageSize: number) => void;
@@ -52,6 +68,12 @@ export function Pagination(&{
     size = 'default',
     disabled = false,
     preventPageChangeOnPageSizeChange = false,
+    prevText,
+    nextText,
+    hideOnSinglePage = false,
+    popoverZIndex,
+    popoverPosition,
+    hoverShowPageSelect = false,
     onChange,
     onPageChange,
     onPageSizeChange,
@@ -80,6 +102,10 @@ export function Pagination(&{
 
     let &[totalPageNum] = track<number>(() => getTotalPageNumber(total, pageSize));
     let &[pageList] = track<PageListItem[]>(() => computePageList(displayCurrentPage, totalPageNum).pageList);
+    let &[restPageLists] = track(() => computeRestPageLists(displayCurrentPage, totalPageNum));
+    // pageList 内最多出现两个 '...'——第一个对应左侧省略号（restLeftPageList），
+    // 第二个对应右侧省略号（restRightPageList），用首次出现的索引区分两者。
+    let &[firstEllipsisIndex] = track<number>(() => pageList.indexOf('...'));
 
     // 上一页/下一页箭头是方向性图标——图标库只有 LTR 默认朝向一套，RTL 下
     // "下一页"在阅读顺序上应该指向左边，需要水平镜像（对齐 Semi 一手来源
@@ -152,7 +178,18 @@ export function Pagination(&{
         return locale.Pagination.total(total);
     });
 
+    // 只有一页时整个组件不渲染；与 showSizeChanger 同时使用时不生效（对齐 Semi：
+    // 否则用户没有入口切换 pageSize 把总页数变多）。
+    let &[shouldRender] = track<boolean>(() => !(hideOnSinglePage && totalPageNum < 2 && !showSizeChanger));
+
+    // hoverShowPageSelect：size="small" 专属的紧凑布局，用"当前页/总页数"文本
+    // 替换数字按钮列表，hover 弹出全部页码的 Popover 选择列表（对齐 Semi
+    // renderSmallPage/renderSmallPageSelect）。
+    let &[useSmallLayout] = track<boolean>(() => size === 'small' && hoverShowPageSelect && !disabled);
+    let &[allPageNumbers] = track<number[]>(() => Array.from({ length: totalPageNum }, (_, i) => i + 1));
+
     <>
+        @if (shouldRender) {
         <div class={classes} style={style} aria-label={ariaLabel} role="navigation">
             @if (rangeText) {
                 <div class="lotus-pagination-total">{rangeText}</div>
@@ -165,13 +202,51 @@ export function Pagination(&{
                 aria-label={locale.Pagination.prevPage}
                 onClick={goPrev}
             >
-                <IconChevronLeft style={rtlIconStyle} />
+                @if (prevText != null) {
+                    <span style="display:contents">{prevText}</span>
+                } @else {
+                    <IconChevronLeft style={rtlIconStyle} />
+                }
             </button>
 
+            @if (size === 'small' && hoverShowPageSelect) {
+                @if (useSmallLayout) {
+                    <Popover
+                        trigger="hover"
+                        position={popoverPosition ?? 'top'}
+                        zIndex={popoverZIndex}
+                        content={
+                            <div class="lotus-pagination-rest-list" role="list">
+                                @for (const pageNum of allPageNumbers; key pageNum) {
+                                    <div role="listitem" class="lotus-pagination-rest-item" aria-label={String(pageNum)} onClick={() => updatePage(pageNum)}>{pageNum}</div>
+                                }
+                            </div>
+                        }
+                    >
+                        <div class="lotus-pagination-item lotus-pagination-item-small">{displayCurrentPage}/{totalPageNum}</div>
+                    </Popover>
+                } @else {
+                    <div class="lotus-pagination-item lotus-pagination-item-small">{displayCurrentPage}/{totalPageNum}</div>
+                }
+            } @else {
             @for (const item of pageList; index i) {
                 <>
                     @if (item === '...') {
-                        <span class="lotus-pagination-item lotus-pagination-ellipsis">...</span>
+                        <Popover
+                            trigger="hover"
+                            position={popoverPosition ?? 'top'}
+                            zIndex={popoverZIndex}
+                            condition={!disabled}
+                            content={
+                                <div class="lotus-pagination-rest-list" role="list">
+                                    @for (const restPage of (i === firstEllipsisIndex ? restPageLists.restLeftPageList : restPageLists.restRightPageList); key restPage) {
+                                        <div role="listitem" class="lotus-pagination-rest-item" aria-label={String(restPage)} onClick={() => updatePage(restPage)}>{restPage}</div>
+                                    }
+                                </div>
+                            }
+                        >
+                            <span class="lotus-pagination-item lotus-pagination-ellipsis">...</span>
+                        </Popover>
                     } @if (item !== '...') {
                         <button
                             type="button"
@@ -186,6 +261,7 @@ export function Pagination(&{
                     }
                 </>
             }
+            }
 
             <button
                 type="button"
@@ -194,7 +270,11 @@ export function Pagination(&{
                 aria-label={locale.Pagination.nextPage}
                 onClick={goNext}
             >
-                <IconChevronRight style={rtlIconStyle} />
+                @if (nextText != null) {
+                    <span style="display:contents">{nextText}</span>
+                } @else {
+                    <IconChevronRight style={rtlIconStyle} />
+                }
             </button>
 
             @if (showSizeChanger) {
@@ -226,6 +306,7 @@ export function Pagination(&{
                 </div>
             }
         </div>
+        }
 
         <style>
             .lotus-pagination {
@@ -267,6 +348,12 @@ export function Pagination(&{
                 font-size: var(--lotus-font-label-size);
             }
 
+            .lotus-pagination-item-small {
+                min-width: 40px;
+                padding: 0 8px;
+                cursor: default;
+            }
+
             .lotus-pagination-item:hover:not(:disabled) {
                 background: var(--lotus-color-fill-0);
             }
@@ -287,6 +374,31 @@ export function Pagination(&{
 
             .lotus-pagination-ellipsis {
                 cursor: default;
+            }
+
+            .lotus-pagination-rest-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                max-height: 160px;
+                overflow-y: auto;
+                min-width: 78px;
+            }
+
+            .lotus-pagination-rest-item {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 32px;
+                padding: 0 8px;
+                border-radius: var(--lotus-border-radius-small);
+                font-size: var(--lotus-font-body-size);
+                color: var(--lotus-color-text-0);
+                cursor: pointer;
+            }
+
+            .lotus-pagination-rest-item:hover {
+                background: var(--lotus-color-fill-0);
             }
 
             .lotus-pagination-size-changer {

@@ -4,6 +4,7 @@ import {
   getTotalPageNumber,
   computeCurrentPageAfterPageSizeChange,
   clampCurrentPage,
+  computeRestPageLists,
 } from './foundation.js';
 
 describe('computePageList', () => {
@@ -79,5 +80,37 @@ describe('clampCurrentPage', () => {
 
   it('正常区间内的值原样返回', () => {
     expect(clampCurrentPage(5, 10)).toBe(5);
+  });
+});
+
+describe('computeRestPageLists', () => {
+  it('总页数 <= 7 时两个列表均为空（不截断，无省略号）', () => {
+    expect(computeRestPageLists(3, 5)).toEqual({ restLeftPageList: [], restRightPageList: [] });
+  });
+
+  it('current < 4 时只有右侧省略号覆盖 5..totalPageNum-2', () => {
+    expect(computeRestPageLists(1, 20)).toEqual({ restLeftPageList: [], restRightPageList: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] });
+  });
+
+  it('current === 4 时只有右侧省略号覆盖 6..totalPageNum-1', () => {
+    expect(computeRestPageLists(4, 20)).toEqual({ restLeftPageList: [], restRightPageList: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] });
+  });
+
+  it('4 < current < total-3 时左右两侧省略号各覆盖对应区间', () => {
+    const result = computeRestPageLists(10, 20);
+    expect(result.restLeftPageList).toEqual([2, 3, 4, 5, 6, 7, 8]);
+    expect(result.restRightPageList).toEqual([12, 13, 14, 15, 16, 17, 18, 19]);
+  });
+
+  it('current 落在末尾 4 页时只有左侧省略号覆盖 2..totalPageNum-5', () => {
+    expect(computeRestPageLists(20, 20)).toEqual({ restLeftPageList: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], restRightPageList: [] });
+  });
+
+  it('与 computePageList 的省略号位置一致：左侧列表最大值 < currentPage，右侧列表最小值 > currentPage', () => {
+    const currentPage = 15;
+    const totalPageNum = 30;
+    const { restLeftPageList, restRightPageList } = computeRestPageLists(currentPage, totalPageNum);
+    expect(Math.max(...restLeftPageList)).toBeLessThan(currentPage);
+    expect(Math.min(...restRightPageList)).toBeGreaterThan(currentPage);
   });
 });

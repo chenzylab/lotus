@@ -63,4 +63,50 @@ test.describe('Pagination', () => {
     await expect(items).toHaveText(['1', '...', '9', '10', '11', '...', '50']);
     await expect(pagination).toHaveClass(/lotus-pagination-size-small/);
   });
+
+  test('省略号 hover 展开完整页码 Popover 列表，点击其中一项跳转', async ({ page }) => {
+    await page.goto('/');
+    const pagination = page.locator('[aria-label="小尺寸分页器（省略号截断）"]');
+    const leftEllipsis = pagination.locator('.lotus-pagination-ellipsis').first();
+
+    await leftEllipsis.hover();
+    const restList = page.locator('.lotus-pagination-rest-list');
+    await expect(restList).toBeVisible();
+    await expect(restList.locator('.lotus-pagination-rest-item').first()).toHaveText('2');
+    await expect(restList.locator('.lotus-pagination-rest-item').last()).toHaveText('8');
+
+    await restList.getByText('5', { exact: true }).click();
+    await expect(pagination.getByRole('button', { name: '第 5 页' })).toHaveClass(/lotus-pagination-item-active/);
+  });
+
+  test('prevText/nextText：自定义上一页/下一页按钮文案替换默认图标', async ({ page }) => {
+    await page.goto('/');
+    const pagination = page.locator('[aria-label="Pagination prevText/nextText/popoverPosition 示例"]');
+
+    await expect(pagination.locator('.lotus-pagination-prev')).toHaveText('上一页');
+    await expect(pagination.locator('.lotus-pagination-next')).toHaveText('下一页');
+  });
+
+  test('hideOnSinglePage：只有一页时整个组件不渲染，多页时正常渲染', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[aria-label="Pagination hideOnSinglePage 多页示例"]')).toBeVisible();
+    await expect(page.locator('[aria-label="Pagination hideOnSinglePage 单页隐藏示例"]')).toHaveCount(0);
+  });
+
+  test('hoverShowPageSelect：size=small 紧凑布局显示"当前页/总页数"，hover 弹出全部页码', async ({ page }) => {
+    await page.goto('/');
+    const pagination = page.locator('[aria-label="Pagination hoverShowPageSelect 紧凑布局示例"]');
+    const compact = pagination.locator('.lotus-pagination-item-small');
+
+    await expect(compact).toHaveText('10/50');
+    await expect(pagination.locator('.lotus-pagination-item:not(.lotus-pagination-prev):not(.lotus-pagination-next):not(.lotus-pagination-item-small)')).toHaveCount(0);
+
+    await compact.hover();
+    const restList = page.locator('.lotus-pagination-rest-list');
+    await expect(restList).toBeVisible();
+    await expect(restList.locator('.lotus-pagination-rest-item')).toHaveCount(50);
+
+    await restList.getByText('42', { exact: true }).click();
+    await expect(compact).toHaveText('42/50');
+  });
 });

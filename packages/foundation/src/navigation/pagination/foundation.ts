@@ -58,3 +58,45 @@ export function clampCurrentPage(currentPage: number, totalPageNum: number): num
   const max = Math.max(totalPageNum, 1);
   return Math.min(Math.max(currentPage, 1), max);
 }
+
+export interface RestPageLists {
+  /** 左侧省略号覆盖的完整页码列表（hover 展开用），不含左侧省略号本身。 */
+  restLeftPageList: number[];
+  /** 右侧省略号覆盖的完整页码列表，不含右侧省略号本身。 */
+  restRightPageList: number[];
+}
+
+/**
+ * 计算每个省略号 hover 展开后应该显示的完整页码列表，与 computePageList
+ * 共享同一套截断分支判断（对齐 Semi _updatePageList 的 restLeftPageList/
+ * restRightPageList 计算）。totalPageNum<=7（不截断）时两个列表均为空。
+ */
+export function computeRestPageLists(currentPage: number, totalPageNum: number): RestPageLists {
+  if (totalPageNum <= PAGE_SHOW_MAX) {
+    return { restLeftPageList: [], restRightPageList: [] };
+  }
+
+  if (currentPage < 4) {
+    return { restLeftPageList: [], restRightPageList: range(5, totalPageNum - 2) };
+  }
+
+  if (currentPage === 4) {
+    return { restLeftPageList: [], restRightPageList: range(6, totalPageNum - 1) };
+  }
+
+  if (currentPage > 4 && currentPage < totalPageNum - 3) {
+    return {
+      restLeftPageList: range(2, currentPage - 2),
+      restRightPageList: range(currentPage + 2, totalPageNum - 1),
+    };
+  }
+
+  // totalPageNum - 3 <= currentPage <= totalPageNum
+  return { restLeftPageList: range(2, totalPageNum - 5), restRightPageList: [] };
+}
+
+/** 闭区间 [start, end] 的整数序列，start > end 时返回空数组。 */
+function range(start: number, end: number): number[] {
+  if (start > end) return [];
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
