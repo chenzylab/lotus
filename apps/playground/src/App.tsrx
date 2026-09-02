@@ -4170,7 +4170,10 @@ export function App() @{
         <Divider>TimePicker：focusOnOpen（挂载后自动聚焦输入框，对齐 Semi）</Divider>
 
         <div style={{ width: '240px' }}>
-            <TimePicker focusOnOpen aria-label="TimePicker focusOnOpen 示例" />
+            {/* preventScroll：playground 是所有 demo 共享同一长页面，focusOnOpen 挂载
+                后立即聚焦会让浏览器自动滚动到本元素位置，误触发 BackTop（visibilityHeight=200）
+                的显示阈值，同 Radio autoFocus demo 的规避方式。 */}
+            <TimePicker focusOnOpen preventScroll aria-label="TimePicker focusOnOpen 示例" />
         </div>
 
         <Divider>DatePicker：基础用法（type=date）</Divider>
