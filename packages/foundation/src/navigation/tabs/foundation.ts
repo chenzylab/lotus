@@ -1,5 +1,7 @@
 import { Foundation, type Adapter } from '../../base/adapter.js';
 
+export * from './overflow.js';
+
 export interface TabItemMeta {
   itemKey: string;
   tab?: string;

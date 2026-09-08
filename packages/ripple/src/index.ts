@@ -509,11 +509,16 @@ export {
 } from './show/table/index.tsrx';
 export {
     Tabs,
+    TabPane,
     type TabsProps,
+    type TabPaneProps,
     type TabItem,
     type TabsType,
     type TabsPosition,
     type TabsSize,
+    type TabsCollapsible,
+    type TabsArrowPosition,
+    type TabsMoreConfig,
 } from './navigation/tabs/index.tsrx';
 export {
     Steps,

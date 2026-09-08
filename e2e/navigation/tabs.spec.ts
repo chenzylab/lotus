@@ -58,4 +58,58 @@ test.describe('Tabs', () => {
     // 从标签二继续向右应跳过 disabled 的「禁用标签」直达标签四
     await expect(tabFour).toHaveAttribute('aria-selected', 'true');
   });
+
+  test('TabPane 声明式写法：正确渲染 tab 元数据并支持切换（对齐 Anchor AnchorLink 的 Context 注册模式）', async ({ page }) => {
+    await page.goto('/');
+    const tabs = page.locator('[aria-label="Tabs TabPane 声明式示例"]');
+    const tabList = tabs.getByRole('tab');
+
+    await expect(tabList).toHaveText(['标签一', '标签二', '禁用标签']);
+    await expect(tabs.getByRole('tab', { name: '标签二' })).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs).toContainText('内容二');
+
+    await tabs.getByRole('tab', { name: '标签一' }).click();
+    await expect(tabs).toContainText('内容一');
+  });
+
+  test('contentStyle/tabBarStyle/tabBarClassName/tabBarExtraContent 均正确应用', async ({ page }) => {
+    await page.goto('/');
+    const tabs = page.locator('[aria-label="Tabs 样式定制示例"]');
+
+    await expect(tabs.locator('.lotus-tabs-content')).toHaveCSS('padding', '12px');
+    await expect(tabs.locator('.lotus-tabs-bar')).toHaveClass(/playground-tabs-bar-demo/);
+    await expect(tabs.locator('.lotus-tabs-bar-extra')).toContainText('额外按钮');
+  });
+
+  test('collapsible + arrowPosition=both：tab 栏可横向滚动，两侧箭头按需禁用/可用', async ({ page }) => {
+    await page.goto('/');
+    const tabs = page.locator('[aria-label="Tabs collapsible 示例"]');
+    const scroller = tabs.locator('.lotus-tabs-bar-scroller');
+    const startArrow = tabs.locator('.lotus-tabs-arrow-start');
+    const endArrow = tabs.locator('.lotus-tabs-arrow-end');
+
+    await expect(startArrow).toBeDisabled();
+    await expect(endArrow).toBeEnabled();
+
+    const before = await scroller.evaluate((el) => el.scrollLeft);
+    await endArrow.click();
+    await page.waitForTimeout(500);
+    const after = await scroller.evaluate((el) => el.scrollLeft);
+    expect(after).toBeGreaterThan(before);
+  });
+
+  test('more：强制收起末尾 N 个 tab 到下拉菜单，点击可选中', async ({ page }) => {
+    await page.goto('/');
+    const tabs = page.locator('[aria-label="Tabs more 示例"]');
+    const moreTrigger = tabs.locator('.lotus-tabs-more-trigger');
+
+    await expect(moreTrigger).toBeVisible();
+    await moreTrigger.click();
+
+    const menu = page.locator('[role="menu"]').filter({ hasText: '标签 10' });
+    await expect(menu).toBeVisible();
+    await menu.getByText('标签 8', { exact: true }).click();
+
+    await expect(tabs.getByRole('tab', { name: '标签 8' })).toHaveAttribute('aria-selected', 'true');
+  });
 });

@@ -1,5 +1,5 @@
 import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -116,6 +116,14 @@ function closableTabList(): TabItem[] {
         { itemKey: 'a', tab: '可关闭 A', closable: true, render: () => <div>面板 A</div> },
         { itemKey: 'b', tab: '可关闭 B', closable: true, render: () => <div>面板 B</div> },
     ];
+}
+
+function manyTabList(count: number): TabItem[] {
+    return Array.from({ length: count }, (_v, i) => ({
+        itemKey: `many-${i}`,
+        tab: `标签 ${i + 1}`,
+        render: () => <div>面板 {i + 1} 内容</div>,
+    }));
 }
 
 const treeDemoData: TreeNodeData[] = [
@@ -734,6 +742,48 @@ export function App() @{
             type="line"
             onTabClose={(key) => console.log('tab closed', key)}
         />
+
+        <Divider>Tabs：TabPane 声明式写法</Divider>
+
+        <Tabs defaultActiveKey="2" aria-label="Tabs TabPane 声明式示例">
+            <TabPane itemKey="1" tab="标签一">内容一</TabPane>
+            <TabPane itemKey="2" tab="标签二">内容二</TabPane>
+            <TabPane itemKey="3" tab="禁用标签" disabled>不可达</TabPane>
+        </Tabs>
+
+        <Divider>Tabs：contentStyle/tabBarStyle/tabBarClassName/tabBarExtraContent</Divider>
+
+        <Tabs
+            tabList={lineTabList()}
+            contentStyle={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}
+            tabBarStyle={{ background: 'var(--lotus-color-fill-0)' }}
+            tabBarClassName="playground-tabs-bar-demo"
+            tabBarExtraContent={<Button size="small">额外按钮</Button>}
+            aria-label="Tabs 样式定制示例"
+        />
+
+        <Divider>Tabs：collapsible + arrowPosition=both（真实滚动，两侧箭头）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Tabs
+                tabList={manyTabList(15)}
+                collapsible
+                arrowPosition="both"
+                onVisibleTabsChange={(visible) => console.log('tabs visible changed', [...visible])}
+                aria-label="Tabs collapsible 示例"
+            />
+        </div>
+
+        <Divider>Tabs：more（强制收起末尾 N 个到下拉菜单）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Tabs
+                tabList={manyTabList(10)}
+                collapsible
+                more={5}
+                aria-label="Tabs more 示例"
+            />
+        </div>
 
         <Divider />
 
