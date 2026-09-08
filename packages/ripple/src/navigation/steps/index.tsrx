@@ -1,9 +1,9 @@
 import { track } from 'ripple';
 import { resolveSteps, type StepItemInput, type StepStatus, type StepsDirection, type StepsSize } from '@lotus/foundation/navigation/steps';
-import { IconTickCircle, IconAlertCircle, IconAlertTriangle } from '@lotus/icons';
+import { IconTickCircle, IconAlertCircle, IconAlertTriangle, IconChevronRight } from '@lotus/icons';
 
 export type { StepStatus, StepsDirection, StepsSize, StepItemInput };
-export type StepsType = 'basic' | 'fill';
+export type StepsType = 'basic' | 'fill' | 'nav';
 
 export interface StepsProps {
     items: StepItemInput[];
@@ -29,11 +29,14 @@ function StatusIcon(&{ status, stepNumber }: { status: StepStatus; stepNumber: n
 }
 
 /**
- * Steps：basic/fill 两种视觉变体共享同一套状态计算逻辑（resolveSteps
- * 纯函数，Foundation 层），仅 CSS 呈现不同——对齐 Semi 的 BasicStep/
- * FillStep 图标映射规则相同、仅样式差异这一事实。`nav`（可点击导航式，
- * 与 Tabs 高度重叠）变体本期不做。Ripple 无 React.cloneElement，
- * 用 items 数组 + 统一渲染取代 children 组合（同 ButtonGroup 先例）。
+ * Steps：basic/fill/nav 三种视觉变体共享同一套状态计算逻辑（resolveSteps
+ * 纯函数，Foundation 层）。basic/fill 仅 CSS 呈现不同——对齐 Semi 的
+ * BasicStep/FillStep 图标映射规则相同、仅样式差异这一事实。nav 是完全
+ * 不同的极简导航条形态（对齐 Semi NavStep 源码核实：只有 title 一个
+ * 内容项，不支持 icon/description/status，项间用 IconChevronRight 分隔，
+ * 最后一项不展示分隔符），不复用 basic/fill 的图标/连接线渲染逻辑。
+ * Ripple 无 React.cloneElement，用 items 数组 + 统一渲染取代 children
+ * 组合（同 ButtonGroup 先例）。
  */
 export function Steps(&{
     items,
@@ -77,6 +80,31 @@ export function Steps(&{
 
     <>
         <div class={classes} style={style} aria-label={ariaLabel}>
+            @if (type === 'nav') {
+                @for (const step of resolved; index i; key step.stepNumber) {
+                    <div
+                        role="button"
+                        tabIndex={step.disabled ? -1 : 0}
+                        aria-current="step"
+                        class={[
+                            'lotus-steps-item',
+                            step.active ? 'lotus-steps-item-active' : '',
+                            step.disabled ? 'lotus-steps-item-disabled' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={() => handleClick(step)}
+                        onKeyDown={(event: KeyboardEvent) => { if (event.key === 'Enter') handleClick(step); }}
+                    >
+                        <div class="lotus-steps-item-container">
+                            <div class="lotus-steps-item-content">
+                                <div class="lotus-steps-item-title">{step.title}</div>
+                            </div>
+                            @if (i !== resolved.length - 1) {
+                                <div class="lotus-steps-item-icon"><IconChevronRight /></div>
+                            }
+                        </div>
+                    </div>
+                }
+            } @else {
             @for (const step of resolved; key step.stepNumber) {
                 <div
                     class={[
@@ -104,6 +132,7 @@ export function Steps(&{
                         }
                     </div>
                 </div>
+            }
             }
         </div>
 
@@ -257,6 +286,69 @@ export function Steps(&{
 
             .lotus-steps-small .lotus-steps-item-title {
                 font-size: var(--lotus-font-label-size);
+            }
+
+            .lotus-steps-nav {
+                display: inline-flex;
+                flex-flow: row nowrap;
+                width: auto;
+            }
+
+            .lotus-steps-nav .lotus-steps-item {
+                flex: 1;
+                cursor: pointer;
+            }
+
+            .lotus-steps-nav .lotus-steps-item:last-child {
+                flex: none;
+            }
+
+            .lotus-steps-nav .lotus-steps-item::after {
+                content: none;
+            }
+
+            .lotus-steps-nav .lotus-steps-item-container {
+                display: flex;
+                align-items: center;
+                color: var(--lotus-color-text-2);
+            }
+
+            .lotus-steps-nav .lotus-steps-item-content {
+                flex: 1;
+                display: inline-block;
+            }
+
+            .lotus-steps-nav .lotus-steps-item-title {
+                font-size: var(--lotus-font-heading-6-size, var(--lotus-font-body-size));
+                max-width: 17em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: var(--lotus-font-weight-regular);
+                color: inherit;
+            }
+
+            .lotus-steps-nav .lotus-steps-item-active .lotus-steps-item-title {
+                color: var(--lotus-color-text-0);
+                font-weight: var(--lotus-font-weight-semibold);
+            }
+
+            .lotus-steps-nav .lotus-steps-item-icon {
+                display: inline-flex;
+                flex: 1;
+                justify-content: center;
+                align-items: center;
+                width: auto;
+                height: auto;
+                min-width: 60px;
+                border: none;
+                background: transparent;
+                color: var(--lotus-color-text-3);
+                font-size: 14px;
+            }
+
+            .lotus-steps-nav.lotus-steps-small .lotus-steps-item-title {
+                font-size: var(--lotus-font-body-size);
             }
         </style>
     </>

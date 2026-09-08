@@ -45,4 +45,20 @@ test.describe('Steps', () => {
     await expect(steps).toHaveClass(/lotus-steps-vertical/);
     await expect(steps).toHaveClass(/lotus-steps-basic/);
   });
+
+  test('type=nav：极简导航条只渲染 title，项间用分隔图标（最后一项无分隔图标），点击切换 active', async ({ page }) => {
+    await page.goto('/');
+    const steps = page.locator('[aria-label="nav 类型导航式步骤条"]');
+    const items = steps.locator('.lotus-steps-item');
+
+    await expect(items).toHaveCount(3);
+    await expect(items.nth(0)).toHaveClass(/lotus-steps-item-active/);
+    await expect(steps.locator('.lotus-steps-item-icon')).toHaveCount(2);
+    // nav 类型不使用 status 概念，不应带任何 status class。
+    await expect(items.nth(0)).not.toHaveClass(/lotus-steps-item-finish|lotus-steps-item-process|lotus-steps-item-wait/);
+
+    await items.nth(1).click();
+    await expect(items.nth(1)).toHaveClass(/lotus-steps-item-active/);
+    await expect(items.nth(0)).not.toHaveClass(/lotus-steps-item-active/);
+  });
 });

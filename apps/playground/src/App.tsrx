@@ -387,6 +387,7 @@ export function App() @{
     let &[motionProgressPercent] = track<number>(30);
     let &[spinSpinning] = track<boolean>(true);
     let &[stepsCurrent] = track<number>(1);
+    let &[stepsNavCurrent] = track<number>(0);
     let &[paginationCurrentPage] = track<number>(3);
     let &[paginationPageSize] = track<number>(10);
     let &[checkboxControlledChecked] = track<boolean>(false);
@@ -1057,6 +1058,19 @@ export function App() @{
                 { title: '步骤三', description: '待处理' },
             ]}
             aria-label="basic 类型垂直步骤条（error 状态）"
+        />
+
+        <Steps
+            type="nav"
+            current={stepsNavCurrent}
+            style={{ marginTop: '24px' }}
+            items={[
+                { title: '概览' },
+                { title: '详情' },
+                { title: '设置' },
+            ]}
+            onChange={(c) => { stepsNavCurrent = c; }}
+            aria-label="nav 类型导航式步骤条"
         />
 
         <Divider>Pagination</Divider>
