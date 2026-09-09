@@ -31,7 +31,7 @@ test.describe('Descriptions', () => {
 
   test('align=plain：key 后跟冒号，inline 展示', async ({ page }) => {
     await page.goto('/');
-    const descriptions = page.getByLabel('plain Descriptions');
+    const descriptions = page.getByLabel('plain Descriptions', { exact: true });
     await expect(descriptions).toHaveClass(/lotus-descriptions-plain/);
     await expect(descriptions.locator('.lotus-descriptions-key').first()).toHaveText('姓名:');
   });
@@ -61,5 +61,22 @@ test.describe('Descriptions', () => {
     expect(valueBox).not.toBeNull();
     // value 的左边界应该在 key 右边界之后（不重叠）
     expect(valueBox!.x).toBeGreaterThanOrEqual(keyBox!.x + keyBox!.width);
+  });
+
+  test('children 声明式写法（DescriptionsItem）：渲染跟 data 数组同构的行结构，hidden 条目不渲染到 DOM', async ({ page }) => {
+    await page.goto('/');
+    const descriptions = page.getByLabel('children声明式 Descriptions');
+    const rows = descriptions.locator('.lotus-descriptions-row');
+    await expect(rows).toHaveCount(3);
+    await expect(descriptions).toContainText('姓名');
+    await expect(descriptions).toContainText('李四');
+    await expect(descriptions).not.toContainText('内部字段');
+    await expect(descriptions).not.toContainText('不应显示');
+  });
+
+  test('children 声明式写法 + align=plain：key 后跟冒号的 inline 展示同样生效', async ({ page }) => {
+    await page.goto('/');
+    const descriptions = page.getByLabel('children声明式plain Descriptions');
+    await expect(descriptions.locator('.lotus-descriptions-key').first()).toHaveText('姓名:');
   });
 });

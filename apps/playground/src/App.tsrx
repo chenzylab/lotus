@@ -1,5 +1,5 @@
 import { track, effect } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, DescriptionsItem, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconMinus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -1814,6 +1814,24 @@ export function App() @{
                     aria-label="hidden 与懒渲染 Descriptions"
                 />
             </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">children 声明式写法（DescriptionsItem，仅 vertical 布局支持）</TypographyText>
+                <Descriptions aria-label="children声明式 Descriptions">
+                    <DescriptionsItem itemKey="姓名">李四</DescriptionsItem>
+                    <DescriptionsItem itemKey="部门">产品组</DescriptionsItem>
+                    <DescriptionsItem itemKey="内部字段" hidden>不应显示</DescriptionsItem>
+                    <DescriptionsItem itemKey="入职时间">2024-03-01</DescriptionsItem>
+                </Descriptions>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">children 声明式写法 + align=plain</TypographyText>
+                <Descriptions align="plain" aria-label="children声明式plain Descriptions">
+                    <DescriptionsItem itemKey="姓名">王五</DescriptionsItem>
+                    <DescriptionsItem itemKey="部门">设计组</DescriptionsItem>
+                </Descriptions>
+            </div>
         </Space>
 
         <Divider>Collapse</Divider>
@@ -1823,7 +1841,7 @@ export function App() @{
                 <TypographyText type="secondary">基础用法（可同时展开多个）</TypographyText>
                 <Collapse defaultActiveKey={['1']} aria-label="基础 Collapse">
                     <CollapsePanel itemKey="1" header="第一节">
-                        <TypographyText>第一节内容，展开收起有 max-height 过渡动画。</TypographyText>
+                        <TypographyText>第一节内容，展开收起有真实高度测量的过渡动画。</TypographyText>
                     </CollapsePanel>
                     <CollapsePanel itemKey="2" header="第二节">
                         <TypographyText>第二节内容。</TypographyText>

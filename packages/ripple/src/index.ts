@@ -251,6 +251,10 @@ export {
     type DescriptionsSize,
     type DescriptionsLayout,
 } from './show/descriptions/index.tsrx';
+export {
+    DescriptionsItem,
+    type DescriptionsItemProps,
+} from './show/descriptions/item.tsrx';
 export { type DescriptionsItemData } from '@lotus/foundation/show/descriptions';
 export {
     Collapse,
