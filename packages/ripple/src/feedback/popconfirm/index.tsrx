@@ -156,7 +156,7 @@ export function Popconfirm(&{
                     size="small"
                     loading={cancelLoading}
                     onClick={handleCancel}
-                    {...cancelButtonProps}
+                    {...(cancelButtonProps ?? {})}
                 >
                     {cancelText ?? locale.Popconfirm.cancel}
                 </Button>
@@ -166,7 +166,7 @@ export function Popconfirm(&{
                     size="small"
                     loading={confirmLoading}
                     onClick={handleConfirm}
-                    {...okButtonProps}
+                    {...(okButtonProps ?? {})}
                 >
                     {okText ?? locale.Popconfirm.confirm}
                 </Button>

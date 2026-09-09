@@ -426,6 +426,12 @@ export function App() @{
     let &[modalFullScreenVisible] = track<boolean>(false);
     let &[modalCenteredVisible] = track<boolean>(false);
     let &[modalNoMaskCloseVisible] = track<boolean>(false);
+    let &[modalIconVisible] = track<boolean>(false);
+    let &[modalNoMotionVisible] = track<boolean>(false);
+    let &[modalKeepDomVisible] = track<boolean>(false);
+    let &[modalPopupContainerVisible] = track<boolean>(false);
+    let &[modalPopupContainerNode] = track<HTMLDivElement | null>(null);
+    let &[modalButtonPropsVisible] = track<boolean>(false);
     let &[modalAfterCloseLog] = track<string>('');
     let &[sideSheetRightVisible] = track<boolean>(false);
     let &[sideSheetLeftVisible] = track<boolean>(false);
@@ -2145,6 +2151,99 @@ export function App() @{
                         aria-label="large 无遮罩关闭 Modal"
                     >
                         <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">icon / closeIcon / footerFill（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalIconVisible = true; }}>打开 icon/closeIcon/footerFill Modal</Button>
+                    <Modal
+                        visible={modalIconVisible}
+                        title="带图标 + 自定义关闭图标 + 底部按钮撑满"
+                        icon={<span style={{ fontSize: '18px' }}>⚠️</span>}
+                        closeIcon={<span>✕</span>}
+                        footerFill
+                        onOk={() => { modalIconVisible = false; }}
+                        onCancel={() => { modalIconVisible = false; }}
+                        aria-label="icon closeIcon footerFill Modal"
+                    >
+                        <TypographyText>标题左侧有自定义 icon，右上角关闭按钮用自定义 closeIcon，底部两个按钮撑满宽度。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">motion=false（关闭过渡动画，对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalNoMotionVisible = true; }}>打开 motion=false Modal</Button>
+                    <Modal
+                        visible={modalNoMotionVisible}
+                        title="无过渡动画"
+                        motion={false}
+                        onOk={() => { modalNoMotionVisible = false; }}
+                        onCancel={() => { modalNoMotionVisible = false; }}
+                        aria-label="motion=false Modal"
+                    >
+                        <TypographyText>展开/收起没有 fade+scale 过渡，立即出现/消失。</TypographyText>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">keepDOM + lazyRender（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalKeepDomVisible = true; }}>打开 keepDOM Modal</Button>
+                    <Modal
+                        visible={modalKeepDomVisible}
+                        title="keepDOM 关闭后内容不卸载"
+                        keepDOM
+                        onOk={() => { modalKeepDomVisible = false; }}
+                        onCancel={() => { modalKeepDomVisible = false; }}
+                        aria-label="keepDOM Modal"
+                    >
+                        <div aria-label="keepDOM Modal 内容标记">keepDOM 内容：关闭后这段内容仍在 DOM 中，只是隐藏。</div>
+                    </Modal>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">getPopupContainer / maskFixed（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <div
+                        ref={modalPopupContainerNode}
+                        style={{ position: 'relative', width: '320px', height: '160px', border: '1px dashed var(--lotus-color-border)', overflow: 'hidden' }}
+                    >
+                        <Button onClick={() => { modalPopupContainerVisible = true; }}>打开挂载到虚线容器的 Modal</Button>
+                        <Modal
+                            visible={modalPopupContainerVisible}
+                            title="挂载到自定义容器"
+                            getPopupContainer={() => modalPopupContainerNode as HTMLElement}
+                            onOk={() => { modalPopupContainerVisible = false; }}
+                            onCancel={() => { modalPopupContainerVisible = false; }}
+                            aria-label="getPopupContainer Modal"
+                        >
+                            <TypographyText>遮罩与内容都应挂载在虚线容器内部（position:absolute 相对定位）。</TypographyText>
+                        </Modal>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">cancelButtonProps / okButtonProps（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { modalButtonPropsVisible = true; }}>打开自定义按钮 props 的 Modal</Button>
+                    <Modal
+                        visible={modalButtonPropsVisible}
+                        title="自定义按钮 props"
+                        cancelButtonProps={{ type: 'warning' }}
+                        okButtonProps={{ type: 'danger' }}
+                        onOk={() => { modalButtonPropsVisible = false; }}
+                        onCancel={() => { modalButtonPropsVisible = false; }}
+                        aria-label="cancelButtonProps okButtonProps Modal"
+                    >
+                        <TypographyText>取消按钮为 warning 类型，确认按钮为 danger 类型。</TypographyText>
                     </Modal>
                 </div>
             </div>

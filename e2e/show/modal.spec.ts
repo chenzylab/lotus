@@ -119,4 +119,71 @@ test.describe('Modal', () => {
     await expect(modal).toBeHidden();
     await expect(openBtn).toBeFocused();
   });
+
+  test('icon/closeIcon/footerFill：标题旁自定义图标、自定义关闭图标、底部按钮撑满宽度（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开 icon/closeIcon/footerFill Modal' }).click();
+    const modal = page.getByLabel('icon closeIcon footerFill Modal');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.lotus-modal-icon')).toHaveText('⚠️');
+    await expect(modal.locator('.lotus-modal-close')).toHaveText('✕');
+    await expect(modal.locator('.lotus-modal-footer')).toHaveClass(/lotus-modal-footer-fill/);
+
+    await modal.locator('.lotus-modal-close').click();
+    await expect(modal).toBeHidden();
+  });
+
+  test('motion=false：关闭时立即从 DOM 移除，不经过离场过渡（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开 motion=false Modal' }).click();
+    const modal = page.getByLabel('motion=false Modal');
+    await expect(modal).toBeVisible();
+    await expect(modal).toHaveClass(/lotus-modal-no-motion/);
+
+    await modal.getByRole('button', { name: '取消' }).click();
+    await expect(modal).toHaveCount(0);
+  });
+
+  test('keepDOM：关闭后内容不从 DOM 卸载，只是隐藏（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开 keepDOM Modal' }).click();
+    const modal = page.getByLabel('keepDOM Modal', { exact: true });
+    await expect(modal).toBeVisible();
+
+    await modal.getByRole('button', { name: '取消' }).click();
+    await expect(modal).toBeHidden();
+    await expect(page.getByLabel('keepDOM Modal 内容标记')).toHaveCount(1);
+  });
+
+  test('getPopupContainer：浮层挂载到指定容器内部而非 document.body（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开挂载到虚线容器的 Modal' }).click();
+    const modal = page.getByLabel('getPopupContainer Modal');
+    await expect(modal).toBeVisible();
+
+    const mountedInsideDashedContainer = await modal.evaluate((el) => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        if (node.style?.border?.includes('dashed')) return true;
+        node = node.parentElement;
+      }
+      return false;
+    });
+    expect(mountedInsideDashedContainer).toBe(true);
+
+    await modal.getByRole('button', { name: '取消' }).click();
+    await expect(modal).toBeHidden();
+  });
+
+  test('cancelButtonProps/okButtonProps：透传给取消/确认按钮的额外 props（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开自定义按钮 props 的 Modal' }).click();
+    const modal = page.getByLabel('cancelButtonProps okButtonProps Modal');
+    await expect(modal).toBeVisible();
+    await expect(modal.getByRole('button', { name: '取消' })).toHaveClass(/lotus-button-warning/);
+    await expect(modal.getByRole('button', { name: '确定' })).toHaveClass(/lotus-button-danger/);
+
+    await modal.getByRole('button', { name: '取消' }).click();
+    await expect(modal).toBeHidden();
+  });
 });

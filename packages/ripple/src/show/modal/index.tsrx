@@ -1,10 +1,11 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 import { ModalFoundation, initialModalState, type ModalState } from '@lotus/foundation/show/modal';
 import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
 import { lockBodyScroll, unlockBodyScroll } from '@lotus/foundation/base/scroll-lock';
-import { Button, type ButtonType } from '../../basic/button/index.tsrx';
+import { Button, type ButtonType, type ButtonProps } from '../../basic/button/index.tsrx';
 import { IconClose } from '@lotus/icons';
 
 export type ModalSize = 'small' | 'medium' | 'large' | 'full-width';
@@ -37,6 +38,33 @@ export interface ModalProps {
     bodyStyle?: Record<string, any>;
     style?: Record<string, any>;
     class?: string;
+    /** 自定义标题旁的图标（对齐 Semi icon）。 */
+    icon?: any;
+    /** 自定义关闭按钮图标（对齐 Semi closeIcon），默认 IconClose。 */
+    closeIcon?: any;
+    /** 浮层挂载的目标容器，不传则读取 ConfigProvider 全局默认值，最终兜底 document.body（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 遮罩自定义样式（对齐 Semi maskStyle）。 */
+    maskStyle?: Record<string, any>;
+    /** getPopupContainer 挂载到非 document.body 容器时，遮罩/内容是否仍固定定位（对齐 Semi maskFixed）。 */
+    maskFixed?: boolean;
+    /** 对话框内容容器的自定义类名（对齐 Semi modalContentClass），与顶层 class 分开——
+     * class 落在遮罩+内容的外层 wrapper，modalContentClass 只落在内容 div 本身。 */
+    modalContentClass?: string;
+    /** 展开/收起是否带过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
+    /** 关闭时是否保留内部 DOM 不销毁（对齐 Semi keepDOM）。 */
+    keepDOM?: boolean;
+    /** 配合 keepDOM 使用，为 true 时挂载时不立即渲染内容，等首次展开后才渲染（对齐 Semi lazyRender，默认 true）。 */
+    lazyRender?: boolean;
+    /** 聚焦时是否阻止浏览器自动滚动到视口（对齐 Semi preventScroll），作用于组件内部的 focus 调用。 */
+    preventScroll?: boolean;
+    /** 底部确认/取消按钮是否撑满容器宽度（对齐 Semi footerFill）。 */
+    footerFill?: boolean;
+    /** 透传给取消按钮的额外 props（对齐 Semi cancelButtonProps）。 */
+    cancelButtonProps?: Partial<ButtonProps>;
+    /** 透传给确认按钮的额外 props（对齐 Semi okButtonProps）。 */
+    okButtonProps?: Partial<ButtonProps>;
     'aria-label'?: string;
 }
 
@@ -75,10 +103,24 @@ export function Modal(&{
     bodyStyle,
     style,
     class: className,
+    icon,
+    closeIcon,
+    getPopupContainer,
+    maskStyle,
+    maskFixed = false,
+    modalContentClass,
+    motion = true,
+    keepDOM = false,
+    lazyRender = true,
+    preventScroll,
+    footerFill = false,
+    cancelButtonProps,
+    okButtonProps,
     'aria-label': ariaLabel,
 }: ModalProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    const configTracked = ConfigContext.get();
 
     let &[state] = track<ModalState>(initialModalState(untrack(() => visible)));
 
@@ -87,12 +129,31 @@ export function Modal(&{
         setState: (patch: Partial<ModalState>) => { state = { ...untrack(() => state), ...patch }; },
     });
 
+    let &[hasRenderedOnce] = track<boolean>(false);
+
+    function resolvePortalTarget(): HTMLElement | null {
+        const configured = getPopupContainer ?? configTracked?.value.getPopupContainer;
+        if (configured) return configured();
+        return typeof document !== 'undefined' ? document.body : null;
+    }
+
+    // 挂载到非 document.body 容器时，Semi 默认让遮罩/内容改用 position:absolute
+    // 相对该容器定位（而非覆盖全视口）；maskFixed=true 时强制保持 position:fixed。
+    function usesNonBodyContainer(): boolean {
+        const container = resolvePortalTarget();
+        return !!container && container !== (typeof document !== 'undefined' ? document.body : null);
+    }
+
     let &[contentNode] = track<HTMLDivElement | null>(null);
     let prevFocusElement: HTMLElement | null = null;
 
     effect(() => {
         if (visible) {
-            untrack(() => foundation.handleShow());
+            untrack(() => { foundation.handleShow(); hasRenderedOnce = true; });
+        } else if (!motion) {
+            // 无动画时不会触发 onTransitionEnd，直接同步走完“动画结束”状态迁移
+            // （对齐 Semi CSSAnimation 在 motion=false 时同步调用 onAnimationEnd）。
+            untrack(() => foundation.handleAnimationEnd(false));
         }
     });
 
@@ -119,7 +180,7 @@ export function Modal(&{
         prevFocusElement = untrack(() => document.activeElement instanceof HTMLElement ? document.activeElement : null);
         if (prevFocusElement && container.contains(prevFocusElement)) return;
         const focusable = getFocusableElements(container);
-        (focusable[0] ?? container).focus({ preventScroll: true });
+        (focusable[0] ?? container).focus({ preventScroll: preventScroll ?? true });
     });
 
     function handleContentKeyDown(event: KeyboardEvent) {
@@ -135,11 +196,12 @@ export function Modal(&{
     }
 
     function handleContentTransitionEnd() {
+        console.log('[Modal debug] handleContentTransitionEnd, visible=', visible);
         if (!visible) {
             foundation.handleAnimationEnd(false);
             // 焦点归还发生在动画结束、真正从 DOM 卸载（shouldRender 变 false）之前，
             // 对齐 Semi ModalContentFoundation.destroy 在组件卸载时归还焦点的时机。
-            prevFocusElement?.focus({ preventScroll: true });
+            prevFocusElement?.focus({ preventScroll: preventScroll ?? true });
             afterClose?.();
         }
     }
@@ -171,11 +233,32 @@ export function Modal(&{
         return () => window.removeEventListener('keydown', handleKeyDown);
     });
 
-    let &[shouldRender] = track<boolean>(() => visible || !state.displayNone);
+    // 对齐 Semi renderDialog 的 shouldRender 判断：受控 visible 为 true 时始终渲染；
+    // keepDOM 时按 lazyRender 决定是否要求"已经展开过一次"才提前渲染；否则退化为
+    // "还在播放关闭动画（displayNone 还没置 true）就先别卸载"（motion=false 时
+    // displayNone 会同步置 true，等价于 visible 一变 false 就立即卸载）。
+    let &[shouldRender] = track<boolean>(() => visible || (keepDOM && (!lazyRender || hasRenderedOnce)) || (motion && !state.displayNone));
+
+    let &[keptButHidden] = track<boolean>(() => keepDOM && !visible && state.displayNone);
 
     let &[maskClasses] = track<string>(() =>
-        ['lotus-modal-mask', visible ? 'lotus-modal-mask-visible' : ''].filter(Boolean).join(' '),
+        [
+            'lotus-modal-mask',
+            visible ? 'lotus-modal-mask-visible' : '',
+            motion ? '' : 'lotus-modal-no-motion',
+            keptButHidden ? 'lotus-modal-displaynone' : '',
+        ].filter(Boolean).join(' '),
     );
+
+    let &[wrapperClasses] = track<string>(() => {
+        const nonBody = usesNonBodyContainer();
+        return [
+            'lotus-modal-wrapper',
+            nonBody && !maskFixed ? 'lotus-modal-wrapper-popup' : '',
+            maskFixed ? 'lotus-modal-wrapper-fixed' : '',
+            keptButHidden ? 'lotus-modal-displaynone' : '',
+        ].filter(Boolean).join(' ');
+    });
 
     let &[contentClasses] = track<string>(() =>
         [
@@ -183,7 +266,14 @@ export function Modal(&{
             visible ? 'lotus-modal-content-visible' : '',
             centered ? 'lotus-modal-centered' : '',
             fullScreen ? 'lotus-modal-fullscreen' : '',
+            icon ? 'lotus-modal-content-with-icon' : '',
+            motion ? '' : 'lotus-modal-no-motion',
+            // keepDOM 关闭动画播放完毕（displayNone=true）后不卸载 DOM，但要真正
+            // 从视觉/布局上隐藏（对齐 Semi `.dialog-displayNone { display: none }`），
+            // 否则元素仍占据文档流、Playwright/屏幕阅读器都会判定为可见。
+            keptButHidden ? 'lotus-modal-displaynone' : '',
             className ?? '',
+            modalContentClass ?? '',
         ].filter(Boolean).join(' '),
     );
 
@@ -200,11 +290,11 @@ export function Modal(&{
 
     <>
         @if (shouldRender) {
-            <Portal target={typeof document !== 'undefined' ? document.body : null}>
+            <Portal target={resolvePortalTarget()}>
                 @if (mask) {
-                    <div class={maskClasses} style={{ zIndex }} onClick={handleMaskClick} />
+                    <div class={maskClasses} style={{ zIndex, ...maskStyle }} onClick={handleMaskClick} />
                 }
-                <div class="lotus-modal-wrapper" style={{ zIndex: zIndex + 1 }} onClick={handleMaskClick}>
+                <div class={wrapperClasses} style={{ zIndex: zIndex + 1 }} onClick={handleMaskClick}>
                     <div
                         class={contentClasses}
                         style={contentStyle}
@@ -217,6 +307,9 @@ export function Modal(&{
                         onKeyDown={handleContentKeyDown}
                         ref={(node: HTMLDivElement | null) => { contentNode = node; }}
                     >
+                        @if (icon) {
+                            <span class="lotus-modal-icon">{icon}</span>
+                        }
                         @if (hasHeader && header !== undefined) {
                             <div class="lotus-modal-header">{header}</div>
                         }
@@ -227,7 +320,7 @@ export function Modal(&{
                         }
                         @if (closable) {
                             <button type="button" class="lotus-modal-close" aria-label="关闭" onClick={handleCancel}>
-                                <IconClose />
+                                {closeIcon ?? <IconClose />}
                             </button>
                         }
 
@@ -239,13 +332,13 @@ export function Modal(&{
                             <div class="lotus-modal-footer">{footer}</div>
                         }
                         @if (footer === undefined) {
-                            <div class="lotus-modal-footer">
+                            <div class={['lotus-modal-footer', footerFill ? 'lotus-modal-footer-fill' : ''].filter(Boolean).join(' ')}>
                                 @if (hasCancel) {
-                                    <Button theme="light" type="tertiary" loading={cancelBtnLoading} onClick={handleCancel}>
+                                    <Button theme="light" type="tertiary" block={footerFill} loading={cancelBtnLoading} onClick={handleCancel} {...(cancelButtonProps ?? {})}>
                                         {cancelText ?? locale.Modal.cancelText}
                                     </Button>
                                 }
-                                <Button theme="solid" type={okType} loading={okLoading} onClick={handleOk}>
+                                <Button theme="solid" type={okType} block={footerFill} loading={okLoading} onClick={handleOk} {...(okButtonProps ?? {})}>
                                     {okText ?? locale.Modal.okText}
                                 </Button>
                             </div>
@@ -268,6 +361,17 @@ export function Modal(&{
                 opacity: 1;
             }
 
+            .lotus-modal-mask.lotus-modal-no-motion {
+                transition: none;
+            }
+
+            /* 用 !important 而非单类选择器覆盖 .lotus-modal-content/-wrapper/-mask
+               的 display 声明——同优先级选择器的胜负取决于源码书写顺序，容易在
+               后续维护中被意外颠倒，!important 才是确定性的覆盖手段。 */
+            .lotus-modal-displaynone {
+                display: none !important;
+            }
+
             .lotus-modal-wrapper {
                 position: fixed;
                 inset: 0;
@@ -275,6 +379,18 @@ export function Modal(&{
                 display: flex;
                 justify-content: center;
                 padding: var(--lotus-spacing-extra-loose) 0;
+            }
+
+            /* getPopupContainer 挂载到非 document.body 容器且未强制 maskFixed 时，
+               遮罩/内容改为相对该容器定位（对齐 Semi .dialog-popup），而非覆盖全视口。 */
+            .lotus-modal-wrapper-popup {
+                position: absolute;
+                overflow: hidden;
+            }
+
+            .lotus-modal-wrapper-fixed {
+                position: fixed;
+                overflow: hidden;
             }
 
             .lotus-modal-content {
@@ -291,9 +407,26 @@ export function Modal(&{
                 max-height: calc(100vh - 64px);
             }
 
+            .lotus-modal-content.lotus-modal-no-motion {
+                transition: none;
+            }
+
             .lotus-modal-content-visible {
                 opacity: 1;
                 transform: scale(1);
+            }
+
+            .lotus-modal-content-with-icon {
+                padding-left: calc(var(--lotus-spacing-base-loose) + 28px);
+            }
+
+            .lotus-modal-icon {
+                position: absolute;
+                top: var(--lotus-spacing-base);
+                left: var(--lotus-spacing-base-loose);
+                display: flex;
+                align-items: center;
+                color: var(--lotus-color-warning);
             }
 
             .lotus-modal-centered {
@@ -350,6 +483,14 @@ export function Modal(&{
                 justify-content: flex-end;
                 gap: var(--lotus-spacing-tight);
                 padding: var(--lotus-spacing-base) var(--lotus-spacing-base-loose);
+            }
+
+            .lotus-modal-footer-fill {
+                justify-content: stretch;
+            }
+
+            .lotus-modal-footer-fill > :global(.lotus-button) {
+                flex: 1;
             }
         </style>
     </>
