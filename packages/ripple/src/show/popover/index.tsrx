@@ -2,6 +2,7 @@ import { track, effect, untrack, Portal } from 'ripple';
 import { TooltipFoundation, type TooltipState, type TooltipTrigger } from '@lotus/foundation/show/tooltip';
 import { calcFloatingStyle, type FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { getFocusableElements, resolveTabWrapTarget } from '@lotus/foundation/base/focus-trap';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 
 export interface PopoverProps {
     children?: any;
@@ -32,6 +33,8 @@ export interface PopoverProps {
     stopPropagation?: boolean;
     /** 关闭时是否保留内部 DOM 不销毁（对齐 Semi，用于避免内部组件重新挂载）。 */
     keepDOM?: boolean;
+    /** 展开/收起是否带 fade+scale 过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
     /** 更新该值可手动触发浮层重新定位。 */
     rePosKey?: string | number;
     getPopupContainer?: () => HTMLElement | null;
@@ -67,6 +70,7 @@ export function Popover(&{
     clickToHide = false,
     stopPropagation = false,
     keepDOM = false,
+    motion = true,
     rePosKey,
     getPopupContainer,
     zIndex = 1030,
@@ -97,6 +101,34 @@ export function Popover(&{
 
     let &[displayVisible] = track<boolean>(() => (isControlled ? !!visibleProp : state.visible));
 
+    // motion 动画状态机：DOM 是否挂载（mounted）与是否处于"离场动画中"（leaving）
+    // 分开追踪——不开 motion 或 leave 动画结束后，mounted 立即跟随 displayVisible
+    // 变为 false 卸载 DOM；开 motion 时，displayVisible 变 false 后先保持 mounted
+    // 不变、加上 leaving 标记跑一遍 zoomOut 过渡，animationend 后才真正卸载
+    // （对齐 Semi CSSAnimation 的 enter/leave 两阶段模型）。
+    let &[mounted] = track<boolean>(false);
+    let &[leaving] = track<boolean>(false);
+    let leaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+    effect(() => {
+        if (displayVisible) {
+            if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+            untrack(() => { mounted = true; leaving = false; });
+        } else if (untrack(() => mounted)) {
+            if (!motion) {
+                untrack(() => { mounted = false; leaving = false; });
+            } else {
+                untrack(() => { leaving = true; });
+                leaveTimer = setTimeout(() => {
+                    untrack(() => { mounted = false; leaving = false; });
+                    leaveTimer = null;
+                }, 100);
+            }
+        }
+    });
+
+    effect(() => () => { if (leaveTimer) clearTimeout(leaveTimer); });
+
     effect(() => {
         if (displayVisible) {
             hasRenderedOnce = true;
@@ -107,10 +139,11 @@ export function Popover(&{
     });
 
     effect(() => {
-        if (!displayVisible) {
+        if (!mounted) {
             floatingStyle = null;
             return;
         }
+        if (!displayVisible) return;
         const trigger = triggerNode;
         if (!trigger) return;
         // rePosKey 变化本身不携带任何数据，只需要让这个 effect 重新执行——读一下
@@ -207,11 +240,18 @@ export function Popover(&{
 
     function resolvePortalTarget(): HTMLElement | null {
         if (getPopupContainer) return getPopupContainer();
+        const configured = ConfigContext.get()?.value.getPopupContainer;
+        if (configured) return configured();
         return typeof document !== 'undefined' ? document.body : null;
     }
 
     let &[floatingClasses] = track<string>(() =>
-        ['lotus-popover', showArrow ? `lotus-popover-arrow-${floatingStyle?.position ?? position}` : '', className ?? '']
+        [
+            'lotus-popover',
+            showArrow ? `lotus-popover-arrow-${floatingStyle?.position ?? position}` : '',
+            motion ? (leaving ? 'lotus-popover-leave' : (displayVisible ? 'lotus-popover-enter' : '')) : '',
+            className ?? '',
+        ]
             .filter(Boolean)
             .join(' '),
     );
@@ -235,7 +275,7 @@ export function Popover(&{
             {children}
         </span>
 
-        @if ((displayVisible || (keepDOM && hasRenderedOnce)) && content != null) {
+        @if ((mounted || (keepDOM && hasRenderedOnce)) && content != null) {
             <Portal target={resolvePortalTarget()}>
                 <div
                     id={contentId}
@@ -246,9 +286,9 @@ export function Popover(&{
                         position: 'fixed',
                         left: `${floatingStyle?.left ?? 0}px`,
                         top: `${floatingStyle?.top ?? 0}px`,
-                        transform: floatingStyle?.transform ?? '',
+                        transform: `${floatingStyle?.transform ?? ''} scale(var(--lotus-popover-motion-scale, 1))`.trim(),
                         zIndex,
-                        ...(displayVisible ? {} : { display: 'none' }),
+                        ...(displayVisible || leaving ? {} : { display: 'none' }),
                         ...(floatingStyle?.arrowOffsetX ? { '--lotus-popover-arrow-offset-x': floatingStyle.arrowOffsetX } : {}),
                         ...(floatingStyle?.arrowOffsetY ? { '--lotus-popover-arrow-offset-y': floatingStyle.arrowOffsetY } : {}),
                     }}
@@ -274,6 +314,37 @@ export function Popover(&{
                 border-radius: var(--lotus-border-radius-medium);
                 background: var(--lotus-color-bg-1);
                 box-shadow: var(--lotus-shadow-elevated);
+            }
+
+            /* motion 过渡：对齐 Semi tooltip.scss 的 zoomIn/zoomOut 数值（100ms、
+               cubic-bezier(0.215, 0.61, 0.355, 1)、opacity 0↔1、scale 0.8↔1）。
+               scale 通过 CSS 变量与定位用的 translate transform 合成，避免互相覆盖；
+               @property 声明为 <number> 类型以保证浏览器对该变量做数值插值动画
+               （未声明类型时自定义属性默认按离散值处理，动画会瞬变而非平滑过渡）。 */
+            @property --lotus-popover-motion-scale {
+                syntax: '<number>';
+                inherits: false;
+                initial-value: 1;
+            }
+
+            @keyframes lotus-popover-zoomIn {
+                from { opacity: 0; --lotus-popover-motion-scale: 0.8; }
+                to { opacity: 1; --lotus-popover-motion-scale: 1; }
+            }
+
+            @keyframes lotus-popover-zoomOut {
+                from { opacity: 1; --lotus-popover-motion-scale: 1; }
+                to { opacity: 0; --lotus-popover-motion-scale: 0.8; }
+            }
+
+            .lotus-popover-enter {
+                animation: lotus-popover-zoomIn 100ms cubic-bezier(0.215, 0.61, 0.355, 1);
+                animation-fill-mode: forwards;
+            }
+
+            .lotus-popover-leave {
+                animation: lotus-popover-zoomOut 100ms cubic-bezier(0.215, 0.61, 0.355, 1);
+                animation-fill-mode: forwards;
             }
 
             .lotus-popover-content {

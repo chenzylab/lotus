@@ -4,9 +4,23 @@ export {
   BREAKPOINTS,
   BREAKPOINT_ORDER,
   breakpointMinWidthQuery,
+  DEFAULT_RESPONSIVE_MAP,
+  createEmptyBreakpointScreens,
+  readBreakpointScreens,
+  watchAllBreakpoints,
   type MediaQueryHandlers,
   type BreakpointKey,
+  type ResponsiveBreakpoint,
+  type ResponsiveMap,
+  type BreakpointScreens,
 } from './base/responsive.js';
+export {
+  isValidTimeZone,
+  normalizeTimeZone,
+  utcToZonedTime,
+  zonedTimeToUtc,
+  type TimeZone,
+} from './base/timezone.js';
 export {
   calcFloatingStyle,
   type FloatingPosition,

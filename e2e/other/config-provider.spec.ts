@@ -208,4 +208,46 @@ test.describe('ConfigProvider', () => {
 
     await toggleBtn.click();
   });
+
+  test('getPopupContainer：全局默认浮层挂载容器，Select 自身未传该 prop 时兜底挂载到指定容器（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('ConfigProvider getPopupContainer 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const dialog = page.getByRole('dialog').filter({ hasText: '选项 A' });
+    await expect(dialog).toBeVisible();
+
+    const mountedInsideDashedContainer = await dialog.evaluate((el) => {
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        if (node.style?.border?.includes('dashed')) return true;
+        node = node.parentElement;
+      }
+      return false;
+    });
+    expect(mountedInsideDashedContainer).toBe(true);
+  });
+
+  test('timeZone：全局默认时区下发给 TimePicker，未显式传 timeZone 的组件按该值把 UTC 时刻换算为本机墙钟时间展示（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('ConfigProvider timeZone 示例', { exact: true });
+    await input.scrollIntoViewIfNeeded();
+
+    // defaultValue 为 UTC 12:00，ConfigProvider timeZone="+09:00" 应换算为
+    // UTC+9 视角下的墙钟时间 21:00 展示在触发器输入框中。
+    await expect(input).toHaveValue('21:00:00');
+  });
+
+  test('responsiveObserve + onBreakpoint：懒注册断点监听，订阅后立即回调当前命中的断点集合（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const watcher = page.getByLabel('ConfigProvider responsive 示例', { exact: true });
+    await watcher.scrollIntoViewIfNeeded();
+
+    const screensText = page.getByLabel('ConfigProvider responsive 断点状态', { exact: true });
+    const screens = JSON.parse(await screensText.textContent() ?? '{}');
+    expect(typeof screens.md).toBe('boolean');
+    // 测试环境视口足够宽，至少应命中 md 断点。
+    expect(screens.md).toBe(true);
+  });
 });

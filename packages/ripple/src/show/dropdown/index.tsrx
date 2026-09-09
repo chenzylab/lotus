@@ -16,6 +16,8 @@ export interface DropdownProps {
     zIndex?: number;
     style?: Record<string, any>;
     class?: string;
+    /** 展开/收起是否带 fade+scale 过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
     onVisibleChange?: (visible: boolean) => void;
 }
 
@@ -38,6 +40,7 @@ export function Dropdown(&{
     zIndex = 1050,
     style,
     class: className,
+    motion = true,
     onVisibleChange,
 }: DropdownProps) @{
     <>
@@ -53,6 +56,7 @@ export function Dropdown(&{
             zIndex={zIndex}
             style={style}
             class={['lotus-dropdown', className ?? ''].filter(Boolean).join(' ')}
+            motion={motion}
             onVisibleChange={onVisibleChange}
         >
             {children}

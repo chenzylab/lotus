@@ -56,6 +56,7 @@ import { Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider } 
 | class | 下拉弹层外层样式类名 | string | - |
 | closeOnEsc | 在 trigger 或弹出层按 Esc 键是否关闭面板 | boolean | true |
 | getPopupContainer | 指定父级 DOM | `() => HTMLElement \| null` | - |
+| motion | 展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
 | position | 弹出菜单的位置 | string | "bottom" |
 | render | 弹出层的内容，由 DropdownMenu 及 DropdownItem、DropdownTitle 构成 | any | - |
 | spacing | 弹出层与 Trigger 元素的距离(px) | number | 透传给 Popover 默认逻辑 |

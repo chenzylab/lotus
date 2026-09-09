@@ -83,9 +83,13 @@ import { DatePicker } from '@lotus/ripple';
 | aria-label | 设置 aria-label 属性 | string | - |
 | aria-labelledby | 关联外部 label 的 id | string | - |
 | aria-required | 必填语义标记 | boolean | - |
+| autoAdjustOverflow | 浮层超出可视区域时是否自动调整弹出方向 | boolean | `true` |
+| autoFocus | 挂载时是否自动聚焦触发器 | boolean | `false` |
+| autoSwitchDate | 单值 date/dateTime 类型下，翻月/翻年时是否自动把已选日期切到新年月的同一天 | boolean | `true` |
 | borderless | 无边框模式 | boolean | `false` |
 | bottomSlot | 面板最外层底部固定区域 | any | - |
 | class | 类名 | string | - |
+| clearIcon | 自定义清除按钮图标 | any | - |
 | defaultOpen | 非受控模式下的默认展开状态 | boolean | `false` |
 | defaultPickerValue | 面板初始展示的年月（不影响已选值） | `Date \| Date[]` | - |
 | defaultValue | 非受控模式下的默认值 | `DatePickerValue` | - |
@@ -94,18 +98,26 @@ import { DatePicker } from '@lotus/ripple';
 | disabledDate | 判断某日期是否禁用 | `(date: Date, options?) => boolean` | - |
 | disabledTime | 判断时间面板里哪些时/分/秒不可选 | `(date, panelType?) => DisabledTimeRulesDP` | - |
 | disabledTimePicker | dateTime/dateTimeRange 下禁止切换到时间面板 | boolean | `false` |
+| dropdownClassName | 浮层内容自定义类名 | string | - |
+| dropdownMargin | 浮层与触发器的间距微调 | number | - |
+| dropdownStyle | 浮层内容自定义样式 | object | - |
 | endYear | 年份滚轮结束年份 | number | - |
 | format | 输入框显示的日期格式 | string | - |
 | getPopupContainer | 浮层挂载的目标容器，不传则挂载在 Popover 默认位置 | `() => HTMLElement` | - |
 | hideDisabledOptions | 时间列表隐藏禁用项而非置灰显示 | boolean | `false` |
 | id | 触发器 id | string | - |
 | insetInput | 面板内直接输入日期（分段 Input），而非只能点选；开启后触发器本身视觉禁用（不可手动编辑），焦点转移到面板内输入框 | boolean | `false` |
+| insetLabel | 内嵌标签文案，渲染在输入框内部；与 prefix 同时传入时 prefix 优先 | any | - |
+| insetLabelId | insetLabel 关联的 id | string | - |
 | max | `multiple` 模式下最多可选数量 | number | - |
+| motion | 面板展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
 | multiple | 是否允许多选（`type="date"` 下生效） | boolean | `false` |
 | needConfirm | 范围/多选类型是否需要点击确认按钮才提交 | boolean | - |
 | open | 受控的面板展开状态 | boolean | - |
 | placeholder | 占位提示文字 | string | - |
 | position | 下拉浮层弹出方向 | `FloatingPosition` | - |
+| preventScroll | 聚焦时是否阻止浏览器自动滚动到视口，配合 autoFocus 使用 | boolean | - |
+| prefix | 输入框前缀内容；与 insetLabel 同时传入时优先生效 | any | - |
 | presets | 快捷预设选项 | `PresetType[]` | - |
 | presetPosition | 快捷预设区域位置 | `'left' \| 'right' \| 'top' \| 'bottom'` | - |
 | rangeSeparator | 范围类型输入框内两端日期的分隔符 | string | - |
@@ -114,9 +126,11 @@ import { DatePicker } from '@lotus/ripple';
 | showClear | 有选中值时展示清除按钮 | boolean | `false` |
 | size | 尺寸 | string | - |
 | startYear | 年份滚轮起始年份 | number | - |
+| stopPropagation | 浮层内容点击是否阻止事件冒泡到 document | boolean | `true` |
 | style | 自定义样式 | object | - |
 | syncSwitchMonth | 范围选择时左右面板翻月是否联动 | boolean | - |
 | timePickerOpts | dateTime/dateTimeRange 时批量透传时间列配置，逐项覆盖同名的顶层 use12Hours/hourStep/minuteStep/secondStep/hideDisabledOptions/disabledHours/disabledMinutes/disabledSeconds | object | - |
+| timeZone | 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 全局默认值 | `string \| number` | - |
 | topSlot | 面板最外层顶部固定区域 | any | - |
 | triggerRender | 完全自定义触发器渲染，替换默认 Input；需自行处理点击展开等交互 | `(props) => any` | - |
 | type | 选择器类型 | `'date' \| 'dateRange' \| 'year' \| 'month' \| 'monthRange' \| 'dateTime' \| 'dateTimeRange'` | `'date'` |
@@ -135,7 +149,11 @@ import { DatePicker } from '@lotus/ripple';
 
 `DatePickerValue` 结构：`Date \| Date[] \| RangeValue \| null`（`RangeValue` 为 `[Date \| null, Date \| null]`）。
 
-> 注意事项：lotus 尚未实现 Semi 的 `filterSorter`/`filterRender`/`treeNodeFilterProp` 等搜索自定义（DatePicker 本身不涉及搜索）、图标定制（`clearIcon`/`prefix`）、浮层样式定制（`dropdownStyle`/`dropdownMargin`/`dropdownClassName`）、`autoAdjustOverflow`/`motion`、`autoFocus`/`preventScroll`、`insetLabel`/`insetLabelId`、`stopPropagation`、`timeZone`、`autoSwitchDate`。这些是长尾自定义能力，已标记为已知简化。
+> `timeZone` 转换语义对齐 Semi：组件内部始终按“本机墙钟时间”保存状态，只有 `value` 传入与 `onChange`/`onConfirm` 传出这两个边界会把时区时刻与本机时刻互转（`onCancel`/`onPanelChange` 不受影响——前者不携带值，后者是纯面板展示状态通知）。date/dateTime/month/dateRange/dateTimeRange/monthRange 及 multiple 模式全部生效。
+>
+> `prefix`/`insetLabel` 同时传入时 `prefix` 优先（对齐 Semi `dateInput.tsx` 的 `labelNode = prefix || insetLabel`），仅渲染在触发器为单值或 range 左侧 Input 时生效。`autoFocus` 不做 Semi 那样"range 类型且面板默认展开时隐式推导为 true"的特殊逻辑，由调用方显式传入（同 TimePicker `focusOnOpen` 的既有取舍）。`autoSwitchDate` 仅对单值 date/dateTime 类型生效（对齐 Semi `updateDateAfterChangeYM` 的 `!multiple && !includeRange` 判断），multiple 与 range 类型翻月/翻年不会改变已选值。`motion` 依赖底层 Popover 的 fade+scale 过渡（100ms，`cubic-bezier(0.215, 0.61, 0.355, 1)`，对齐 Semi tooltip/popover 动画数值）。
+>
+> lotus 尚未实现 Semi 的 `filterSorter`/`filterRender`/`treeNodeFilterProp`——这三个 prop 在 Semi 源码里也从未在 DatePicker 的 `datePicker.tsx`/`monthsGrid.tsx` 中出现过（grep 全仓确认不存在），推测是文档历史遗留的错误条目，不是真实缺口。
 
 ## Accessibility
 

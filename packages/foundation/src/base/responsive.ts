@@ -53,3 +53,54 @@ export const BREAKPOINT_ORDER: BreakpointKey[] = ['xxl', 'xl', 'lg', 'md', 'sm',
 export function breakpointMinWidthQuery(key: keyof typeof BREAKPOINTS): string {
   return `(min-width: ${BREAKPOINTS[key]}px)`;
 }
+
+/** ConfigProvider `responsiveMap`/`onBreakpoint` 用到的断点集合，对齐 Semi 命名。 */
+export type ResponsiveBreakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+
+export type ResponsiveMap = Record<ResponsiveBreakpoint, string>;
+
+export type BreakpointScreens = Record<ResponsiveBreakpoint, boolean>;
+
+/** 默认响应式断点媒体查询，数值对齐上面的 `BREAKPOINTS`（`xs` 是唯一的 max-width 特例）。 */
+export const DEFAULT_RESPONSIVE_MAP: ResponsiveMap = {
+  xs: `(max-width: ${BREAKPOINTS.sm - 1}px)`,
+  sm: breakpointMinWidthQuery('sm'),
+  md: breakpointMinWidthQuery('md'),
+  lg: breakpointMinWidthQuery('lg'),
+  xl: breakpointMinWidthQuery('xl'),
+  xxl: breakpointMinWidthQuery('xxl'),
+};
+
+export function createEmptyBreakpointScreens(): BreakpointScreens {
+  return { xs: false, sm: false, md: false, lg: false, xl: false, xxl: false };
+}
+
+/** 同步读取当前视口命中的所有断点（SSR/无 window 环境下全部为 false）。 */
+export function readBreakpointScreens(responsiveMap: ResponsiveMap): BreakpointScreens {
+  const screens = createEmptyBreakpointScreens();
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return screens;
+  (Object.keys(responsiveMap) as ResponsiveBreakpoint[]).forEach((key) => {
+    screens[key] = window.matchMedia(responsiveMap[key]).matches;
+  });
+  return screens;
+}
+
+/**
+ * 注册 responsiveMap 里全部断点的媒体查询监听，任意断点匹配状态变化时回调
+ * `(screen, matches)`。返回统一的取消订阅函数。调用方（ConfigProvider）负责
+ * 在 `responsiveObserve` 关闭或组件卸载时调用。
+ */
+export function watchAllBreakpoints(
+  responsiveMap: ResponsiveMap,
+  onChange: (screen: ResponsiveBreakpoint, matches: boolean) => void,
+): () => void {
+  const keys = Object.keys(responsiveMap) as ResponsiveBreakpoint[];
+  const unregisters = keys.map((key) =>
+    watchMediaQuery(responsiveMap[key], {
+      match: () => onChange(key, true),
+      unmatch: () => onChange(key, false),
+      callOnInit: false,
+    }),
+  );
+  return () => unregisters.forEach((fn) => fn());
+}

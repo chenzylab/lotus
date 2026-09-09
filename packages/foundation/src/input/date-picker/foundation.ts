@@ -505,17 +505,50 @@ export class DatePickerFoundation extends Foundation<DatePickerState> {
     }
   }
 
-  switchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType, syncSwitchMonth: boolean, onPanelChange?: (date: Date) => void): void {
+  switchMonthOrYear(
+    switchType: YearMonthChangeType,
+    panelType: PanelType,
+    syncSwitchMonth: boolean,
+    onPanelChange?: (date: Date) => void,
+    autoSwitchDate = true,
+    disabledDate?: (date: Date) => boolean,
+  ): Date | null {
     const rangeType = isRangeType(this.opts.type);
     if (rangeType && syncSwitchMonth) {
       this._handleYearOrMonthChange(switchType, LEFT, onPanelChange);
       this._handleYearOrMonthChange(switchType, RIGHT, onPanelChange);
-      return;
+      return null;
     }
     const panelDetail = this._getPanelDetail(panelType);
     const target = DatePickerFoundation.dateCalcFns[switchType](panelDetail.pickerDate, 1);
     this._handleYearOrMonthChange(switchType, panelType, onPanelChange);
-    if (rangeType) this._handleSyncChangeMonths(panelType, target, onPanelChange);
+    if (rangeType) {
+      this._handleSyncChangeMonths(panelType, target, onPanelChange);
+      return null;
+    }
+    if (!autoSwitchDate) return null;
+    return this._updateDateAfterChangeYM(target, disabledDate);
+  }
+
+  /**
+   * autoSwitchDate 生效时（默认开启，仅单值 date/dateTime 类型）：翻月/翻年后，把已选中的
+   * 日期自动移到新年月的同一天（保留 dateTime 的时分秒），而不是让选中值停留在旧月份、
+   * 只有面板显示的月份变了。对齐 Semi monthsGridFoundation.updateDateAfterChangeYM。
+   * multiple/range 类型不生效（同 Semi `!multiple && !includeRange` 判断）。
+   */
+  private _updateDateAfterChangeYM(target: Date, disabledDate?: (date: Date) => boolean): Date | null {
+    if (this.opts.multiple || isRangeType(this.opts.type)) return null;
+    const { value } = this.getState();
+    if (Array.isArray(value) || !value) return null;
+    const year = target.getFullYear();
+    const month = target.getMonth();
+    let nextDate = setYear(setMonth(value, month), year);
+    if (this.opts.type === 'dateTime') {
+      nextDate = mergeDateAndTime(nextDate, this._getPanelDetail(LEFT).pickerDate);
+    }
+    if (disabledDate?.(nextDate)) return null;
+    this.setState({ value: nextDate, selected: new Set([formatFullDate(nextDate.getFullYear(), nextDate.getMonth() + 1, nextDate.getDate())]) });
+    return nextDate;
   }
 
   showYearPicker(panelType: PanelType): void {

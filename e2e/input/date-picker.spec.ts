@@ -356,4 +356,75 @@ test.describe('DatePicker', () => {
     await expect(page.getByRole('button', { name: '收起日历' })).toBeVisible();
     await expect(page.locator('.lotus-date-picker-panel')).toBeVisible();
   });
+
+  test('insetLabel：桥接到 Input prefix 展示内嵌标签，携带 insetLabelId（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker insetLabel 示例', { exact: true });
+    const wrapper = input.locator('xpath=ancestor::div[contains(@class,"lotus-date-picker-trigger")]');
+    const prefix = wrapper.locator('.lotus-input-prefix');
+    await expect(prefix).toHaveText('日期');
+    await expect(prefix.locator('#date-picker-inset-label-demo')).toHaveText('日期');
+  });
+
+  test('clearIcon：自定义清除按钮图标覆盖默认图标（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker clearIcon 示例', { exact: true });
+    const wrapper = input.locator('xpath=ancestor::div[contains(@class,"lotus-date-picker-trigger")]');
+    await wrapper.hover();
+    await expect(wrapper.getByLabel('自定义清除')).toBeVisible();
+  });
+
+  test('autoSwitchDate：翻月后已选日期自动切到新月同一天并触发 onChange（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker autoSwitchDate 示例', { exact: true });
+    await input.click();
+
+    const panel = page.locator('.lotus-date-picker-panel').first();
+    await panel.locator('button[aria-label="下个月"]').click();
+
+    await expect(page.getByText(/autoSwitchDate 变化：/)).toContainText('Fri Apr 05 2024');
+    await expect(input).toHaveValue(/2024-04-05/);
+  });
+
+  test('autoSwitchDate=false：翻月后已选日期保持不变（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker autoSwitchDate=false 示例', { exact: true });
+    const initialValue = await input.inputValue();
+    await input.click();
+
+    const panel = page.locator('.lotus-date-picker-panel').first();
+    await panel.locator('button[aria-label="下个月"]').click();
+    await page.keyboard.press('Escape');
+
+    await expect(input).toHaveValue(initialValue);
+  });
+
+  test('dropdownStyle/dropdownClassName/dropdownMargin：透传给浮层内容（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker dropdown 定制示例', { exact: true });
+    await input.click();
+
+    const dropdown = page.locator('.playground-date-picker-dropdown-demo');
+    await expect(dropdown).toBeVisible();
+    await expect(dropdown).toHaveCSS('border-width', '2px');
+  });
+
+  test('motion=false：面板关闭时立即从 DOM 移除，不保留离场动画帧（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker motion=false 示例', { exact: true });
+    await input.click();
+    await expect(page.locator('.lotus-date-picker-panel')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
+  });
+
+  test('timeZone：value 传入时把 UTC 时刻换算为该时区下的墙钟时间展示（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker timeZone 示例', { exact: true });
+    await input.scrollIntoViewIfNeeded();
+
+    // defaultValue 为 UTC 12:00，timeZone="+09:00" 换算为该时区墙钟时间 21:00。
+    await expect(input).toHaveValue('2026-01-01 21:00:00');
+  });
 });

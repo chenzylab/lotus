@@ -75,6 +75,7 @@ import { Popover } from '@lotus/ripple';
 | getPopupContainer | 指定父级 DOM | `() => HTMLElement \| null` | `() => document.body` |
 | guardFocus | 焦点处于浮层内时，Tab/Shift+Tab 是否在浮层内首尾元素间循环 | boolean | `true` |
 | keepDOM | 关闭时是否保留内部 DOM 不销毁 | boolean | `false` |
+| motion | 展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
 | mouseEnterDelay | 鼠标移入后延迟显示时间(ms) | number | 50 |
 | mouseLeaveDelay | 鼠标移出后延迟消失时间(ms) | number | 50 |
 | position | 方向，共 12 个值 | string | "bottom" |
@@ -92,6 +93,8 @@ import { Popover } from '@lotus/ripple';
 | onVisibleChange | 弹出层展示/隐藏时触发的回调 | `(visible: boolean) => void` | - |
 
 > 注意事项：内容角色（role）会根据 `trigger` 动态判定——`trigger` 为 `click`/`custom` 时渲染 `role="dialog"`，其余情况渲染 `role="tooltip"`，对齐 Semi 的 a11y 语义。`content` 不支持函数式 `({ initialFocusRef }) => ReactNode` 写法（无 `initialFocusRef` 焦点初始化机制）；`margin`（object 类型的溢出冗余值）暂未实现，均属已知简化，非文档遗漏。
+>
+> `motion` 数值对齐 Semi tooltip/popover 动画规格：100ms、`cubic-bezier(0.215, 0.61, 0.355, 1)`、opacity 0↔1、scale 0.8↔1。关闭时（`keepDOM=false`）DOM 不会立即卸载，而是先带 `lotus-popover-leave` class 播完离场动画（100ms）再卸载，避免视觉突变；`motion=false` 时立即卸载，无过渡。
 
 ## Accessibility
 

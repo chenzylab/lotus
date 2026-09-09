@@ -210,4 +210,22 @@ test.describe('TimePicker', () => {
     const input = page.getByLabel('TimePicker focusOnOpen 示例', { exact: true });
     await expect(input).toBeFocused();
   });
+
+  test('timeZone：value 传入时把 UTC 时刻换算为该时区下的墙钟时间展示，onChange 传出时换算回 UTC（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker timeZone 示例', { exact: true });
+    await input.scrollIntoViewIfNeeded();
+
+    // defaultValue 为 UTC 12:00，timeZone="+09:00" 换算为该时区墙钟时间 21:00。
+    await expect(input).toHaveValue('21:00:00');
+
+    await input.click();
+    const hourOption = page.locator('.lotus-time-picker-panel [role="option"]').filter({ hasText: /^22时$/ }).first();
+    await hourOption.click();
+    await page.keyboard.press('Escape');
+
+    // 面板选择 22 时（本机墙钟时间），换算回 UTC 时刻应比 UTC 12:00 少 9 小时
+    // 的偏移关系保持一致：22:00（+09:00 视角）= UTC 13:00。
+    await expect(page.getByLabel('TimePicker timeZone 事件日志')).toContainText('2026-01-01T13:');
+  });
 });

@@ -285,6 +285,59 @@ describe('switchMonthOrYear：双面板导航', () => {
   });
 });
 
+describe('switchMonthOrYear：autoSwitchDate（对齐 Semi updateDateAfterChangeYM）', () => {
+  it('单值 date 类型 + autoSwitchDate 默认开启：翻月后已选日期自动切到新月同一天，返回新值', () => {
+    const { foundation, getState } = makeFoundation('date', { value: new Date(2024, 2, 5) });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true);
+    expect(updated?.getMonth()).toBe(3);
+    expect(updated?.getDate()).toBe(5);
+    expect((getState().value as Date).getMonth()).toBe(3);
+  });
+
+  it('autoSwitchDate=false：翻月后已选日期保持不变，返回 null', () => {
+    const { foundation, getState } = makeFoundation('date', { value: new Date(2024, 2, 5) });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, false);
+    expect(updated).toBeNull();
+    expect((getState().value as Date).getMonth()).toBe(2);
+  });
+
+  it('未选中任何日期时翻月不产生新值', () => {
+    const { foundation } = makeFoundation('date', { value: null });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true);
+    expect(updated).toBeNull();
+  });
+
+  it('disabledDate 拦截：新年月同一天落在禁用日期上则不切换', () => {
+    const { foundation, getState } = makeFoundation('date', { value: new Date(2024, 2, 5) });
+    const disabledDate = (d: Date) => d.getMonth() === 3 && d.getDate() === 5;
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true, disabledDate);
+    expect(updated).toBeNull();
+    expect((getState().value as Date).getMonth()).toBe(2);
+  });
+
+  it('multiple 类型不生效（对齐 Semi `!multiple` 判断）', () => {
+    const { foundation, getState } = makeFoundation('date', { value: [new Date(2024, 2, 5)] }, { multiple: true });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true);
+    expect(updated).toBeNull();
+    expect((getState().value as Date[])[0]?.getMonth()).toBe(2);
+  });
+
+  it('range 类型不生效（对齐 Semi `!includeRange` 判断）', () => {
+    const { foundation } = makeFoundation('dateRange', { value: null });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true);
+    expect(updated).toBeNull();
+  });
+
+  it('dateTime 类型：新值保留原有时分秒', () => {
+    const original = new Date(2024, 2, 5, 14, 30, 0);
+    const { foundation } = makeFoundation('dateTime', { value: original, monthLeft: { pickerDate: original, showDate: original, isTimePickerOpen: false, isYearPickerOpen: false } });
+    const updated = foundation.switchMonthOrYear('nextMonth', 'left', false, undefined, true);
+    expect(updated?.getMonth()).toBe(3);
+    expect(updated?.getHours()).toBe(14);
+    expect(updated?.getMinutes()).toBe(30);
+  });
+});
+
 describe('syncPanelsFromRangeValue：防撞月', () => {
   it('两端同月时右面板自动 +1 月', () => {
     const { foundation, getState } = makeFoundation('dateRange');

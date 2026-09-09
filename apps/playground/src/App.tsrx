@@ -1,5 +1,5 @@
-import { track } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { track, effect } from 'ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -306,6 +306,22 @@ function FormScrollAgeInput(&{ id, value, disabled, onChange, onBlur, 'aria-labe
     );
 }
 
+function ConfigProviderBreakpointWatcher() @{
+    const configTracked = ConfigContext.get();
+    let &[screens] = track<BreakpointScreens | null>(null);
+
+    effect(() => {
+        const onBreakpoint = configTracked?.value.onBreakpoint;
+        if (!onBreakpoint) return;
+        return onBreakpoint((next) => { screens = next; });
+    });
+
+    <div style={{ padding: '16px', border: '1px solid var(--lotus-color-border)', borderRadius: 'var(--lotus-border-radius-medium)' }} aria-label="ConfigProvider responsive 示例">
+        <TypographyText type="secondary">缩放浏览器窗口查看当前命中的断点：</TypographyText>
+        <pre aria-label="ConfigProvider responsive 断点状态" style={{ margin: '8px 0 0' }}>{JSON.stringify(screens)}</pre>
+    </div>
+}
+
 function FormContactsArrayFieldContent(&{ arrayFields, add, addWithInitValue }: ArrayFieldRenderProps) @{
     <Space vertical align="start" style={{ width: '100%', gap: '8px' }}>
         @for (const item of arrayFields; key item.key) {
@@ -458,10 +474,13 @@ export function App() @{
     let &[timePickerRangeChangeLog] = track<string>('');
     let &[timePickerControlledValue] = track<Date | null>(null);
     let &[timePickerFocusBlurLog] = track<string>('');
+    let &[timePickerTimeZoneLog] = track<string>('');
     let &[datePickerChangeLog] = track<string>('');
     let &[datePickerRangeChangeLog] = track<string>('');
     let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
     let &[datePickerConfirmLog] = track<string>('');
+    let &[datePickerAutoSwitchLog] = track<string>('');
+    let &[datePickerTimeZoneLog] = track<string>('');
     let &[sliderChangeLog] = track<string>('');
     let &[sliderRangeChangeLog] = track<string>('');
     let &[sliderControlledValue] = track<number>(30);
@@ -621,6 +640,8 @@ export function App() @{
     let &[configProviderDirection] = track<'ltr' | 'rtl'>('ltr');
     let &[rtlSidebarVisible] = track<boolean>(false);
     let &[rtlSidebarMode] = track<'main' | 'code'>('main');
+    let &[configProviderPopupContainerNode] = track<HTMLDivElement | null>(null);
+    let &[configProviderTimeZoneLog] = track<string>('');
     let &[cropperResultUrl] = track<string>('');
     let &[cropperZoom] = track<number>(1);
     let &[chatMessages] = track<ChatMessage[]>(() => [
@@ -2773,6 +2794,17 @@ export function App() @{
             </Tooltip>
         </Space>
 
+        <Divider>Tooltip：motion（fade+scale 过渡动画，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Tooltip content="默认开启 motion" trigger="click">
+                <Button aria-label="Tooltip motion 默认示例触发器">motion 默认</Button>
+            </Tooltip>
+            <Tooltip content="motion 关闭" trigger="click" motion={false}>
+                <Button aria-label="Tooltip motion 关闭示例触发器">motion=false</Button>
+            </Tooltip>
+        </Space>
+
         <Divider>Popover：任意 JSX 内容 + click 触发</Divider>
 
         <Space>
@@ -2816,6 +2848,17 @@ export function App() @{
                 content={<div style={{ padding: '4px' }} onClick={() => console.log('popover content clicked')}>点我关闭（clickToHide）</div>}
             >
                 <Button theme="solid" type="warning">clickToHide</Button>
+            </Popover>
+        </Space>
+
+        <Divider>Popover：motion（fade+scale 过渡动画，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Popover trigger="click" content="默认开启 motion" aria-label="Popover motion 默认示例">
+                <Button aria-label="Popover motion 默认示例触发器">motion 默认</Button>
+            </Popover>
+            <Popover trigger="click" motion={false} content="motion 关闭" aria-label="Popover motion 关闭示例">
+                <Button aria-label="Popover motion 关闭示例触发器">motion=false</Button>
             </Popover>
         </Space>
 
@@ -4270,6 +4313,22 @@ export function App() @{
             <TimePicker focusOnOpen preventScroll aria-label="TimePicker focusOnOpen 示例" />
         </div>
 
+        <Divider>TimePicker：timeZone（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            {/* UTC 12:00 的时间戳，本机（UTC 视为基准环境）解读为 12:00；
+                timeZone="+09:00" 时对外应显示为本机时区 22:00 对应关系的逆运算——
+                即内部墙钟保存 12:00，onChange 输出时被换算为 UTC+9 视角下的时间戳，
+                触发器展示仍是本机墙钟时间 12:00（不直接改变面板显示）。 */}
+            <TimePicker
+                defaultValue={new Date('2026-01-01T12:00:00.000Z')}
+                timeZone="+09:00"
+                onChange={(v) => { timePickerTimeZoneLog = `timeZone onChange：${v ? (v as Date).toISOString() : 'null'}`; }}
+                aria-label="TimePicker timeZone 示例"
+            />
+            <TypographyText type="secondary" aria-label="TimePicker timeZone 事件日志">{timePickerTimeZoneLog}</TypographyText>
+        </div>
+
         <Divider>DatePicker：基础用法（type=date）</Divider>
 
         <div style={{ width: '260px' }}>
@@ -4421,6 +4480,87 @@ export function App() @{
                 triggerRender={({ open }) => <Button>{open ? '收起日历' : '打开日历'}</Button>}
                 aria-label="DatePicker triggerRender 示例"
             />
+        </div>
+
+        <Divider>DatePicker：clearIcon / prefix / insetLabel（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    defaultValue={new Date(2024, 2, 5)}
+                    insetLabel="日期"
+                    insetLabelId="date-picker-inset-label-demo"
+                    aria-label="DatePicker insetLabel 示例"
+                />
+            </div>
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    defaultValue={new Date(2024, 2, 5)}
+                    clearIcon={<IconButton icon={<span>×</span>} size="small" aria-label="自定义清除" />}
+                    aria-label="DatePicker clearIcon 示例"
+                />
+            </div>
+        </Space>
+
+        <Divider>DatePicker：autoSwitchDate（翻月/翻年自动切换已选日期，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start">
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    defaultValue={new Date(2024, 2, 5)}
+                    defaultPickerValue={new Date(2024, 2, 5)}
+                    onChange={(v) => { datePickerAutoSwitchLog = `autoSwitchDate 变化：${v ? (v as Date).toDateString() : 'null'}`; }}
+                    aria-label="DatePicker autoSwitchDate 示例"
+                />
+            </div>
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    defaultValue={new Date(2024, 2, 5)}
+                    defaultPickerValue={new Date(2024, 2, 5)}
+                    autoSwitchDate={false}
+                    aria-label="DatePicker autoSwitchDate=false 示例"
+                />
+            </div>
+            <span>{datePickerAutoSwitchLog}</span>
+        </Space>
+
+        <Divider>DatePicker：dropdownStyle / dropdownClassName / dropdownMargin（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                dropdownStyle={{ border: '2px solid var(--lotus-color-primary)' }}
+                dropdownClassName="playground-date-picker-dropdown-demo"
+                dropdownMargin={16}
+                aria-label="DatePicker dropdown 定制示例"
+            />
+        </div>
+
+        <Divider>DatePicker：autoFocus / preventScroll（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        {/* autoFocus 在 playground 中显式设为 false：playground 是所有 demo 共享同一页面，
+            与 TimePicker focusOnOpen demo 同时开启会互相争抢挂载时的焦点（同 Radio autoFocus
+            demo 的既有规避方式）。真实 autoFocus 效果见 e2e/input/date-picker.spec.ts 的独立断言。 */}
+        <div style={{ width: '260px' }}>
+            <DatePicker autoFocus={false} preventScroll aria-label="DatePicker autoFocus 示例" />
+        </div>
+
+        <Divider>DatePicker：motion=false（关闭浮层过渡动画，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker motion={false} aria-label="DatePicker motion=false 示例" />
+        </div>
+
+        <Divider>DatePicker：timeZone（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '260px' }}>
+            <DatePicker
+                type="dateTime"
+                defaultValue={new Date('2026-01-01T12:00:00.000Z')}
+                timeZone="+09:00"
+                onChange={(v) => { datePickerTimeZoneLog = `timeZone onChange：${v ? (v as Date).toISOString() : 'null'}`; }}
+                aria-label="DatePicker timeZone 示例"
+            />
+            <TypographyText type="secondary" aria-label="DatePicker timeZone 事件日志">{datePickerTimeZoneLog}</TypographyText>
         </div>
 
         <Divider>Slider：基础用法</Divider>
@@ -5543,6 +5683,46 @@ export function App() @{
                     aria-label="ConfigProvider direction 示例 Sidebar"
                 />
             </div>
+        </ConfigProvider>
+
+        <Divider>ConfigProvider：getPopupContainer（全局默认浮层挂载容器，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <ConfigProvider getPopupContainer={() => configProviderPopupContainerNode}>
+            <div
+                ref={configProviderPopupContainerNode}
+                style={{ position: 'relative', padding: '16px', border: '1px dashed var(--lotus-color-border)', borderRadius: 'var(--lotus-border-radius-medium)', width: '320px' }}
+            >
+                <TypographyText type="secondary">下拉浮层应挂载在这个虚线容器内部。</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Select
+                        aria-label="ConfigProvider getPopupContainer 示例"
+                        placeholder="点击展开下拉"
+                        optionList={[
+                            { value: 'a', label: '选项 A' },
+                            { value: 'b', label: '选项 B' },
+                        ]}
+                    />
+                </div>
+            </div>
+        </ConfigProvider>
+
+        <Divider>ConfigProvider：timeZone（全局默认时区，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <ConfigProvider timeZone="+09:00">
+            <div style={{ width: '260px' }}>
+                <TimePicker
+                    defaultValue={new Date('2026-01-01T12:00:00.000Z')}
+                    onChange={(v) => { configProviderTimeZoneLog = `ConfigProvider timeZone onChange：${v ? (v as Date).toISOString() : 'null'}`; }}
+                    aria-label="ConfigProvider timeZone 示例"
+                />
+                <TypographyText type="secondary" aria-label="ConfigProvider timeZone 事件日志">{configProviderTimeZoneLog}</TypographyText>
+            </div>
+        </ConfigProvider>
+
+        <Divider>ConfigProvider：responsiveObserve + onBreakpoint（响应式断点监听，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <ConfigProvider responsiveObserve>
+            <ConfigProviderBreakpointWatcher />
         </ConfigProvider>
 
         <Divider>CodeHighlight：代码高亮</Divider>

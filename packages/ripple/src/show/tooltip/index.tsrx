@@ -1,6 +1,7 @@
 import { track, effect, untrack, Portal } from 'ripple';
 import { TooltipFoundation, type TooltipState, type TooltipTrigger } from '@lotus/foundation/show/tooltip';
 import { calcFloatingStyle, type FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 
 export type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 
@@ -32,6 +33,8 @@ export interface TooltipProps {
      * 的 shrink-to-fit（默认，兼容多数场景）。
      */
     block?: boolean;
+    /** 展开/收起是否带 fade+scale 过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
     onVisibleChange?: (visible: boolean) => void;
 }
 
@@ -54,6 +57,7 @@ export function Tooltip(&{
     style,
     class: className,
     block = false,
+    motion = true,
     onVisibleChange,
 }: TooltipProps) @{
     const isControlled = trigger === 'custom';
@@ -72,12 +76,38 @@ export function Tooltip(&{
     // 不依赖内部 state.visible（同 Switch/Tag 已验证的受控范式）。
     let &[displayVisible] = track<boolean>(() => (isControlled ? !!visibleProp : state.visible));
 
+    // motion 动画状态机，同 Popover：mounted 控制 DOM 是否存在，leaving 标记离场
+    // 动画期间的过渡态，动画结束（固定 100ms，对齐 Semi zoomOut 时长）后才真正卸载。
+    let &[mounted] = track<boolean>(false);
+    let &[leaving] = track<boolean>(false);
+    let leaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+    effect(() => {
+        if (displayVisible) {
+            if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+            untrack(() => { mounted = true; leaving = false; });
+        } else if (untrack(() => mounted)) {
+            if (!motion) {
+                untrack(() => { mounted = false; leaving = false; });
+            } else {
+                untrack(() => { leaving = true; });
+                leaveTimer = setTimeout(() => {
+                    untrack(() => { mounted = false; leaving = false; });
+                    leaveTimer = null;
+                }, 100);
+            }
+        }
+    });
+
+    effect(() => () => { if (leaveTimer) clearTimeout(leaveTimer); });
+
     // 浮层可见时，测量触发元素与浮层自身尺寸，计算定位样式；随 displayVisible/position 变化重新计算。
     effect(() => {
-        if (!displayVisible) {
+        if (!mounted) {
             floatingStyle = null;
             return;
         }
+        if (!displayVisible) return;
         const trigger = triggerNode;
         if (!trigger) return;
         const rect = trigger.getBoundingClientRect();
@@ -122,11 +152,18 @@ export function Tooltip(&{
 
     function resolvePortalTarget(): HTMLElement | null {
         if (getPopupContainer) return getPopupContainer();
+        const configured = ConfigContext.get()?.value.getPopupContainer;
+        if (configured) return configured();
         return typeof document !== 'undefined' ? document.body : null;
     }
 
     let &[floatingClasses] = track<string>(() =>
-        ['lotus-tooltip', showArrow ? `lotus-tooltip-arrow-${floatingStyle?.position ?? position}` : '', className ?? '']
+        [
+            'lotus-tooltip',
+            showArrow ? `lotus-tooltip-arrow-${floatingStyle?.position ?? position}` : '',
+            motion ? (leaving ? 'lotus-tooltip-leave' : (displayVisible ? 'lotus-tooltip-enter' : '')) : '',
+            className ?? '',
+        ]
             .filter(Boolean)
             .join(' '),
     );
@@ -147,7 +184,7 @@ export function Tooltip(&{
             {children}
         </span>
 
-        @if (displayVisible && content != null) {
+        @if (mounted && content != null) {
             <Portal target={resolvePortalTarget()}>
                 <div
                     id={contentId}
@@ -158,8 +195,9 @@ export function Tooltip(&{
                         position: 'fixed',
                         left: `${floatingStyle?.left ?? 0}px`,
                         top: `${floatingStyle?.top ?? 0}px`,
-                        transform: floatingStyle?.transform ?? '',
+                        transform: `${floatingStyle?.transform ?? ''} scale(var(--lotus-tooltip-motion-scale, 1))`.trim(),
                         zIndex,
+                        ...(displayVisible || leaving ? {} : { display: 'none' }),
                     }}
                     ref={(node: HTMLElement) => { floatingNode = node; }}
                 >
@@ -191,6 +229,32 @@ export function Tooltip(&{
 
             .lotus-tooltip-content {
                 position: relative;
+            }
+
+            @property --lotus-tooltip-motion-scale {
+                syntax: '<number>';
+                inherits: false;
+                initial-value: 1;
+            }
+
+            @keyframes lotus-tooltip-zoomIn {
+                from { opacity: 0; --lotus-tooltip-motion-scale: 0.8; }
+                to { opacity: 1; --lotus-tooltip-motion-scale: 1; }
+            }
+
+            @keyframes lotus-tooltip-zoomOut {
+                from { opacity: 1; --lotus-tooltip-motion-scale: 1; }
+                to { opacity: 0; --lotus-tooltip-motion-scale: 0.8; }
+            }
+
+            .lotus-tooltip-enter {
+                animation: lotus-tooltip-zoomIn 100ms cubic-bezier(0.215, 0.61, 0.355, 1);
+                animation-fill-mode: forwards;
+            }
+
+            .lotus-tooltip-leave {
+                animation: lotus-tooltip-zoomOut 100ms cubic-bezier(0.215, 0.61, 0.355, 1);
+                animation-fill-mode: forwards;
             }
 
             .lotus-tooltip-arrow {

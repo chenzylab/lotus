@@ -78,6 +78,7 @@ import { TimePicker } from '@lotus/ripple';
 | size | 尺寸 | `small` \| `default` \| `large` | - |
 | stopPropagation | 浮层内容点击是否阻止事件冒泡到 document | boolean | `true` |
 | style | 自定义样式 | object | - |
+| timeZone | 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 全局默认值 | `string \| number` | - |
 | triggerRender | 完全自定义触发器渲染，替换默认 Input | `(props: { value: string; placeholder: string; open: boolean; disabled: boolean }) => any` | - |
 | type | 选择器类型 | `'time' \| 'timeRange'` | `'time'` |
 | use12Hours | 是否使用 12 小时制（AM/PM） | boolean | `false` |
@@ -91,6 +92,8 @@ import { TimePicker } from '@lotus/ripple';
 | onOpenChange | 面板展开/收起时的回调 | `(open: boolean) => void` | - |
 
 `TimePickerValue` 结构：`Date \| string \| null`（字符串需符合 `HH:mm` 或 `HH:mm:ss` 格式）。
+
+> `timeZone` 转换语义对齐 Semi：组件内部始终按“本机墙钟时间”保存状态，只有 `value` 传入与 `onChange` 传出这两个边界会把时区时刻与本机时刻互转（不是让面板整体切换显示时区），`time`/`timeRange` 均生效。
 
 ## Accessibility
 

@@ -67,6 +67,7 @@ Tooltip 支持 12 个方向的弹出位置。
 | condition | 是否允许 Tooltip 触发显示 | boolean | true |
 | content | 弹出层内容 | any | - |
 | getPopupContainer | 指定父级 DOM | `() => HTMLElement \| null` | `() => document.body` |
+| motion | 展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
 | mouseEnterDelay | 鼠标移入后延迟显示时间(ms) | number | 50 |
 | mouseLeaveDelay | 鼠标移出后延迟消失时间(ms) | number | 50 |
 | position | 弹出层展示位置，共 12 个值 | string | "top" |
@@ -78,7 +79,9 @@ Tooltip 支持 12 个方向的弹出位置。
 | zIndex | 弹层层级 | number | 1060 |
 | onVisibleChange | 弹出层展示/隐藏时触发的回调 | `(visible: boolean) => void` | - |
 
-> 注意事项：lotus 的 `autoAdjustOverflow` 是简化版算法（原方向空间不足且对侧空间足够则整体翻转），不支持 Semi 那种半空间独立判断，也不支持 4 种 `xxxOver` 边缘变体。lotus 尚未实现 `arrowPointAtCenter`、`clickToHide`、`disableFocusListener`、`keepDOM`、`margin`、`motion`、`prefixCls`、`preventScroll`、`rePosKey`、`stopPropagation`、`transformFromCenter`、`wrapperClassName`、`wrapperId`、`onClickOutSide`。
+> 注意事项：lotus 的 `autoAdjustOverflow` 是简化版算法（原方向空间不足且对侧空间足够则整体翻转），不支持 Semi 那种半空间独立判断，也不支持 4 种 `xxxOver` 边缘变体。lotus 尚未实现 `arrowPointAtCenter`、`clickToHide`、`disableFocusListener`、`keepDOM`、`margin`、`prefixCls`、`preventScroll`、`rePosKey`、`stopPropagation`、`transformFromCenter`、`wrapperClassName`、`wrapperId`、`onClickOutSide`。
+>
+> `motion` 数值对齐 Semi tooltip 动画规格：100ms、`cubic-bezier(0.215, 0.61, 0.355, 1)`、opacity 0↔1、scale 0.8↔1。关闭时 DOM 不会立即卸载，而是先带 `lotus-tooltip-leave` class 播完离场动画（100ms）再卸载；`motion=false` 时立即卸载，无过渡。
 
 ## Accessibility
 

@@ -45,4 +45,30 @@ test.describe('Tooltip', () => {
     });
     expect(isDirectBodyDescendant).toBe(true);
   });
+
+  test('motion 默认开启：关闭后浮层带 leave 动画短暂保留在 DOM 中，动画结束后才移除（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Tooltip motion 默认示例触发器' });
+    await trigger.click();
+
+    const tooltip = page.getByRole('tooltip', { name: '默认开启 motion' });
+    await expect(tooltip).toHaveClass(/lotus-tooltip-enter/);
+
+    await trigger.click();
+    await expect(tooltip).toHaveClass(/lotus-tooltip-leave/);
+    await expect(tooltip).toHaveCount(0, { timeout: 1000 });
+  });
+
+  test('motion=false：关闭后浮层立即从 DOM 移除，不经过 leave 动画阶段（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Tooltip motion 关闭示例触发器' });
+    await trigger.click();
+
+    const tooltip = page.getByRole('tooltip', { name: 'motion 关闭' });
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).not.toHaveClass(/lotus-tooltip-enter/);
+
+    await trigger.click();
+    await expect(tooltip).toHaveCount(0);
+  });
 });

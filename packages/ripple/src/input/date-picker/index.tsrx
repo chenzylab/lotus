@@ -21,8 +21,10 @@ import {
     type MonthDayInfo,
 } from '@lotus/foundation/input/date-picker';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { isValidTimeZone, utcToZonedTime, zonedTimeToUtc } from '@lotus/foundation/base/timezone';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 import { Popover } from '../../show/popover/index.tsrx';
 import { Input, type InputSize, type InputValidateStatus } from '../input/index.tsrx';
 import { Button } from '../../basic/button/index.tsrx';
@@ -125,6 +127,35 @@ export interface DatePickerProps {
     getPopupContainer?: () => HTMLElement;
     /** 浮层层级（对齐 Semi zIndex），不传由 CSS 层级 token 控制。 */
     zIndex?: number;
+    /** 自定义清除按钮图标（对齐 Semi clearIcon），桥接到内部 Input。 */
+    clearIcon?: any;
+    /** 输入框前缀内容（对齐 Semi prefix），与 insetLabel 同时传入时 prefix 优先
+     * （对齐 Semi dateInput.tsx `labelNode = prefix || insetLabel` 的既有语义）。 */
+    prefix?: any;
+    /** 内嵌标签文案，渲染在输入框内部（对齐 Semi insetLabel，桥接到 Input 的 prefix）。 */
+    insetLabel?: any;
+    /** insetLabel 关联的 id（对齐 Semi insetLabelId），桥接到 Input 内部 label 元素。 */
+    insetLabelId?: string;
+    /** 浮层内容自定义样式（对齐 Semi dropdownStyle），透传给内部 Popover。 */
+    dropdownStyle?: Record<string, any>;
+    /** 浮层内容自定义类名（对齐 Semi dropdownClassName），透传给内部 Popover。 */
+    dropdownClassName?: string;
+    /** 浮层与触发器的间距微调（对齐 Semi dropdownMargin），透传给 Popover spacing。 */
+    dropdownMargin?: number;
+    /** 浮层超出可视区域时是否自动调整弹出方向（对齐 Semi autoAdjustOverflow）。 */
+    autoAdjustOverflow?: boolean;
+    /** 面板展开/收起是否带过渡动画（对齐 Semi motion）。 */
+    motion?: boolean;
+    /** 挂载时是否自动聚焦触发器（对齐 Semi autoFocus）；range 类型且面板默认展开时
+     * Semi 会自动置为 true，lotus 不做这层隐式推导，由调用方显式传入。 */
+    autoFocus?: boolean;
+    /** 聚焦时是否阻止浏览器自动滚动到视口，透传给原生 focus() 同名选项
+     * （对齐 Semi preventScroll，配合 autoFocus 使用）。 */
+    preventScroll?: boolean;
+    /** 浮层内容点击是否阻止事件冒泡到 document（对齐 Semi stopPropagation，默认 true）。 */
+    stopPropagation?: boolean;
+    /** range 类型下，选择区间起点后面板是否自动跳转展示终点所在月（对齐 Semi autoSwitchDate，默认 true）。 */
+    autoSwitchDate?: boolean;
     'aria-labelledby'?: string;
     'aria-describedby'?: string;
     'aria-errormessage'?: string;
@@ -133,6 +164,11 @@ export interface DatePickerProps {
     id?: string;
     onChange?: (value: DatePickerValue, dateString: string | string[]) => void;
     onPanelChange?: (date: Date) => void;
+    /** 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 的全局默认值。
+     * 语义对齐 Semi：组件内部始终按“本机墙钟时间”保存 state，value 传入与 onChange 传出
+     * 这两个边界把 timeZone 时刻与本机时刻做互转（不是整体切换显示时区），date/dateTime/
+     * month/dateRange/dateTimeRange/monthRange、单值与 multiple 全部生效。 */
+    timeZone?: string | number;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -143,6 +179,22 @@ function resolveBaseValue(v: BaseValueType | (() => BaseValueType) | undefined):
     if (raw == null) return null;
     if (raw instanceof Date) return raw;
     return new Date(raw);
+}
+
+/** value 入口：外部传入的 timeZone 时刻 → 组件内部保存的本机墙钟时刻。 */
+function applyTimeZoneIn(value: DatePickerValue, timeZone: string | number | undefined): DatePickerValue {
+    if (!isValidTimeZone(timeZone)) return value;
+    if (value == null) return value;
+    if (Array.isArray(value)) return value.map((d) => (d ? utcToZonedTime(d, timeZone) : d)) as DatePickerValue;
+    return utcToZonedTime(value, timeZone);
+}
+
+/** onChange 出口：组件内部的本机墙钟时刻 → 对外通知的 timeZone 时刻。 */
+function applyTimeZoneOut(value: DatePickerValue, timeZone: string | number | undefined): DatePickerValue {
+    if (!isValidTimeZone(timeZone)) return value;
+    if (value == null) return value;
+    if (Array.isArray(value)) return value.map((d) => (d ? zonedTimeToUtc(d, timeZone) : d)) as DatePickerValue;
+    return zonedTimeToUtc(value, timeZone);
 }
 
 function toValueArray(value: DatePickerValue): Array<Date | null> {
@@ -543,8 +595,22 @@ export function DatePicker(&{
     bottomSlot,
     getPopupContainer,
     zIndex,
+    clearIcon,
+    prefix,
+    insetLabel,
+    insetLabelId,
+    dropdownStyle,
+    dropdownClassName,
+    dropdownMargin,
+    autoAdjustOverflow = true,
+    motion = true,
+    autoFocus = false,
+    preventScroll,
+    stopPropagation = true,
+    autoSwitchDate = true,
     onChange,
     onPanelChange,
+    timeZone,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledby,
     'aria-describedby': ariaDescribedby,
@@ -557,6 +623,10 @@ export function DatePicker(&{
 }: DatePickerProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    const configTracked = ConfigContext.get();
+    let &[effTimeZone] = track(() => timeZone ?? configTracked?.value.timeZone);
+    let &[tzValue] = track<DatePickerValue>(() => applyTimeZoneIn((value ?? null) as DatePickerValue, effTimeZone));
+    let &[tzDefaultValue] = track<DatePickerValue>(() => applyTimeZoneIn((defaultValue ?? null) as DatePickerValue, effTimeZone));
 
     // 上/下月、上/下年箭头是方向性图标，RTL 下需要水平镜像（对齐 Semi
     // 一手来源 semi-foundation/datePicker/rtl.scss 的 scaleX(-1) 方案）。
@@ -574,7 +644,7 @@ export function DatePicker(&{
     }
 
     function initialSingle(): Date | Date[] | null {
-        const dv = (isControlled ? value : defaultValue) as Date | Date[] | null | undefined;
+        const dv = untrack(() => (isControlled ? tzValue : tzDefaultValue)) as Date | Date[] | null | undefined;
         if (multiple) {
             if (Array.isArray(dv)) return dv;
             if (dv instanceof Date) return [dv];
@@ -586,7 +656,7 @@ export function DatePicker(&{
 
     let &[state] = track<DatePickerState>({
         value: isRange ? null : initialSingle(),
-        rangeValue: isRange ? toRangePair((isControlled ? value : defaultValue) ?? null) : [null, null],
+        rangeValue: isRange ? toRangePair(untrack(() => (isControlled ? tzValue : tzDefaultValue)) ?? null) : [null, null],
         visible: open ?? defaultOpen,
         cachedValue: null,
         cachedRange: null,
@@ -624,22 +694,24 @@ export function DatePicker(&{
 
     untrack(() => {
         foundation.initPanels(defaultPickerValue);
-        if (isYearOrMonth) foundation.initYearMonth((isControlled ? value : defaultValue) ?? null);
-        else if (isRange) foundation.syncPanelsFromRangeValue(toRangePair((isControlled ? value : defaultValue) ?? null));
+        const dv = isControlled ? tzValue : tzDefaultValue;
+        if (isYearOrMonth) foundation.initYearMonth(dv ?? null);
+        else if (isRange) foundation.syncPanelsFromRangeValue(toRangePair(dv ?? null));
         else foundation.syncSelectedFromValue(initialSingle());
     });
 
     let &[hasBeenControlled] = track<boolean>(false);
     effect(() => {
         if (value === undefined) return;
+        const dv = tzValue;
         untrack(() => { hasBeenControlled = true; });
         if (isRange) {
-            const pair = toRangePair(value);
+            const pair = toRangePair(dv);
             untrack(() => { state = { ...state, rangeValue: pair }; foundation.syncPanelsFromRangeValue(pair); if (insetInput) foundation.syncInsetInputFromValue(pair); });
         } else if (isYearOrMonth) {
-            untrack(() => { foundation.initYearMonth(value); });
+            untrack(() => { foundation.initYearMonth(dv); });
         } else {
-            const v = multiple ? ((Array.isArray(value) ? value : []) as Date[]) : ((Array.isArray(value) ? value[0] : value) as Date | null);
+            const v = multiple ? ((Array.isArray(dv) ? dv : []) as Date[]) : ((Array.isArray(dv) ? dv[0] : dv) as Date | null);
             untrack(() => { state = { ...state, value: v }; foundation.syncSelectedFromValue(v); if (insetInput) foundation.syncInsetInputFromValue(Array.isArray(v) ? v : [v]); });
         }
     });
@@ -650,6 +722,17 @@ export function DatePicker(&{
 
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[panelNode] = track<HTMLElement | null>(null);
+    let inputApi: { focus: (options?: { preventScroll?: boolean }) => void; blur: () => void } | null = null;
+
+    // 挂载后自动聚焦触发器（对齐 Semi autoFocus）。range 类型且面板默认展开时
+    // Semi 会隐式推导 autoFocus=true，lotus 不做这层隐式推导（同 TimePicker
+    // focusOnOpen 的既有取舍），由调用方显式传 autoFocus。
+    effect(() => {
+        if (!autoFocus || disabled) return;
+        untrack(() => {
+            inputApi?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+        });
+    });
 
     function notifyOpenChange(next: boolean) {
         onOpenChange?.(next);
@@ -665,11 +748,12 @@ export function DatePicker(&{
             onChange(isRange ? [] : (multiple ? [] : null), isRange || multiple ? [] : '');
             return;
         }
+        const outValue = applyTimeZoneOut(notifyValue as DatePickerValue, untrack(() => effTimeZone));
         const token = foundation.getValidDateFormat();
-        const arr = Array.isArray(notifyValue) ? (notifyValue as Array<Date | null>) : [notifyValue as Date | null];
+        const arr = Array.isArray(outValue) ? (outValue as Array<Date | null>) : [outValue as Date | null];
         const strs = arr.filter((d): d is Date => !!d).map((d) => foundation.localeFormat(d, token));
         const dateString = isRange ? strs : (multiple ? strs : (strs[0] ?? ''));
-        onChange(notifyValue as DatePickerValue, dateString as string | string[]);
+        onChange(outValue, dateString as string | string[]);
     }
 
     function handleTriggerClick() {
@@ -750,13 +834,21 @@ export function DatePicker(&{
     }
 
     function switchMonth(switchType: 'prevMonth' | 'nextMonth' | 'prevYear' | 'nextYear', panelType: PanelType) {
-        foundation.switchMonthOrYear(switchType, panelType, syncSwitchMonth, onPanelChange);
+        const updated = foundation.switchMonthOrYear(
+            switchType,
+            panelType,
+            syncSwitchMonth,
+            onPanelChange,
+            autoSwitchDate,
+            disabledDate ? (d: Date) => disabledDate(d) : undefined,
+        );
+        if (updated) emit(updated);
     }
 
     function handleConfirm() {
         const result = foundation.commitCached(isControlled);
         if (result.shouldNotify) emit(result.notifyValue);
-        onConfirm?.(result.notifyValue as DatePickerValue);
+        onConfirm?.(applyTimeZoneOut(result.notifyValue as DatePickerValue, untrack(() => effTimeZone)));
         closePanel();
     }
 
@@ -899,11 +991,20 @@ export function DatePicker(&{
     );
 
     let &[panelClasses] = track<string>(() =>
-        ['lotus-date-picker-panel', density === 'compact' ? 'lotus-date-picker-panel-compact' : ''].filter(Boolean).join(' '),
+        ['lotus-date-picker-panel', density === 'compact' ? 'lotus-date-picker-panel-compact' : '', dropdownClassName ?? ''].filter(Boolean).join(' '),
     );
 
     function panelDisabledDate(d: Date, opts?: DisabledDateOptions) {
         return disabledDate ? disabledDate(d, opts) : false;
+    }
+
+    // prefix 与 insetLabel 同时传入时 prefix 优先（对齐 Semi dateInput.tsx
+    // `labelNode = prefix || insetLabel` 的既有语义），insetLabelId 只在渲染
+    // insetLabel（而非 prefix）时才附着，同样对齐 Semi 只把 id 关联给 insetLabel 场景。
+    function renderLabelNode() {
+        if (prefix) return prefix;
+        if (insetLabel) return <span id={insetLabelId}>{insetLabel}</span>;
+        return undefined;
     }
 
     function yamProps(panelType: PanelType) {
@@ -933,12 +1034,15 @@ export function DatePicker(&{
                 trigger="custom"
                 visible={state.visible}
                 position={position}
-                spacing={4}
+                spacing={dropdownMargin ?? 4}
                 closeOnEsc={false}
                 getPopupContainer={getPopupContainer}
                 zIndex={zIndex}
+                autoAdjustOverflow={autoAdjustOverflow}
+                motion={motion}
+                stopPropagation={stopPropagation}
                 content={
-                    <div class={panelClasses} data-type={type} ref={(node: HTMLElement) => { panelNode = node; }}>
+                    <div class={panelClasses} data-type={type} style={dropdownStyle} ref={(node: HTMLElement) => { panelNode = node; }}>
                         @if (topSlot) {
                             <div class="lotus-date-picker-top-slot">{topSlot}</div>
                         }
@@ -1190,13 +1294,16 @@ export function DatePicker(&{
                             validateStatus={validateStatus}
                             borderless={borderless}
                             placeholder={effPlaceholder}
+                            prefix={renderLabelNode()}
                             suffix={<IconCalendar />}
+                            clearIcon={clearIcon}
                             aria-label={ariaLabel}
                             aria-labelledby={ariaLabelledby}
                             aria-describedby={ariaDescribedby}
                             aria-errormessage={ariaErrormessage}
                             aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
                             aria-required={ariaRequired}
+                            getInputApi={(api) => { inputApi = api; }}
                             onFocus={() => foundation.setRangeInputFocus('rangeStart')}
                             onBlur={(e) => handleInputBlur(`${(e.target as HTMLInputElement).value}${rangeSeparator}${rangeRightValue}`)}
                         />
@@ -1209,6 +1316,7 @@ export function DatePicker(&{
                             borderless={borderless}
                             showClear={showClear && !insetInput}
                             placeholder={effPlaceholder}
+                            clearIcon={clearIcon}
                             onFocus={() => foundation.setRangeInputFocus('rangeEnd')}
                             onBlur={(e) => handleInputBlur(`${rangeLeftValue}${rangeSeparator}${(e.target as HTMLInputElement).value}`)}
                             onClear={handleClear}
@@ -1225,13 +1333,16 @@ export function DatePicker(&{
                             borderless={borderless}
                             showClear={showClear && !insetInput}
                             placeholder={effPlaceholder}
+                            prefix={renderLabelNode()}
                             suffix={<IconCalendar />}
+                            clearIcon={clearIcon}
                             aria-label={ariaLabel}
                             aria-labelledby={ariaLabelledby}
                             aria-describedby={ariaDescribedby}
                             aria-errormessage={ariaErrormessage}
                             aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
                             aria-required={ariaRequired}
+                            getInputApi={(api) => { inputApi = api; }}
                             onBlur={(e) => handleInputBlur((e.target as HTMLInputElement).value)}
                             onClear={handleClear}
                         />

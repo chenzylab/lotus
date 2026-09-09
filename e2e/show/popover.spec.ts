@@ -119,4 +119,32 @@ test.describe('Popover', () => {
     expect(logs).toContain('popover content clicked');
     await expect(popover).not.toBeVisible();
   });
+
+  test('motion 默认开启：关闭后浮层带 leave 动画短暂保留在 DOM 中，动画结束后才移除（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Popover motion 默认示例触发器' });
+    await trigger.click();
+
+    const popover = page.locator('.lotus-popover', { hasText: '默认开启 motion' });
+    await expect(popover).toHaveClass(/lotus-popover-enter/);
+
+    await page.keyboard.press('Escape');
+    // leave 动画期间（100ms 内）浮层仍应挂载在 DOM 中，带 leave class。
+    await expect(popover).toHaveClass(/lotus-popover-leave/);
+    // 动画结束后（略超过 100ms）浮层从 DOM 移除。
+    await expect(popover).toHaveCount(0, { timeout: 1000 });
+  });
+
+  test('motion=false：关闭后浮层立即从 DOM 移除，不经过 leave 动画阶段（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Popover motion 关闭示例触发器' });
+    await trigger.click();
+
+    const popover = page.locator('.lotus-popover', { hasText: 'motion 关闭' });
+    await expect(popover).toBeVisible();
+    await expect(popover).not.toHaveClass(/lotus-popover-enter/);
+
+    await page.keyboard.press('Escape');
+    await expect(popover).toHaveCount(0);
+  });
 });

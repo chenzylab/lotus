@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { watchMediaQuery, BREAKPOINTS, breakpointMinWidthQuery } from './responsive.js';
+import {
+  watchMediaQuery,
+  BREAKPOINTS,
+  breakpointMinWidthQuery,
+  DEFAULT_RESPONSIVE_MAP,
+  createEmptyBreakpointScreens,
+  readBreakpointScreens,
+  watchAllBreakpoints,
+} from './responsive.js';
 
 describe('watchMediaQuery', () => {
   afterEach(() => {
@@ -86,5 +94,65 @@ describe('breakpointMinWidthQuery', () => {
     for (const key of Object.keys(BREAKPOINTS) as (keyof typeof BREAKPOINTS)[]) {
       expect(breakpointMinWidthQuery(key)).toBe(`(min-width: ${BREAKPOINTS[key]}px)`);
     }
+  });
+});
+
+describe('createEmptyBreakpointScreens', () => {
+  it('返回全部断点均为 false 的对象', () => {
+    expect(createEmptyBreakpointScreens()).toEqual({
+      xs: false, sm: false, md: false, lg: false, xl: false, xxl: false,
+    });
+  });
+});
+
+describe('readBreakpointScreens', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('SSR/无 window 环境下全部为 false', () => {
+    vi.stubGlobal('window', undefined);
+    expect(readBreakpointScreens(DEFAULT_RESPONSIVE_MAP)).toEqual(createEmptyBreakpointScreens());
+  });
+
+  it('按 responsiveMap 同步读取每个断点的当前匹配状态', () => {
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn((query: string) => ({ matches: query === DEFAULT_RESPONSIVE_MAP.md })),
+    });
+    const screens = readBreakpointScreens(DEFAULT_RESPONSIVE_MAP);
+    expect(screens.md).toBe(true);
+    expect(screens.sm).toBe(false);
+  });
+});
+
+describe('watchAllBreakpoints', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('为 responsiveMap 里每个断点注册监听，变化时回调 (screen, matches)', () => {
+    const handlers: Record<string, { match: () => void; unmatch: () => void }> = {};
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn((query: string) => ({
+        matches: false,
+        addEventListener: (_: string, cb: any) => {
+          const key = (Object.keys(DEFAULT_RESPONSIVE_MAP) as (keyof typeof DEFAULT_RESPONSIVE_MAP)[])
+            .find((k) => DEFAULT_RESPONSIVE_MAP[k] === query);
+          if (key) handlers[key] = { match: () => cb({ matches: true }), unmatch: () => cb({ matches: false }) };
+        },
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    const onChange = vi.fn();
+    const unsubscribe = watchAllBreakpoints(DEFAULT_RESPONSIVE_MAP, onChange);
+
+    handlers.md.match();
+    expect(onChange).toHaveBeenCalledWith('md', true);
+
+    handlers.lg.unmatch();
+    expect(onChange).toHaveBeenCalledWith('lg', false);
+
+    expect(() => unsubscribe()).not.toThrow();
   });
 });

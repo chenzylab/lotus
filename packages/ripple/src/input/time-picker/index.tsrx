@@ -14,8 +14,10 @@ import {
     type TimeOption,
 } from '@lotus/foundation/input/time-picker';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
+import { isValidTimeZone, utcToZonedTime, zonedTimeToUtc } from '@lotus/foundation/base/timezone';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 import { Popover } from '../../show/popover/index.tsrx';
 import { Input, type InputSize, type InputValidateStatus } from '../input/index.tsrx';
 import { ScrollList } from '../../show/scroll-list/index.tsrx';
@@ -87,6 +89,10 @@ export interface TimePickerProps {
     insetLabel?: any;
     /** 原样透传给每一列（时/分/秒/AM-PM）ScrollItem 的 props（对齐 Semi scrollItemProps）。 */
     scrollItemProps?: Partial<ScrollItemProps<number | 'AM' | 'PM'>>;
+    /** 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 的全局默认值。
+     * 语义对齐 Semi：组件内部始终按“本机墙钟时间”保存 state，value 传入与 onChange 传出
+     * 这两个边界把 timeZone 时刻与本机时刻做互转（不是整体切换显示时区）。 */
+    timeZone?: string | number;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -102,9 +108,12 @@ function toDateValue(input: TimePickerValue): Date | null {
     return d;
 }
 
-function toPair(input: TimePickerProps['value']): TimePickerPair {
-    if (Array.isArray(input)) return [toDateValue(input[0] ?? null), toDateValue(input[1] ?? null)];
-    return [toDateValue((input ?? null) as TimePickerValue), null];
+function toPair(input: TimePickerProps['value'], timeZone?: string | number): TimePickerPair {
+    const pair: TimePickerPair = Array.isArray(input)
+        ? [toDateValue(input[0] ?? null), toDateValue(input[1] ?? null)]
+        : [toDateValue((input ?? null) as TimePickerValue), null];
+    if (!isValidTimeZone(timeZone)) return pair;
+    return [pair[0] ? utcToZonedTime(pair[0], timeZone) : null, pair[1] ? utcToZonedTime(pair[1], timeZone) : null];
 }
 
 function pad2(n: number): string {
@@ -308,12 +317,15 @@ export function TimePicker(&{
     inputReadOnly = false,
     insetLabel,
     scrollItemProps,
+    timeZone,
     'aria-label': ariaLabel,
     style,
     class: className,
 }: TimePickerProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    const configTracked = ConfigContext.get();
+    let &[effTimeZone] = track(() => timeZone ?? configTracked?.value.timeZone);
 
     const isRange = type === 'timeRange';
     const isControlled = value !== undefined;
@@ -322,7 +334,7 @@ export function TimePicker(&{
     let &[effFormat] = track<string>(() => format ?? (use12Hours ? 'a h:mm:ss' : 'HH:mm:ss'));
 
     let &[state] = track<TimePickerState>({
-        pair: isControlled ? toPair(value) : toPair(defaultValue),
+        pair: isControlled ? toPair(value, untrack(() => effTimeZone)) : toPair(defaultValue, untrack(() => effTimeZone)),
         visible: isOpenControlled ? !!open : defaultOpen,
         inputDraft: null,
         invalid: false,
@@ -337,7 +349,7 @@ export function TimePicker(&{
     effect(() => {
         if (value !== undefined) {
             hasBeenControlled = true;
-            untrack(() => { state = { ...state, pair: toPair(value) }; });
+            untrack(() => { state = { ...state, pair: toPair(value, effTimeZone) }; });
         } else if (untrack(() => hasBeenControlled)) {
             untrack(() => { state = { ...state, pair: [null, null] }; });
         }
@@ -365,7 +377,10 @@ export function TimePicker(&{
     });
 
     function notify(pair: TimePickerPair) {
-        onChange?.(isRange ? pair : pair[0]);
+        const outPair: TimePickerPair = isValidTimeZone(untrack(() => effTimeZone))
+            ? [pair[0] ? zonedTimeToUtc(pair[0], untrack(() => effTimeZone) as string | number) : null, pair[1] ? zonedTimeToUtc(pair[1], untrack(() => effTimeZone) as string | number) : null]
+            : pair;
+        onChange?.(isRange ? outPair : outPair[0]);
     }
 
     function handleTriggerClick() {

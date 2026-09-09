@@ -629,4 +629,11 @@ export {
     type NormalizedNavItem,
 } from './navigation/nav/index.tsrx';
 export { ConfigProvider, type ConfigProviderProps, type ConfigProviderThemeMode } from './other/config-provider/index.tsrx';
+export {
+  ConfigContext,
+  type ConfigContextValue,
+  type ResponsiveMap,
+  type BreakpointScreens,
+  type ResponsiveBreakpoint,
+} from './other/config-provider/config-context.js';
 export { zhCN, enUS, locales, type LocaleShape, type LocaleCode } from '@lotus/locale';
