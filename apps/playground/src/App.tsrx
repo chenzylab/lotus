@@ -631,6 +631,77 @@ export function App() @{
         { title: '操作', key: 'action', fixed: 'right', width: 100, render: () => <a href="javascript:void(0)">编辑</a> },
     ];
 
+    const tableResizableColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name', width: 150 },
+        { title: '年龄', dataIndex: 'age', key: 'age', width: 120 },
+        { title: '城市', dataIndex: 'city', key: 'city', width: 150 },
+        { title: '部门', dataIndex: 'dept', key: 'dept', width: 150, resize: false },
+    ];
+    let &[tableResizeLog] = track<string>('');
+
+    const tableStickyColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '年龄', dataIndex: 'age', key: 'age' },
+        { title: '城市', dataIndex: 'city', key: 'city' },
+        { title: '部门', dataIndex: 'dept', key: 'dept' },
+    ];
+    const tableStickyData: TablePerson[] = Array.from({ length: 15 }, (_, i) => ({
+        key: `s${i + 1}`,
+        name: `员工${i + 1}`,
+        age: 22 + (i % 20),
+        city: ['北京', '上海', '深圳'][i % 3]!,
+        dept: i % 2 === 0 ? '研发' : '产品',
+    }));
+
+    interface TableSpanRow {
+        key: string;
+        dept: string;
+        name: string;
+        score: number;
+    }
+    const tableRowSpanColumns: ColumnDef<TableSpanRow>[] = [
+        {
+            title: '部门',
+            dataIndex: 'dept',
+            key: 'dept',
+            render: (text: string, record: TableSpanRow, index: number) => {
+                if (record.key === 'r1') return { children: text, props: { rowSpan: 2 } };
+                if (record.key === 'r2') return { children: text, props: { rowSpan: 0 } };
+                return text;
+            },
+        },
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '得分', dataIndex: 'score', key: 'score' },
+    ];
+    const tableRowSpanData: TableSpanRow[] = [
+        { key: 'r1', dept: '研发', name: '张三', score: 88 },
+        { key: 'r2', dept: '研发', name: '李四', score: 92 },
+        { key: 'r3', dept: '产品', name: '王五', score: 76 },
+    ];
+
+    const tableGroupColumns: ColumnDef<TablePerson>[] = [
+        { title: '姓名', dataIndex: 'name', key: 'name' },
+        { title: '年龄', dataIndex: 'age', key: 'age' },
+        { title: '城市', dataIndex: 'city', key: 'city' },
+    ];
+    const tableGroupData: TablePerson[] = [
+        { key: 'g1', name: '张三', age: 32, city: '北京', dept: '研发' },
+        { key: 'g2', name: '李四', age: 28, city: '上海', dept: '产品' },
+        { key: 'g3', name: '王五', age: 45, city: '北京', dept: '研发' },
+        { key: 'g4', name: '赵六', age: 24, city: '深圳', dept: '设计' },
+        { key: 'g5', name: '孙七', age: 36, city: '上海', dept: '运营' },
+    ];
+
+    // groupBy + 分页组合：分页按打平后的整体顺序切（对齐 Semi 真实行为，不是
+    // "每组独立占若干整页"），验证组标题只在该组至少有一条数据落在本页时才出现。
+    const tableGroupPageData: TablePerson[] = Array.from({ length: 12 }, (_, i) => ({
+        key: `gp${i + 1}`,
+        name: `员工${i + 1}`,
+        age: 22 + i,
+        city: '北京',
+        dept: i < 5 ? '研发' : i < 9 ? '产品' : '设计',
+    }));
+
     let formApiRef: FormApi | undefined;
     let &[formSubmitResult] = track<string>('');
     let linkageFormApiRef: FormApi | undefined;
@@ -5563,6 +5634,106 @@ export function App() @{
                 <Table columns={tableBasicColumns} dataSource={tableBasicData} pagination={false} loading aria-label="Table loading" />
                 <Table columns={tableBasicColumns} dataSource={tableBasicData} pagination={false} bordered size="small" aria-label="Table bordered small" />
             </Space>
+        </div>
+
+        <Divider>Table：resizable（拖拽调整列宽，"部门"列 resize=false 关闭）</Divider>
+
+        <div>
+            <Table
+                columns={tableResizableColumns}
+                dataSource={tableBasicData}
+                pagination={false}
+                resizable={{
+                    onResize: (col) => { tableResizeLog = `resize: ${col.title} -> ${col.width}px`; },
+                    onResizeStop: (col) => { tableResizeLog = `resizeStop: ${col.title} -> ${col.width}px`; },
+                }}
+                aria-label="Table resizable"
+            />
+            <TypographyText type="secondary" aria-label="Table resize 日志">{tableResizeLog}</TypographyText>
+        </div>
+
+        <Divider>Table：sticky（页面级吸顶表头，top 偏移 60px）+ showHeader/indentSize</Divider>
+
+        <div style={{ height: '200px', overflow: 'auto', border: '1px solid var(--lotus-color-border)' }}>
+            <div style={{ height: '80px' }}>滚动这个容器，观察表头吸顶</div>
+            <Table columns={tableStickyColumns} dataSource={tableStickyData} pagination={false} sticky={{ top: 0 }} aria-label="Table sticky" />
+        </div>
+
+        <Divider>Table：rowSpan 单元格合并 + rowSpanHover 联动高亮</Divider>
+
+        <div>
+            <Table columns={tableRowSpanColumns} dataSource={tableRowSpanData} pagination={false} rowSpanHover aria-label="Table rowSpan" />
+        </div>
+
+        <Divider>Table：onHeaderRow（表头行注入自定义属性）+ showHeader=false</Divider>
+
+        <div>
+            <Space vertical style={{ width: '100%' }}>
+                <Table
+                    columns={tableBasicColumns}
+                    dataSource={tableBasicData}
+                    pagination={false}
+                    onHeaderRow={() => ({ 'data-testid': 'custom-header-row' })}
+                    aria-label="Table onHeaderRow"
+                />
+                <Table columns={tableBasicColumns} dataSource={tableBasicData} pagination={false} showHeader={false} aria-label="Table showHeader false" />
+            </Space>
+        </div>
+
+        <Divider>Table：keepDOM（收起子行/展开内容仍保留 DOM，视觉隐藏）</Divider>
+
+        <div>
+            <Table
+                columns={tableExpandColumns}
+                dataSource={tableTreeData}
+                pagination={false}
+                expandedRowRender={(record: TablePerson) => <div>部门详情：{record.dept}</div>}
+                keepDOM
+                aria-label="Table keepDOM"
+            />
+        </div>
+
+        <Divider>Table：indentSize（树形数据 + 展开行，自定义缩进 40px）</Divider>
+
+        <div>
+            <Table
+                columns={tableExpandColumns}
+                dataSource={tableTreeData}
+                pagination={false}
+                expandedRowRender={(record: TablePerson) => <div>部门详情：{record.dept}</div>}
+                defaultExpandedRowKeys={['t1']}
+                indentSize={40}
+                aria-label="Table indentSize"
+            />
+        </div>
+
+        <Divider>Table：groupBy 数据分组（点击标题行展开/收起）</Divider>
+
+        <div>
+            <Table
+                columns={tableGroupColumns}
+                dataSource={tableGroupData}
+                pagination={false}
+                groupBy="dept"
+                clickGroupedRowToExpand
+                defaultExpandAllGroupRows
+                onGroupedRow={() => ({ 'data-testid': 'group-row' })}
+                renderGroupSection={(groupKey: string) => `分组：${groupKey}`}
+                aria-label="Table groupBy"
+            />
+        </div>
+
+        <Divider>Table：groupBy + 分页组合（pageSize=6，分页按打平后整体顺序切，组标题只在本组数据落在本页时出现）</Divider>
+
+        <div>
+            <Table
+                columns={tableGroupColumns}
+                dataSource={tableGroupPageData}
+                pagination={{ pageSize: 6 }}
+                groupBy="dept"
+                defaultExpandAllGroupRows
+                aria-label="Table groupBy 分页"
+            />
         </div>
 
         <Divider>Table：空数据</Divider>

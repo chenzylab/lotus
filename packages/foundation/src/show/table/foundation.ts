@@ -14,6 +14,7 @@ import {
 import { flattenRows, toggleExpandedRow, type FlatRow } from './expand.js';
 import { calcFixedOffsets, hasFixedColumns, type FixedOffsets } from './fixed-column.js';
 import { calcResizedWidth } from './resize-column.js';
+import { groupDataSource, buildGroupSections, type GroupBy, type GroupSection } from './group.js';
 
 export * from './table-data.js';
 export * from './sort.js';
@@ -22,6 +23,7 @@ export * from './row-selection.js';
 export * from './expand.js';
 export * from './fixed-column.js';
 export * from './resize-column.js';
+export * from './group.js';
 
 export interface TableState<T = any> {
   sortState: SortState;
@@ -39,6 +41,7 @@ export interface TableFoundationOptions<T = any> {
   childrenKey: string;
   checkRelation: CheckRelation;
   hasExpandedRowRender: boolean;
+  keepDOM?: boolean;
 }
 
 export interface ChangeInfo<T = any> {
@@ -158,6 +161,7 @@ export class TableFoundation<T = any> extends Foundation<TableState<T>> {
       childrenKey: this.opts.childrenKey,
       expandedRowKeys,
       hasExpandedRowRender: this.opts.hasExpandedRowRender,
+      keepDOM: this.opts.keepDOM,
     });
   }
 
@@ -189,6 +193,13 @@ export class TableFoundation<T = any> extends Foundation<TableState<T>> {
     const { columnWidths } = this.getState();
     this.setState({ columnWidths: { ...columnWidths, [columnKey]: width } });
     return width;
+  }
+
+  // ===================== 数据分组 =====================
+
+  getGroupSections(data: T[], groupBy: GroupBy<T> | undefined): GroupSection<T>[] {
+    const grouped = groupDataSource(data, groupBy, (r, i) => this.resolveKey(r, i));
+    return buildGroupSections(grouped, (r, i) => this.resolveKey(r, i));
   }
 
   // ===================== 统一 onChange 聚合信息 =====================

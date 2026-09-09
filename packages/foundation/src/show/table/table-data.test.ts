@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getColumnKey, getCellValue, flattenLeafColumns, getHeaderRowCount, resolveRowKey, type ColumnDef } from './table-data.js';
+import { getColumnKey, getCellValue, flattenLeafColumns, getHeaderRowCount, resolveRowKey, resolveRenderCell, resolveRowSpans, type ColumnDef } from './table-data.js';
 
 describe('getColumnKey', () => {
   it('优先使用 key', () => {
@@ -80,5 +80,78 @@ describe('resolveRowKey', () => {
   it('rowKey 未设置：默认取 record.key，缺省回退 index', () => {
     expect(resolveRowKey({ key: 'k1' }, 0, undefined)).toBe('k1');
     expect(resolveRowKey({}, 3, undefined)).toBe(3);
+  });
+});
+
+describe('resolveRenderCell', () => {
+  it('普通值：原样透传，rowSpan/colSpan 都是 1', () => {
+    expect(resolveRenderCell('Tom')).toEqual({ content: 'Tom', rowSpan: 1, colSpan: 1 });
+    expect(resolveRenderCell(42)).toEqual({ content: 42, rowSpan: 1, colSpan: 1 });
+    expect(resolveRenderCell(null)).toEqual({ content: null, rowSpan: 1, colSpan: 1 });
+  });
+
+  it('数组：原样透传（不是 rowSpan 声明对象）', () => {
+    const arr = ['a', 'b'];
+    expect(resolveRenderCell(arr)).toEqual({ content: arr, rowSpan: 1, colSpan: 1 });
+  });
+
+  it('{ children, props } 形态：拆出 rowSpan/colSpan', () => {
+    expect(resolveRenderCell({ children: 'Tom', props: { rowSpan: 3 } })).toEqual({
+      content: 'Tom',
+      rowSpan: 3,
+      colSpan: 1,
+    });
+    expect(resolveRenderCell({ children: 'x', props: { rowSpan: 0 } })).toEqual({
+      content: 'x',
+      rowSpan: 0,
+      colSpan: 1,
+    });
+    expect(resolveRenderCell({ children: 'x', props: { colSpan: 2 } })).toEqual({
+      content: 'x',
+      rowSpan: 1,
+      colSpan: 2,
+    });
+  });
+
+  it('{ children } 无 props：默认 rowSpan/colSpan 都是 1', () => {
+    expect(resolveRenderCell({ children: 'x' })).toEqual({ content: 'x', rowSpan: 1, colSpan: 1 });
+  });
+});
+
+describe('resolveRowSpans', () => {
+  it('无合并：每格 rowSpan/colSpan 都是 1，都不跳过', () => {
+    const rows = [{ a: 1 }, { a: 2 }];
+    const columns: ColumnDef[] = [{ dataIndex: 'a' }];
+    const result = resolveRowSpans(rows, columns, (record: any, col) => (record as any)[col.dataIndex!]);
+    expect(result).toEqual([
+      [{ content: 1, rowSpan: 1, colSpan: 1, skip: false }],
+      [{ content: 2, rowSpan: 1, colSpan: 1, skip: false }],
+    ]);
+  });
+
+  it('rowSpan 合并：后续行同列标记 skip', () => {
+    const rows = [{ g: 'A' }, { g: 'A' }, { g: 'B' }];
+    const columns: ColumnDef[] = [{ dataIndex: 'g' }];
+    const result = resolveRowSpans(rows, columns, (record: any, _col, rowIndex) => {
+      if (record.g === 'A' && rowIndex === 0) return { children: 'A', props: { rowSpan: 2 } };
+      if (record.g === 'A') return { children: 'A', props: { rowSpan: 0 } };
+      return record.g;
+    });
+    expect(result[0]![0]).toEqual({ content: 'A', rowSpan: 2, colSpan: 1, skip: false });
+    expect(result[1]![0]).toEqual({ content: undefined, rowSpan: 1, colSpan: 1, skip: true });
+    expect(result[2]![0]).toEqual({ content: 'B', rowSpan: 1, colSpan: 1, skip: false });
+  });
+
+  it('colSpan 合并：本行内向右吞并后续列', () => {
+    const rows = [{ a: 1, b: 2, c: 3 }];
+    const columns: ColumnDef[] = [{ dataIndex: 'a' }, { dataIndex: 'b' }, { dataIndex: 'c' }];
+    const result = resolveRowSpans(rows, columns, (record: any, col) =>
+      col.dataIndex === 'a' ? { children: 'merged', props: { colSpan: 2 } } : (record as any)[col.dataIndex!],
+    );
+    expect(result[0]).toEqual([
+      { content: 'merged', rowSpan: 1, colSpan: 2, skip: false },
+      { content: undefined, rowSpan: 1, colSpan: 1, skip: true },
+      { content: 3, rowSpan: 1, colSpan: 1, skip: false },
+    ]);
   });
 });

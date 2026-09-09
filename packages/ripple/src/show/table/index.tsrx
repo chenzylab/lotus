@@ -4,6 +4,7 @@ import {
     flattenLeafColumns,
     getColumnKey,
     getCellValue,
+    resolveRenderCell,
     getHeaderRowCount,
     sortData,
     filterData,
@@ -11,6 +12,11 @@ import {
     calcAllSelectedStatus,
     calcFixedOffsets,
     hasFixedColumns,
+    resolveRowSpans,
+    groupDataSource,
+    flattenGroupedRows,
+    resolveRowKey,
+    type ResolvedCell,
     type TableState,
     type ColumnDef,
     type SortOrder,
@@ -72,6 +78,7 @@ export interface TableProps<T = any> {
     onExpandedRowsChange?: (expandedRowKeys: Array<string | number>) => void;
     onChange?: (info: ChangeInfo & { pagination: { currentPage: number; pageSize: number } }) => void;
     onRow?: (record: T, index: number) => Record<string, any>;
+    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => Record<string, any>;
     empty?: any;
     title?: () => any;
     footer?: () => any;
@@ -79,6 +86,24 @@ export interface TableProps<T = any> {
     style?: Record<string, any>;
     class?: string;
     'aria-label'?: string;
+    showHeader?: boolean;
+    indentSize?: number;
+    sticky?: boolean | { top?: number };
+    resizable?: boolean | {
+        onResize?: (column: ColumnDef<T>) => void;
+        onResizeStart?: (column: ColumnDef<T>) => void;
+        onResizeStop?: (column: ColumnDef<T>) => void;
+    };
+    /** hover 合并单元格（rowSpan > 1）时联动高亮所有被跨越的行。 */
+    rowSpanHover?: boolean;
+    /** 收起的子行/展开内容是否仍保留 DOM（视觉隐藏而非不渲染），避免反复挂载卸载丢状态。 */
+    keepDOM?: boolean;
+    groupBy?: string | ((record: T) => string | number);
+    renderGroupSection?: (groupKey: string, group: string[]) => any | { children: any; [key: string]: any };
+    onGroupedRow?: (record: T | undefined, index: number) => Record<string, any>;
+    clickGroupedRowToExpand?: boolean;
+    defaultExpandAllGroupRows?: boolean;
+    expandAllGroupRows?: boolean;
 }
 
 function toKeySet(v: Array<string | number> | undefined): Set<string> {
@@ -126,6 +151,7 @@ function SortIcon(&{ order }: { order: SortOrder }) @{
 interface TableRowProps<T = any> {
     flat: FlatRow<T>;
     leafColumns: ColumnDef<T>[];
+    resolvedCells: ResolvedCell[] | undefined;
     rowSelection: TableRowSelection<T> | undefined;
     showExpandColumn: boolean;
     hasExpandedRowRender: boolean;
@@ -141,6 +167,13 @@ interface TableRowProps<T = any> {
     onExpandToggle: (key: string, record: T) => void;
     fixedCellStyle: (index: number) => Record<string, any> | undefined;
     fixedCellClass: (index: number) => string;
+    indentSize: number;
+    onRowHover: ((isHover: boolean, rowKey: string) => void) | undefined;
+    renderGroupSection: ((groupKey: string, group: string[]) => any) | undefined;
+    onGroupedRow: ((record: any, index: number) => Record<string, any>) | undefined;
+    clickGroupedRowToExpand: boolean;
+    groupExpanded: boolean;
+    onGroupToggle: ((groupKey: string) => void) | undefined;
 }
 
 /** 单行 `<tr>` 的渲染抽成子组件，供虚拟化/非虚拟化两条渲染路径共用，避免
@@ -148,6 +181,7 @@ interface TableRowProps<T = any> {
 function TableRow<T = any>(&{
     flat,
     leafColumns,
+    resolvedCells,
     rowSelection,
     showExpandColumn,
     hasExpandedRowRender,
@@ -163,64 +197,108 @@ function TableRow<T = any>(&{
     onExpandToggle,
     fixedCellStyle,
     fixedCellClass,
+    indentSize,
+    onRowHover,
+    renderGroupSection,
+    onGroupedRow,
+    clickGroupedRowToExpand,
+    groupExpanded,
+    onGroupToggle,
 }: TableRowProps<T>) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
     <>
-    @if (flat.isExpandedContent) {
-        <tr class="lotus-table-expanded-row" role="row">
+    @if (flat.isGroupSection) {
+        <tr
+            class={['lotus-table-row-section', groupExpanded ? 'lotus-table-row-section-open' : ''].filter(Boolean).join(' ')}
+            role="row"
+            aria-expanded={groupExpanded}
+            {...(onGroupedRow ? onGroupedRow(undefined, 0) : {})}
+            onClick={(e: MouseEvent) => { if (clickGroupedRowToExpand) onGroupToggle?.(flat.groupKey!); }}
+        >
             <td
-                class="lotus-table-cell lotus-table-expanded-cell"
+                class="lotus-table-cell lotus-table-section-cell"
                 colSpan={leafColumns.length + (rowSelection ? 1 : 0) + (showExpandColumn ? 1 : 0)}
             >
-                {expandedRowRender?.(flat.record, 0)}
+                <span class="lotus-table-section-inner">
+                    <span
+                        class={['lotus-table-expand-btn', groupExpanded ? 'lotus-table-expand-btn-open' : ''].filter(Boolean).join(' ')}
+                        tabIndex={0}
+                        role="button"
+                        onClick={(e: MouseEvent) => { e.stopPropagation(); onGroupToggle?.(flat.groupKey!); }}
+                        onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onGroupToggle?.(flat.groupKey!); } }}
+                    >
+                        <IconChevronRight />
+                    </span>
+                    {renderGroupSection ? resolveRenderCell(renderGroupSection(flat.groupKey!, [])).content : flat.groupKey}
+                </span>
             </td>
         </tr>
     } @else {
-        <tr
-            class={['lotus-table-row', flat.level > 0 ? 'lotus-table-row-child' : ''].filter(Boolean).join(' ')}
-            role="row"
-            {...(onRow ? onRow(flat.record, 0) : {})}
-        >
-            @if (rowSelection) {
-                <td class="lotus-table-cell lotus-table-selection-cell">
-                    @if (!disabled) {
-                        <Checkbox
-                            checked={selected}
-                            indeterminate={halfSelected}
-                            onChange={(checked: boolean) => onRowToggle(flat.record, 0, checked)}
-                            aria-label={locale.Table.selectRow}
-                        />
-                    }
-                </td>
-            }
-            @if (showExpandColumn) {
-                <td class="lotus-table-cell lotus-table-expand-cell" style={flat.level > 0 ? { paddingLeft: `${flat.level * 20}px` } : undefined}>
-                    @if (flat.hasChildren || (hasExpandedRowRender && (!rowExpandable || rowExpandable(flat.record)))) {
-                        <span
-                            class={['lotus-table-expand-btn', expanded ? 'lotus-table-expand-btn-open' : ''].filter(Boolean).join(' ')}
-                            tabIndex={0}
-                            role="button"
-                            onClick={() => onExpandToggle(flat.key, flat.record)}
-                            onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onExpandToggle(flat.key, flat.record); } }}
-                        >
-                            <IconChevronRight />
-                        </span>
-                    }
-                </td>
-            }
-            @for (const col of leafColumns; index colIndex) {
+        @if (flat.isExpandedContent) {
+            <tr class="lotus-table-expanded-row" role="row" style={flat.displayNone ? { display: 'none' } : undefined}>
                 <td
-                    class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? '', fixedCellClass(colIndex)].filter(Boolean).join(' ')}
-                    role="gridcell"
-                    style={fixedCellStyle(colIndex)}
-                    onClick={() => { if (expandRowByClick && (flat.hasChildren || hasExpandedRowRender)) onExpandToggle(flat.key, flat.record); }}
+                    class="lotus-table-cell lotus-table-expanded-cell"
+                    colSpan={leafColumns.length + (rowSelection ? 1 : 0) + (showExpandColumn ? 1 : 0)}
                 >
-                    {col.render ? col.render(getCellValue(flat.record, col.dataIndex), flat.record, 0) : getCellValue(flat.record, col.dataIndex)}
+                    {expandedRowRender?.(flat.record, 0)}
                 </td>
-            }
-        </tr>
+            </tr>
+        } @else {
+            <tr
+                class={['lotus-table-row', flat.level > 0 ? 'lotus-table-row-child' : ''].filter(Boolean).join(' ')}
+                role="row"
+                data-row-key={flat.key}
+                aria-expanded={(flat.hasChildren || (hasExpandedRowRender && (!rowExpandable || rowExpandable(flat.record)))) ? expanded : undefined}
+                style={flat.displayNone ? { display: 'none' } : undefined}
+                onMouseEnter={() => onRowHover?.(true, flat.key)}
+                onMouseLeave={() => onRowHover?.(false, flat.key)}
+                {...(onRow ? onRow(flat.record, 0) : {})}
+            >
+                @if (rowSelection) {
+                    <td class="lotus-table-cell lotus-table-selection-cell">
+                        @if (!disabled) {
+                            <Checkbox
+                                checked={selected}
+                                indeterminate={halfSelected}
+                                onChange={(checked: boolean) => onRowToggle(flat.record, 0, checked)}
+                                aria-label={locale.Table.selectRow}
+                            />
+                        }
+                    </td>
+                }
+                @if (showExpandColumn) {
+                    <td class="lotus-table-cell lotus-table-expand-cell" style={flat.level > 0 ? { paddingLeft: `${flat.level * indentSize}px` } : undefined}>
+                        @if (flat.hasChildren || (hasExpandedRowRender && (!rowExpandable || rowExpandable(flat.record)))) {
+                            <span
+                                class={['lotus-table-expand-btn', expanded ? 'lotus-table-expand-btn-open' : ''].filter(Boolean).join(' ')}
+                                tabIndex={0}
+                                role="button"
+                                onClick={() => onExpandToggle(flat.key, flat.record)}
+                                onKeyDown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onExpandToggle(flat.key, flat.record); } }}
+                            >
+                                <IconChevronRight />
+                            </span>
+                        }
+                    </td>
+                }
+                @for (const col of leafColumns; index colIndex) {
+                    @if (!resolvedCells || !resolvedCells[colIndex]?.skip) {
+                        <td
+                            class={['lotus-table-cell', col.align ? `lotus-table-align-${col.align}` : '', col.className ?? '', fixedCellClass(colIndex)].filter(Boolean).join(' ')}
+                            role="gridcell"
+                            style={fixedCellStyle(colIndex)}
+                            rowSpan={resolvedCells && resolvedCells[colIndex]!.rowSpan > 1 ? resolvedCells[colIndex]!.rowSpan : undefined}
+                            colSpan={resolvedCells && resolvedCells[colIndex]!.colSpan > 1 ? resolvedCells[colIndex]!.colSpan : undefined}
+                            onClick={() => { if (expandRowByClick && (flat.hasChildren || hasExpandedRowRender)) onExpandToggle(flat.key, flat.record); }}
+                        >
+                            {resolvedCells ? resolvedCells[colIndex]!.content : (col.render ? col.render(getCellValue(flat.record, col.dataIndex), flat.record, 0) : getCellValue(flat.record, col.dataIndex))}
+                        </td>
+                    }
+                }
+            </tr>
+        }
     }
 
     <style>
@@ -251,7 +329,8 @@ function TableRow<T = any>(&{
         .lotus-table-align-center { text-align: center; }
         .lotus-table-align-right { text-align: right; }
 
-        .lotus-table-row:hover .lotus-table-cell {
+        .lotus-table-row:hover .lotus-table-cell,
+        .lotus-table-row-hovered .lotus-table-cell {
             background: var(--lotus-color-fill-0);
         }
 
@@ -282,6 +361,21 @@ function TableRow<T = any>(&{
 
         .lotus-table-expanded-row .lotus-table-expanded-cell {
             background: var(--lotus-color-fill-0);
+        }
+
+        .lotus-table-row-section {
+            cursor: pointer;
+        }
+
+        .lotus-table-row-section .lotus-table-section-cell {
+            background: var(--lotus-color-fill-0);
+            font-weight: 600;
+        }
+
+        .lotus-table-section-inner {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .lotus-table-cell-fixed {
@@ -343,6 +437,7 @@ export function Table<T = any>(&{
     onExpandedRowsChange,
     onChange,
     onRow,
+    onHeaderRow,
     empty,
     title,
     footer,
@@ -350,6 +445,18 @@ export function Table<T = any>(&{
     style,
     class: className,
     'aria-label': ariaLabel,
+    showHeader = true,
+    indentSize = 20,
+    sticky,
+    resizable,
+    rowSpanHover = false,
+    keepDOM = false,
+    groupBy,
+    renderGroupSection,
+    onGroupedRow,
+    clickGroupedRowToExpand = false,
+    defaultExpandAllGroupRows = false,
+    expandAllGroupRows,
 }: TableProps<T>) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
@@ -362,12 +469,25 @@ export function Table<T = any>(&{
     const initialPageSize = paginationOpts?.pageSize ?? 10;
     const initialPage = paginationOpts?.currentPage ?? paginationOpts?.defaultCurrentPage ?? 1;
 
+    const isGroupExpandControlled = expandAllGroupRows !== undefined;
+
+    function computeInitialGroupKeys(): string[] {
+        if (!groupBy) return [];
+        const grouped = groupDataSource(dataSource, groupBy, (r, i) => resolveRowKey(r, i, rowKey as any) as any as string);
+        return grouped.groupKeys;
+    }
+
+    const initialExpandedRowKeys = new Set(toKeySet(expandedRowKeysProp ?? defaultExpandedRowKeys));
+    if (groupBy && (expandAllGroupRows ?? defaultExpandAllGroupRows)) {
+        computeInitialGroupKeys().forEach((k) => initialExpandedRowKeys.add(k));
+    }
+
     let &[state] = track<TableState<T>>({
         sortState: {},
         filterState: {},
         selectedRowKeys: toKeySet(rowSelection?.selectedRowKeys),
         halfSelectedRowKeys: new Set<string>(),
-        expandedRowKeys: toKeySet(expandedRowKeysProp ?? defaultExpandedRowKeys),
+        expandedRowKeys: initialExpandedRowKeys,
         currentPage: initialPage,
         pageSize: initialPageSize,
         columnWidths: {},
@@ -398,8 +518,78 @@ export function Table<T = any>(&{
         }
     });
 
+    effect(() => {
+        if (!groupBy || expandAllGroupRows === undefined) return;
+        const wantExpanded = expandAllGroupRows;
+        const groupKeys = computeInitialGroupKeys();
+        const next = new Set(untrack(() => state).expandedRowKeys);
+        if (wantExpanded) {
+            groupKeys.forEach((k) => next.add(k));
+        } else {
+            groupKeys.forEach((k) => next.delete(k));
+        }
+        untrack(() => { state = { ...untrack(() => state), expandedRowKeys: next }; });
+    });
+
     let &[openFilterKey] = track<string | null>(null);
     let &[draftFilterValues] = track<Array<string | number | boolean>>([]);
+
+    // rowSpanHover：hover 时纯 DOM 查询计算需要联动高亮的行 key 集合（跨行合并
+    // 单元格靠 <td rowspan> 声明，同一 rowspan 覆盖的所有 <tr> 都要高亮），不
+    // 走响应式 state——这是 hover 期间的高频瞬态交互，直接操作 DOM class 比
+    // 触发整棵响应式树重算更轻量（对齐 Semi rowSpanHover 的纯 DOM 实现）。
+    let tbodyNode: HTMLElement | null = null;
+    let hoveredRowKeys: Set<string> = new Set();
+
+    function updateRowHoverClass(nextKeys: string[]) {
+        const tbody = tbodyNode;
+        if (!tbody) { hoveredRowKeys.clear(); return; }
+        const nextSet = new Set(nextKeys);
+        for (const key of hoveredRowKeys) {
+            if (!nextSet.has(key)) {
+                tbody.querySelectorAll(`tr[data-row-key="${CSS.escape(key)}"]`).forEach((r) => r.classList.remove('lotus-table-row-hovered'));
+            }
+        }
+        for (const key of nextSet) {
+            if (!hoveredRowKeys.has(key)) {
+                tbody.querySelectorAll(`tr[data-row-key="${CSS.escape(key)}"]`).forEach((r) => r.classList.add('lotus-table-row-hovered'));
+            }
+        }
+        hoveredRowKeys = nextSet;
+    }
+
+    function getHoveredRowKeysFromDOM(currentRowKey: string): string[] {
+        const keys = new Set<string>([currentRowKey]);
+        const tbody = tbodyNode;
+        if (!tbody) return Array.from(keys);
+        const currentRow = tbody.querySelector(`tr[data-row-key="${CSS.escape(currentRowKey)}"]`);
+        if (!currentRow) return Array.from(keys);
+        const allRows = Array.from(tbody.querySelectorAll('tr[data-row-key]'));
+        const currentIndex = allRows.indexOf(currentRow);
+        if (currentIndex === -1) return Array.from(keys);
+        allRows.forEach((row, rowIndex) => {
+            row.querySelectorAll('td[rowspan]').forEach((cell) => {
+                const span = parseInt(cell.getAttribute('rowspan') || '1', 10);
+                if (span <= 1) return;
+                const endIndex = rowIndex + span - 1;
+                if (currentIndex < rowIndex || currentIndex > endIndex) return;
+                allRows.slice(rowIndex, endIndex + 1).forEach((spannedRow) => {
+                    const spannedKey = spannedRow.getAttribute('data-row-key');
+                    if (spannedKey) keys.add(spannedKey);
+                });
+            });
+        });
+        return Array.from(keys);
+    }
+
+    function handleRowHover(isHover: boolean, rowKey: string) {
+        if (!rowSpanHover) return;
+        if (isHover) {
+            updateRowHoverClass(getHoveredRowKeysFromDOM(rowKey));
+        } else {
+            updateRowHoverClass([]);
+        }
+    }
 
     let &[leafColumns] = track<ColumnDef<T>[]>(() => flattenLeafColumns(columns));
     let &[headerRowCount] = track<number>(() => getHeaderRowCount(columns));
@@ -441,6 +631,54 @@ export function Table<T = any>(&{
         return undefined;
     }
 
+    // 列宽调整：拖拽手柄在最后一个叶子列单元格右边界注入，pointer 事件序列
+    // 里只在 pointerdown 时读取起始宽度快照，move 阶段用 deltaX 换算（不逐帧
+    // 重新测量 DOM），松开时触发用户的 onResizeStop 回调——对齐 Semi
+    // ResizableProps 的三段回调时机（Start/中途多次 onResize/Stop 各一次）。
+    let resizingColumnKey: string | null = null;
+    let resizingStartX = 0;
+    let resizingStartWidth = 0;
+
+    function columnWidth(col: ColumnDef<T>, index: number): number | undefined {
+        const key = getColumnKey(col, index);
+        return state.columnWidths[key] ?? col.width;
+    }
+
+    function canResizeColumn(col: ColumnDef<T>): boolean {
+        return !!resizable && col.resize !== false && typeof (col.width ?? columnWidth(col, leafColumns.indexOf(col))) === 'number';
+    }
+
+    function handleResizeStart(e: PointerEvent, col: ColumnDef<T>, index: number) {
+        e.preventDefault();
+        e.stopPropagation();
+        const key = getColumnKey(col, index);
+        const startWidth = columnWidth(col, index) ?? 100;
+        resizingColumnKey = key;
+        resizingStartX = e.clientX;
+        resizingStartWidth = startWidth;
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        const resizeOpts = typeof resizable === 'object' ? resizable : undefined;
+        resizeOpts?.onResizeStart?.({ ...col, width: startWidth });
+    }
+
+    function handleResizeMove(e: PointerEvent, col: ColumnDef<T>, index: number) {
+        if (resizingColumnKey === null) return;
+        const key = getColumnKey(col, index);
+        const deltaX = e.clientX - resizingStartX;
+        const width = foundation.resizeColumn(key, resizingStartWidth, deltaX, col.minWidth, col.maxWidth);
+        const resizeOpts = typeof resizable === 'object' ? resizable : undefined;
+        resizeOpts?.onResize?.({ ...col, width });
+    }
+
+    function handleResizeEnd(e: PointerEvent, col: ColumnDef<T>, index: number) {
+        if (resizingColumnKey === null) return;
+        resizingColumnKey = null;
+        const key = getColumnKey(col, index);
+        const width = untrack(() => state).columnWidths[key] ?? col.width;
+        const resizeOpts = typeof resizable === 'object' ? resizable : undefined;
+        resizeOpts?.onResizeStop?.({ ...col, width });
+    }
+
     function fixedCellClass(index: number): string {
         if (!tableHasFixedColumns) return '';
         const col = leafColumns[index];
@@ -460,19 +698,42 @@ export function Table<T = any>(&{
         const filtered = filterData(dataSource, leafColumns, state.filterState);
         return sortData(filtered, leafColumns, state.sortState);
     });
+    // groupBy 只重排数据（同组聚在一起），分页按重排后的整体顺序切——一页内
+    // 可能只含某个组的一部分，忠实对齐 Semi getCurrentPageData 的真实行为
+    // （分组不改变分页粒度，是打平后再切页，不是"每组独立占若干整页"）。
+    let &[groupedResult] = track(() => groupDataSource(processed, groupBy, (r, i) => foundation.resolveKey(r, i)));
     let &[pageResult] = track<{ pageData: T[]; total: number }>(() => {
-        if (!paginationOpts) return { pageData: processed, total: processed.length };
+        const source = groupedResult.dataSource;
+        if (!paginationOpts) return { pageData: source, total: source.length };
         const start = (state.currentPage - 1) * state.pageSize;
-        return { pageData: processed.slice(start, start + state.pageSize), total: processed.length };
+        return { pageData: source.slice(start, start + state.pageSize), total: source.length };
     });
-    let &[flatRows] = track<FlatRow<T>[]>(() =>
-        flattenRows(pageResult.pageData, {
-            rowKey: (r, i) => foundation.resolveKey(r, i),
-            childrenKey: childrenRecordName,
-            expandedRowKeys: state.expandedRowKeys,
-            hasExpandedRowRender,
-        }),
-    );
+    let &[flatRows] = track<FlatRow<T>[]>(() => {
+        const flattenMembers = (members: T[]) =>
+            flattenRows(members, {
+                rowKey: (r, i) => foundation.resolveKey(r, i),
+                childrenKey: childrenRecordName,
+                expandedRowKeys: state.expandedRowKeys,
+                hasExpandedRowRender,
+                keepDOM,
+            });
+        if (!groupBy) return flattenMembers(pageResult.pageData);
+        // 分页只切了本页的数据，但分组信息（groups 里存的是全量成员 key）来自
+        // groupedResult——按本页出现过的 key 交集限定每组成员，保证「组标题只
+        // 在该组至少有一条数据落在本页时才出现」。
+        const pageKeys = new Set(pageResult.pageData.map((r, i) => foundation.resolveKey(r, i)));
+        const limitedGroups = new Map<string, Set<string>>();
+        groupedResult.groups.forEach((memberKeys, groupKey) => {
+            const limited = new Set([...memberKeys].filter((k) => pageKeys.has(k)));
+            if (limited.size > 0) limitedGroups.set(groupKey, limited);
+        });
+        const limitedGroupKeys = groupedResult.groupKeys.filter((k) => limitedGroups.has(k));
+        return flattenGroupedRows(
+            { groupKeys: limitedGroupKeys, groups: limitedGroups, dataSource: pageResult.pageData },
+            (r, i) => foundation.resolveKey(r, i),
+            { expandedRowKeys: state.expandedRowKeys, flattenMembers },
+        );
+    });
 
     // 虚拟滚动仅在声明了固定高度（scroll.y）且没有展开行内容（expandedRowRender 渲染任意
     // 高度内容，与固定行高假设冲突）时生效，对齐 Semi 用 scroll.y 驱动虚拟滚动容器高度的设计。
@@ -494,6 +755,26 @@ export function Table<T = any>(&{
     let &[visibleFlatRows] = track<FlatRow<T>[]>(() => {
         if (!virtualRange) return flatRows;
         return flatRows.slice(virtualRange.startIndex, virtualRange.endIndex + 1);
+    });
+
+    // rowSpan 只在「相邻的真实数据行」之间生效，展开内容行（isExpandedContent）
+    // 不参与列结构，用 null 占位保持下标与 visibleFlatRows 对齐，resolveRowSpans
+    // 只喂真实数据行进去、按原下标写回结果矩阵。
+    let &[resolvedCellsByRow] = track<(ResolvedCell[] | undefined)[]>(() => {
+        const dataFlatRows: T[] = [];
+        const dataFlatIndexes: number[] = [];
+        visibleFlatRows.forEach((flat, i) => {
+            if (!flat.isExpandedContent && !flat.isGroupSection) {
+                dataFlatRows.push(flat.record);
+                dataFlatIndexes.push(i);
+            }
+        });
+        const resolved = resolveRowSpans(dataFlatRows, leafColumns, (record: T, col: ColumnDef<T>) =>
+            col.render ? col.render(getCellValue(record, col.dataIndex), record, 0) : getCellValue(record, col.dataIndex),
+        );
+        const byRow: (ResolvedCell[] | undefined)[] = new Array(visibleFlatRows.length).fill(undefined);
+        dataFlatIndexes.forEach((rowIndex, i) => { byRow[rowIndex] = resolved[i]; });
+        return byRow;
     });
 
     let &[disabledKeys] = track<Set<string>>(() => {
@@ -553,6 +834,13 @@ export function Table<T = any>(&{
         const next = foundation.toggleExpand(key, isExpandControlled);
         const expanded = next.has(key);
         onExpand?.(expanded, record);
+        onExpandedRowsChange?.(Array.from(next));
+    }
+
+    function handleGroupToggle(groupKey: string) {
+        const next = foundation.toggleExpand(groupKey, isExpandControlled || isGroupExpandControlled);
+        const expanded = next.has(groupKey);
+        onExpand?.(expanded, { groupKey } as any);
         onExpandedRowsChange?.(Array.from(next));
     }
 
@@ -639,14 +927,18 @@ export function Table<T = any>(&{
             }}
             onScroll={isVirtualized ? handleVirtualScroll : undefined}
         >
-            <table class="lotus-table" role="grid" style={scroll?.x ? { minWidth: typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x } : undefined}>
+            <table class={['lotus-table', resizable ? 'lotus-table-resizable' : ''].filter(Boolean).join(' ')} role="grid" style={scroll?.x ? { minWidth: typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x } : undefined}>
                 <thead
-                    class="lotus-table-thead"
-                    style={scroll?.y !== undefined ? { position: 'sticky', top: 0, zIndex: 1 } : undefined}
+                    class={['lotus-table-thead', sticky ? 'lotus-table-thead-sticky' : '', !showHeader ? 'lotus-table-thead-hidden' : ''].filter(Boolean).join(' ')}
+                    style={
+                        scroll?.y !== undefined
+                            ? { position: 'sticky', top: 0, zIndex: 1 }
+                            : sticky ? { position: 'sticky', top: `${typeof sticky === 'object' ? (sticky.top ?? 0) : 0}px`, zIndex: 2 } : undefined
+                    }
                     ref={(node: HTMLElement | null) => { theadNode = node; if (node) queueMicrotask(remeasureColumnWidths); }}
                 >
-                    @for (const row of headerRows) {
-                        <tr role="row">
+                    @for (const row of headerRows; index rowIndex) {
+                        <tr role="row" {...(onHeaderRow ? onHeaderRow(leafColumns, rowIndex) : {})}>
                             @if (rowSelection && row === headerRows[0]) {
                                 <th class="lotus-table-cell lotus-table-selection-cell" rowSpan={headerRowCount}>
                                     @if (allSelectedStatus.hasSelectable) {
@@ -669,7 +961,9 @@ export function Table<T = any>(&{
                                     colSpan={cell.colSpan > 1 ? cell.colSpan : undefined}
                                     rowSpan={cell.rowSpan > 1 ? cell.rowSpan : undefined}
                                     style={{
-                                        ...(cell.column.width ? { width: `${cell.column.width}px` } : {}),
+                                        ...(cell.isLeaf ? columnWidth(cell.column, leafColumns.indexOf(cell.column)) : cell.column.width) !== undefined
+                                            ? { width: `${cell.isLeaf ? columnWidth(cell.column, leafColumns.indexOf(cell.column)) : cell.column.width}px` }
+                                            : {},
                                         ...(cell.isLeaf ? fixedCellStyle(leafColumns.indexOf(cell.column)) : {}),
                                     }}
                                 >
@@ -721,12 +1015,20 @@ export function Table<T = any>(&{
                                             </span>
                                         </Popover>
                                     }
+                                    @if (cell.isLeaf && canResizeColumn(cell.column)) {
+                                        <span
+                                            class="lotus-table-resize-handle"
+                                            onPointerDown={(e: PointerEvent) => handleResizeStart(e, cell.column, leafColumns.indexOf(cell.column))}
+                                            onPointerMove={(e: PointerEvent) => handleResizeMove(e, cell.column, leafColumns.indexOf(cell.column))}
+                                            onPointerUp={(e: PointerEvent) => handleResizeEnd(e, cell.column, leafColumns.indexOf(cell.column))}
+                                        ></span>
+                                    }
                                 </th>
                             }
                         </tr>
                     }
                 </thead>
-                <tbody class="lotus-table-tbody">
+                <tbody class="lotus-table-tbody" ref={(node: HTMLElement | null) => { tbodyNode = node; }}>
                     @if (loading) {
                         <tr>
                             <td class="lotus-table-loading-cell" colSpan={leafColumns.length + (rowSelection ? 1 : 0) + ((expandedRowRender || rowExpandable) && !hideExpandedColumn ? 1 : 0)}>
@@ -745,10 +1047,11 @@ export function Table<T = any>(&{
                         @if (virtualRange && virtualRange.offsetY > 0) {
                             <tr class="lotus-table-virtual-spacer" aria-hidden="true" style={{ height: `${virtualRange.offsetY}px` }}><td colSpan={leafColumns.length + (rowSelection ? 1 : 0) + ((expandedRowRender || rowExpandable) && !hideExpandedColumn ? 1 : 0)} /></tr>
                         }
-                        @for (const flat of visibleFlatRows; key flat.key) {
+                        @for (const flat of visibleFlatRows; index rowIdx; key flat.key) {
                             <TableRow
                                 flat={flat}
                                 leafColumns={leafColumns}
+                                resolvedCells={resolvedCellsByRow[rowIdx]}
                                 rowSelection={rowSelection}
                                 showExpandColumn={!!((expandedRowRender || rowExpandable) && !hideExpandedColumn)}
                                 hasExpandedRowRender={hasExpandedRowRender}
@@ -764,6 +1067,13 @@ export function Table<T = any>(&{
                                 onExpandToggle={handleExpandToggle}
                                 fixedCellStyle={fixedCellStyle}
                                 fixedCellClass={fixedCellClass}
+                                indentSize={indentSize}
+                                onRowHover={rowSpanHover ? handleRowHover : undefined}
+                                renderGroupSection={renderGroupSection}
+                                onGroupedRow={onGroupedRow as any}
+                                clickGroupedRowToExpand={clickGroupedRowToExpand}
+                                groupExpanded={flat.groupKey !== undefined && state.expandedRowKeys.has(flat.groupKey)}
+                                onGroupToggle={handleGroupToggle}
                             />
                         }
                         @if (virtualRange && (virtualRange.totalHeight - virtualRange.offsetY - (virtualRange.endIndex - virtualRange.startIndex + 1) * virtualize!.itemSize) > 0) {
@@ -819,6 +1129,10 @@ export function Table<T = any>(&{
                 table-layout: auto;
             }
 
+            .lotus-table-resizable {
+                table-layout: fixed;
+            }
+
             .lotus-table-cell {
                 padding: 12px 16px;
                 text-align: start;
@@ -843,10 +1157,40 @@ export function Table<T = any>(&{
             }
 
             .lotus-table-header-cell {
+                position: relative;
                 background: var(--lotus-color-fill-0);
                 font-weight: 600;
                 color: var(--lotus-color-text-1);
                 white-space: nowrap;
+            }
+
+            .lotus-table-resize-handle {
+                position: absolute;
+                top: 0;
+                right: -4px;
+                bottom: 0;
+                width: 8px;
+                cursor: col-resize;
+                touch-action: none;
+                z-index: 1;
+            }
+
+            .lotus-table-resize-handle:hover,
+            .lotus-table-resize-handle:active {
+                background: var(--lotus-color-primary);
+                opacity: 0.4;
+            }
+
+            .lotus-table-thead-hidden {
+                display: none;
+            }
+
+            .lotus-table-thead-sticky {
+                z-index: 2;
+            }
+
+            .lotus-table-thead-sticky .lotus-table-header-cell {
+                background: var(--lotus-color-bg-1);
             }
 
             .lotus-table-align-left { text-align: left; }

@@ -15,6 +15,12 @@ export interface FlatRow<T = any> {
   isExpandedContent: boolean;
   /** 该行是否有子节点（决定要不要渲染展开图标）。 */
   hasChildren: boolean;
+  /** keepDOM 场景下，收起状态仍打平进结果但要视觉隐藏（display:none），
+   * 避免子行/展开内容反复挂载卸载丢状态。真正展开时为 false。 */
+  displayNone: boolean;
+  /** 合成的"分组标题"行（groupBy 场景），record 为 undefined。 */
+  isGroupSection?: boolean;
+  groupKey?: string;
 }
 
 export interface FlattenOptions<T = any> {
@@ -22,29 +28,33 @@ export interface FlattenOptions<T = any> {
   childrenKey: string;
   expandedRowKeys: Set<string>;
   hasExpandedRowRender: boolean;
+  /** 收起的子行/展开内容是否仍保留 DOM（视觉隐藏而非不渲染）。 */
+  keepDOM?: boolean;
 }
 
 export function flattenRows<T = any>(data: T[], options: FlattenOptions<T>): FlatRow<T>[] {
-  const { rowKey, childrenKey, expandedRowKeys, hasExpandedRowRender } = options;
+  const { rowKey, childrenKey, expandedRowKeys, hasExpandedRowRender, keepDOM = false } = options;
   const result: FlatRow<T>[] = [];
 
-  function walk(rows: T[], level: number, baseIndex: number) {
+  function walk(rows: T[], level: number, baseIndex: number, parentDisplayNone: boolean) {
     rows.forEach((record, i) => {
       const key = rowKey(record, baseIndex + i);
       const children = (record as any)[childrenKey] as T[] | undefined;
       const hasChildren = !!children?.length;
-      result.push({ key, record, level, isExpandedContent: false, hasChildren });
+      const expanded = expandedRowKeys.has(key);
+      result.push({ key, record, level, isExpandedContent: false, hasChildren, displayNone: parentDisplayNone });
 
-      if (!expandedRowKeys.has(key)) return;
+      if (!expanded && !(keepDOM && (hasChildren || hasExpandedRowRender))) return;
+      const displayNone = parentDisplayNone || !expanded;
       if (hasChildren) {
-        walk(children!, level + 1, 0);
+        walk(children!, level + 1, 0, displayNone);
       } else if (hasExpandedRowRender) {
-        result.push({ key: `${key}__expanded`, record, level: level + 1, isExpandedContent: true, hasChildren: false });
+        result.push({ key: `${key}__expanded`, record, level: level + 1, isExpandedContent: true, hasChildren: false, displayNone });
       }
     });
   }
 
-  walk(data, 0, 0);
+  walk(data, 0, 0, false);
   return result;
 }
 

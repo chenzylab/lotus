@@ -35,6 +35,53 @@ describe('flattenRows', () => {
     const result = flattenRows(data, { rowKey: (r: any) => r.id, childrenKey: 'children', expandedRowKeys: new Set(['a']), hasExpandedRowRender: false });
     expect(result).toHaveLength(1);
   });
+
+  it('displayNone 默认 false（普通行/真实展开行都可见）', () => {
+    const data = [{ id: 'a', children: [{ id: 'a1' }] }];
+    const result = flattenRows(data, { rowKey: (r: any) => r.id, childrenKey: 'children', expandedRowKeys: new Set(['a']), hasExpandedRowRender: false });
+    expect(result.every((r) => r.displayNone === false)).toBe(true);
+  });
+
+  it('keepDOM：树形数据收起时仍打平子行，但标记 displayNone', () => {
+    const data = [{ id: 'a', children: [{ id: 'a1' }, { id: 'a2' }] }];
+    const result = flattenRows(data, {
+      rowKey: (r: any) => r.id,
+      childrenKey: 'children',
+      expandedRowKeys: new Set(),
+      hasExpandedRowRender: false,
+      keepDOM: true,
+    });
+    expect(result.map((r) => r.key)).toEqual(['a', 'a1', 'a2']);
+    expect(result[0]!.displayNone).toBe(false);
+    expect(result[1]!.displayNone).toBe(true);
+    expect(result[2]!.displayNone).toBe(true);
+  });
+
+  it('keepDOM：expandedRowRender 收起时仍插入合成展开内容行，标记 displayNone', () => {
+    const data = [{ id: 'a' }];
+    const result = flattenRows(data, {
+      rowKey: (r: any) => r.id,
+      childrenKey: 'children',
+      expandedRowKeys: new Set(),
+      hasExpandedRowRender: true,
+      keepDOM: true,
+    });
+    expect(result).toHaveLength(2);
+    expect(result[1]!.isExpandedContent).toBe(true);
+    expect(result[1]!.displayNone).toBe(true);
+  });
+
+  it('keepDOM：真实展开时 displayNone 为 false', () => {
+    const data = [{ id: 'a', children: [{ id: 'a1' }] }];
+    const result = flattenRows(data, {
+      rowKey: (r: any) => r.id,
+      childrenKey: 'children',
+      expandedRowKeys: new Set(['a']),
+      hasExpandedRowRender: false,
+      keepDOM: true,
+    });
+    expect(result[1]!.displayNone).toBe(false);
+  });
 });
 
 describe('toggleExpandedRow', () => {

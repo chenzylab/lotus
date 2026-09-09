@@ -163,4 +163,153 @@ test.describe('Table', () => {
     await expect(rows.first().locator('input[type="checkbox"]')).toBeChecked();
     await expect(page.getByLabel('Table 虚拟滚动选中日志')).toHaveText('已选：1 条');
   });
+
+  test('resizable：拖拽表头右边界调整列宽，resize=false 的列不渲染拖拽手柄', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table resizable', { exact: true });
+    await root.scrollIntoViewIfNeeded();
+
+    const handles = root.locator('.lotus-table-resize-handle');
+    await expect(handles).toHaveCount(3);
+
+    const nameHeader = root.locator('thead th.lotus-table-header-cell').first();
+    const widthBefore = (await nameHeader.boundingBox())!.width;
+
+    const handle = handles.first();
+    const box = (await handle.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2);
+    await page.mouse.up();
+
+    const widthAfter = (await nameHeader.boundingBox())!.width;
+    expect(widthAfter - widthBefore).toBeGreaterThan(50);
+    await expect(page.getByLabel('Table resize 日志', { exact: true })).toContainText('resizeStop');
+  });
+
+  test('sticky：表头 position:sticky 生效，滚动内层容器后吸顶', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table sticky', { exact: true });
+    await root.scrollIntoViewIfNeeded();
+
+    const thead = root.locator('thead');
+    await expect(thead).toHaveClass(/lotus-table-thead-sticky/);
+    await expect(thead).toHaveCSS('position', 'sticky');
+  });
+
+  test('onHeaderRow：表头行注入自定义属性', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table onHeaderRow', { exact: true });
+    await expect(root.locator('thead tr')).toHaveAttribute('data-testid', 'custom-header-row');
+  });
+
+  test('showHeader=false：不渲染可见表头', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table showHeader false', { exact: true });
+    await expect(root.locator('thead')).toBeHidden();
+  });
+
+  test('indentSize：树形子行按自定义缩进值渲染', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table indentSize', { exact: true });
+    const childCell = root.locator('.lotus-table-row-child .lotus-table-expand-cell').first();
+    await expect(childCell).toHaveCSS('padding-left', '40px');
+  });
+
+  test('keepDOM：收起的子行/展开内容仍保留 DOM，只是视觉隐藏', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table keepDOM', { exact: true });
+    const childRow = root.locator('.lotus-table-row-child').first();
+    await expect(childRow).toBeAttached();
+    await expect(childRow).toBeHidden();
+
+    await root.locator('.lotus-table-expand-btn').first().click();
+    await expect(childRow).toBeVisible();
+  });
+
+  test('rowSpan：column.render 返回 { children, props: { rowSpan } } 合并单元格', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table rowSpan', { exact: true });
+    const rows = root.locator('tbody tr');
+    await expect(rows).toHaveCount(3);
+
+    const firstRowFirstCell = rows.nth(0).locator('td').first();
+    await expect(firstRowFirstCell).toHaveAttribute('rowspan', '2');
+    await expect(rows.nth(1).locator('td')).toHaveCount(2);
+  });
+
+  test('rowSpanHover：hover 合并单元格覆盖的行时联动高亮', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table rowSpan', { exact: true });
+    const rows = root.locator('tbody tr');
+
+    await rows.nth(0).hover();
+    await expect(rows.nth(0)).toHaveClass(/lotus-table-row-hovered/);
+    await expect(rows.nth(1)).toHaveClass(/lotus-table-row-hovered/);
+    await expect(rows.nth(2)).not.toHaveClass(/lotus-table-row-hovered/);
+  });
+
+  test('groupBy：按字段分组渲染标题行，defaultExpandAllGroupRows 默认全展开', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table groupBy', { exact: true });
+    const sections = root.locator('.lotus-table-row-section');
+    await expect(sections).toHaveCount(4);
+    await expect(sections.first()).toContainText('分组：研发');
+
+    const dataRows = root.locator('tbody tr:not(.lotus-table-row-section)');
+    await expect(dataRows).toHaveCount(5);
+  });
+
+  test('groupBy：clickGroupedRowToExpand 点击标题行整体触发收起/展开，onGroupedRow 注入自定义属性', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table groupBy', { exact: true });
+    const firstSection = root.locator('.lotus-table-row-section').first();
+    await expect(firstSection).toHaveAttribute('data-testid', 'group-row');
+
+    const dataRowsBefore = await root.locator('tbody tr:not(.lotus-table-row-section)').count();
+    await firstSection.click();
+    const dataRowsAfter = await root.locator('tbody tr:not(.lotus-table-row-section)').count();
+    expect(dataRowsAfter).toBeLessThan(dataRowsBefore);
+
+    await firstSection.click();
+    const dataRowsRestored = await root.locator('tbody tr:not(.lotus-table-row-section)').count();
+    expect(dataRowsRestored).toBe(dataRowsBefore);
+  });
+
+  test('aria-expanded：分组标题行与可展开的树形父行携带正确的展开态，无展开能力的普通行不携带该属性', async ({ page }) => {
+    await page.goto('/');
+
+    const group = page.getByLabel('Table groupBy', { exact: true });
+    const firstSection = group.locator('.lotus-table-row-section').first();
+    await expect(firstSection).toHaveAttribute('aria-expanded', 'true');
+    await firstSection.click();
+    await expect(firstSection).toHaveAttribute('aria-expanded', 'false');
+
+    const tree = page.getByLabel('Table indentSize', { exact: true });
+    const parentRow = tree.locator('tbody tr').first();
+    await expect(parentRow).toHaveAttribute('aria-expanded', 'true');
+
+    const basic = page.getByLabel('Table 基础', { exact: true });
+    await expect(basic.locator('tbody tr').first()).not.toHaveAttribute('aria-expanded');
+  });
+
+  test('groupBy + 分页组合：分页按打平后整体顺序切，跨页的组标题在两页各自重新出现', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table groupBy 分页', { exact: true });
+    await root.scrollIntoViewIfNeeded();
+
+    const sectionsPage1 = root.locator('.lotus-table-row-section');
+    await expect(sectionsPage1).toHaveCount(2);
+    await expect(sectionsPage1.nth(0)).toContainText('研发');
+    await expect(sectionsPage1.nth(1)).toContainText('产品');
+    await expect(root.locator('tbody tr:not(.lotus-table-row-section)')).toHaveCount(6);
+
+    await root.getByLabel('第 2 页', { exact: true }).click();
+
+    const sectionsPage2 = root.locator('.lotus-table-row-section');
+    await expect(sectionsPage2).toHaveCount(2);
+    await expect(sectionsPage2.nth(0)).toContainText('产品');
+    await expect(sectionsPage2.nth(1)).toContainText('设计');
+    await expect(root.locator('tbody tr:not(.lotus-table-row-section)')).toHaveCount(6);
+  });
 });
