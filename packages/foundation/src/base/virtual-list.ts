@@ -44,3 +44,57 @@ export function calcVirtualRange(options: VirtualListOptions): VirtualRange {
 
   return { startIndex, endIndex, totalHeight, offsetY: startIndex * itemHeight };
 }
+
+export type ScrollAlign = 'auto' | 'smart' | 'center' | 'end' | 'start';
+
+/** 固定行高场景下，算出把第 index 项滚动到可见区间所需的目标 scrollTop。
+ * 移植自 react-window List.scrollToItem 的对齐语义（Semi Table 的
+ * getVirtualizedListRef 直接透传 react-window 实例给用户调用这个方法，
+ * lotus 没有第三方库实例可透传，改为自研同语义的纯函数——align 参数的
+ * 行为对照保持一致，供组件层包一层暴露给用户）：
+ * - start：目标行顶对齐容器顶
+ * - end：目标行底对齐容器底
+ * - center：目标行居中
+ * - auto：已在可视区间内不滚动，否则滚动最小距离使其可见（等价 smart，
+ *   react-window 的 smart 在"简单场景"下退化为 auto 的行为，这里不区分
+ *   一屏内/一屏外的额外阈值判断，是被验证过的合理简化）
+ */
+export function calcScrollToItemTop(
+  index: number,
+  options: { itemCount: number; itemHeight: number; containerHeight: number; scrollTop: number; align?: ScrollAlign },
+): number {
+  const { itemCount, itemHeight, containerHeight, scrollTop, align = 'auto' } = options;
+  if (itemCount === 0 || itemHeight <= 0) return 0;
+
+  const clampedIndex = Math.max(0, Math.min(itemCount - 1, index));
+  const itemTop = clampedIndex * itemHeight;
+  const itemBottom = itemTop + itemHeight;
+  const maxScrollTop = Math.max(0, itemCount * itemHeight - containerHeight);
+
+  let target: number;
+  switch (align) {
+    case 'start':
+      target = itemTop;
+      break;
+    case 'end':
+      target = itemBottom - containerHeight;
+      break;
+    case 'center':
+      target = itemTop - containerHeight / 2 + itemHeight / 2;
+      break;
+    case 'auto':
+    case 'smart':
+    default: {
+      if (itemTop >= scrollTop && itemBottom <= scrollTop + containerHeight) {
+        target = scrollTop;
+      } else if (itemTop < scrollTop) {
+        target = itemTop;
+      } else {
+        target = itemBottom - containerHeight;
+      }
+      break;
+    }
+  }
+
+  return Math.max(0, Math.min(maxScrollTop, target));
+}

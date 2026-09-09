@@ -312,4 +312,16 @@ test.describe('Table', () => {
     await expect(sectionsPage2.nth(1)).toContainText('设计');
     await expect(root.locator('tbody tr:not(.lotus-table-row-section)')).toHaveCount(6);
   });
+
+  test('getVirtualizedListRef：scrollToItem 把指定行滚动进可见区间（lotus 自研虚拟滚动的同语义句柄，非透传 react-window 实例）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Table 虚拟滚动示例', { exact: true });
+    await root.scrollIntoViewIfNeeded();
+
+    const firstCell = root.locator('tbody tr.lotus-table-row').first().locator('td').nth(1);
+    await expect(firstCell).toContainText('用户 0');
+
+    await page.getByLabel('Table 滚动到第5000行', { exact: true }).click();
+    await expect(firstCell).toContainText('用户 4997', { timeout: 5000 });
+  });
 });

@@ -24,7 +24,7 @@ import {
     type ChangeInfo,
     type FixedOffsets,
 } from '@lotus/foundation/show/table';
-import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
+import { calcVirtualRange, calcScrollToItemTop } from '@lotus/foundation/base/virtual-list';
 import { Checkbox } from '../../input/checkbox/index.tsrx';
 import { Spin } from '../../feedback/spin/index.tsrx';
 import { Empty } from '../empty/index.tsrx';
@@ -83,6 +83,11 @@ export interface TableProps<T = any> {
     title?: () => any;
     footer?: () => any;
     virtualize?: { itemSize: number };
+    /** 虚拟滚动场景下暴露滚动控制句柄（对齐 Semi getVirtualizedListRef 的
+     * scrollTo/scrollToItem 语义；lotus 虚拟滚动是自研的、没有 react-window
+     * 那样的第三方 List 实例可透传，改为提供同语义的句柄）。仅在同时声明了
+     * virtualize 时才会被调用。 */
+    getVirtualizedListRef?: (ref: { scrollTo: (offset: number) => void; scrollToItem: (index: number, align?: 'auto' | 'smart' | 'center' | 'end' | 'start') => void }) => void;
     style?: Record<string, any>;
     class?: string;
     'aria-label'?: string;
@@ -442,6 +447,7 @@ export function Table<T = any>(&{
     title,
     footer,
     virtualize,
+    getVirtualizedListRef,
     style,
     class: className,
     'aria-label': ariaLabel,
@@ -739,10 +745,37 @@ export function Table<T = any>(&{
     // 高度内容，与固定行高假设冲突）时生效，对齐 Semi 用 scroll.y 驱动虚拟滚动容器高度的设计。
     const isVirtualized = !!virtualize && scroll?.y !== undefined && !hasExpandedRowRender;
     let &[virtualScrollTop] = track<number>(0);
+    let scrollNode: HTMLElement | null = null;
     function handleVirtualScroll(event: Event) {
         const scrollTop = (event.target as HTMLElement).scrollTop;
         untrack(() => { virtualScrollTop = scrollTop; });
     }
+
+    // getVirtualizedListRef：lotus 虚拟滚动是自研的，没有 react-window 那样
+    // 的第三方 List 实例可以透传给用户，改为提供同语义（scrollTo/scrollToItem）
+    // 的句柄——scrollToItem 用固定行高纯计算换算目标 scrollTop，不需要 DOM
+    // 测量（对齐 calcVirtualRange 本身"容器高度/滚动位置由调用方采样传入"
+    // 的设计，calcScrollToItemTop 同样只依赖传入的数值，不碰 DOM）。
+    effect(() => {
+        if (!isVirtualized || !getVirtualizedListRef) return;
+        const containerHeight = typeof scroll!.y === 'number' ? scroll!.y : parseFloat(String(scroll!.y));
+        untrack(() => getVirtualizedListRef({
+            scrollTo: (offset: number) => {
+                if (scrollNode) scrollNode.scrollTop = offset;
+            },
+            scrollToItem: (index: number, align: 'auto' | 'smart' | 'center' | 'end' | 'start' = 'auto') => {
+                if (!scrollNode) return;
+                const target = calcScrollToItemTop(index, {
+                    itemCount: flatRows.length,
+                    itemHeight: virtualize!.itemSize,
+                    containerHeight,
+                    scrollTop: scrollNode.scrollTop,
+                    align,
+                });
+                scrollNode.scrollTop = target;
+            },
+        }));
+    });
     let &[virtualRange] = track(() => {
         if (!isVirtualized) return null;
         return calcVirtualRange({
@@ -926,6 +959,7 @@ export function Table<T = any>(&{
                     : {}),
             }}
             onScroll={isVirtualized ? handleVirtualScroll : undefined}
+            ref={(node: HTMLElement | null) => { scrollNode = node; }}
         >
             <table class={['lotus-table', resizable ? 'lotus-table-resizable' : ''].filter(Boolean).join(' ')} role="grid" style={scroll?.x ? { minWidth: typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x } : undefined}>
                 <thead

@@ -50,6 +50,7 @@ import { Table } from '@lotus/ripple';
 | expandedRowRender | 展开行的渲染函数 | `(record, index) => any` | 无 |
 | expandRowByClick | 点击行是否触发展开 | boolean | `false` |
 | footer | 表格底部渲染函数 | `() => any` | 无 |
+| getVirtualizedListRef | 仅 virtualize 场景生效，暴露 `{ scrollTo, scrollToItem }` 滚动控制句柄（lotus 虚拟滚动是自研的、没有 react-window 那样的第三方 List 实例可透传，提供同语义的句柄） | `(ref) => void` | 无 |
 | groupBy | 数据分组字段名或分组函数，分组后同组数据聚在一起、分组标题行插入到组前 | `string \| ((record: T) => string \| number)` | 无 |
 | hideExpandedColumn | 是否隐藏展开列 | boolean | `false` |
 | indentSize | 树形数据子行的缩进像素值 | number | `20` |

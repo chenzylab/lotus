@@ -578,6 +578,7 @@ export function App() @{
         dept: '研发',
     }));
     let &[tableVirtualizeSelectedKeys] = track<Array<string | number>>([]);
+    let tableVirtualListRef: { scrollTo: (offset: number) => void; scrollToItem: (index: number, align?: 'auto' | 'smart' | 'center' | 'end' | 'start') => void } | null = null;
 
     const tablePageColumns: ColumnDef<TablePerson>[] = [
         { title: '姓名', dataIndex: 'name', key: 'name' },
@@ -5622,9 +5623,11 @@ export function App() @{
                     selectedRowKeys: tableVirtualizeSelectedKeys,
                     onChange: (keys) => { tableVirtualizeSelectedKeys = keys; },
                 }}
+                getVirtualizedListRef={(ref) => { tableVirtualListRef = ref; }}
                 aria-label="Table 虚拟滚动示例"
             />
             <TypographyText type="secondary" aria-label="Table 虚拟滚动选中日志">{`已选：${tableVirtualizeSelectedKeys.length} 条`}</TypographyText>
+            <Button aria-label="Table 滚动到第5000行" onClick={() => tableVirtualListRef?.scrollToItem(5000, 'start')}>滚动到第 5000 行</Button>
         </div>
 
         <Divider>Table：loading / bordered / size</Divider>
