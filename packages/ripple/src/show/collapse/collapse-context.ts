@@ -11,6 +11,11 @@ export interface CollapseContextValue {
   clickHeaderToExpand: boolean;
   expandIconPosition: 'left' | 'right';
   onToggle: (key: string, event: MouseEvent) => void;
+  motion: boolean;
+  keepDOM: boolean;
+  lazyRender: boolean;
+  expandIcon: any;
+  collapseIcon: any;
 }
 
 export const CollapseContext = new Context<Tracked<CollapseContextValue>>();

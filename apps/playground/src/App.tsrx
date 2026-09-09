@@ -2,7 +2,7 @@ import { track, effect } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
-import { IconClose, IconPlus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
+import { IconClose, IconPlus, IconMinus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
 
@@ -417,6 +417,7 @@ export function App() @{
     let &[checkboxControlledChecked] = track<boolean>(false);
     let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[collapsibleOpen] = track<boolean>(false);
+    let &[collapsibleLazyOpen] = track<boolean>(false);
     let &[carouselControlledIndex] = track<number>(0);
     let &[carouselMounted] = track<boolean>(true);
     let &[modalBasicVisible] = track<boolean>(false);
@@ -1872,6 +1873,27 @@ export function App() @{
                     </CollapsePanel>
                 </Collapse>
             </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">自定义展开/收起图标（expandIcon/collapseIcon）+ keepDOM（收起时保留 Panel 内容 DOM）</TypographyText>
+                <Collapse defaultActiveKey={['q1']} expandIcon={<IconPlus />} collapseIcon={<IconMinus />} keepDOM aria-label="自定义图标 Collapse">
+                    <CollapsePanel itemKey="q1" header="面板一">
+                        <TypographyText>用 +/- 代替默认的 Chevron 图标，keepDOM=true 收起后内容仍在 DOM 中。</TypographyText>
+                    </CollapsePanel>
+                    <CollapsePanel itemKey="q2" header="面板二">
+                        <TypographyText>面板二内容。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">motion=false（无动画，展开/收起立即切换）</TypographyText>
+                <Collapse defaultActiveKey={[]} motion={false} aria-label="无动画 Collapse">
+                    <CollapsePanel itemKey="m1" header="面板一">
+                        <TypographyText>motion=false，点击 header 立即展开/收起，没有过渡动画。</TypographyText>
+                    </CollapsePanel>
+                </Collapse>
+            </div>
         </Space>
 
         <Divider>Collapsible</Divider>
@@ -1891,6 +1913,23 @@ export function App() @{
             <Collapsible isOpen={collapsibleOpen} keepDOM aria-label="keepDOM Collapsible">
                 <div style={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}>
                     <TypographyText>keepDOM=true，收起后这段内容仍在 DOM 中（只是不可见）。</TypographyText>
+                </div>
+            </Collapsible>
+
+            <TypographyText type="secondary">collapseHeightAdaptive（内容真实高度小于声明的 collapseHeight 时，收起态不硬撑声明值）</TypographyText>
+            <Collapsible isOpen={false} collapseHeight={200} collapseHeightAdaptive aria-label="collapseHeightAdaptive Collapsible">
+                <div style={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}>
+                    <TypographyText>这段内容比声明的 collapseHeight（200px）矮很多。</TypographyText>
+                </div>
+            </Collapsible>
+
+            <TypographyText type="secondary">lazyRender（首次收起态不渲染内容，展开一次后即使收起也保留 DOM）</TypographyText>
+            <Button onClick={() => { collapsibleLazyOpen = !collapsibleLazyOpen; }} aria-label="lazyRender Collapsible 触发按钮">
+                {collapsibleLazyOpen ? '收起' : '展开'}
+            </Button>
+            <Collapsible isOpen={collapsibleLazyOpen} keepDOM lazyRender aria-label="lazyRender Collapsible">
+                <div style={{ padding: '12px', background: 'var(--lotus-color-fill-0)' }}>
+                    <TypographyText>lazyRender：首次挂载时不渲染，展开过一次后收起仍保留 DOM。</TypographyText>
                 </div>
             </Collapsible>
         </Space>

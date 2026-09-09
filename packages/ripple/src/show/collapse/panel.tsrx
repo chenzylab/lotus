@@ -1,6 +1,7 @@
 import { track, untrack } from 'ripple';
 import { IconChevronDown, IconChevronUp } from '@lotus/icons';
 import { CollapseContext } from './collapse-context.js';
+import { Collapsible } from '../collapsible/index.tsrx';
 
 export interface CollapsePanelProps {
     itemKey: string;
@@ -28,6 +29,11 @@ export function CollapsePanel(&{
     let &[activeKeys] = track(() => contextTracked?.value.activeKeys ?? new Set<string>());
     let &[clickHeaderToExpand] = track(() => contextTracked?.value.clickHeaderToExpand ?? true);
     let &[expandIconPosition] = track(() => contextTracked?.value.expandIconPosition ?? 'right');
+    let &[motion] = track(() => contextTracked?.value.motion ?? true);
+    let &[keepDOM] = track(() => contextTracked?.value.keepDOM ?? false);
+    let &[lazyRender] = track(() => contextTracked?.value.lazyRender ?? false);
+    let &[customExpandIcon] = track(() => contextTracked?.value.expandIcon);
+    let &[customCollapseIcon] = track(() => contextTracked?.value.collapseIcon);
 
     let &[isActive] = track<boolean>(() => activeKeys.has(itemKey));
     const hasChildren = children !== undefined;
@@ -73,8 +79,18 @@ export function CollapsePanel(&{
             >
                 @if (showArrow && expandIconPosition === 'left') {
                     <span class="lotus-collapse-arrow" aria-hidden="true" onClick={handleArrowClick}>
-                        @if (isActive) { <IconChevronUp /> }
-                        @if (!isActive) { <IconChevronDown /> }
+                        @if (isActive) {
+                            <>
+                                @if (customCollapseIcon !== undefined) { <>{customCollapseIcon}</> }
+                                @if (customCollapseIcon === undefined) { <IconChevronUp /> }
+                            </>
+                        }
+                        @if (!isActive) {
+                            <>
+                                @if (customExpandIcon !== undefined) { <>{customExpandIcon}</> }
+                                @if (customExpandIcon === undefined) { <IconChevronDown /> }
+                            </>
+                        }
                     </span>
                 }
                 <div class="lotus-collapse-header-main">
@@ -90,17 +106,25 @@ export function CollapsePanel(&{
                 </div>
                 @if (showArrow && expandIconPosition === 'right') {
                     <span class="lotus-collapse-arrow" aria-hidden="true" onClick={handleArrowClick}>
-                        @if (isActive) { <IconChevronUp /> }
-                        @if (!isActive) { <IconChevronDown /> }
+                        @if (isActive) {
+                            <>
+                                @if (customCollapseIcon !== undefined) { <>{customCollapseIcon}</> }
+                                @if (customCollapseIcon === undefined) { <IconChevronUp /> }
+                            </>
+                        }
+                        @if (!isActive) {
+                            <>
+                                @if (customExpandIcon !== undefined) { <>{customExpandIcon}</> }
+                                @if (customExpandIcon === undefined) { <IconChevronDown /> }
+                            </>
+                        }
                     </span>
                 }
             </div>
 
-            <div class={['lotus-collapse-content', isActive ? 'lotus-collapse-content-active' : ''].filter(Boolean).join(' ')} aria-hidden={!isActive}>
-                <div class="lotus-collapse-content-inner">
-                    {children}
-                </div>
-            </div>
+            <Collapsible isOpen={isActive} motion={motion} keepDOM={keepDOM} lazyRender={lazyRender} class="lotus-collapse-content-inner">
+                <>{children}</>
+            </Collapsible>
         </div>
 
         <style>
@@ -146,16 +170,6 @@ export function CollapsePanel(&{
                 align-items: center;
                 color: var(--lotus-color-text-2);
                 transition: transform 0.2s ease;
-            }
-
-            .lotus-collapse-content {
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.25s ease;
-            }
-
-            .lotus-collapse-content-active {
-                max-height: 2000px;
             }
 
             .lotus-collapse-content-inner {

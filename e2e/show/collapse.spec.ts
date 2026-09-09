@@ -74,4 +74,35 @@ test.describe('Collapse', () => {
     await header1.click();
     await expect(header1).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('expandIcon/collapseIcon：自定义图标替换默认 Chevron，展开态用 collapseIcon、收起态用 expandIcon', async ({ page }) => {
+    await page.goto('/');
+    const collapse = page.getByLabel('自定义图标 Collapse');
+    const activeArrow = collapse.locator('.lotus-collapse-panel-active .lotus-collapse-arrow svg');
+    const inactiveArrow = collapse.locator('.lotus-collapse-panel:not(.lotus-collapse-panel-active) .lotus-collapse-arrow svg');
+
+    // Minus 图标是单条水平线 path，Plus 图标是横竖两条线的 path——用路径特征区分，
+    // 不用图标库内部 data-* 标记（IconMinus/IconPlus 没有暴露语义化标识）。
+    const activePath = await activeArrow.locator('path').getAttribute('d');
+    const inactivePath = await inactiveArrow.locator('path').getAttribute('d');
+    expect(activePath).not.toBe(inactivePath);
+  });
+
+  test('keepDOM：收起态 Panel 内容仍保留在 DOM 中', async ({ page }) => {
+    await page.goto('/');
+    const collapse = page.getByLabel('自定义图标 Collapse');
+    const inactivePanelInner = collapse.locator('.lotus-collapse-panel:not(.lotus-collapse-panel-active) .lotus-collapse-content-inner');
+    await expect(inactivePanelInner).not.toBeEmpty();
+  });
+
+  test('motion=false：展开后没有过渡动画时长', async ({ page }) => {
+    await page.goto('/');
+    const collapse = page.getByLabel('无动画 Collapse');
+    const header = collapse.locator('.lotus-collapse-header').first();
+    await header.click();
+
+    const contentWrapper = collapse.locator('.lotus-collapse-content-inner').locator('..');
+    await expect(contentWrapper).not.toHaveCSS('height', '0px');
+    await expect(contentWrapper).toHaveCSS('transition-duration', '0s');
+  });
 });

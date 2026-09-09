@@ -36,8 +36,13 @@ import { Collapse, CollapsePanel } from '@lotus/ripple';
 | aria-label | 设置 aria-label 属性 | string | - |
 | children | `CollapsePanel` 子项 | any | - |
 | clickHeaderToExpand | 点击整个标题区域是否触发展开/收起 | boolean | `true` |
+| collapseIcon | 自定义收起状态图标（替换默认的向上 Chevron） | any | - |
 | defaultActiveKey | 非受控模式下默认展开的面板 key | `string \| string[]` | - |
+| expandIcon | 自定义展开状态图标（替换默认的向下 Chevron） | any | - |
 | expandIconPosition | 展开图标位置 | `'left' \| 'right'` | `'right'` |
+| keepDOM | 收起态是否保留 Panel 内容的 DOM（不销毁重建），透传给内部 Collapsible | boolean | `false` |
+| lazyRender | 内容首次展开前不渲染，展开一次后即使收起也保留 DOM（需要 `keepDOM` 才有意义） | boolean | `false` |
+| motion | 展开/收起是否有动画过渡，`false` 时立即切换 | boolean | `true` |
 | style | 自定义样式 | object | - |
 | onChange | 展开面板变化时的回调 | `(activeKey: string[], event: MouseEvent) => void` | - |
 
@@ -59,6 +64,10 @@ import { Collapse, CollapsePanel } from '@lotus/ripple';
 - 标题区携带 `role="button"`、`aria-expanded`（反映展开状态）、`aria-disabled`。
 - 内容区在收起状态携带 `aria-hidden={true}`，避免屏幕阅读器读取到不可见内容。
 - 展开箭头图标携带 `aria-hidden="true"`（纯装饰，语义已由标题区的 `aria-expanded` 表达）。
+
+## 实现说明
+
+Panel 内容区的展开/收起动画由内部的 [Collapsible](./collapsible) 组件承载：用 `ResizeObserver` 实测内容真实高度驱动 CSS `height` 过渡，不是 `max-height` 近似值——后者按声明的常量差值算过渡进度而非内容真实高度，短内容展开时视觉上大半时间在过渡"看不见的空白"，内容超过声明的上限还会被直接截断。
 
 ## 设计变量
 
