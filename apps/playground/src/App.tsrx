@@ -3004,6 +3004,7 @@ export function App() @{
             <Avatar
                 alt="avatar image"
                 src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png"
+                imgAttr={{ loading: 'lazy', 'data-testid': 'avatar-img-attr' }}
             />
         </Space>
 

@@ -13,6 +13,14 @@ test.describe('Avatar', () => {
     await expect(label).toBeVisible();
     await expect(label).toHaveText('AS');
   });
+
+  test('imgAttr 透传给 <img> 元素，不覆盖 src/alt', async ({ page }) => {
+    await page.goto('/');
+    const img = page.locator('img[data-testid="avatar-img-attr"]');
+    await expect(img).toHaveAttribute('loading', 'lazy');
+    await expect(img).toHaveAttribute('alt', 'avatar image');
+    await expect(img).toHaveAttribute('src', /bytednsdoc\.com/);
+  });
 });
 
 test.describe('AvatarGroup', () => {

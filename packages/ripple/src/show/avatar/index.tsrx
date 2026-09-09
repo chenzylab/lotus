@@ -66,6 +66,8 @@ export interface AvatarProps {
     border?: boolean | AvatarBorder;
     /** 内容区域呼吸动效（配合直播/在线等场景使用）。 */
     contentMotion?: boolean;
+    /** 透传给 <img> 元素的任意 HTML 属性（如 loading/crossOrigin/referrerPolicy）。 */
+    imgAttr?: Record<string, any>;
     style?: Record<string, any>;
     class?: string;
 }
@@ -111,6 +113,7 @@ export function Avatar(&{
     bottomSlot,
     border,
     contentMotion = false,
+    imgAttr,
     style,
     class: className,
 }: AvatarProps) @{
@@ -187,7 +190,7 @@ export function Avatar(&{
                             ref={(node: HTMLElement) => { avatarNode = node; }}
                         >
                             @if (isImg) {
-                                <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} />
+                                <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} {...(imgAttr ?? {})} />
                             } @else {
                                 @if (isTextContent) {
                                     <span class="lotus-avatar-content" style={{ transform: `scale(${scale})` }}>
@@ -224,7 +227,7 @@ export function Avatar(&{
                 } @else {
                     <span class={avatarClasses} ref={(node: HTMLElement) => { avatarNode = node; }}>
                         @if (isImg) {
-                            <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} />
+                            <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} {...(imgAttr ?? {})} />
                         } @else {
                             @if (isTextContent) {
                                 <span class="lotus-avatar-content" style={{ transform: `scale(${scale})` }}>
@@ -297,7 +300,7 @@ export function Avatar(&{
                 ref={(node: HTMLElement) => { avatarNode = node; }}
             >
                 @if (isImg) {
-                    <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} />
+                    <img alt={alt} src={src} srcSet={srcSet} onError={handleImgError} {...(imgAttr ?? {})} />
                 } @else {
                     @if (isTextContent) {
                         <span class="lotus-avatar-content" style={{ transform: `scale(${scale})` }}>

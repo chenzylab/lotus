@@ -96,6 +96,7 @@ Semi 版本 `AvatarGroup` 用 children 承载子 `Avatar`；lotus 没有 childre
 | contentMotion | 头像内容区域动效 | boolean | false |
 | gap | 字符头像距离左右两侧的像素大小 | number | 3 |
 | hoverMask | hover 时头像内容覆盖层 | any | - |
+| imgAttr | 透传给 `<img>` 元素的任意 HTML 属性（如 `loading`/`crossOrigin`/`referrerPolicy`），可覆盖 `src`/`srcSet`，不会覆盖 `alt` | object | - |
 | isText | 内容是否为纯文字（决定是否启用自适应字符缩放），Ripple 特有，需显式声明 | boolean | true |
 | shape | 指定头像的形状，支持 circle、square | string | "circle" |
 | size | 支持 7 档关键字和合法 width 值 | string | "medium" |
