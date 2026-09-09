@@ -151,4 +151,49 @@ test.describe('SideSheet', () => {
     await expect(sheet).toBeHidden();
     await expect(openBtn).toBeFocused();
   });
+
+  test('closeIcon/motion=false：自定义关闭图标生效，关闭时立即从 DOM 移除不经过离场过渡（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开 closeIcon/motion=false SideSheet' }).click();
+    const sheet = page.getByLabel('closeIcon motion SideSheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveClass(/lotus-side-sheet-no-motion/);
+    await expect(sheet.locator('.lotus-side-sheet-close')).toHaveText('✕');
+
+    await sheet.locator('.lotus-side-sheet-close').click();
+    await expect(sheet).toHaveCount(0);
+  });
+
+  test('getPopupContainer：浮层挂载到指定容器内部而非 document.body（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开挂载到虚线容器的 SideSheet' }).click();
+    const sheet = page.getByLabel('getPopupContainer SideSheet');
+    await expect(sheet).toBeVisible();
+
+    const mountedInsideDashedContainer = await sheet.evaluate((el) => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        if (node.style?.border?.includes('dashed')) return true;
+        node = node.parentElement;
+      }
+      return false;
+    });
+    expect(mountedInsideDashedContainer).toBe(true);
+
+    await sheet.locator('.lotus-side-sheet-close').click();
+    await expect(sheet).toBeHidden();
+  });
+
+  test('canVerticalSetWidth：top 放置下配合 width 设置固定宽度，而非默认铺满 100%（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '打开固定宽度的顶部 SideSheet' }).click();
+    const sheet = page.getByLabel('canVerticalSetWidth SideSheet');
+    await expect(sheet).toBeVisible();
+
+    const width = await sheet.evaluate((el) => getComputedStyle(el).width);
+    expect(width).toBe('400px');
+
+    await sheet.locator('.lotus-side-sheet-close').click();
+    await expect(sheet).toBeHidden();
+  });
 });

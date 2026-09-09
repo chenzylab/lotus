@@ -25,6 +25,30 @@ import { SideSheet } from '@lotus/ripple';
 ../../src/demos/show/side-sheet/placement-left.tsrx
 ```
 
+### closeIcon / motion
+
+`closeIcon` 替换右上角默认关闭图标；`motion=false` 关闭展开/收起过渡动画，立即显隐。
+
+```tsrx demo
+../../src/demos/show/side-sheet/close-icon-motion.tsrx
+```
+
+### getPopupContainer
+
+指定浮层挂载的目标容器，不传则挂载到 `document.body`。
+
+```tsrx demo
+../../src/demos/show/side-sheet/popup-container.tsrx
+```
+
+### canVerticalSetWidth
+
+`placement` 为 `top`/`bottom`（水平方向）时默认宽度铺满 100%；开启 `canVerticalSetWidth` 后可配合 `width` 指定固定宽度。
+
+```tsrx demo
+../../src/demos/show/side-sheet/vertical-width.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -32,23 +56,27 @@ import { SideSheet } from '@lotus/ripple';
 | afterVisibleChange | 显隐状态变化（含关闭动画结束）后的回调 | `(visible: boolean) => void` | 无 |
 | aria-label | 设置 aria-label 属性 | string | 无 |
 | bodyStyle | 内容区域自定义样式 | object | 无 |
+| canVerticalSetWidth | `placement` 为 `top`/`bottom` 时，是否仍允许通过 `width` 设置固定宽度 | boolean | `false` |
 | class | 类名 | string | 无 |
 | closable | 是否显示关闭按钮 | boolean | `true` |
+| closeIcon | 自定义关闭按钮图标，默认 `IconClose` | any | 无 |
 | closeOnEsc | 是否支持 Esc 关闭 | boolean | `true` |
 | disableScroll | 是否禁用 `body` 滚动锁定 | boolean | `true` |
 | footer | 底部内容 | any | 无 |
+| getPopupContainer | 浮层挂载的目标容器 | `() => HTMLElement` | `() => document.body` |
 | headerStyle | 头部自定义样式 | object | 无 |
 | height | 高度（`placement` 为 `top`/`bottom` 时生效） | string \| number | 无 |
 | keepDOM | 关闭后是否保留 DOM（不销毁） | boolean | `false` |
 | mask | 是否显示遮罩 | boolean | `true` |
 | maskClosable | 点击遮罩是否关闭 | boolean | `true` |
 | maskStyle | 遮罩自定义样式 | object | 无 |
+| motion | 展开/收起是否带过渡动画 | boolean | `true` |
 | placement | 滑出方向 | `SideSheetPlacement` | `'right'` |
 | size | 尺寸（`small`/`medium`/`large` 对应预设宽度） | `SideSheetSize` | `'medium'` |
 | style | 自定义样式 | object | 无 |
 | title | 标题 | any | 无 |
 | visible | 是否显示 | boolean | `false` |
-| width | 宽度（`placement` 为 `left`/`right` 时生效） | string \| number | 无 |
+| width | 宽度（`placement` 为 `left`/`right`，或 `canVerticalSetWidth` 时生效） | string \| number | 无 |
 | zIndex | 层级 | number | 无 |
 | onCancel | 点击关闭按钮/遮罩/Esc 时的回调 | `(event) => void` | 无 |
 

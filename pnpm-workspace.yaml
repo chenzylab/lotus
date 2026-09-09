@@ -66,3 +66,5 @@ minimumReleaseAgeExclude:
   - '@tiptap/pm@3.30.3'
   - '@tiptap/starter-kit@3.30.3'
 
+patchedDependencies:
+  ripple@0.3.128: patches/ripple@0.3.128.patch

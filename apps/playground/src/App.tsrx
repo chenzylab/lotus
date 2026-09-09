@@ -439,6 +439,10 @@ export function App() @{
     let &[sideSheetBottomVisible] = track<boolean>(false);
     let &[sideSheetKeepDomVisible] = track<boolean>(false);
     let &[sideSheetNoMaskCloseVisible] = track<boolean>(false);
+    let &[sideSheetCloseIconVisible] = track<boolean>(false);
+    let &[sideSheetPopupContainerVisible] = track<boolean>(false);
+    let &[sideSheetPopupContainerNode] = track<HTMLDivElement | null>(null);
+    let &[sideSheetVerticalWidthVisible] = track<boolean>(false);
     let &[sideSheetAfterVisibleChangeLog] = track<string>('');
     let &[calendarWeekAnchor] = track<Date>(new Date(2026, 0, 15));
     let &[calendarMonthAnchor] = track<Date>(new Date(2026, 0, 15));
@@ -2353,6 +2357,62 @@ export function App() @{
                         aria-label="large 无遮罩关闭 SideSheet"
                     >
                         <TypographyText>点击遮罩不会关闭，也没有右上角关闭按钮，只能通过底部按钮关闭。</TypographyText>
+                    </SideSheet>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">closeIcon / motion=false（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetCloseIconVisible = true; }}>打开 closeIcon/motion=false SideSheet</Button>
+                    <SideSheet
+                        visible={sideSheetCloseIconVisible}
+                        title="自定义关闭图标 + 无过渡动画"
+                        closeIcon={<span>✕</span>}
+                        motion={false}
+                        onCancel={() => { sideSheetCloseIconVisible = false; }}
+                        aria-label="closeIcon motion SideSheet"
+                    >
+                        <TypographyText>右上角关闭按钮用自定义 closeIcon，展开/收起没有过渡动画。</TypographyText>
+                    </SideSheet>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">getPopupContainer（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <div
+                        ref={sideSheetPopupContainerNode}
+                        style={{ position: 'relative', width: '320px', height: '200px', border: '1px dashed var(--lotus-color-border)', overflow: 'hidden' }}
+                    >
+                        <Button onClick={() => { sideSheetPopupContainerVisible = true; }}>打开挂载到虚线容器的 SideSheet</Button>
+                        <SideSheet
+                            visible={sideSheetPopupContainerVisible}
+                            title="挂载到自定义容器"
+                            getPopupContainer={() => sideSheetPopupContainerNode as HTMLElement}
+                            onCancel={() => { sideSheetPopupContainerVisible = false; }}
+                            aria-label="getPopupContainer SideSheet"
+                        >
+                            <TypographyText>遮罩与内容都挂载在虚线容器内部。</TypographyText>
+                        </SideSheet>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <TypographyText type="secondary">canVerticalSetWidth：top/bottom 放置下允许设置固定宽度（对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Button onClick={() => { sideSheetVerticalWidthVisible = true; }}>打开固定宽度的顶部 SideSheet</Button>
+                    <SideSheet
+                        visible={sideSheetVerticalWidthVisible}
+                        title="top 放置 + canVerticalSetWidth + width"
+                        placement="top"
+                        canVerticalSetWidth
+                        width={400}
+                        onCancel={() => { sideSheetVerticalWidthVisible = false; }}
+                        aria-label="canVerticalSetWidth SideSheet"
+                    >
+                        <TypographyText>默认 top/bottom 放置宽度铺满 100%，canVerticalSetWidth 开启后可用 width 指定固定宽度（居左，不会自动居中）。</TypographyText>
                     </SideSheet>
                 </div>
             </div>

@@ -5,6 +5,7 @@ import { lockBodyScroll, unlockBodyScroll } from '@lotus/foundation/base/scroll-
 import { IconClose } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { ConfigContext } from '../../other/config-provider/config-context.js';
 
 export type SideSheetPlacement = 'top' | 'right' | 'bottom' | 'left';
 export type SideSheetSize = 'small' | 'medium' | 'large';
@@ -32,6 +33,15 @@ export interface SideSheetProps {
     maskStyle?: Record<string, any>;
     style?: Record<string, any>;
     class?: string;
+    /** 自定义关闭按钮图标，默认 IconClose（对齐 Semi closeIcon）。 */
+    closeIcon?: any;
+    /** 浮层挂载的目标容器，不传则读取 ConfigProvider 全局默认值，最终兜底 document.body（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 展开/收起是否带过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
+    /** placement 为 top/bottom（水平方向）时，是否仍允许通过 width 设置固定宽度
+     * （对齐 Semi canVerticalSetWidth）；默认 false，水平方向宽度固定 100%。 */
+    canVerticalSetWidth?: boolean;
     'aria-label'?: string;
 }
 
@@ -74,10 +84,15 @@ export function SideSheet(&{
     maskStyle,
     style,
     class: className,
+    closeIcon,
+    getPopupContainer,
+    motion = true,
+    canVerticalSetWidth = false,
     'aria-label': ariaLabel,
 }: SideSheetProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
+    const configTracked = ConfigContext.get();
 
     let &[state] = track<SideSheetState>(initialSideSheetState(untrack(() => visible)));
 
@@ -86,12 +101,23 @@ export function SideSheet(&{
         setState: (patch: Partial<SideSheetState>) => { state = { ...untrack(() => state), ...patch }; },
     });
 
+    function resolvePortalTarget(): HTMLElement | null {
+        const configured = getPopupContainer ?? configTracked?.value.getPopupContainer;
+        if (configured) return configured();
+        return typeof document !== 'undefined' ? document.body : null;
+    }
+
     let &[contentNode] = track<HTMLDivElement | null>(null);
     let prevFocusElement: HTMLElement | null = null;
 
     effect(() => {
         if (visible) {
             untrack(() => foundation.handleShow());
+        } else if (!motion) {
+            // 无动画时不会触发 onTransitionEnd，直接同步走完“动画结束”状态迁移
+            // （对齐 Semi CSSAnimation 在 motion=false 时同步调用 onAnimationEnd，
+            // 同 Modal 的处理方式）。
+            untrack(() => foundation.handleAnimationEnd(false));
         }
     });
 
@@ -155,13 +181,17 @@ export function SideSheet(&{
         return () => window.removeEventListener('keydown', handleKeyDown);
     });
 
-    let &[shouldRender] = track<boolean>(() => visible || keepDOM || !state.displayNone);
+    // 对齐 Semi shouldRender：受控 visible 为 true 或 keepDOM 时始终渲染；否则退化
+    // 为"还在播放关闭动画（displayNone 还没置 true）就先别卸载"（motion=false 时
+    // displayNone 会同步置 true，等价于 visible 一变 false 就立即卸载）。
+    let &[shouldRender] = track<boolean>(() => visible || keepDOM || (motion && !state.displayNone));
 
     let &[maskClasses] = track<string>(() =>
         [
             'lotus-side-sheet-mask',
             visible ? 'lotus-side-sheet-mask-visible' : '',
             keepDOM && !visible ? 'lotus-side-sheet-hidden' : '',
+            motion ? '' : 'lotus-side-sheet-no-motion',
         ].filter(Boolean).join(' '),
     );
 
@@ -171,6 +201,7 @@ export function SideSheet(&{
             `lotus-side-sheet-content-${placement}`,
             visible ? 'lotus-side-sheet-content-visible' : '',
             keepDOM && !visible ? 'lotus-side-sheet-hidden' : '',
+            motion ? '' : 'lotus-side-sheet-no-motion',
             className ?? '',
         ].filter(Boolean).join(' '),
     );
@@ -179,14 +210,14 @@ export function SideSheet(&{
         const vertical = isVerticalPlacement(placement);
         return {
             ...style,
-            width: vertical ? (width ?? SIZE_WIDTH[size]) : undefined,
+            width: (vertical || canVerticalSetWidth) ? (width ?? SIZE_WIDTH[size]) : undefined,
             height: !vertical ? (height ?? SIZE_HEIGHT[size]) : undefined,
         };
     });
 
     <>
         @if (shouldRender) {
-            <Portal target={typeof document !== 'undefined' ? document.body : null}>
+            <Portal target={resolvePortalTarget()}>
                 @if (mask) {
                     <div class={maskClasses} style={{ zIndex, ...maskStyle }} aria-hidden="true" onClick={handleMaskClick} />
                 }
@@ -209,7 +240,7 @@ export function SideSheet(&{
                     }
                     @if (closable) {
                         <button type="button" class="lotus-side-sheet-close" aria-label={locale.SideSheet.close} onClick={handleCancel}>
-                            <IconClose />
+                            {closeIcon ?? <IconClose />}
                         </button>
                     }
 
@@ -237,6 +268,10 @@ export function SideSheet(&{
                 opacity: 1;
             }
 
+            .lotus-side-sheet-mask.lotus-side-sheet-no-motion {
+                transition: none;
+            }
+
             .lotus-side-sheet-content {
                 position: fixed;
                 display: flex;
@@ -248,8 +283,15 @@ export function SideSheet(&{
                 max-height: 100vh;
             }
 
+            .lotus-side-sheet-content.lotus-side-sheet-no-motion {
+                transition: none;
+            }
+
+            /* 与 .lotus-side-sheet-content 同优先级选择器的胜负取决于源码顺序，用
+               !important 做确定性覆盖（同 Modal keepDOM 的处理方式，避免未来维护
+               时被意外颠倒导致 display:none 失效）。 */
             .lotus-side-sheet-hidden {
-                display: none;
+                display: none !important;
             }
 
             .lotus-side-sheet-content-right {
