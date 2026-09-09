@@ -6,7 +6,10 @@ test.describe('IconButton', () => {
     page.on('console', (msg) => logs.push(msg.text()));
 
     await page.goto('/');
-    const button = page.getByRole('button', { name: '设置', exact: true });
+    // 不用泛化的 getByRole('button', { name: '设置' })：Steps nav 类型 demo 里
+    // 也有一个标题为"设置"的步骤条项（role="button"），文本重名会命中两个元素
+    // 触发 Playwright 严格模式报错，改用 class 前缀限定到真正的 IconButton。
+    const button = page.locator('button.lotus-icon-button[aria-label="设置"]');
 
     // 对应 specs 踩坑 #41：@if/@else 两分支渲染同 class 容器时 @else 分支内容可能不显示，
     // 必须断言内部子元素（svg）真的存在，不能只看外层 button 是否可见。
@@ -78,7 +81,10 @@ test.describe('IconButton', () => {
 
   test('图标按钮为正方形（宽高相等）', async ({ page }) => {
     await page.goto('/');
-    const button = page.getByRole('button', { name: '设置', exact: true });
+    // 不用泛化的 getByRole('button', { name: '设置' })：Steps nav 类型 demo 里
+    // 也有一个标题为"设置"的步骤条项（role="button"），文本重名会命中两个元素
+    // 触发 Playwright 严格模式报错，改用 class 前缀限定到真正的 IconButton。
+    const button = page.locator('button.lotus-icon-button[aria-label="设置"]');
     const box = await button.boundingBox();
 
     expect(box).not.toBeNull();
