@@ -36,6 +36,13 @@ test.describe('List', () => {
     await expect(list).toContainText('卡片二');
   });
 
+  test('grid.justify 透传给外层 Row，控制主轴对齐方式', async ({ page }) => {
+    await page.goto('/');
+    const list = page.getByLabel('grid justify List', { exact: true });
+    const row = list.locator('.lotus-list-items-grid');
+    await expect(row).toHaveCSS('justify-content', 'center');
+  });
+
   test('loading 时显示 Spin 遮罩', async ({ page }) => {
     await page.goto('/');
     const list = page.getByLabel('loading List');

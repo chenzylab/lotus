@@ -2008,6 +2008,16 @@ export function App() @{
             </div>
 
             <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">grid.justify（主轴对齐，未占满整行时居中）</TypographyText>
+                <List
+                    grid={{ gutter: 16, span: 4, justify: 'center' }}
+                    dataSource={['A', 'B', 'C']}
+                    renderItem={(item) => <Card title={item}><TypographyText>{item}</TypographyText></Card>}
+                    aria-label="grid justify List"
+                />
+            </div>
+
+            <div style={{ width: '100%' }}>
                 <TypographyText type="secondary">loading（Spin 遮罩） / 空状态</TypographyText>
                 <Space style={{ width: '100%', gap: '16px' }}>
                     <div style={{ flex: 1 }}>

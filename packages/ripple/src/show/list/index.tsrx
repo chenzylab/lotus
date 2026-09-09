@@ -17,6 +17,10 @@ export interface ListGrid {
     lg?: number;
     xl?: number;
     xxl?: number;
+    /** 透传给外层 Row 的交叉轴对齐方式。 */
+    align?: 'top' | 'middle' | 'bottom';
+    /** 透传给外层 Row 的主轴对齐方式。 */
+    justify?: 'start' | 'end' | 'center' | 'space-around' | 'space-between';
 }
 
 export interface ListProps<T = any> {
@@ -95,7 +99,7 @@ export function List(&{
                     <div class="lotus-list-empty">{emptyContent ?? locale.List.emptyContent}</div>
                 }
                 @if (!isEmpty && isGrid) {
-                    <Row gutter={grid!.gutter} class="lotus-list-items-grid" style={{}}>
+                    <Row gutter={grid!.gutter} align={grid!.align} justify={grid!.justify} class="lotus-list-items-grid" style={{}}>
                         @for (const item of dataItems; index i) {
                             <Col span={grid!.span} xs={grid!.xs} sm={grid!.sm} md={grid!.md} lg={grid!.lg} xl={grid!.xl} xxl={grid!.xxl}>
                                 {renderItem!(item, i)}

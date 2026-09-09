@@ -49,7 +49,7 @@ import { List, ListItem } from '@lotus/ripple';
 | split | 是否显示项间分隔线 | boolean | `true` |
 | style | 自定义样式 | object | - |
 
-`ListGrid` 结构：`{ span?, gutter?, xs?, sm?, md?, lg?, xl?, xxl? }`（响应式断点透传给内部 `Col`）。
+`ListGrid` 结构：`{ span?, gutter?, xs?, sm?, md?, lg?, xl?, xxl?, align?, justify? }`（`span`/响应式断点透传给内部每个 `Col`；`align`/`justify` 透传给外层 `Row`，控制整个栅格的交叉轴/主轴对齐方式）。
 
 ### ListItem
 
