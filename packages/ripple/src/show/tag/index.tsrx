@@ -2,28 +2,43 @@ import { track } from 'ripple';
 import { IconClose } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
+import { Avatar } from '../avatar/index.tsrx';
 
 export type TagColor =
     | 'amber' | 'blue' | 'cyan' | 'green' | 'grey' | 'indigo' | 'lightBlue' | 'lightGreen'
     | 'lime' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'violet' | 'yellow' | 'white';
 export type TagType = 'ghost' | 'solid' | 'light';
 export type TagSize = 'default' | 'small' | 'large';
+export type TagShape = 'circle' | 'square';
+export type TagAvatarShape = 'circle' | 'square';
 
 export interface TagProps {
     children?: any;
+    /** 标识该标签的 key，`onClose` 回调透传，多标签场景（如 TagGroup）区分是哪一个被关闭。 */
+    tagKey?: string | number;
     size?: TagSize;
     color?: TagColor;
     type?: TagType;
+    /** 标签外观形状：`square`（默认，方角）或 `circle`（胶囊形，完全圆角）。 */
+    shape?: TagShape;
     closable?: boolean;
     visible?: boolean;
     /** AI 多彩风格（对齐 Semi `colorful`），生效时忽略 `color` 语义色，改用 AI 渐变色系。 */
     colorful?: boolean;
     /** 配合 `colorful` 使用：是否用渐变色而非纯色（对齐 Semi `gradient`），单独设置无效果。 */
     gradient?: boolean;
-    onClose?: (event: MouseEvent) => void;
+    /** 标签内嵌头像图片地址，与 `prefixIcon` 互斥的独立能力。 */
+    avatarSrc?: string;
+    /** 内嵌头像的形状。 */
+    avatarShape?: TagAvatarShape;
+    onClose?: (children: any, event: MouseEvent | KeyboardEvent, tagKey: string | number | undefined) => void;
     onClick?: (event: MouseEvent) => void;
+    onKeyDown?: (event: KeyboardEvent) => void;
+    onMouseEnter?: () => void;
     prefixIcon?: any;
     suffixIcon?: any;
+    /** 内部使用：TagInput 场景需要用 -1 关闭 Tag 自身的 Tab 序，改由外层管理焦点。 */
+    tabIndex?: number;
     style?: Record<string, any>;
     class?: string;
     'aria-label'?: string;
@@ -31,17 +46,24 @@ export interface TagProps {
 
 export function Tag(&{
     children,
+    tagKey,
     size = 'default',
     color = 'grey',
     type = 'light',
+    shape = 'square',
     closable = false,
     visible: visibleProp,
     colorful = false,
     gradient = false,
+    avatarSrc,
+    avatarShape = 'square',
     onClose,
     onClick,
+    onKeyDown,
+    onMouseEnter,
     prefixIcon,
     suffixIcon,
+    tabIndex,
     style,
     class: className,
     'aria-label': ariaLabel,
@@ -58,6 +80,7 @@ export function Tag(&{
             'lotus-tag',
             `lotus-tag-${type}`,
             `lotus-tag-${size}`,
+            `lotus-tag-${shape}`,
             color === 'white' && !colorful ? 'lotus-tag-white' : '',
             colorful ? 'lotus-tag-colorful' : '',
             colorful && gradient ? 'lotus-tag-colorful-gradient' : '',
@@ -67,13 +90,41 @@ export function Tag(&{
             .join(' '),
     );
 
-    const handleClose = (event: MouseEvent) => {
+    // clickable 决定是否需要键盘可达性（role=button + tabIndex + 键盘事件）：
+    // 对齐 Semi 只在真的可交互（有 onClick 或 closable）时才把 Tag 纳入 Tab
+    // 序，纯展示用的 Tag 不应该抢占键盘焦点。
+    const clickable = onClick !== undefined || closable;
+
+    function handleClose(event: MouseEvent | KeyboardEvent) {
         event.stopPropagation();
         if (!isControlledVisible) {
             internalVisible = false;
         }
-        onClose?.(event);
-    };
+        onClose?.(children, event, tagKey);
+    }
+
+    // 对齐 Semi handleKeyDown：Backspace/Delete 关闭（closable 时），Enter
+    // 触发 onClick，Escape 失焦——只在 clickable 时绑定，避免纯展示 Tag
+    // 意外响应键盘事件。
+    function handleKeyDown(event: KeyboardEvent) {
+        switch (event.key) {
+            case 'Backspace':
+            case 'Delete':
+                if (closable) {
+                    event.preventDefault();
+                    handleClose(event);
+                }
+                break;
+            case 'Enter':
+                event.preventDefault();
+                onClick?.(event as any);
+                break;
+            case 'Escape':
+                (event.target as HTMLElement)?.blur();
+                break;
+        }
+        onKeyDown?.(event);
+    }
 
     <>
         @if (visible) {
@@ -81,11 +132,20 @@ export function Tag(&{
                 class={classes}
                 style={{ ...style, '--lotus-tag-color': colorful || color === 'white' ? '' : `var(--lotus-color-tag-${kebabCase(color)})` }}
                 onClick={onClick}
+                onMouseEnter={onMouseEnter}
                 aria-label={ariaLabel}
+                role={clickable ? 'button' : undefined}
+                tabIndex={clickable ? (tabIndex ?? 0) : tabIndex}
+                onKeyDown={clickable ? handleKeyDown : onKeyDown}
             >
                 @if (prefixIcon) {
                     <span class="lotus-tag-prefix-icon">
                         {prefixIcon}
+                    </span>
+                }
+                @if (avatarSrc) {
+                    <span class="lotus-tag-avatar">
+                        <Avatar src={avatarSrc} shape={avatarShape} size="extra-small" />
                     </span>
                 }
                 <span class="lotus-tag-content">{children}</span>
@@ -133,6 +193,16 @@ export function Tag(&{
                 height: 28px;
                 padding: 0 10px;
                 font-size: var(--lotus-font-body-size);
+            }
+
+            .lotus-tag-circle {
+                border-radius: var(--lotus-border-radius-full);
+            }
+
+            .lotus-tag-avatar {
+                display: inline-flex;
+                align-items: center;
+                margin-inline-start: -4px;
             }
 
             /* light：浅底深字，默认主题 */

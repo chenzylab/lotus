@@ -1,5 +1,5 @@
 import { track, effect } from 'ripple';
-import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, DescriptionsItem, Collapse, CollapsePanel, Collapsible, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
+import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, DescriptionsItem, Collapse, CollapsePanel, Collapsible, TagGroup, SplitTagGroup, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNoContentDark, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
 import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
 import { IconClose, IconPlus, IconMinus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
@@ -418,6 +418,8 @@ export function App() @{
     let &[collapseControlledActiveKey] = track<string[]>([]);
     let &[collapsibleOpen] = track<boolean>(false);
     let &[collapsibleLazyOpen] = track<boolean>(false);
+    let &[tagCloseLog] = track<string>('');
+    let &[tagGroupCloseLog] = track<string>('');
     let &[carouselControlledIndex] = track<number>(0);
     let &[carouselMounted] = track<boolean>(true);
     let &[modalBasicVisible] = track<boolean>(false);
@@ -810,13 +812,16 @@ export function App() @{
             <Tag size="default" color="blue">default</Tag>
             <Tag size="large" color="blue">large</Tag>
             <Tag
+                tagKey="closable-demo"
                 color="green"
                 closable
-                onClose={() => console.log('tag closed')}
+                onClose={(_children, _e, tagKey) => { tagCloseLog = `关闭了 tagKey=${tagKey}`; }}
+                aria-label="可关闭 Tag"
             >
                 可关闭标签
             </Tag>
         </Space>
+        <TypographyText type="tertiary" aria-label="Tag 关闭日志">{tagCloseLog}</TypographyText>
 
         <Divider>Tag：colorful / gradient（AI 多彩风格）</Divider>
 
@@ -827,6 +832,75 @@ export function App() @{
             <Tag type="light" colorful gradient>light colorful gradient</Tag>
             <Tag type="ghost" colorful>ghost colorful</Tag>
             <Tag type="ghost" colorful gradient>ghost colorful gradient</Tag>
+        </Space>
+
+        <Divider>Tag：shape=circle（胶囊形） + avatarSrc（内嵌头像）</Divider>
+
+        <Space wrap align="center">
+            <Tag shape="circle" color="blue">circle shape</Tag>
+            <Tag shape="square" color="blue">square shape（默认）</Tag>
+            <Tag avatarSrc="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/dy.png" color="grey">带头像标签</Tag>
+        </Space>
+
+        <Divider>Tag：键盘操作（closable 时聚焦后按 Backspace/Delete 关闭，Enter 触发 onClick）</Divider>
+
+        <Space>
+            <Tag
+                closable
+                color="orange"
+                onClick={() => { tagCloseLog = '点击了可交互 Tag'; }}
+                onClose={() => { tagCloseLog = '键盘/点击关闭按钮关闭了 Tag'; }}
+                aria-label="键盘可操作 Tag"
+            >
+                聚焦后试试 Backspace/Enter
+            </Tag>
+        </Space>
+
+        <Divider>TagGroup：声明式 tagList 数组（Ripple 无 children 反射能力，改用数据数组承载配置，同 AvatarGroup 的设计取舍） + maxTagCount 折叠</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '12px' }}>
+            <TagGroup
+                tagList={[
+                    { children: '标签一', color: 'blue' },
+                    { children: '标签二', color: 'green' },
+                    { children: '标签三', color: 'orange' },
+                    { children: '标签四', color: 'purple' },
+                    { children: '标签五', color: 'red' },
+                ]}
+                maxTagCount={2}
+                aria-label="TagGroup maxTagCount"
+            />
+
+            <TagGroup
+                tagList={[
+                    { children: '标签一', color: 'blue' },
+                    { children: '标签二', color: 'green' },
+                    { children: '标签三', color: 'orange' },
+                ]}
+                maxTagCount={1}
+                showPopover
+                aria-label="TagGroup showPopover"
+            />
+
+            <TagGroup
+                tagList={[
+                    { tagKey: 'g1', children: '可关闭一', color: 'blue', closable: true },
+                    { tagKey: 'g2', children: '可关闭二', color: 'green', closable: true },
+                ]}
+                onTagClose={(_children, _e, tagKey) => { tagGroupCloseLog = `TagGroup 关闭了 tagKey=${tagKey}`; }}
+                aria-label="TagGroup onTagClose"
+            />
+            <TypographyText type="tertiary" aria-label="TagGroup 关闭日志">{tagGroupCloseLog}</TypographyText>
+        </Space>
+
+        <Divider>SplitTagGroup：JSX children 声明式写法（纯 CSS 首尾圆角，不需要 children 遍历/克隆）</Divider>
+
+        <Space>
+            <SplitTagGroup aria-label="SplitTagGroup 示例">
+                <Tag color="blue">周一</Tag>
+                <Tag color="blue">周二</Tag>
+                <Tag color="blue">周三</Tag>
+            </SplitTagGroup>
         </Space>
 
         <Divider />

@@ -222,7 +222,9 @@ export {
     type FormErrors,
     type FormMessages,
 } from './input/form/index.tsrx';
-export { Tag, type TagProps, type TagColor, type TagType, type TagSize } from './show/tag/index.tsrx';
+export { Tag, type TagProps, type TagColor, type TagType, type TagSize, type TagShape, type TagAvatarShape } from './show/tag/index.tsrx';
+export { TagGroup, type TagGroupProps } from './show/tag/group.tsrx';
+export { SplitTagGroup, type SplitTagGroupProps } from './show/tag/split-group.tsrx';
 export {
     Badge,
     type BadgeProps,
