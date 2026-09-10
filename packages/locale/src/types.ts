@@ -38,6 +38,7 @@ export interface CalendarLocale {
   weekdays: [string, string, string, string, string, string, string];
   months: [string, string, string, string, string, string, string, string, string, string, string, string];
   formatHour: (hour: number) => string;
+  close: string;
 }
 
 export interface UserGuideLocale {

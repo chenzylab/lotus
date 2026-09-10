@@ -6,10 +6,16 @@ import {
   layoutRangeEvents,
   getWeekRange,
   getWeekDays,
+  getDateRangeDays,
   getMonthWeeks,
   groupTimedEventsByDay,
   extractAllDayEvents,
+  calcMonthItemLimit,
+  filterEventsByItemLimit,
+  calcRemainingCount,
+  getDayPos,
   type CalendarEvent,
+  type PositionedRangeEvent,
 } from './foundation.js';
 
 function d(y: number, m: number, day: number, h = 0, min = 0): Date {
@@ -173,6 +179,38 @@ describe('getWeekDays', () => {
   });
 });
 
+describe('getDateRangeDays', () => {
+  it('dayCount=1：单日视图（day 模式），只返回起点当天', () => {
+    const day = d(2026, 1, 5);
+    const days = getDateRangeDays(day, 1, day);
+    expect(days).toHaveLength(1);
+    expect(days[0]!.date.getTime()).toBe(day.getTime());
+    expect(days[0]!.isToday).toBe(true);
+  });
+
+  it('dayCount=7：等价于从任意起点（不要求是自然周首日）连续 7 天', () => {
+    const start = d(2026, 1, 3); // 周六，非自然周首日
+    const days = getDateRangeDays(start, 7);
+    expect(days).toHaveLength(7);
+    expect(days[0]!.date.getDate()).toBe(3);
+    expect(days[6]!.date.getDate()).toBe(9);
+  });
+
+  it('任意天数（range 模式，如 3 天）：连续 dayCount 天，跨月正确进位', () => {
+    const start = d(2026, 1, 30);
+    const days = getDateRangeDays(start, 3);
+    expect(days.map((day) => day.date.getDate())).toEqual([30, 31, 1]);
+    expect(days[2]!.date.getMonth()).toBe(1); // 2 月（0-indexed）
+  });
+
+  it('getWeekDays(weekStartsOn=0) 与 getDateRangeDays 从对应周首日起算的结果一致', () => {
+    const anchor = d(2026, 1, 15);
+    const weekDays = getWeekDays(anchor, 0);
+    const rangeDays = getDateRangeDays(weekDays[0]!.date, 7);
+    expect(rangeDays.map((day) => day.date.getTime())).toEqual(weekDays.map((day) => day.date.getTime()));
+  });
+});
+
 describe('getMonthWeeks', () => {
   it('返回的每一周都是 7 天', () => {
     const weeks = getMonthWeeks(d(2026, 1, 15));
@@ -213,5 +251,71 @@ describe('extractAllDayEvents', () => {
     const result = extractAllDayEvents(events);
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('a');
+  });
+});
+
+describe('calcMonthItemLimit', () => {
+  it('按 (cellHeight - 60) / 24 向上取整换算可见行数', () => {
+    // (132 - 60) / 24 = 3 -> ceil(3) = 3
+    expect(calcMonthItemLimit(132)).toBe(3);
+    // (140 - 60) / 24 = 3.33... -> ceil = 4
+    expect(calcMonthItemLimit(140)).toBe(4);
+  });
+
+  it('格子高度不足以容纳 padding 时返回 0，不出现负数', () => {
+    expect(calcMonthItemLimit(30)).toBe(0);
+    expect(calcMonthItemLimit(0)).toBe(0);
+  });
+});
+
+describe('filterEventsByItemLimit', () => {
+  const event = (topInd: number): PositionedRangeEvent => ({
+    event: { key: String(topInd), start: d(2026, 1, 1), end: d(2026, 1, 1) },
+    leftPos: 0,
+    width: 1,
+    topInd,
+  });
+
+  it('只保留 topInd < itemLimit 的事件', () => {
+    const events = [event(0), event(1), event(2), event(3)];
+    const result = filterEventsByItemLimit(events, 2);
+    expect(result.map((e) => e.topInd)).toEqual([0, 1]);
+  });
+
+  it('itemLimit=0 时全部过滤掉', () => {
+    const events = [event(0), event(1)];
+    expect(filterEventsByItemLimit(events, 0)).toHaveLength(0);
+  });
+
+  it('itemLimit 足够大时全部保留', () => {
+    const events = [event(0), event(1)];
+    expect(filterEventsByItemLimit(events, 100)).toHaveLength(2);
+  });
+});
+
+describe('calcRemainingCount', () => {
+  it('事件数超过 itemLimit 时返回差值', () => {
+    expect(calcRemainingCount(5, 2)).toBe(3);
+  });
+
+  it('事件数不超过 itemLimit 时返回 0（不出现负数）', () => {
+    expect(calcRemainingCount(2, 5)).toBe(0);
+    expect(calcRemainingCount(2, 2)).toBe(0);
+  });
+});
+
+describe('getDayPos', () => {
+  it('午夜返回 0', () => {
+    expect(getDayPos(d(2026, 1, 1, 0, 0))).toBe(0);
+  });
+
+  it('正午返回 0.5', () => {
+    expect(getDayPos(d(2026, 1, 1, 12, 0))).toBe(0.5);
+  });
+
+  it('23:59 接近但小于 1', () => {
+    const pos = getDayPos(new Date(2026, 0, 1, 23, 59, 59));
+    expect(pos).toBeLessThan(1);
+    expect(pos).toBeGreaterThan(0.99);
   });
 });

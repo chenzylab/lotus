@@ -448,6 +448,8 @@ export function App() @{
     let &[calendarWeekAnchor] = track<Date>(new Date(2026, 0, 15));
     let &[calendarMonthAnchor] = track<Date>(new Date(2026, 0, 15));
     let &[calendarClickLog] = track<string>('');
+    let &[calendarMoreClickLog] = track<string>('');
+    let &[calendarCloseLog] = track<string>('');
     let &[scrollHourIndex] = track<number>(3);
     let &[scrollMinuteIndex] = track<number>(0);
     let &[scrollControlledIndex] = track<number>(2);
@@ -2585,7 +2587,7 @@ export function App() @{
             </div>
 
             <div style={{ width: '100%' }}>
-                <TypographyText type="secondary">month 模式：跨天横条事件按贪心分层布局</TypographyText>
+                <TypographyText type="secondary">month 模式：跨天横条事件按贪心分层布局，超出可见行数聚合为"+N 更多"（onMoreClick）</TypographyText>
                 <div style={{ marginTop: '8px' }}>
                     <Calendar
                         mode="month"
@@ -2593,12 +2595,57 @@ export function App() @{
                         height={480}
                         markWeekend
                         onClick={(_e, value) => { calendarClickLog = `点击了 ${value.toLocaleString()}`; }}
+                        onMoreClick={(_e, date, remaining) => { calendarMoreClickLog = `${date.getDate()} 日还有 ${remaining} 项未显示`; }}
+                        onClose={() => { calendarCloseLog = '事件详情卡片已关闭'; }}
                         events={[
                             { key: 'm1', start: new Date(2026, 0, 5), end: new Date(2026, 0, 8), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>项目排期 A</TypographyText> },
                             { key: 'm2', start: new Date(2026, 0, 7), end: new Date(2026, 0, 10), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>项目排期 B（与 A 重叠，自动分行）</TypographyText> },
                             { key: 'm3', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>单日里程碑</TypographyText> },
+                            { key: 'm4', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>第二个事件</TypographyText> },
+                            { key: 'm5', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>第三个事件</TypographyText> },
+                            { key: 'm6', start: new Date(2026, 0, 20), end: new Date(2026, 0, 20), children: <TypographyText style={{ color: 'inherit', fontSize: '12px' }}>第四个事件（超出应聚合为 +N）</TypographyText> },
                         ]}
                         aria-label="month Calendar"
+                    />
+                    <div style={{ marginTop: '8px' }}>
+                        <TypographyText type="tertiary" aria-label="Calendar 更多点击日志">{calendarMoreClickLog}</TypographyText>
+                        <TypographyText type="tertiary" aria-label="Calendar 关闭日志">{calendarCloseLog}</TypographyText>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">day 模式（单日视图）+ showCurrTime 当前时间线 + header 自定义头部</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Calendar
+                        mode="day"
+                        displayValue={new Date()}
+                        height={300}
+                        scrollTop={480}
+                        showCurrTime
+                        header={<div style={{ padding: '8px 12px', fontWeight: 600 }}>今日日程</div>}
+                        events={[
+                            { key: 'd1', start: new Date(new Date().setHours(9, 0, 0, 0)), end: new Date(new Date().setHours(10, 30, 0, 0)), children: <TypographyText style={{ color: 'inherit' }}>晨会</TypographyText> },
+                        ]}
+                        aria-label="day Calendar"
+                    />
+                </div>
+            </div>
+
+            <div style={{ width: '100%' }}>
+                <TypographyText type="secondary">range 模式（任意区间视图，3 天）+ renderDateDisplay 自定义表头 + allDayEventsRender 自定义全天事件区</TypographyText>
+                <div style={{ marginTop: '8px' }}>
+                    <Calendar
+                        mode="range"
+                        range={[new Date(2026, 0, 12), new Date(2026, 0, 14)]}
+                        height={300}
+                        events={[
+                            { key: 'r1', start: new Date(2026, 0, 13, 9), end: new Date(2026, 0, 13, 10), children: <TypographyText style={{ color: 'inherit' }}>区间内事件</TypographyText> },
+                            { key: 'r2', allDay: true, start: new Date(2026, 0, 12), end: new Date(2026, 0, 12), children: <TypographyText style={{ color: 'inherit' }}>全天</TypographyText> },
+                        ]}
+                        renderDateDisplay={(date) => <TypographyText style={{ fontWeight: 600 }}>{`${date.getMonth() + 1}/${date.getDate()}`}</TypographyText>}
+                        allDayEventsRender={(events) => <TypographyText type="secondary">{`共 ${events.length} 个全天事件（自定义渲染）`}</TypographyText>}
+                        aria-label="range Calendar"
                     />
                 </div>
             </div>

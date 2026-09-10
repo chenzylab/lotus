@@ -55,7 +55,7 @@ function addDays(date: Date, amount: number): Date {
 }
 
 /** 一天内秒数占比，[0, 1)。 */
-function getDayPos(date: Date): number {
+export function getDayPos(date: Date): number {
   return ((date.getHours() * 60 + date.getMinutes()) * 60 + date.getSeconds()) / 86400;
 }
 
@@ -196,6 +196,30 @@ function isRowRangeOccupied(occupied: boolean[][], row: number, startCol: number
   return false;
 }
 
+/** 月视图单个格子的内边距/单行事件高度（像素），对齐 Semi monthCalendar.tsx
+ * 的 contentPadding=60 / contentHeight=24 常量——两者共同决定"给定格子实测
+ * 高度，能完整容纳几行事件"，这是纯几何换算，不依赖任何渲染框架。 */
+const MONTH_CELL_CONTENT_PADDING = 60;
+const MONTH_CELL_CONTENT_ROW_HEIGHT = 24;
+
+/** 根据月视图单元格实测高度换算能完整显示的事件行数（itemLimit）。
+ * 超出这个行数的事件应被隐藏、改用"+N 更多"聚合展示（calcRemainingCount）。 */
+export function calcMonthItemLimit(cellHeight: number): number {
+  return Math.max(0, Math.ceil((cellHeight - MONTH_CELL_CONTENT_PADDING) / MONTH_CELL_CONTENT_ROW_HEIGHT));
+}
+
+/** 按 itemLimit 过滤掉超出可见行数的跨天/全天事件（topInd >= itemLimit 的
+ * 直接丢弃，不渲染）。 */
+export function filterEventsByItemLimit(events: PositionedRangeEvent[], itemLimit: number): PositionedRangeEvent[] {
+  return events.filter((item) => item.topInd < itemLimit);
+}
+
+/** 某一天里超出 itemLimit 的事件数量（用于"+N 更多"文案），dayEventCount 是
+ * 该天全部事件条数（含被截断的），itemLimit 之内的不算超出。 */
+export function calcRemainingCount(dayEventCount: number, itemLimit: number): number {
+  return Math.max(0, dayEventCount - itemLimit);
+}
+
 /** 某天所属的一周起止日期（周日为一周起始，对齐 Semi 默认 weekStartsOn=0）。 */
 export function getWeekRange(date: Date, weekStartsOn: number = 0): { start: Date; end: Date } {
   const day = date.getDay();
@@ -208,8 +232,18 @@ export function getWeekRange(date: Date, weekStartsOn: number = 0): { start: Dat
 /** 一周 7 天的 DayInfo 数组。 */
 export function getWeekDays(date: Date, weekStartsOn: number = 0, today: Date = new Date()): DayInfo[] {
   const { start } = getWeekRange(date, weekStartsOn);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = addDays(start, i);
+  return getDateRangeDays(start, 7, today);
+}
+
+/** 从 startDate 起连续 dayCount 天的 DayInfo[]，是 week（7 天，从自然周首日起）/
+ * day（1 天）/ range（任意天数，从任意起点）三种视图共用的通用打平函数——
+ * 对齐 Semi rangeCalendar 用 differenceInCalendarDays(range[1], range[0]) 算
+ * 天数、逐天铺开渲染跟 week 视图相同 DayCol 结构的思路，三种模式本质是
+ * "同一套逐日列渲染，只是天数和起点不同"，不需要三份独立实现。
+ */
+export function getDateRangeDays(startDate: Date, dayCount: number, today: Date = new Date()): DayInfo[] {
+  return Array.from({ length: dayCount }, (_, i) => {
+    const d = addDays(startDate, i);
     return {
       date: d,
       isToday: isSameDay(d, today),

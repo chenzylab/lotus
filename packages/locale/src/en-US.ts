@@ -43,6 +43,7 @@ const enUS: LocaleShape = {
       const displayHour = hour % 12 === 0 ? 12 : hour % 12;
       return `${displayHour} ${period}`;
     },
+    close: 'Close',
   },
   UserGuide: {
     next: 'Next',

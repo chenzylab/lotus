@@ -110,4 +110,106 @@ test.describe('Calendar', () => {
     // month 模式复用同一个 onClick handler，点击后也应触发回调日志更新
     await expect(page.getByText(/点击了/)).toBeVisible();
   });
+
+  test('month 模式：itemLimit 生效时格子真实高度撑开（回归防护：踩坑 #82 组件顶层非 Fragment 导致 scoped CSS 丢失，min-height 不生效）', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('month Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    const cell = calendar.locator('.lotus-calendar-month-cell').first();
+    const box = await cell.boundingBox();
+    expect(box).not.toBeNull();
+    // min-height: 96px 必须真实生效，不能被压缩成内容自然高度（~36px）
+    expect(box!.height).toBeGreaterThanOrEqual(90);
+  });
+
+  test('month 模式：单日事件数超过可见行数时聚合为"+N 更多"，点击触发 onMoreClick 并弹出事件详情 Popover', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('month Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    const more = calendar.locator('.lotus-calendar-month-cell-more').filter({ hasText: '还有 2 项' });
+    await expect(more).toBeVisible();
+    await more.click();
+    await expect(page.getByLabel('Calendar 更多点击日志')).toContainText('还有 2 项未显示');
+
+    // Popover 展示当天全部事件，不受 itemLimit 截断（这一天共 4 个事件）
+    const card = page.locator('.lotus-calendar-event-card');
+    await expect(card).toBeVisible();
+    await expect(card.locator('.lotus-calendar-event-card-list li')).toHaveCount(4);
+  });
+
+  test('month 模式："+N 更多" 支持键盘操作（role=button + tabIndex + Enter 触发）', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('month Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    const more = calendar.locator('.lotus-calendar-month-cell-more').filter({ hasText: '还有 2 项' });
+    await expect(more).toHaveAttribute('role', 'button');
+    await expect(more).toHaveAttribute('tabindex', '0');
+
+    await more.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.lotus-calendar-event-card')).toBeVisible();
+  });
+
+  test('month 模式：事件详情 Popover 关闭按钮触发 onClose', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('month Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    const more = calendar.locator('.lotus-calendar-month-cell-more').filter({ hasText: '还有 2 项' });
+    await more.click();
+
+    const card = page.locator('.lotus-calendar-event-card');
+    await expect(card).toBeVisible();
+    await card.locator('.lotus-calendar-event-card-close').click();
+    await expect(card).not.toBeVisible();
+    await expect(page.getByLabel('Calendar 关闭日志')).toHaveText('事件详情卡片已关闭');
+  });
+
+  test('day 模式：只渲染单日列，不显示周表头，showCurrTime 渲染当前时间线', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('day Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    await expect(calendar.locator('.lotus-calendar-day-col')).toHaveCount(1);
+    await expect(calendar.locator('.lotus-calendar-week-header')).toHaveCount(0);
+    await expect(calendar.locator('.lotus-calendar-curr-line')).toBeVisible();
+  });
+
+  test('day 模式：header 自定义头部内容正确渲染', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('day Calendar');
+    await expect(calendar).toContainText('今日日程');
+  });
+
+  test('day 模式：scrollTop 初始滚动位置生效', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('day Calendar');
+    const body = calendar.locator('.lotus-calendar-week-body');
+    const scrollTop = await body.evaluate((el) => el.scrollTop);
+    expect(scrollTop).toBe(480);
+  });
+
+  test('range 模式：按 range 区间渲染对应天数的列', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('range Calendar');
+    await calendar.scrollIntoViewIfNeeded();
+    await expect(calendar.locator('.lotus-calendar-day-col')).toHaveCount(3);
+  });
+
+  test('range 模式：renderDateDisplay 自定义表头展示', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('range Calendar');
+    const headerCell = calendar.locator('.lotus-calendar-week-header-cell').first();
+    await expect(headerCell).toContainText('1/12');
+  });
+
+  test('range 模式：allDayEventsRender 自定义全天事件区渲染', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('range Calendar');
+    await expect(calendar).toContainText('自定义渲染');
+  });
+
+  test('range 模式：区间内事件正确渲染', async ({ page }) => {
+    await page.goto('/');
+    const calendar = page.getByLabel('range Calendar');
+    await expect(calendar.getByText('区间内事件')).toBeVisible();
+  });
 });

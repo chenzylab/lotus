@@ -37,13 +37,10 @@ test.describe('Collapsible', () => {
 
     await button.click();
     await expect(async () => {
-      const expandedHeight = await keepDOM.evaluate((el) => getComputedStyle(el).height);
-      expect(expandedHeight).not.toBe('0px');
+      const innerHeight = await keepDOM.locator('.lotus-collapsible-inner').evaluate((el) => el.scrollHeight);
+      const finalHeight = await keepDOM.evaluate((el) => parseFloat(getComputedStyle(el).height));
+      expect(finalHeight).toBeCloseTo(innerHeight, 0);
     }).toPass();
-
-    const innerHeight = await keepDOM.locator('.lotus-collapsible-inner').evaluate((el) => el.scrollHeight);
-    const finalHeight = await keepDOM.evaluate((el) => parseFloat(getComputedStyle(el).height));
-    expect(finalHeight).toBeCloseTo(innerHeight, 0);
   });
 
   test('collapseHeightAdaptive：内容真实高度小于声明的 collapseHeight 时，收起态用真实高度而非硬撑声明值', async ({ page }) => {
