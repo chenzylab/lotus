@@ -190,6 +190,12 @@ const zhCN: LocaleShape = {
     expandNode: '展开节点',
     propertyCount: (n) => `${n} 个属性`,
     itemCount: (n) => `${n} 项`,
+    editValue: '编辑值',
+    searchPlaceholder: '搜索',
+    searchResultCount: (current, total) => `${current}/${total}`,
+    noSearchResult: '无匹配结果',
+    searchPrev: '上一个',
+    searchNext: '下一个',
   },
   Tree: {
     searchPlaceholder: '搜索',

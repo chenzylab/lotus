@@ -86,4 +86,106 @@ test.describe('JsonViewer', () => {
     await expect(copyBtn).toBeVisible();
     await expect(copyBtn).toHaveAttribute('aria-label', '复制');
   });
+
+  test('width/height：容器尺寸生效，超出滚动', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer width height');
+    await expect(root).toHaveCSS('width', '300px');
+    await expect(root).toHaveCSS('height', '150px');
+    await expect(root).toHaveCSS('overflow', 'auto');
+  });
+
+  test('editable：点击叶子值进入编辑态，Enter 提交后触发 onChange', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer editable');
+    await root.scrollIntoViewIfNeeded();
+
+    const nameValue = root.locator('.lotus-json-viewer-value', { hasText: '"lotus"' });
+    await nameValue.click();
+
+    const input = root.locator('.lotus-json-viewer-edit-input');
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('lotus');
+
+    await input.fill('lotus-e2e');
+    await input.press('Enter');
+
+    await expect(root.locator('.lotus-json-viewer-edit-input')).toHaveCount(0);
+    await expect(root).toContainText('lotus-e2e');
+  });
+
+  test('editable：Escape 取消编辑，不提交改动（回归防护：Escape 后紧跟的原生 blur 事件不应重复提交）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer editable');
+    await root.scrollIntoViewIfNeeded();
+
+    const countValue = root.locator('.lotus-json-viewer-value', { hasText: '42' });
+    await countValue.click();
+
+    const input = root.locator('.lotus-json-viewer-edit-input');
+    await input.fill('999');
+    await input.press('Escape');
+
+    await expect(root.locator('.lotus-json-viewer-edit-input')).toHaveCount(0);
+    await expect(root).toContainText('42');
+    await expect(root).not.toContainText('999');
+  });
+
+  test('editable：失焦（点击别处）提交编辑', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer editable');
+    await root.scrollIntoViewIfNeeded();
+
+    const activeValue = root.locator('.lotus-json-viewer-value', { hasText: 'true' });
+    await activeValue.click();
+
+    const input = root.locator('.lotus-json-viewer-edit-input');
+    await input.fill('false');
+    await root.locator('.lotus-json-viewer-toolbar-btn').first().click();
+
+    await expect(root.locator('.lotus-json-viewer-edit-input')).toHaveCount(0);
+    await expect(root.locator('.lotus-json-viewer-value-boolean').filter({ hasText: 'false' })).toBeVisible();
+  });
+
+  test('showSearch：搜索命中 key/叶子值，自动展开祖先并高亮当前命中，计数正确', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer showSearch');
+    await root.scrollIntoViewIfNeeded();
+
+    const searchInput = root.locator('.lotus-json-viewer-search input');
+    await searchInput.fill('role');
+
+    await expect(root.locator('.lotus-json-viewer-search-count')).toHaveText('1/3');
+    const active = root.locator('.lotus-json-viewer-node-active-match');
+    await expect(active).toBeVisible();
+    await expect(active).toContainText('role');
+  });
+
+  test('showSearch：点击下一个/上一个按钮在命中结果间循环跳转', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer showSearch');
+    await root.scrollIntoViewIfNeeded();
+
+    const searchInput = root.locator('.lotus-json-viewer-search input');
+    await searchInput.fill('role');
+    await expect(root.locator('.lotus-json-viewer-search-count')).toHaveText('1/3');
+
+    const [prevBtn, nextBtn] = await root.locator('.lotus-json-viewer-search-btn').all();
+    await nextBtn.click();
+    await expect(root.locator('.lotus-json-viewer-search-count')).toHaveText('2/3');
+
+    await prevBtn.click();
+    await expect(root.locator('.lotus-json-viewer-search-count')).toHaveText('1/3');
+  });
+
+  test('showSearch：无匹配结果时显示提示文案', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('JsonViewer showSearch');
+    await root.scrollIntoViewIfNeeded();
+
+    const searchInput = root.locator('.lotus-json-viewer-search input');
+    await searchInput.fill('nonexistent-xyz');
+
+    await expect(root.locator('.lotus-json-viewer-search-count')).toHaveText('无匹配结果');
+  });
 });

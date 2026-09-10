@@ -420,6 +420,7 @@ export function App() @{
     let &[collapsibleLazyOpen] = track<boolean>(false);
     let &[tagCloseLog] = track<string>('');
     let &[tagGroupCloseLog] = track<string>('');
+    let &[jsonViewerEditableValue] = track<any>({ name: 'lotus', version: '1.0.0', active: true, count: 42 });
     let &[carouselControlledIndex] = track<number>(0);
     let &[carouselMounted] = track<boolean>(true);
     let &[modalBasicVisible] = track<boolean>(false);
@@ -6308,6 +6309,42 @@ export function App() @{
                     defaultExpandDepth={Infinity}
                     showCopy={false}
                     value={{ a: { b: { c: [1, 2, 3] } } }}
+                />
+            </div>
+            <div>
+                <TypographyText type="secondary">width/height（超出容器尺寸时滚动）</TypographyText>
+                <JsonViewer
+                    aria-label="JsonViewer width height"
+                    width={300}
+                    height={150}
+                    value={{ a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }}
+                    defaultExpandDepth={Infinity}
+                />
+            </div>
+            <div>
+                <TypographyText type="secondary">editable（点击叶子值原地编辑，Enter/失焦提交，Esc 取消）</TypographyText>
+                <JsonViewer
+                    aria-label="JsonViewer editable"
+                    editable
+                    value={jsonViewerEditableValue}
+                    onChange={(next) => { jsonViewerEditableValue = next; }}
+                    defaultExpandDepth={Infinity}
+                />
+            </div>
+            <div>
+                <TypographyText type="secondary">showSearch（搜索 key/叶子值，自动展开+高亮定位+上一个/下一个）</TypographyText>
+                <JsonViewer
+                    aria-label="JsonViewer showSearch"
+                    showSearch
+                    height={200}
+                    value={{
+                        users: [
+                            { name: 'Alice', role: 'admin' },
+                            { name: 'Bob', role: 'user' },
+                            { name: 'Charlie', role: 'user' },
+                        ],
+                        total: 3,
+                    }}
                 />
             </div>
         </div>

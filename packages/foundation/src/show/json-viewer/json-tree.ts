@@ -139,6 +139,82 @@ export function replaceNodeValue(root: JsonNode, path: string, nextValue: unknow
   return changed ? { ...root, children } : root;
 }
 
+/**
+ * 把叶子节点编辑框里的原始输入文本解析成对应类型的值：`string` 类型节点
+ * 编辑框里输入的是不带引号的纯文本，直接作为字符串值（用户在编辑一个
+ * 字符串，没有理由要求他们自己敲转义引号）；其余类型（number/boolean/
+ * null）按 JSON 字面量语法解析（`"123"` → 123，`"true"` → true），解析
+ * 失败时回退成原始字符串（保持编辑框里打出来的内容，不静默丢弃用户输入）。
+ */
+export function parseLeafEditInput(rawInput: string, nodeType: JsonValueType): unknown {
+  if (nodeType === 'string') return rawInput;
+  try {
+    return JSON.parse(rawInput);
+  } catch {
+    return rawInput;
+  }
+}
+
+/** 按路径查找节点，找不到返回 null——提交编辑前需要读节点当前的 `type`
+ * 才能决定 `parseLeafEditInput` 走哪条解析规则。 */
+export function findNodeByPath(root: JsonNode, path: string): JsonNode | null {
+  if (root.path === path) return root;
+  for (const child of root.children) {
+    if (path === child.path || path.startsWith(`${child.path}.`) || path.startsWith(`${child.path}[`)) {
+      return findNodeByPath(child, path);
+    }
+  }
+  return null;
+}
+
+/**
+ * 在树上搜索文本，命中 key（对象成员名）或叶子节点的展示值（对齐
+ * formatLeafValue 的展示文本，用户看到什么就能搜什么）——不搜索容器
+ * 节点本身（object/array 没有"值"文本可比对，只有 key），按先序遍历
+ * 顺序返回命中路径数组，供"上一个/下一个"跳转按数组下标前进/后退。
+ * 大小写不敏感，对齐大多数代码编辑器搜索的默认行为。
+ */
+export function searchJsonTree(root: JsonNode, query: string): string[] {
+  if (query === '') return [];
+  const lowerQuery = query.toLowerCase();
+  const result: string[] = [];
+
+  function matchesLeafValue(node: JsonNode): boolean {
+    if (node.type === 'string') return (node.value as string).toLowerCase().includes(lowerQuery);
+    if (node.type === 'null') return 'null'.includes(lowerQuery);
+    return String(node.value).toLowerCase().includes(lowerQuery);
+  }
+
+  function walk(node: JsonNode) {
+    if (node.key !== null && node.key.toLowerCase().includes(lowerQuery)) {
+      result.push(node.path);
+    } else if (node.children.length === 0 && matchesLeafValue(node)) {
+      result.push(node.path);
+    }
+    for (const child of node.children) walk(child);
+  }
+
+  walk(root);
+  return result;
+}
+
+/** 命中路径的全部祖先路径集合（不含命中路径本身），用于自动展开搜索结果
+ * 所在的折叠节点——对齐"搜索到的内容必须在收起状态下也能看见"的直觉。 */
+export function calcSearchExpandPaths(matchedPaths: string[]): Set<string> {
+  const result = new Set<string>();
+  for (const path of matchedPaths) {
+    // 路径形如 root.a.b[0].c，祖先边界出现在每个 '.' 或 '[' 之前。
+    const boundaries: number[] = [];
+    for (let i = 1; i < path.length; i++) {
+      if (path[i] === '.' || path[i] === '[') boundaries.push(i);
+    }
+    for (const boundary of boundaries) {
+      result.add(path.slice(0, boundary));
+    }
+  }
+  return result;
+}
+
 /** 把 JsonNode 树还原成普通 JS 值（可编辑模式下向外抛 onChange 用）。 */
 export function jsonTreeToValue(node: JsonNode): unknown {
   if (node.type === 'object') {

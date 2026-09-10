@@ -204,6 +204,12 @@ export interface JsonViewerLocale {
   expandNode: string;
   propertyCount: (n: number) => string;
   itemCount: (n: number) => string;
+  editValue: string;
+  searchPlaceholder: string;
+  searchResultCount: (current: number, total: number) => string;
+  noSearchResult: string;
+  searchPrev: string;
+  searchNext: string;
 }
 
 export interface TreeLocale {

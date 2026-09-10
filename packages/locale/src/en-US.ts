@@ -200,6 +200,12 @@ const enUS: LocaleShape = {
     expandNode: 'Expand node',
     propertyCount: (n) => `${n} properties`,
     itemCount: (n) => `${n} items`,
+    editValue: 'Edit value',
+    searchPlaceholder: 'Search',
+    searchResultCount: (current, total) => `${current}/${total}`,
+    noSearchResult: 'No results',
+    searchPrev: 'Previous',
+    searchNext: 'Next',
   },
   Tree: {
     searchPlaceholder: 'Search',

@@ -8,6 +8,10 @@ import {
   toggleExpandedPath,
   replaceNodeValue,
   jsonTreeToValue,
+  parseLeafEditInput,
+  findNodeByPath,
+  searchJsonTree,
+  calcSearchExpandPaths,
 } from './json-tree.js';
 
 describe('getJsonValueType', () => {
@@ -149,5 +153,116 @@ describe('jsonTreeToValue', () => {
     const original = { a: 1, b: [1, 2, { c: 'x' }], d: null, e: true };
     const root = buildJsonTree(original);
     expect(jsonTreeToValue(root)).toEqual(original);
+  });
+});
+
+describe('parseLeafEditInput', () => {
+  it('string 类型：原始输入直接作为字符串值，不做 JSON 解析', () => {
+    expect(parseLeafEditInput('hello', 'string')).toBe('hello');
+    expect(parseLeafEditInput('123', 'string')).toBe('123');
+    expect(parseLeafEditInput('true', 'string')).toBe('true');
+  });
+
+  it('number 类型：按 JSON 字面量解析成数字', () => {
+    expect(parseLeafEditInput('123', 'number')).toBe(123);
+    expect(parseLeafEditInput('-1.5', 'number')).toBe(-1.5);
+  });
+
+  it('boolean 类型：按 JSON 字面量解析成布尔值', () => {
+    expect(parseLeafEditInput('true', 'boolean')).toBe(true);
+    expect(parseLeafEditInput('false', 'boolean')).toBe(false);
+  });
+
+  it('null 类型：按 JSON 字面量解析成 null', () => {
+    expect(parseLeafEditInput('null', 'null')).toBe(null);
+  });
+
+  it('非 string 类型解析失败时，回退成原始字符串（不静默丢弃用户输入）', () => {
+    expect(parseLeafEditInput('not a number', 'number')).toBe('not a number');
+    expect(parseLeafEditInput('yes', 'boolean')).toBe('yes');
+  });
+});
+
+describe('searchJsonTree', () => {
+  it('空查询返回空数组', () => {
+    const root = buildJsonTree({ a: 1 });
+    expect(searchJsonTree(root, '')).toEqual([]);
+  });
+
+  it('命中 key（对象成员名），大小写不敏感', () => {
+    const root = buildJsonTree({ userName: 'x', age: 1 });
+    expect(searchJsonTree(root, 'NAME')).toEqual(['root.userName']);
+  });
+
+  it('命中字符串叶子值', () => {
+    const root = buildJsonTree({ a: 'hello world' });
+    expect(searchJsonTree(root, 'world')).toEqual(['root.a']);
+  });
+
+  it('命中数字/布尔叶子值（按展示文本比对）', () => {
+    const root = buildJsonTree({ a: 123, b: true });
+    expect(searchJsonTree(root, '123')).toEqual(['root.a']);
+    expect(searchJsonTree(root, 'true')).toEqual(['root.b']);
+  });
+
+  it('不搜索容器节点本身（只搜 key 和叶子值）', () => {
+    const root = buildJsonTree({ container: { a: 1 } });
+    // 'container' 本身作为 key 会命中，但容器节点没有"值"文本
+    expect(searchJsonTree(root, 'container')).toEqual(['root.container']);
+  });
+
+  it('按先序遍历顺序返回多个命中', () => {
+    const root = buildJsonTree({ a: 'test', b: { c: 'test' }, d: [1, 'test'] });
+    const result = searchJsonTree(root, 'test');
+    expect(result).toEqual(['root.a', 'root.b.c', 'root.d[1]']);
+  });
+
+  it('无命中时返回空数组', () => {
+    const root = buildJsonTree({ a: 1 });
+    expect(searchJsonTree(root, 'nonexistent')).toEqual([]);
+  });
+});
+
+describe('calcSearchExpandPaths', () => {
+  it('单个命中路径：返回其全部祖先路径，不含自身', () => {
+    const result = calcSearchExpandPaths(['root.a.b[0].c']);
+    expect(result).toEqual(new Set(['root', 'root.a', 'root.a.b', 'root.a.b[0]']));
+  });
+
+  it('多个命中路径：合并全部祖先，去重', () => {
+    const result = calcSearchExpandPaths(['root.a.x', 'root.a.y']);
+    expect(result).toEqual(new Set(['root', 'root.a']));
+  });
+
+  it('根节点本身命中：没有祖先，返回空集合', () => {
+    expect(calcSearchExpandPaths(['root'])).toEqual(new Set());
+  });
+
+  it('空数组返回空集合', () => {
+    expect(calcSearchExpandPaths([])).toEqual(new Set());
+  });
+});
+
+describe('findNodeByPath', () => {
+  it('找到根节点', () => {
+    const root = buildJsonTree({ a: 1 });
+    expect(findNodeByPath(root, 'root')).toBe(root);
+  });
+
+  it('找到对象成员节点', () => {
+    const root = buildJsonTree({ a: 1, b: { c: 2 } });
+    const node = findNodeByPath(root, 'root.b.c');
+    expect(node?.value).toBe(2);
+  });
+
+  it('找到数组元素节点', () => {
+    const root = buildJsonTree({ list: [1, 2, 3] });
+    const node = findNodeByPath(root, 'root.list[1]');
+    expect(node?.value).toBe(2);
+  });
+
+  it('找不到路径时返回 null', () => {
+    const root = buildJsonTree({ a: 1 });
+    expect(findNodeByPath(root, 'root.nonexistent')).toBeNull();
   });
 });
