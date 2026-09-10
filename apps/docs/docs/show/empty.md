@@ -32,6 +32,7 @@ import { Empty } from '@lotus/ripple';
 | aria-label | 设置 aria-label 属性 | string | - |
 | children | 底部额外内容（如操作按钮） | any | - |
 | class | 类名 | string | - |
+| darkModeImage | 深色模式下替换 `image` 展示的插画，随 `document.documentElement` 的 `data-theme` 属性变化实时切换 | any | - |
 | description | 描述文案 | any | - |
 | image | 插画/图标 | any | - |
 | imageStyle | 插画容器自定义样式 | object | - |

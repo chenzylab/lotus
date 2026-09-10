@@ -39,4 +39,39 @@ test.describe('Empty', () => {
     const empty = page.getByLabel('纯文字 Empty（无 image）');
     await expect(empty).toHaveClass(/lotus-empty-vertical/);
   });
+
+  test('darkModeImage：data-theme 变为 dark 时切换为深色插图，切回 light 时恢复', async ({ page }) => {
+    await page.goto('/');
+    const empty = page.getByLabel('darkModeImage Empty');
+    await empty.scrollIntoViewIfNeeded();
+
+    const lightSvg = await empty.locator('.lotus-empty-image svg').innerHTML();
+
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    await expect(async () => {
+      const darkSvg = await empty.locator('.lotus-empty-image svg').innerHTML();
+      expect(darkSvg).not.toBe(lightSvg);
+    }).toPass();
+
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+    await expect(async () => {
+      const backToLightSvg = await empty.locator('.lotus-empty-image svg').innerHTML();
+      expect(backToLightSvg).toBe(lightSvg);
+    }).toPass();
+
+    await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+  });
+
+  test('未传 darkModeImage 时，data-theme 变化不影响 image 展示', async ({ page }) => {
+    await page.goto('/');
+    const empty = page.getByLabel('带插图的 Empty');
+    const before = await empty.locator('.lotus-empty-image svg').innerHTML();
+
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    await page.waitForTimeout(200);
+    const after = await empty.locator('.lotus-empty-image svg').innerHTML();
+    expect(after).toBe(before);
+
+    await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+  });
 });
