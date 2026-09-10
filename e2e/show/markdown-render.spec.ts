@@ -30,16 +30,33 @@ test.describe('MarkdownRender', () => {
     await expect(items.nth(1)).toHaveText('列表项二');
   });
 
-  test('GFM 表格语法渲染为 table，含表头与两行数据', async ({ page }) => {
+  test('GFM 表格语法渲染为完整 Table 组件（对齐 Semi markdownRender/components/table.tsx，非原生 table+CSS）', async ({ page }) => {
     await page.goto('/');
     const root = page.locator('.demo-markdown-render');
     const table = root.locator('table');
     await expect(table).toBeVisible();
+    await expect(table).toHaveClass(/lotus-table/);
     await expect(table.locator('th').nth(0)).toHaveText('姓名');
     await expect(table.locator('th').nth(1)).toHaveText('年龄');
     const rows = table.locator('tbody tr');
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0).locator('td').nth(0)).toHaveText('张三');
+  });
+
+  test('标题/段落/链接复用 Typography 组件渲染（对齐 Semi markdownRender/components 设计）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.locator('.demo-markdown-render');
+    await expect(root.locator('h1')).toHaveClass(/lotus-typography-title-h1/);
+    await expect(root.locator('a').first()).toHaveClass(/lotus-typography-link/);
+  });
+
+  test('图片渲染为 Image 组件并展示 alt 文案（对齐 Semi markdownRender/components/img.tsx）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.locator('.demo-markdown-render');
+    const imageWrap = root.locator('.lotus-markdown-render-image');
+    await expect(imageWrap).toBeVisible();
+    await expect(imageWrap.locator('img')).toHaveAttribute('src', 'https://example.com/image.png');
+    await expect(imageWrap.locator('.lotus-markdown-render-image-alt')).toHaveText('示例图片');
   });
 
   test('围栏代码块复用 CodeHighlight 组件渲染语法高亮（含 language-* 类与 token）', async ({ page }) => {

@@ -16,7 +16,7 @@
  * 并自负 XSS 风险。
  */
 
-import type { Root as HastRoot } from 'hast';
+import type { Element as HastElement, ElementContent as HastElementContent, Root as HastRoot } from 'hast';
 
 export type { HastRoot };
 
@@ -133,4 +133,65 @@ export function hastPropsToAttrs(
     }
   }
   return out;
+}
+
+function findChildByTag(node: HastElement, tagName: string): HastElement | undefined {
+  return node.children.find((c): c is HastElement => c.type === 'element' && c.tagName === tagName);
+}
+
+function findChildrenByTag(node: HastElement, tagName: string): HastElement[] {
+  return node.children.filter((c): c is HastElement => c.type === 'element' && c.tagName === tagName);
+}
+
+function elementTextContent(node: HastElementContent): string {
+  if (node.type === 'text') return node.value;
+  if (node.type === 'element') return node.children.map(elementTextContent).join('');
+  return '';
+}
+
+export interface MarkdownTableColumn {
+  dataIndex: string;
+  title: string;
+}
+
+export interface MarkdownTableRow {
+  key: string;
+  [dataIndex: string]: unknown;
+}
+
+export interface MarkdownTableData {
+  columns: MarkdownTableColumn[];
+  dataSource: MarkdownTableRow[];
+}
+
+/**
+ * 从 hast 的 `table` 节点提取 columns/dataSource，供 Table 组件消费（对齐 Semi
+ * markdownRender/components/table.tsx 把 markdown 表格渲染成完整 Table 组件、
+ * 而非原生 `<table>` 的设计）。remark-rehype 产出的表格固定是
+ * `table > thead > tr > th` + `table > tbody > tr > td` 结构，不需要 Semi 那样
+ * 用 React.Children.toArray 做防御性归一化（hast 树本身就是规整数组）。
+ */
+export function extractTableFromHast(tableNode: HastElement): MarkdownTableData {
+  const thead = findChildByTag(tableNode, 'thead');
+  const tbody = findChildByTag(tableNode, 'tbody');
+
+  const headRow = thead ? findChildByTag(thead, 'tr') : undefined;
+  const headCells = headRow ? findChildrenByTag(headRow, 'th') : [];
+
+  const columns: MarkdownTableColumn[] = headCells.map((cell, i) => ({
+    dataIndex: String(i),
+    title: elementTextContent(cell),
+  }));
+
+  const bodyRows = tbody ? findChildrenByTag(tbody, 'tr') : [];
+  const dataSource: MarkdownTableRow[] = bodyRows.map((row, rowIndex) => {
+    const cells = findChildrenByTag(row, 'td');
+    const record: MarkdownTableRow = { key: String(rowIndex) };
+    cells.forEach((cell, cellIndex) => {
+      record[String(cellIndex)] = elementTextContent(cell);
+    });
+    return record;
+  });
+
+  return { columns, dataSource };
 }

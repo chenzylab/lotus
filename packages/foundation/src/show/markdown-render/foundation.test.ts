@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileToHast, hastPropsToAttrs } from './foundation.js';
+import { compileToHast, hastPropsToAttrs, extractTableFromHast } from './foundation.js';
 import type { Element, Root } from 'hast';
 
 function findFirstElement(node: Root, tagName: string): Element | undefined {
@@ -108,5 +108,33 @@ describe('hastPropsToAttrs', () => {
       href: 'https://x.com',
       title: 'hi',
     });
+  });
+});
+
+describe('extractTableFromHast', () => {
+  it('从 thead/tbody 结构提取 columns/dataSource（对齐 Semi markdownRender table.tsx 的语义）', async () => {
+    const hast = await compileToHast('| 姓名 | 年龄 |\n| --- | --- |\n| 张三 | 20 |\n| 李四 | 25 |');
+    const table = findFirstElement(hast, 'table')!;
+    const { columns, dataSource } = extractTableFromHast(table);
+    expect(columns).toEqual([
+      { dataIndex: '0', title: '姓名' },
+      { dataIndex: '1', title: '年龄' },
+    ]);
+    expect(dataSource).toEqual([
+      { key: '0', '0': '张三', '1': '20' },
+      { key: '1', '0': '李四', '1': '25' },
+    ]);
+  });
+
+  it('没有 thead/tbody 时返回空 columns/dataSource', () => {
+    const emptyTable: Element = { type: 'element', tagName: 'table', properties: {}, children: [] };
+    expect(extractTableFromHast(emptyTable)).toEqual({ columns: [], dataSource: [] });
+  });
+
+  it('单元格内含内联元素（如加粗）时提取纯文本', async () => {
+    const hast = await compileToHast('| a |\n| - |\n| **bold** |');
+    const table = findFirstElement(hast, 'table')!;
+    const { dataSource } = extractTableFromHast(table);
+    expect(dataSource).toEqual([{ key: '0', '0': 'bold' }]);
   });
 });

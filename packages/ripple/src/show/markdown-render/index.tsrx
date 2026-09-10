@@ -66,18 +66,6 @@ export function MarkdownRender(&{
                 font-size: 0.9em;
             }
 
-            .lotus-markdown-render :global(table) {
-                border-collapse: collapse;
-                width: 100%;
-            }
-
-            .lotus-markdown-render :global(th),
-            .lotus-markdown-render :global(td) {
-                border: 1px solid var(--lotus-color-border);
-                padding: 6px 12px;
-                text-align: start;
-            }
-
             .lotus-markdown-render :global(blockquote) {
                 margin: 0;
                 padding: 0 1em;
@@ -85,12 +73,24 @@ export function MarkdownRender(&{
                 border-inline-start: 4px solid var(--lotus-color-border);
             }
 
-            .lotus-markdown-render :global(img) {
-                max-width: 100%;
+            .lotus-markdown-render :global(.lotus-markdown-render-heading) {
+                margin: 1.2em 0 0.6em;
             }
 
-            .lotus-markdown-render :global(a) {
-                color: var(--lotus-color-primary);
+            .lotus-markdown-render :global(.lotus-markdown-render-p) {
+                margin: 0 0 1em;
+                line-height: 1.6;
+            }
+
+            .lotus-markdown-render :global(.lotus-markdown-render-image) {
+                margin: 0.6em 0;
+            }
+
+            .lotus-markdown-render :global(.lotus-markdown-render-image-alt) {
+                margin-top: 4px;
+                font-size: var(--lotus-font-body-size);
+                color: var(--lotus-color-text-2);
+                text-align: center;
             }
         </style>
     </>

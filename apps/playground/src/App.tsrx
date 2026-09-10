@@ -6283,7 +6283,7 @@ export function App() @{
         <div style={{ maxWidth: '640px' }}>
             <MarkdownRender
                 class="demo-markdown-render"
-                raw={`# 标题一\n\n段落文本，包含 **加粗** 和 *斜体*，以及 [链接](https://example.com)。\n\n- 列表项一\n- 列表项二\n\n| 姓名 | 年龄 |\n| --- | --- |\n| 张三 | 20 |\n| 李四 | 25 |\n\n\`\`\`ts\nfunction greet(name: string): string {\n  return \`Hello, \${name}!\`;\n}\n\`\`\`\n\n行内代码 \`const a = 1\` 示例。\n\n<script>alert('xss')<\/script>\n\n> 引用文本示例。\n`}
+                raw={`# 标题一\n\n段落文本，包含 **加粗** 和 *斜体*，以及 [链接](https://example.com)。\n\n- 列表项一\n- 列表项二\n\n| 姓名 | 年龄 |\n| --- | --- |\n| 张三 | 20 |\n| 李四 | 25 |\n\n\`\`\`ts\nfunction greet(name: string): string {\n  return \`Hello, \${name}!\`;\n}\n\`\`\`\n\n行内代码 \`const a = 1\` 示例。\n\n![示例图片](https://example.com/image.png)\n\n<script>alert('xss')<\/script>\n\n> 引用文本示例。\n`}
             />
         </div>
 
