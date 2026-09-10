@@ -116,7 +116,7 @@ test.describe('UserGuide', () => {
     await expect(dialog).toHaveClass(/lotus-user-guide-card-theme-primary/);
   });
 
-  test('modal 模式：居中弹窗轮播，圆点指示器随步骤同步', async ({ page }) => {
+  test('modal 模式：居中弹窗轮播，有 cover 时圆点指示器随步骤同步（对齐 Semi：圆点仅在 cover 存在时渲染）', async ({ page }) => {
     await page.goto('/');
     const modal = page.getByLabel('modal UserGuide');
     await expect(modal).toBeHidden();
@@ -132,6 +132,16 @@ test.describe('UserGuide', () => {
     await modal.getByRole('button', { name: '下一步' }).click();
     await expect(modal).toContainText('功能强大');
     await expect(dots.nth(1)).toHaveClass(/lotus-user-guide-modal-dot-active/);
+  });
+
+  test('modal 模式：popup 引导显示步骤计数指示器（对齐 Semi「current+1/steps.length」文案）', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: '开始引导' }).click();
+    const dialog = page.getByLabel('popup UserGuide');
+    await expect(dialog.locator('.lotus-user-guide-indicator')).toHaveText('1/3');
+
+    await dialog.getByRole('button', { name: '下一步' }).click();
+    await expect(dialog.locator('.lotus-user-guide-indicator')).toHaveText('2/3');
   });
 
   test('modal 模式：点击遮罩不关闭（maskClosable 硬编码 false，对齐 Semi）', async ({ page }) => {

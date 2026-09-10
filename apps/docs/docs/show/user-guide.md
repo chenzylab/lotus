@@ -56,13 +56,19 @@ import { UserGuide } from '@lotus/ripple';
 | onPrev | 点击"上一步"时的回调 | `(current: number) => void` | 无 |
 | onSkip | 跳过引导时的回调 | `() => void` | 无 |
 
-`UserGuideStep` 结构：`{ target?: () => Element | null, title?, description?, position?, spotlightPadding?, theme? }`。
+`UserGuideStep` 结构：`{ target?: () => Element | null, title?, description?, cover?, position?, spotlightPadding?, theme?, class?, showArrow? }`。
 
 ## Accessibility
 
 - 键盘支持：Esc 触发跳过，方向键 ←/→ 触发上一步/下一步（Semi 一手来源未提供此能力，是 lotus 主动新增）。
 - 窗口尺寸变化时高亮框和浮层自动重新定位（Semi 一手来源同样未提供，lotus 主动新增 resize 监听）。
 - popup 模式用 SVG `<mask>` 实现镂空遮罩，镂空区域内部完全穿透，可正常与目标元素交互；镂空外的透明矩形精确拦截点击，不会误触到页面其他区域。
+
+## 其它细节
+
+- `steps.length > 1` 时，popup 卡片左下角显示步骤计数（如 `1/3`）。
+- modal 模式的步骤圆点指示器仅在该步骤设置了 `cover` 时渲染（对齐 Semi：圆点与封面图配套出现，纯文字步骤不显示）。
+- `theme="primary"`（或 step 级 `theme` 覆盖）时，popup 卡片内的"跳过"/"上一步"/"下一步（完成）"按钮会切换为融入主题色卡片的样式（跳过/上一步用浅色底纯色字，下一步/完成用透明底白字），而非默认主题下的中性按钮样式。
 
 ## 设计变量
 

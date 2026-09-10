@@ -3062,9 +3062,9 @@ export function App() @{
                         mode="modal"
                         visible={userGuideModalVisible}
                         steps={[
-                            { title: '欢迎使用 lotus', description: 'lotus 是对齐 Semi Design 能力的 Ripple 组件库。' },
-                            { title: '功能强大', description: '涵盖基础、导航、数据录入、数据展示等多个分类的组件。' },
-                            { title: '开始使用', description: '点击完成关闭本引导，开始探索吧。' },
+                            { cover: <div style={{ height: '80px', background: 'var(--lotus-color-fill-0)' }} />, title: '欢迎使用 lotus', description: 'lotus 是对齐 Semi Design 能力的 Ripple 组件库。' },
+                            { cover: <div style={{ height: '80px', background: 'var(--lotus-color-fill-0)' }} />, title: '功能强大', description: '涵盖基础、导航、数据录入、数据展示等多个分类的组件。' },
+                            { cover: <div style={{ height: '80px', background: 'var(--lotus-color-fill-0)' }} />, title: '开始使用', description: '点击完成关闭本引导，开始探索吧。' },
                         ]}
                         onFinish={() => { userGuideModalVisible = false; }}
                         onSkip={() => { userGuideModalVisible = false; }}

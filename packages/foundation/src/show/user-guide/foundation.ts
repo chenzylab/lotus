@@ -12,6 +12,7 @@ export interface UserGuideStepData {
   spotlightPadding?: number;
   theme?: 'default' | 'primary';
   position?: FloatingPosition;
+  class?: string;
 }
 
 export interface UserGuideState {

@@ -235,8 +235,15 @@ export function UserGuide(&{
         return isLast ? (finishText ?? locale.UserGuide.finish) : locale.UserGuide.next;
     });
 
+    let &[isPrimaryTheme] = track<boolean>(() => (currentStep?.theme ?? theme) === 'primary');
+
     let &[popupCardClasses] = track<string>(() =>
-        ['lotus-user-guide-card', `lotus-user-guide-card-theme-${currentStep?.theme ?? theme}`, className ?? ''].filter(Boolean).join(' '),
+        [
+            'lotus-user-guide-card',
+            `lotus-user-guide-card-theme-${currentStep?.theme ?? theme}`,
+            className ?? '',
+            currentStep?.class ?? '',
+        ].filter(Boolean).join(' '),
     );
 
     let &[modalDotClasses] = track<(index: number) => string>(() => (index: number) =>
@@ -299,17 +306,42 @@ export function UserGuide(&{
                         </div>
                         <div class="lotus-user-guide-footer">
                             <div class="lotus-user-guide-footer-left">
-                                @if (showSkip) {
-                                    <Button theme="borderless" size="small" onClick={handleSkip}>{locale.UserGuide.skip}</Button>
+                                @if (steps.length > 1) {
+                                    <span class="lotus-user-guide-indicator">{displayCurrent + 1}/{steps.length}</span>
                                 }
                             </div>
                             <div class="lotus-user-guide-footer-right">
+                                @if (showSkip) {
+                                    <Button
+                                        theme={isPrimaryTheme ? 'solid' : 'light'}
+                                        type={isPrimaryTheme ? 'primary' : 'tertiary'}
+                                        size="small"
+                                        style={isPrimaryTheme ? { backgroundColor: 'var(--lotus-color-fill-2)' } : {}}
+                                        onClick={handleSkip}
+                                    >
+                                        {locale.UserGuide.skip}
+                                    </Button>
+                                }
                                 @if (showPrev) {
-                                    <Button theme="light" size="small" {...prevButtonProps} onClick={(e: MouseEvent) => { prevButtonProps.onClick?.(e); handlePrev(); }}>
+                                    <Button
+                                        theme={isPrimaryTheme ? 'solid' : 'light'}
+                                        type={isPrimaryTheme ? 'primary' : 'tertiary'}
+                                        size="small"
+                                        style={isPrimaryTheme ? { backgroundColor: 'var(--lotus-color-fill-2)' } : {}}
+                                        {...prevButtonProps}
+                                        onClick={(e: MouseEvent) => { prevButtonProps.onClick?.(e); handlePrev(); }}
+                                    >
                                         {prevButtonProps.children ?? locale.UserGuide.prev}
                                     </Button>
                                 }
-                                <Button theme="solid" type="primary" size="small" {...nextButtonProps} onClick={(e: MouseEvent) => { nextButtonProps.onClick?.(e); handleNext(); }}>
+                                <Button
+                                    theme={isPrimaryTheme ? 'borderless' : 'solid'}
+                                    type="primary"
+                                    size="small"
+                                    style={isPrimaryTheme ? { backgroundColor: 'var(--lotus-color-bg-0)' } : {}}
+                                    {...nextButtonProps}
+                                    onClick={(e: MouseEvent) => { nextButtonProps.onClick?.(e); handleNext(); }}
+                                >
                                     {nextButtonProps.children ?? nextLabel}
                                 </Button>
                             </div>
@@ -330,27 +362,31 @@ export function UserGuide(&{
                 footer={null}
                 centered
                 zIndex={zIndex}
-                class={['lotus-user-guide-modal', className ?? ''].filter(Boolean).join(' ')}
+                class={['lotus-user-guide-modal', className ?? '', currentStep?.class ?? ''].filter(Boolean).join(' ')}
                 style={style}
                 aria-label={ariaLabel}
             >
                 @if (currentStep) {
                     <>
                         @if (currentStep.cover !== undefined) {
-                            <div class="lotus-user-guide-modal-cover">{currentStep.cover}</div>
+                            <>
+                                <div class="lotus-user-guide-modal-cover">{currentStep.cover}</div>
+                                @if (steps.length > 1) {
+                                    <div class="lotus-user-guide-modal-dots" role="tablist" aria-label="步骤指示器">
+                                        @for (const _step of steps; index i) {
+                                            <span class={modalDotClasses(i)} />
+                                        }
+                                    </div>
+                                }
+                            </>
                         }
-                        <div class="lotus-user-guide-modal-body">
-                            @if (currentStep.title !== undefined) {
-                                <div class="lotus-user-guide-title">{currentStep.title}</div>
-                            }
-                            @if (currentStep.description !== undefined) {
-                                <div class="lotus-user-guide-description">{currentStep.description}</div>
-                            }
-                        </div>
-                        @if (steps.length > 1) {
-                            <div class="lotus-user-guide-modal-dots" role="tablist" aria-label="步骤指示器">
-                                @for (const _step of steps; index i) {
-                                    <span class={modalDotClasses(i)} />
+                        @if (currentStep.title !== undefined || currentStep.description !== undefined) {
+                            <div class="lotus-user-guide-modal-body">
+                                @if (currentStep.title !== undefined) {
+                                    <div class="lotus-user-guide-title">{currentStep.title}</div>
+                                }
+                                @if (currentStep.description !== undefined) {
+                                    <div class="lotus-user-guide-description">{currentStep.description}</div>
                                 }
                             </div>
                         }
@@ -462,6 +498,16 @@ export function UserGuide(&{
             }
 
             .lotus-user-guide-card-theme-primary .lotus-user-guide-description {
+                color: var(--lotus-color-bg-0);
+                opacity: 0.85;
+            }
+
+            .lotus-user-guide-indicator {
+                font-size: var(--lotus-font-body-size);
+                color: var(--lotus-color-text-2);
+            }
+
+            .lotus-user-guide-card-theme-primary .lotus-user-guide-indicator {
                 color: var(--lotus-color-bg-0);
                 opacity: 0.85;
             }
