@@ -2,7 +2,7 @@ import { Foundation, type Adapter } from '../../base/adapter.js';
 import { calcCheckedKeysForChecked, calcCheckedKeysForUnchecked, calcCheckedKeys } from '../../navigation/tree/check-cascade.js';
 import { toggleExpanded } from '../../navigation/tree/expand.js';
 import { computeSearchResult, type FilterTreeNode, type SearchResult } from '../../navigation/tree/search.js';
-import type { KeyEntities } from '../../navigation/tree/tree-data.js';
+import type { KeyEntities, KeyMapProps, TreeNodeData } from '../../navigation/tree/tree-data.js';
 import { normalizeCheckedKeysToValue } from '../../navigation/tree/value.js';
 
 export * from '../../navigation/tree/tree-data.js';
@@ -87,9 +87,9 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
     return result;
   }
 
-  handleSearch(input: string, entities: KeyEntities, filterTreeNode: FilterTreeNode): SearchResult {
+  handleSearch(input: string, entities: KeyEntities, filterTreeNode: FilterTreeNode, labelOf?: (data: TreeNodeData) => string, keyMaps?: KeyMapProps): SearchResult {
     this.setState({ searchInput: input });
-    const result = computeSearchResult(input, entities, filterTreeNode);
+    const result = computeSearchResult(input, entities, filterTreeNode, labelOf, keyMaps);
     if (input) {
       const { expandedKeys } = this.getState();
       this.setState({ expandedKeys: new Set([...expandedKeys, ...result.expandedAncestorKeys]) });
@@ -124,7 +124,7 @@ export class TreeSelectFoundation extends Foundation<TreeSelectState> {
     return result;
   }
 
-  resolveValue(entities: KeyEntities, checkRelation: TreeSelectCheckRelation = 'related', options: { autoMergeValue?: boolean; leafOnly?: boolean } = {}): string[] {
+  resolveValue(entities: KeyEntities, checkRelation: TreeSelectCheckRelation = 'related', options: { autoMergeValue?: boolean; leafOnly?: boolean; keyMaps?: KeyMapProps } = {}): string[] {
     const { checkedKeys, independentCheckedKeys } = this.getState();
     if (checkRelation === 'unRelated') return [...independentCheckedKeys];
     return normalizeCheckedKeysToValue(checkedKeys, entities, options);

@@ -1,4 +1,4 @@
-import { findAncestorKeys, findDescendantKeys, type KeyEntities, type TreeNodeData } from './tree-data.js';
+import { findAncestorKeys, findDescendantKeys, getNodeLabel, type KeyEntities, type KeyMapProps, type TreeNodeData } from './tree-data.js';
 
 export type FilterTreeNode = boolean | ((input: string, label: string, data: TreeNodeData) => boolean);
 
@@ -23,8 +23,10 @@ export function computeSearchResult(
   input: string,
   entities: KeyEntities,
   filterTreeNode: FilterTreeNode,
-  labelOf: (data: TreeNodeData) => string = (d) => String(d.label ?? ''),
+  labelOf?: (data: TreeNodeData) => string,
+  keyMaps?: KeyMapProps,
 ): SearchResult {
+  const resolvedLabelOf = labelOf ?? ((d) => String(getNodeLabel(d, keyMaps) ?? ''));
   if (!input || !filterTreeNode) {
     return { filteredKeys: new Set(), expandedAncestorKeys: new Set(), filteredShownKeys: new Set() };
   }
@@ -32,7 +34,7 @@ export function computeSearchResult(
 
   const filteredKeys = new Set<string>();
   for (const entity of Object.values(entities)) {
-    if (matchFn(input, labelOf(entity.data), entity.data)) {
+    if (matchFn(input, resolvedLabelOf(entity.data), entity.data)) {
       filteredKeys.add(entity.key);
     }
   }

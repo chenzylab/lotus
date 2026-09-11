@@ -43,6 +43,14 @@ import { TreeSelect } from '@lotus/ripple';
 ../../src/demos/input/tree-select/render-custom.tsrx
 ```
 
+### 自定义字段名映射
+
+数据源字段名不是标准的 `key`/`label`/`children` 时，用 `keyMaps` 声明映射关系。
+
+```tsrx demo
+../../src/demos/input/tree-select/key-maps.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -69,6 +77,7 @@ import { TreeSelect } from '@lotus/ripple';
 | filterTreeNode | 开启搜索过滤：`true` 走内置包含匹配，函数则自定义匹配逻辑 | `boolean \| ((input, label, node) => boolean)` | - |
 | getPopupContainer | 浮层挂载的目标容器 | `() => HTMLElement \| null` | - |
 | insetLabel | 内嵌标签文案，渲染在触发器内部 | any | - |
+| keyMaps | 自定义字段名映射，适配字段名不是 `key`/`label`/`value`/`children`/`disabled`/`isLeaf` 的数据源 | `{ key?, label?, value?, disabled?, children?, isLeaf? }` | - |
 | leafOnly | 多选：value 只保留叶子节点 key，优先级高于 `autoMergeValue` | boolean | `false` |
 | loadData | 异步加载子节点 | `(node: TreeNodeData) => Promise<TreeNodeData[]>` | - |
 | maxTagCount | 多选标签超出该数量后折叠为 "+N" | number | - |

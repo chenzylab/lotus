@@ -1,9 +1,9 @@
-import type { KeyEntities } from './tree-data.js';
+import { getNodeIsLeaf, type KeyEntities, type KeyMapProps } from './tree-data.js';
 
-function isLeafKey(key: string, entities: KeyEntities): boolean {
+function isLeafKey(key: string, entities: KeyEntities, keyMaps?: KeyMapProps): boolean {
   const entity = entities[key];
   if (!entity) return true;
-  return entity.data.isLeaf ?? entity.children.length === 0;
+  return getNodeIsLeaf(entity.data, keyMaps) ?? entity.children.length === 0;
 }
 
 /**
@@ -19,12 +19,12 @@ function isLeafKey(key: string, entities: KeyEntities): boolean {
 export function normalizeCheckedKeysToValue(
   checkedKeys: Set<string>,
   entities: KeyEntities,
-  options: { autoMergeValue?: boolean; leafOnly?: boolean } = {},
+  options: { autoMergeValue?: boolean; leafOnly?: boolean; keyMaps?: KeyMapProps } = {},
 ): string[] {
-  const { autoMergeValue = true, leafOnly = false } = options;
+  const { autoMergeValue = true, leafOnly = false, keyMaps } = options;
 
   if (leafOnly) {
-    return [...checkedKeys].filter((key) => isLeafKey(key, entities));
+    return [...checkedKeys].filter((key) => isLeafKey(key, entities, keyMaps));
   }
 
   if (!autoMergeValue) {

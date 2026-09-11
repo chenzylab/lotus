@@ -59,6 +59,14 @@ import { Tree } from '@lotus/ripple';
 ../../src/demos/navigation/tree/drag.tsrx
 ```
 
+### 自定义字段名映射
+
+数据源字段名不是标准的 `key`/`label`/`children` 时，用 `keyMaps` 声明映射关系，不需要预先转换数据结构。
+
+```tsrx demo
+../../src/demos/navigation/tree/key-maps.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -84,6 +92,7 @@ import { Tree } from '@lotus/ripple';
 | filterTreeNode | 开启搜索过滤：`true` 走内置包含匹配，函数则自定义匹配逻辑 | `boolean \| ((input: string, label: string, node: TreeNodeData) => boolean)` | - |
 | hideDraggingNode | 拖拽时是否隐藏原节点的拖拽镜像 | boolean | `false` |
 | icon | 自定义节点图标，支持函数形式接收 `(node: TreeNodeData)` | `any \| ((node) => any)` | - |
+| keyMaps | 自定义字段名映射，适配字段名不是 `key`/`label`/`value`/`children`/`disabled`/`isLeaf`/`icon` 的数据源 | `{ key?, label?, value?, disabled?, children?, isLeaf?, icon? }` | - |
 | leafOnly | 多选：value 只保留叶子节点 key，优先级高于 `autoMergeValue` | boolean | `false` |
 | loadData | 异步加载子节点，返回 `Promise<TreeNodeData[]>` | `(node: TreeNodeData) => Promise<TreeNodeData[]>` | - |
 | loadedKeys | 受控的已加载节点 key 数组，标记的节点展开不再触发 `loadData` | string[] | - |
@@ -109,9 +118,9 @@ import { Tree } from '@lotus/ripple';
 | onSearch | 搜索框输入变化时的回调，第二个参数是搜索匹配节点的祖先展开 key 列表 | `(input: string, filteredExpandedKeys: string[]) => void` | - |
 | onSelect | 选中/取消选中节点时的回调（单选场景） | `(selectedKey: string \| null, selected: boolean, node: TreeNodeData) => void` | - |
 
-`TreeNodeData` 结构：`{ key, label, value?, icon?, disabled?, isLeaf?, children? }`。
+`TreeNodeData` 结构：`{ key, label, value?, icon?, disabled?, isLeaf?, children? }`（传 `keyMaps` 时对应字段名可以不同）。
 
-> 明确不做：`keyMaps`（自定义字段名映射）、`treeDataSimpleJson`（简化 JSON 转 treeData）——这两项是 Semi 为兼容历史数据格式提供的便捷层，lotus 直接要求标准 `TreeNodeData` 结构，不需要额外的字段映射/格式转换。
+> 明确不做：`treeDataSimpleJson`（简化 JSON 转 treeData）——这是 Semi 为兼容历史数据格式提供的便捷层，lotus 直接要求标准 `TreeNodeData`/`keyMaps` 结构，不需要额外的格式转换。
 
 ## Accessibility
 

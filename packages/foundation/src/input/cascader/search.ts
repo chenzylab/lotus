@@ -1,17 +1,13 @@
-import { type CascaderEntities, type CascaderEntity, getPathData, isLeafEntity } from './cascader-data.js';
+import { type CascaderEntities, type CascaderEntity, type CascaderKeyMapProps, type CascaderNodeData, getPathData, getCascaderNodeLabel, isLeafEntity } from './cascader-data.js';
 
 export type CascaderFilterFn = (input: string, pathLabel: string, entity: CascaderEntity) => boolean;
 export type CascaderFilterTreeNode = boolean | CascaderFilterFn;
 
 export interface CascaderSearchItem {
   key: string;
-  pathData: import('./cascader-data.js').CascaderNodeData[];
+  pathData: CascaderNodeData[];
   /** 用 separator 拼接的完整路径展示文本，如 "浙江 / 杭州 / 西湖区"。 */
   pathLabel: string;
-}
-
-function defaultLabelOf(data: { label: any }): string {
-  return String(data.label ?? '');
 }
 
 /**
@@ -27,10 +23,10 @@ export function computeCascaderSearchResult(
   input: string,
   entities: CascaderEntities,
   filterTreeNode: CascaderFilterTreeNode,
-  options: { separator?: string; filterLeafOnly?: boolean; labelOf?: (data: { label: any }) => string } = {},
+  options: { separator?: string; filterLeafOnly?: boolean; labelOf?: (data: CascaderNodeData) => string; keyMaps?: CascaderKeyMapProps } = {},
 ): CascaderSearchItem[] {
   if (!input || !filterTreeNode) return [];
-  const { separator = ' / ', filterLeafOnly = true, labelOf = defaultLabelOf } = options;
+  const { separator = ' / ', filterLeafOnly = true, keyMaps, labelOf = (data: CascaderNodeData) => String(getCascaderNodeLabel(data, keyMaps) ?? '') } = options;
 
   const matchFn: CascaderFilterFn =
     typeof filterTreeNode === 'function'
@@ -39,7 +35,7 @@ export function computeCascaderSearchResult(
 
   const result: CascaderSearchItem[] = [];
   for (const entity of Object.values(entities)) {
-    if (filterLeafOnly && !isLeafEntity(entity)) continue;
+    if (filterLeafOnly && !isLeafEntity(entity, keyMaps)) continue;
     const pathData = getPathData(entity.key, entities);
     const pathLabel = pathData.map(labelOf).join(separator);
     if (!matchFn(input, pathLabel, entity)) continue;

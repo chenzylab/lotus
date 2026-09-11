@@ -55,4 +55,15 @@ describe('normalizeCheckedKeysToValue', () => {
     const entities = buildKeyEntities(DATA);
     expect(normalizeCheckedKeysToValue(new Set(), entities)).toEqual([]);
   });
+
+  it('leafOnly=true 时 keyMaps 自定义 isLeaf 字段名同样生效', () => {
+    const customData: TreeNodeData[] = [
+      { key: 'unused', label: 'unused', id: 'p1', name: 'P1', items: [{ key: 'unused', label: 'unused', id: 'c1', name: 'C1', leaf: true }] },
+    ];
+    const keyMaps = { key: 'id', children: 'items', isLeaf: 'leaf' };
+    const entities = buildKeyEntities(customData, keyMaps);
+    const checkedKeys = new Set(['p1', 'c1']);
+    const result = normalizeCheckedKeysToValue(checkedKeys, entities, { leafOnly: true, keyMaps });
+    expect(result).toEqual(['c1']);
+  });
 });

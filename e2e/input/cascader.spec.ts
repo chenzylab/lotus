@@ -345,4 +345,21 @@ test.describe('Cascader', () => {
     const trigger = page.getByLabel('Cascader displayRender 示例', { exact: true });
     await expect(trigger).toContainText('已选：浙江 / 杭州 / 西湖区');
   });
+
+  test('keyMaps：自定义字段名映射（对齐 Semi，此前 lotus 完全没有实现），第一列与展开的第二列都按映射字段名渲染', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Cascader keyMaps', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const items = page.locator('.lotus-cascader-item-label');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toHaveText('浙江');
+    await expect(items.nth(1)).toHaveText('江苏');
+
+    await page.locator('.lotus-cascader-item', { hasText: '浙江' }).click();
+    await expect(items).toHaveCount(4);
+    await expect(items.nth(2)).toHaveText('杭州');
+    await expect(items.nth(3)).toHaveText('宁波');
+  });
 });

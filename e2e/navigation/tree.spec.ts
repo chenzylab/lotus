@@ -247,4 +247,14 @@ test.describe('Tree', () => {
     await expect(tree.locator('.lotus-tree-switcher-loading')).toHaveCount(0);
     await expect(tree.locator('.lotus-tree-node-label')).toHaveCount(2);
   });
+
+  test('keyMaps：自定义字段名映射（对齐 Semi，此前 lotus 完全没有实现）正确渲染，不要求数据带标准 key/label/children 字段名', async ({ page }) => {
+    await page.goto('/');
+    const tree = page.getByLabel('Tree keyMaps');
+    const labels = tree.locator('.lotus-tree-node-label');
+    await expect(labels).toHaveCount(5);
+    await expect(labels.nth(0)).toHaveText('研发部');
+    await expect(labels.nth(1)).toHaveText('前端组');
+    await expect(labels.nth(3)).toHaveText('产品部');
+  });
 });

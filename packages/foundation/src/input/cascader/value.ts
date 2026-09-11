@@ -1,4 +1,4 @@
-import { type CascaderEntities, type CascaderEntity, isLeafEntity } from './cascader-data.js';
+import { type CascaderEntities, type CascaderEntity, type CascaderKeyMapProps, isLeafEntity } from './cascader-data.js';
 
 /** 三态级联算出的内部选中态（checkedKeys，含被级联自动带上的父/子节点）
  * 折叠成对外暴露的 value 数组——这一层是 Cascader 特有的，Tree 没有
@@ -14,14 +14,14 @@ import { type CascaderEntities, type CascaderEntity, isLeafEntity } from './casc
 export function collapseCheckedKeysToValuePaths(
   checkedKeys: Set<string>,
   entities: CascaderEntities,
-  options: { autoMergeValue?: boolean; leafOnly?: boolean } = {},
+  options: { autoMergeValue?: boolean; leafOnly?: boolean; keyMaps?: CascaderKeyMapProps } = {},
 ): Array<Array<string | number>> {
-  const { autoMergeValue = true, leafOnly = false } = options;
+  const { autoMergeValue = true, leafOnly = false, keyMaps } = options;
 
   if (leafOnly) {
     return [...checkedKeys]
       .map((key) => entities[key])
-      .filter((entity): entity is CascaderEntity => !!entity && isLeafEntity(entity))
+      .filter((entity): entity is CascaderEntity => !!entity && isLeafEntity(entity, keyMaps))
       .map((entity) => entity.valuePath);
   }
 

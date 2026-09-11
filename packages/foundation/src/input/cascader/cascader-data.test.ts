@@ -7,7 +7,13 @@ import {
   findAncestorKeys,
   getPathData,
   computeColumns,
+  getCascaderNodeValue,
+  getCascaderNodeLabel,
+  getCascaderNodeChildren,
+  getCascaderNodeDisabled,
+  getCascaderNodeIsLeaf,
   type CascaderNodeData,
+  type CascaderKeyMapProps,
 } from './cascader-data.js';
 
 const DATA: CascaderNodeData[] = [
@@ -140,5 +146,62 @@ describe('computeColumns', () => {
     const columns = computeColumns(DATA, activeKeys, entities);
     expect(columns.length).toBe(3);
     expect(columns[2].map((e) => e.data.label)).toEqual(['西湖区', '滨江区']);
+  });
+});
+
+describe('keyMaps：自定义字段名映射（对齐 Semi Cascader keyMaps）', () => {
+  const keyMaps: CascaderKeyMapProps = { value: 'val', label: 'name', children: 'items', disabled: 'isDisabled', isLeaf: 'leaf' };
+  const customNode: CascaderNodeData = {
+    value: 'unused', label: 'unused',
+    val: 'v1', name: 'V1', items: [{ value: 'unused', label: 'unused', val: 'v1a', name: 'V1a' }], isDisabled: true, leaf: true,
+  };
+
+  it('getCascaderNodeValue 按映射读取自定义字段名', () => {
+    expect(getCascaderNodeValue(customNode, keyMaps)).toBe('v1');
+  });
+
+  it('getCascaderNodeLabel 按映射读取自定义字段名', () => {
+    expect(getCascaderNodeLabel(customNode, keyMaps)).toBe('V1');
+  });
+
+  it('getCascaderNodeChildren 按映射读取自定义字段名', () => {
+    expect(getCascaderNodeChildren(customNode, keyMaps)).toEqual([{ value: 'unused', label: 'unused', val: 'v1a', name: 'V1a' }]);
+  });
+
+  it('getCascaderNodeDisabled 按映射读取自定义字段名', () => {
+    expect(getCascaderNodeDisabled(customNode, keyMaps)).toBe(true);
+  });
+
+  it('getCascaderNodeIsLeaf 按映射读取自定义字段名', () => {
+    expect(getCascaderNodeIsLeaf(customNode, keyMaps)).toBe(true);
+  });
+
+  it('未传 keyMaps 时回退标准字段名', () => {
+    const standardNode: CascaderNodeData = { value: 'a', label: 'A', disabled: false, isLeaf: true };
+    expect(getCascaderNodeValue(standardNode)).toBe('a');
+    expect(getCascaderNodeLabel(standardNode)).toBe('A');
+    expect(getCascaderNodeDisabled(standardNode)).toBe(false);
+    expect(getCascaderNodeIsLeaf(standardNode)).toBe(true);
+  });
+
+  it('buildCascaderEntities 传入 keyMaps 时用自定义字段名构建索引', () => {
+    const customData: CascaderNodeData[] = [
+      { value: 'unused', label: 'unused', val: 'p1', name: 'P1', items: [{ value: 'unused', label: 'unused', val: 'c1', name: 'C1' }] },
+    ];
+    const entities = buildCascaderEntities(customData, { value: 'val', children: 'items' });
+    const rootKey = joinValuePath(['p1']);
+    const childKey = joinValuePath(['p1', 'c1']);
+    expect(entities[rootKey]).toBeDefined();
+    expect(entities[childKey]).toBeDefined();
+    expect(entities[childKey]!.parent!.key).toBe(rootKey);
+  });
+
+  it('isLeafEntity 传入 keyMaps 时按自定义 isLeaf 字段名判断', () => {
+    const customData: CascaderNodeData[] = [
+      { value: 'unused', label: 'unused', val: 'p1', name: 'P1', items: [], leaf: true },
+    ];
+    const km: CascaderKeyMapProps = { value: 'val', children: 'items', isLeaf: 'leaf' };
+    const entities = buildCascaderEntities(customData, km);
+    expect(isLeafEntity(entities[joinValuePath(['p1'])]!, km)).toBe(true);
   });
 });

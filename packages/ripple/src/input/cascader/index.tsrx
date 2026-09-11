@@ -7,11 +7,15 @@ import {
     collapseCheckedKeysToValuePaths,
     isLeafEntity,
     joinValuePath,
+    getCascaderNodeValue,
+    getCascaderNodeLabel,
+    getCascaderNodeDisabled,
     type CascaderState,
     type CascaderNodeData,
     type CascaderEntities,
     type CascaderEntity,
     type CascaderFilterTreeNode,
+    type CascaderKeyMapProps,
 } from '@lotus/foundation/input/cascader';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
@@ -31,6 +35,9 @@ type ValuePath = Array<string | number>;
 
 export interface CascaderProps {
     treeData?: CascaderNodeData[];
+    /** 自定义字段名映射，适配字段名不是 value/label/children/disabled/isLeaf
+     * 的数据源（对齐 Semi Cascader `keyMaps`）。 */
+    keyMaps?: CascaderKeyMapProps;
     value?: ValuePath | ValuePath[];
     defaultValue?: ValuePath | ValuePath[];
     multiple?: boolean;
@@ -128,6 +135,7 @@ function isMultiValue(v: ValuePath | ValuePath[] | undefined): v is ValuePath[] 
 
 interface CascaderColumnItemProps {
     entity: CascaderEntity;
+    keyMaps?: CascaderKeyMapProps;
     multiple: boolean;
     active: boolean;
     /** 键盘导航虚拟焦点（与 `active` 语义不同——`active` 表示这个 entity 在
@@ -148,6 +156,7 @@ interface CascaderColumnItemProps {
  * （对齐 Select 组件 `SelectOptionItem` 已验证的同一模式）。 */
 function CascaderColumnItem(&{
     entity,
+    keyMaps,
     multiple,
     active,
     keyboardActive = false,
@@ -176,7 +185,7 @@ function CascaderColumnItem(&{
                 <Checkbox checked={checked} indeterminate={halfChecked} disabled={disabled} onChange={() => onItemCheck(entity)} />
             </span>
         }
-        <span class="lotus-cascader-item-label">{entity.data.label}</span>
+        <span class="lotus-cascader-item-label">{getCascaderNodeLabel(entity.data, keyMaps)}</span>
         @if (loading) {
             <Spin size="small" />
         }
@@ -248,6 +257,7 @@ function CascaderColumnItem(&{
  */
 export function Cascader(&{
     treeData = [],
+    keyMaps,
     value,
     defaultValue,
     multiple = false,
@@ -304,7 +314,7 @@ export function Cascader(&{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
-    let &[entities] = track<CascaderEntities>(() => buildCascaderEntities(treeData));
+    let &[entities] = track<CascaderEntities>(() => buildCascaderEntities(treeData, keyMaps));
 
     const isControlled = value !== undefined;
     const initialState: CascaderState = {
@@ -386,12 +396,12 @@ export function Cascader(&{
     // adapter.getState() 的 untrack() 包裹会阻断响应式依赖追踪，导致这个
     // track() 派生值只在挂载时计算一次、之后 activeKeys 变化不会重新求值——
     // 对齐 Tree 组件 flatNodes 直接读 state.expandedKeys 传给纯函数的模式）。
-    let &[columns] = track<CascaderEntity[][]>(() => computeColumns(treeData, state.activeKeys, entities));
+    let &[columns] = track<CascaderEntity[][]>(() => computeColumns(treeData, state.activeKeys, entities, keyMaps));
 
     function firstEnabledRow(col: number): number {
         const column = columns[col];
         if (!column) return -1;
-        return column.findIndex((e) => !e.data.disabled);
+        return column.findIndex((e) => !getCascaderNodeDisabled(e.data, keyMaps));
     }
 
     function nextEnabledRow(col: number, from: number, step: 1 | -1): number {
@@ -400,7 +410,8 @@ export function Cascader(&{
         let i = from;
         for (let count = 0; count < column.length; count++) {
             i = (i + step + column.length) % column.length;
-            if (!column[i]?.data.disabled) return i;
+            const entity = column[i];
+            if (entity && !getCascaderNodeDisabled(entity.data, keyMaps)) return i;
         }
         return -1;
     }
@@ -434,13 +445,13 @@ export function Cascader(&{
     });
 
     // 同理：直接读 state.searchInput 建立响应式依赖，不经过 foundation 方法。
-    let &[searchResults] = track(() => computeCascaderSearchResult(state.searchInput, entities, filterTreeNode, { separator, filterLeafOnly }));
+    let &[searchResults] = track(() => computeCascaderSearchResult(state.searchInput, entities, filterTreeNode, { separator, filterLeafOnly, keyMaps }));
 
     let &[isSearching] = track<boolean>(() => !!filterTreeNode && state.searchInput.length > 0);
 
     function notifyChange() {
         if (multiple) {
-            const paths = foundation.resolveValue(untrack(() => entities), { autoMergeValue, leafOnly });
+            const paths = foundation.resolveValue(untrack(() => entities), { autoMergeValue, leafOnly, keyMaps });
             onChange?.(paths);
         } else {
             const key = untrack(() => state).selectedKey;
@@ -451,11 +462,11 @@ export function Cascader(&{
 
     function triggerLoad(entity: CascaderEntity) {
         if (!loadData) return;
-        if (isLeafEntity(entity)) return;
+        if (isLeafEntity(entity, keyMaps)) return;
         const s = untrack(() => state);
         if (s.loadingKeys.has(entity.key) || s.loadedKeys.has(entity.key)) return;
         foundation.handleLoadStart(entity.key);
-        const loadedEntityInfo = { value: entity.data.value, label: entity.data.label, valuePath: entity.valuePath };
+        const loadedEntityInfo = { value: getCascaderNodeValue(entity.data, keyMaps), label: getCascaderNodeLabel(entity.data, keyMaps), valuePath: entity.valuePath };
         loadData(loadedEntityInfo)
             .then(() => {
                 const result = foundation.handleLoadEnd(entity.key, true);
@@ -468,13 +479,13 @@ export function Cascader(&{
     }
 
     function handleItemActivate(entity: CascaderEntity) {
-        if (entity.data.disabled) return;
+        if (getCascaderNodeDisabled(entity.data, keyMaps)) return;
         foundation.handleActivate(entity.key, untrack(() => entities));
         triggerLoad(entity);
     }
 
     function handleItemSelect(entity: CascaderEntity) {
-        if (entity.data.disabled) return;
+        if (getCascaderNodeDisabled(entity.data, keyMaps)) return;
         if (multiple) {
             const currentEntities = untrack(() => entities);
             const wasChecked = untrack(() => state).checkedKeys.has(entity.key);
@@ -491,7 +502,7 @@ export function Cascader(&{
             triggerLoad(entity);
             return;
         }
-        const result = foundation.handleSingleSelect(entity.key, untrack(() => entities), changeOnSelect, isControlled);
+        const result = foundation.handleSingleSelect(entity.key, untrack(() => entities), changeOnSelect, isControlled, keyMaps);
         if (result.selectedKey !== null) notifyChange();
         if (result.canClose) {
             isOpen = false;
@@ -507,14 +518,14 @@ export function Cascader(&{
     // 点文字=展开、点 checkbox=勾选，两个交互互不干扰。
     function handleColumnItemClick(entity: CascaderEntity) {
         if (multiple) {
-            const leaf = isLeafEntity(entity);
+            const leaf = isLeafEntity(entity, keyMaps);
             if (clickToSelect || (enableLeafClick && leaf)) {
                 handleItemSelect(entity);
             }
             handleItemActivate(entity);
             return;
         }
-        const leaf = isLeafEntity(entity);
+        const leaf = isLeafEntity(entity, keyMaps);
         if (showNext === 'hover' && !leaf) {
             handleItemActivate(entity);
             return;
@@ -528,13 +539,13 @@ export function Cascader(&{
 
     function handleColumnItemHover(entity: CascaderEntity) {
         if (showNext !== 'hover') return;
-        if (entity.data.disabled) return;
+        if (getCascaderNodeDisabled(entity.data, keyMaps)) return;
         handleItemActivate(entity);
     }
 
     function handleSearchResultClick(key: string) {
         const entity = untrack(() => entities)[key];
-        if (!entity || entity.data.disabled) return;
+        if (!entity || getCascaderNodeDisabled(entity.data, keyMaps)) return;
         handleItemSelect(entity);
     }
 
@@ -644,7 +655,7 @@ export function Cascader(&{
 
     function handleSearchInput(event: Event) {
         const input = (event.target as HTMLInputElement).value;
-        foundation.handleSearch(input, untrack(() => entities), filterTreeNode, { separator, filterLeafOnly });
+        foundation.handleSearch(input, untrack(() => entities), filterTreeNode, { separator, filterLeafOnly, keyMaps });
         onSearch?.(input);
     }
 
@@ -670,7 +681,7 @@ export function Cascader(&{
         if (!key) return '';
         const entity = entities[key];
         if (!entity) return '';
-        return entity.valuePath.length ? untrack(() => entities)[key]!.data.label : '';
+        return entity.valuePath.length ? getCascaderNodeLabel(untrack(() => entities)[key]!.data, keyMaps) as string : '';
     });
 
     let &[selectedPathEntities] = track<CascaderEntity[]>(() => {
@@ -687,8 +698,8 @@ export function Cascader(&{
     });
 
     let &[displayPathLabel] = track<string>(() => {
-        if (!displayProp) return selectedPathEntities.map((e) => e.data.label).join(separator);
-        return selectedPathEntities.map((e) => (e.data as any)[displayProp] ?? e.data.label).join(separator);
+        if (!displayProp) return selectedPathEntities.map((e) => getCascaderNodeLabel(e.data, keyMaps)).join(separator);
+        return selectedPathEntities.map((e) => (e.data as any)[displayProp] ?? getCascaderNodeLabel(e.data, keyMaps)).join(separator);
     });
 
     // 已选路径展示内容优先级：displayRender（完全自定义）> displayProp（自定义
@@ -793,15 +804,16 @@ export function Cascader(&{
                                                         <div style={{ height: `${virtualize.itemSize}px` }}>
                                                             <CascaderColumnItem
                                                                 entity={entry.entity}
+                                                                keyMaps={keyMaps}
                                                                 multiple={multiple}
                                                                 active={state.activeKeys.has(entry.entity.key)}
                                                                 keyboardActive={activeCoord?.col === colIndex && activeCoord?.row === entry.index}
                                                                 id={itemDomId(colIndex, entry.index)}
                                                                 checked={state.checkedKeys.has(entry.entity.key)}
                                                                 halfChecked={state.halfCheckedKeys.has(entry.entity.key)}
-                                                                disabled={!!entry.entity.data.disabled}
+                                                                disabled={!!getCascaderNodeDisabled(entry.entity.data, keyMaps)}
                                                                 loading={state.loadingKeys.has(entry.entity.key)}
-                                                                isLeaf={isLeafEntity(entry.entity)}
+                                                                isLeaf={isLeafEntity(entry.entity, keyMaps)}
                                                                 onItemClick={handleColumnItemClick}
                                                                 onItemHover={handleColumnItemHover}
                                                                 onItemCheck={handleItemSelect}
@@ -818,15 +830,16 @@ export function Cascader(&{
                                             @for (const entity of column; index rowIndex; key entity.key) {
                                                 <CascaderColumnItem
                                                     entity={entity}
+                                                    keyMaps={keyMaps}
                                                     multiple={multiple}
                                                     active={state.activeKeys.has(entity.key)}
                                                     keyboardActive={activeCoord?.col === colIndex && activeCoord?.row === rowIndex}
                                                     id={itemDomId(colIndex, rowIndex)}
                                                     checked={state.checkedKeys.has(entity.key)}
                                                     halfChecked={state.halfCheckedKeys.has(entity.key)}
-                                                    disabled={!!entity.data.disabled}
+                                                    disabled={!!getCascaderNodeDisabled(entity.data, keyMaps)}
                                                     loading={state.loadingKeys.has(entity.key)}
-                                                    isLeaf={isLeafEntity(entity)}
+                                                    isLeaf={isLeafEntity(entity, keyMaps)}
                                                     onItemClick={handleColumnItemClick}
                                                     onItemHover={handleColumnItemHover}
                                                     onItemCheck={handleItemSelect}
@@ -876,7 +889,7 @@ export function Cascader(&{
                                     <>
                                         @for (const entity of visibleTagsResult.visible; key entity.key) {
                                             <span class="lotus-cascader-tag">
-                                                <span class="lotus-cascader-tag-label">{entity.data.label}</span>
+                                                <span class="lotus-cascader-tag-label">{getCascaderNodeLabel(entity.data, keyMaps)}</span>
                                                 <span class="lotus-cascader-tag-remove" onClick={(event: MouseEvent) => handleRemoveTag(entity, event)}>
                                                     <IconClear />
                                                 </span>

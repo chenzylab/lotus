@@ -5,7 +5,15 @@ import {
   findAncestorKeys,
   findDescendantKeys,
   findSiblingKeys,
+  getNodeKey,
+  getNodeLabel,
+  getNodeValue,
+  getNodeChildren,
+  getNodeDisabled,
+  getNodeIsLeaf,
+  getNodeIcon,
   type TreeNodeData,
+  type KeyMapProps,
 } from './tree-data.js';
 
 const TREE: TreeNodeData[] = [
@@ -114,5 +122,71 @@ describe('findSiblingKeys', () => {
     const entities = buildKeyEntities(TREE);
     const result = findSiblingKeys('a', entities, true);
     expect(new Set(result)).toEqual(new Set(['a', 'b', 'c']));
+  });
+});
+
+describe('keyMaps：自定义字段名映射（对齐 Semi Tree/Cascader keyMaps）', () => {
+  const keyMaps: KeyMapProps = { key: 'id', label: 'name', value: 'val', children: 'items', disabled: 'isDisabled', isLeaf: 'leaf', icon: 'ico' };
+  const customNode: TreeNodeData = {
+    key: 'unused', label: 'unused',
+    id: 'x1', name: 'X1', val: 'v1', items: [{ id: 'x1a', name: 'X1a' }], isDisabled: true, leaf: true, ico: 'icon-x',
+  };
+
+  it('getNodeKey 按映射读取自定义字段名', () => {
+    expect(getNodeKey(customNode, keyMaps)).toBe('x1');
+  });
+
+  it('getNodeLabel 按映射读取自定义字段名', () => {
+    expect(getNodeLabel(customNode, keyMaps)).toBe('X1');
+  });
+
+  it('getNodeValue 按映射读取自定义字段名', () => {
+    expect(getNodeValue(customNode, keyMaps)).toBe('v1');
+  });
+
+  it('getNodeChildren 按映射读取自定义字段名', () => {
+    expect(getNodeChildren(customNode, keyMaps)).toEqual([{ id: 'x1a', name: 'X1a' }]);
+  });
+
+  it('getNodeDisabled 按映射读取自定义字段名', () => {
+    expect(getNodeDisabled(customNode, keyMaps)).toBe(true);
+  });
+
+  it('getNodeIsLeaf 按映射读取自定义字段名', () => {
+    expect(getNodeIsLeaf(customNode, keyMaps)).toBe(true);
+  });
+
+  it('getNodeIcon 按映射读取自定义字段名', () => {
+    expect(getNodeIcon(customNode, keyMaps)).toBe('icon-x');
+  });
+
+  it('未传 keyMaps 时回退标准字段名', () => {
+    const standardNode: TreeNodeData = { key: 'a', label: 'A', value: 'va', disabled: false, isLeaf: true, icon: 'i' };
+    expect(getNodeKey(standardNode)).toBe('a');
+    expect(getNodeLabel(standardNode)).toBe('A');
+    expect(getNodeValue(standardNode)).toBe('va');
+    expect(getNodeDisabled(standardNode)).toBe(false);
+    expect(getNodeIsLeaf(standardNode)).toBe(true);
+    expect(getNodeIcon(standardNode)).toBe('i');
+  });
+
+  it('buildKeyEntities 传入 keyMaps 时用自定义字段名构建索引', () => {
+    const customTree: TreeNodeData[] = [
+      { key: 'unused', label: 'unused', id: 'p1', name: 'P1', items: [{ key: 'unused', label: 'unused', id: 'c1', name: 'C1' }] },
+    ];
+    const entities = buildKeyEntities(customTree, { key: 'id', children: 'items' });
+    expect(Object.keys(entities)).toEqual(['p1', 'c1']);
+    expect(entities.c1!.parent!.key).toBe('p1');
+  });
+
+  it('flattenTreeData 传入 keyMaps 时按自定义字段名摊平', () => {
+    const customTree: TreeNodeData[] = [
+      { key: 'unused', label: 'unused', id: 'p1', name: 'P1', items: [{ key: 'unused', label: 'unused', id: 'c1', name: 'C1' }] },
+    ];
+    const flat = flattenTreeData(customTree, new Set(['p1']), null, { key: 'id', label: 'name', children: 'items' });
+    expect(flat.map((n) => ({ key: n.key, label: n.label }))).toEqual([
+      { key: 'p1', label: 'P1' },
+      { key: 'c1', label: 'C1' },
+    ]);
   });
 });

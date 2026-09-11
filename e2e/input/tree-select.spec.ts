@@ -379,4 +379,16 @@ test.describe('TreeSelect', () => {
     await panel.click();
     await expect(panel).toBeVisible();
   });
+
+  test('keyMaps：自定义字段名映射（对齐 Semi，此前 lotus 完全没有实现）正确渲染面板', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('TreeSelect keyMaps', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+
+    const labels = page.locator('.lotus-tree-select-node-label');
+    await expect(labels).toHaveCount(2);
+    await expect(labels.nth(0)).toHaveText('研发部');
+    await expect(labels.nth(1)).toHaveText('产品部');
+  });
 });

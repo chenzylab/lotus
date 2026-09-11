@@ -7,6 +7,7 @@ import {
   isLeafEntity,
   joinValuePath,
   type CascaderEntities,
+  type CascaderKeyMapProps,
   type CascaderNodeData,
 } from './cascader-data.js';
 import { collapseCheckedKeysToValuePaths } from './value.js';
@@ -67,10 +68,10 @@ export class CascaderFoundation extends Foundation<CascaderState> {
    * `value` prop 本身变化时才会被调度，若父组件的 onChange 拒绝更新，UI
    * 会永久停留在点击产生的中间态（同一 bug 已在 Rating 组件真机验证过，
    * 详见 specs 踩坑 #100）。 */
-  handleSingleSelect(key: string, entities: CascaderEntities, changeOnSelect: boolean, isControlled: boolean): { selectedKey: string | null; canClose: boolean } {
+  handleSingleSelect(key: string, entities: CascaderEntities, changeOnSelect: boolean, isControlled: boolean, keyMaps?: CascaderKeyMapProps): { selectedKey: string | null; canClose: boolean } {
     const entity = entities[key];
     if (!entity) return { selectedKey: null, canClose: false };
-    const isLeaf = isLeafEntity(entity);
+    const isLeaf = isLeafEntity(entity, keyMaps);
     if (!isLeaf && !changeOnSelect) {
       this.handleActivate(key, entities);
       return { selectedKey: null, canClose: false };
@@ -136,17 +137,17 @@ export class CascaderFoundation extends Foundation<CascaderState> {
     return result;
   }
 
-  resolveValue(entities: CascaderEntities, options: { autoMergeValue?: boolean; leafOnly?: boolean } = {}): Array<Array<string | number>> {
+  resolveValue(entities: CascaderEntities, options: { autoMergeValue?: boolean; leafOnly?: boolean; keyMaps?: CascaderKeyMapProps } = {}): Array<Array<string | number>> {
     const { checkedKeys } = this.getState();
     return collapseCheckedKeysToValuePaths(checkedKeys, entities, options);
   }
 
-  computeColumns(rootData: CascaderNodeData[], entities: CascaderEntities): ReturnType<typeof computeColumns> {
+  computeColumns(rootData: CascaderNodeData[], entities: CascaderEntities, keyMaps?: CascaderKeyMapProps): ReturnType<typeof computeColumns> {
     const { activeKeys } = this.getState();
-    return computeColumns(rootData, activeKeys, entities);
+    return computeColumns(rootData, activeKeys, entities, keyMaps);
   }
 
-  handleSearch(input: string, entities: CascaderEntities, filterTreeNode: CascaderFilterTreeNode, options?: { separator?: string; filterLeafOnly?: boolean }): CascaderSearchItem[] {
+  handleSearch(input: string, entities: CascaderEntities, filterTreeNode: CascaderFilterTreeNode, options?: { separator?: string; filterLeafOnly?: boolean; labelOf?: (data: CascaderNodeData) => string; keyMaps?: CascaderKeyMapProps }): CascaderSearchItem[] {
     this.setState({ searchInput: input });
     return computeCascaderSearchResult(input, entities, filterTreeNode, options);
   }

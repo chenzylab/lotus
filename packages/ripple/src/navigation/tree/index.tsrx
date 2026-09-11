@@ -4,6 +4,10 @@ import {
     createInitialTreeState,
     buildKeyEntities,
     flattenTreeData,
+    getNodeDisabled,
+    getNodeLabel,
+    getNodeKey,
+    getNodeChildren,
     calcExpandedKeys,
     calcAllExpandedKeys,
     calcCheckedKeys,
@@ -15,6 +19,7 @@ import {
     type KeyEntities,
     type FlatTreeNode,
     type TreeCheckRelation,
+    type KeyMapProps,
 } from '@lotus/foundation/navigation/tree';
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
 import { Checkbox } from '../../input/checkbox/index.tsrx';
@@ -65,6 +70,9 @@ export interface TreeDragEventInfo {
 
 export interface TreeProps {
     treeData: TreeNodeData[];
+    /** 自定义字段名映射，适配字段名不是 key/label/value/children/disabled/isLeaf
+     * 的数据源（对齐 Semi Tree `keyMaps`）。 */
+    keyMaps?: KeyMapProps;
     multiple?: boolean;
     checkRelation?: TreeCheckRelation;
     leafOnly?: boolean;
@@ -336,6 +344,7 @@ function TreeNodeItem(&{
  */
 export function Tree(&{
     treeData,
+    keyMaps,
     multiple = false,
     checkRelation = 'related',
     leafOnly = false,
@@ -393,13 +402,13 @@ export function Tree(&{
     const isExpandControlled = expandedKeysProp !== undefined;
     const isLoadedControlled = loadedKeysProp !== undefined;
 
-    let &[entities] = track<KeyEntities>(() => buildKeyEntities(treeData));
+    let &[entities] = track<KeyEntities>(() => buildKeyEntities(treeData, keyMaps));
 
     function disabledKeysFor(ents: KeyEntities): Set<string> | undefined {
         if (!disableStrictly) return undefined;
         const result = new Set<string>();
         for (const key of Object.keys(ents)) {
-            if (ents[key]!.data.disabled) result.add(key);
+            if (getNodeDisabled(ents[key]!.data, keyMaps)) result.add(key);
         }
         return result;
     }
@@ -411,7 +420,7 @@ export function Tree(&{
         return new Set<string>();
     }
 
-    const initialEntities = buildKeyEntities(treeData);
+    const initialEntities = buildKeyEntities(treeData, keyMaps);
     const initialCheckedSource = multiple ? (isValueControlled ? valueProp : defaultValue) : undefined;
     const initialCascade = initialCheckedSource !== undefined && checkRelation === 'related'
         ? calcCheckedKeys(toKeyArray(initialCheckedSource), initialEntities)
@@ -487,7 +496,11 @@ export function Tree(&{
     });
 
     function labelOf(data: TreeNodeData): string {
-        return String((data as any)[treeNodeFilterProp] ?? data.label ?? '');
+        // treeNodeFilterProp 默认值 'label' 与 keyMaps.label 是两套独立机制：
+        // treeNodeFilterProp 显式传自定义字段名时优先生效；未显式传（仍是默认值）
+        // 时应遵循 keyMaps.label 的映射，而非死读字面量 'label' 字段。
+        if (treeNodeFilterProp !== 'label') return String((data as any)[treeNodeFilterProp] ?? '');
+        return String(getNodeLabel(data, keyMaps) ?? '');
     }
 
     // foundation.handleSearch() 已经把展开祖先链的副作用写进 state；这里
@@ -502,6 +515,7 @@ export function Tree(&{
             treeData,
             state.expandedKeys,
             showFilteredOnly && searchResult ? searchResult.filteredShownKeys : null,
+            keyMaps,
         ),
     );
 
@@ -515,7 +529,7 @@ export function Tree(&{
 
     function notifyChange() {
         if (multiple) {
-            const keys = foundation.resolveValue(untrack(() => entities), checkRelation, { autoMergeValue, leafOnly });
+            const keys = foundation.resolveValue(untrack(() => entities), checkRelation, { autoMergeValue, leafOnly, keyMaps });
             onChange?.(onChangeWithObject ? keys.map((k) => nodeDataOf(k)).filter(Boolean) as TreeNodeData[] : keys);
         } else {
             const key = untrack(() => state).selectedKey;
@@ -534,8 +548,8 @@ export function Tree(&{
         if (!wasExpanded && loadData && !hasChildren && !currentState.loadedKeys.has(key)) {
             foundation.handleLoadStart(key);
             loadData(node).then((children) => {
-                node.children = children;
-                entities = buildKeyEntities(treeData);
+                (node as any)[keyMaps?.children ?? 'children'] = children;
+                entities = buildKeyEntities(treeData, keyMaps);
                 foundation.handleLoadEnd(key);
                 const next = isExpandControlled ? new Set([...untrack(() => state).expandedKeys, key]) : foundation.handleExpand(key);
                 onLoad?.([...untrack(() => state).loadedKeys], node);
@@ -558,7 +572,7 @@ export function Tree(&{
     }
 
     function handleSelectNode(key: string, node: TreeNodeData) {
-        if (disabled || node.disabled) return;
+        if (disabled || getNodeDisabled(node, keyMaps)) return;
         if (multiple) {
             foundation.handleCheck(key, untrack(() => entities), checkRelation, disabledKeysFor(untrack(() => entities)));
             notifyChange();
@@ -574,7 +588,7 @@ export function Tree(&{
     }
 
     function handleSearchInput(input: string) {
-        const result = foundation.handleSearch(input, untrack(() => entities), filterTreeNode);
+        const result = foundation.handleSearch(input, untrack(() => entities), filterTreeNode, labelOf, keyMaps);
         onSearch?.(input, [...result.expandedAncestorKeys]);
     }
 
@@ -585,7 +599,7 @@ export function Tree(&{
     // ===================== 拖拽 =====================
 
     function handleDragStartNode(event: DragEvent, node: TreeNodeData) {
-        foundation.handleDragStart(node.key, untrack(() => entities));
+        foundation.handleDragStart(getNodeKey(node, keyMaps), untrack(() => entities));
         if (hideDraggingNode) {
             const target = event.currentTarget as HTMLElement;
             const dragImg = target.cloneNode(true) as HTMLElement;
@@ -599,18 +613,19 @@ export function Tree(&{
 
     function handleDragEnterNode(event: DragEvent, node: TreeNodeData, rect: DOMRect) {
         const dropPosition = calcDropRelativePosition(event.clientY, rect);
-        const accepted = foundation.handleDragEnter(node.key, dropPosition);
+        const key = getNodeKey(node, keyMaps);
+        const accepted = foundation.handleDragEnter(key, dropPosition);
         if (!accepted) return;
         const dragState = untrack(() => state).drag;
-        if (autoExpandWhenDragEnter && node.children?.length && !untrack(() => state).expandedKeys.has(node.key)) {
-            handleToggleExpand(node.key, node, true);
+        if (autoExpandWhenDragEnter && getNodeChildren(node, keyMaps)?.length && !untrack(() => state).expandedKeys.has(key)) {
+            handleToggleExpand(key, node, true);
         }
         onDragEnter?.({ event, node, dragNodesKeys: [...dragState.dragNodesKeys] });
     }
 
     function handleDragOverNode(event: DragEvent, node: TreeNodeData, rect: DOMRect) {
         const dropPosition = calcDropRelativePosition(event.clientY, rect);
-        const accepted = foundation.handleDragOver(node.key, dropPosition);
+        const accepted = foundation.handleDragOver(getNodeKey(node, keyMaps), dropPosition);
         if (!accepted) return;
         onDragOver?.({ event, node });
     }
@@ -622,7 +637,7 @@ export function Tree(&{
 
     function handleDropNode(event: DragEvent, node: TreeNodeData) {
         const dragState = foundation.clearDragState();
-        if (dragState.dragNodesKeys.has(node.key)) return;
+        if (dragState.dragNodesKeys.has(getNodeKey(node, keyMaps))) return;
         const dragNodeEntity = dragState.dragNodeKey ? untrack(() => entities)[dragState.dragNodeKey] : undefined;
         onDrop?.({
             event,

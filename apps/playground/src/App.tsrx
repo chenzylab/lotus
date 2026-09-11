@@ -1,7 +1,7 @@
 import { track, effect } from 'ripple';
 import { Button, ButtonGroup, IconButton, FloatButton, Resizable, Progress, Spin, Banner, Steps, Pagination, Popconfirm, BackTop, Anchor, AnchorLink, Toast, Notification, Tree, Badge, Card, CardMeta, CardGroup, Empty, Descriptions, DescriptionsItem, Collapse, CollapsePanel, Collapsible, TagGroup, SplitTagGroup, List, ListItem, Timeline, TimelineItem, Image, ImagePreviewGroup, Carousel, Modal, SideSheet, Calendar, OverflowList, ScrollList, ScrollItem, Highlight, Cropper, UserGuide, Divider, Space, Row, Col, Switch, Tag, Tabs, TabPane, Avatar, AvatarGroup, Layout, Header, Content, Footer, Sider, Tooltip, Popover, Breadcrumb, Skeleton, SkeletonAvatar, SkeletonImage, SkeletonTitle, SkeletonButton, SkeletonParagraph, Nav, NavHeader, NavItem, NavSub, NavFooter, Dropdown, DropdownMenu, DropdownItem, DropdownTitle, DropdownDivider, TypographyTitle, TypographyText, TypographyParagraph, TypographyNumeral, Input, TextArea, Checkbox, CheckboxGroup, Radio, RadioGroup, InputNumber, Select, SelectOption, SelectOptGroup, Cascader, TreeSelect, AutoComplete, TimePicker, DatePicker, Slider, Rating, ColorPicker, type ColorValue, Transfer, Upload, type FileItem, type CustomRequestArgs, TagInput, PinCode, Table, type ColumnDef, Form, Field, Slot, ArrayField, ConfigProvider, ConfigContext, type BreakpointScreens, zhCN, enUS, CodeHighlight, MarkdownRender, JsonViewer, Chat, type ChatMessage, AudioPlayer, VideoPlayer, Lottie, type AnimationItem, DragMove, HotKeys, ResizeGroup, ResizeItem, ResizeHandler, Sidebar, SidebarMCPConfigure, type SidebarMCPOption, SidebarAnnotation, type SidebarAnnotationGroup, AiChatDialogue, type AiChatMessage as AiDialogueMessage, streamingResponseToMessage, type AiChatDialogueApi, AiChatInput, type AiChatInputApi, type AiInputMessageContent, Chart } from '@lotus/ripple';
 import { IllustrationNoContent, IllustrationNoContentDark, IllustrationNotFound, IllustrationNoAccess } from '@lotus/illustrations';
-import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi } from '@lotus/ripple';
+import type { SelectOptionData, SelectOptionListEntry, FormApi, FieldRenderProps, ArrayFieldRenderProps, CropperApi, InputApi, TextAreaApi, CheckboxApi, InputNumberApi, RadioApi, PinCodeApi, RatingApi, TransferDataSource } from '@lotus/ripple';
 import { IconClose, IconPlus, IconMinus, IconSearch, IconSetting, IconTickCircle, IconAiBellLevel3, IconLotusLogo, IconLoading } from '@lotus/icons';
 import { IconTag as IconTagLab, IconTable, IconAvatar as IconAvatarLab } from '@lotus/icons-lab';
 import type { TagColor, TabItem, AvatarGroupItem, NavItemInput, TreeNodeData, CascaderNodeData } from '@lotus/ripple';
@@ -46,6 +46,11 @@ const cascaderVirtualizeData: CascaderNodeData[] = [
 const cascaderLazyData: CascaderNodeData[] = [
     { value: 'fruit', label: '水果', isLeaf: false },
     { value: 'vegetable', label: '蔬菜', isLeaf: false },
+];
+
+const cascaderKeyMapsData = [
+    { val: 'zhejiang', name: '浙江', items: [{ val: 'hangzhou', name: '杭州' }, { val: 'ningbo', name: '宁波' }] },
+    { val: 'jiangsu', name: '江苏', items: [{ val: 'nanjing', name: '南京' }] },
 ];
 
 const treeSelectLazyData: TreeNodeData[] = [
@@ -157,6 +162,11 @@ const treeDemoData: TreeNodeData[] = [
             { key: 'dept-2-2', label: '陈八' },
         ],
     },
+];
+
+const treeKeyMapsData = [
+    { id: 'km-1', name: '研发部', items: [{ id: 'km-1-1', name: '前端组' }, { id: 'km-1-2', name: '后端组' }] },
+    { id: 'km-2', name: '产品部', items: [{ id: 'km-2-1', name: '刘七' }] },
 ];
 
 const treeDragData: TreeNodeData[] = [
@@ -1632,6 +1642,16 @@ export function App() @{
                     aria-label="Tree loadedKeys 受控"
                 />
                 <Button size="small" onClick={() => { treeLoadedKeysControlled = ['lazy-ctrl-1']; }}>标记节点 1 为已加载</Button>
+            </div>
+
+            <div style={{ width: '280px' }}>
+                <TypographyText type="secondary">keyMaps（自定义字段名映射，对齐 Semi，此前 lotus 完全没有实现）</TypographyText>
+                <Tree
+                    treeData={treeKeyMapsData}
+                    keyMaps={{ key: 'id', label: 'name', children: 'items' }}
+                    defaultExpandAll
+                    aria-label="Tree keyMaps"
+                />
             </div>
         </Space>
 
@@ -4326,6 +4346,16 @@ export function App() @{
             </div>
         </Space>
 
+        <Divider>Cascader：keyMaps（自定义字段名映射，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <Cascader
+                treeData={cascaderKeyMapsData}
+                keyMaps={{ value: 'val', label: 'name', children: 'items' }}
+                aria-label="Cascader keyMaps"
+            />
+        </div>
+
         <Divider>TreeSelect：单选</Divider>
 
         <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
@@ -4537,6 +4567,16 @@ export function App() @{
                 aria-label="TreeSelect onFocus-onBlur 示例"
             />
             <TypographyText type="secondary" aria-label="TreeSelect focus/blur 日志">{treeSelectFocusBlurLog}</TypographyText>
+        </div>
+
+        <Divider>TreeSelect：keyMaps（自定义字段名映射，对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <TreeSelect
+                treeData={treeKeyMapsData}
+                keyMaps={{ key: 'id', label: 'name', children: 'items' }}
+                aria-label="TreeSelect keyMaps"
+            />
         </div>
 
         <Divider>AutoComplete：基础用法（onSearch 里自行过滤候选项，组件本身不做匹配）</Divider>
@@ -5238,7 +5278,7 @@ export function App() @{
         <div>
             <Transfer
                 type="treeList"
-                dataSource={treeDemoData}
+                dataSource={treeDemoData as TransferDataSource}
                 value={transferTreeValue}
                 onChange={(v) => { transferTreeValue = v; }}
                 aria-label="Transfer 树形"
@@ -5333,7 +5373,7 @@ export function App() @{
         <div>
             <Transfer
                 type="treeList"
-                dataSource={treeDemoData}
+                dataSource={treeDemoData as TransferDataSource}
                 treeProps={{ defaultExpandAll: true }}
                 aria-label="Transfer treeProps 示例"
             />

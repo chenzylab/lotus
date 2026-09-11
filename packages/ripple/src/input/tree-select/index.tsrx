@@ -9,12 +9,17 @@ import {
     computeSearchResult,
     normalizeCheckedKeysToValue,
     foldTags,
+    getNodeKey,
+    getNodeLabel,
+    getNodeDisabled,
+    getNodeChildren,
     type TreeSelectState,
     type TreeSelectCheckRelation,
     type TreeNodeData,
     type FilterTreeNode,
     type KeyEntities,
     type FlatTreeNode,
+    type KeyMapProps,
 } from '@lotus/foundation/input/tree-select';
 import type { FloatingPosition } from '@lotus/foundation/base/floating-position';
 import { calcVirtualRange } from '@lotus/foundation/base/virtual-list';
@@ -31,6 +36,9 @@ export type { TreeNodeData };
 
 export interface TreeSelectProps {
     treeData?: TreeNodeData[];
+    /** 自定义字段名映射，适配字段名不是 key/label/value/children/disabled/isLeaf
+     * 的数据源（对齐 Semi Tree/TreeSelect `keyMaps`）。 */
+    keyMaps?: KeyMapProps;
     value?: string | string[];
     defaultValue?: string | string[];
     multiple?: boolean;
@@ -369,6 +377,7 @@ function TreeSelectNodeItem(&{
  */
 export function TreeSelect(&{
     treeData = [],
+    keyMaps,
     value,
     defaultValue,
     multiple = false,
@@ -437,7 +446,7 @@ export function TreeSelect(&{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
-    let &[entities] = track<KeyEntities>(() => buildKeyEntities(treeData));
+    let &[entities] = track<KeyEntities>(() => buildKeyEntities(treeData, keyMaps));
 
     const isValueControlled = value !== undefined;
     const isExpandControlled = expandedKeysProp !== undefined;
@@ -449,7 +458,7 @@ export function TreeSelect(&{
         return new Set<string>();
     }
 
-    const initialEntities = buildKeyEntities(treeData);
+    const initialEntities = buildKeyEntities(treeData, keyMaps);
     const initialCheckedSource = multiple ? (isValueControlled ? value : defaultValue) : undefined;
     const initialCascade = initialCheckedSource !== undefined
         ? calcCheckedKeys(toKeyArray(initialCheckedSource), initialEntities)
@@ -545,7 +554,7 @@ export function TreeSelect(&{
     // 直接读 state.searchInput/state.expandedKeys 建立响应式依赖（不经过
     // foundation 方法，参照 Cascader 踩坑 #74）。
     let &[searchResult] = track(() =>
-        filterTreeNode && state.searchInput ? computeSearchResult(state.searchInput, entities, filterTreeNode) : null,
+        filterTreeNode && state.searchInput ? computeSearchResult(state.searchInput, entities, filterTreeNode, undefined, keyMaps) : null,
     );
 
     let &[flatNodes] = track<FlatTreeNode[]>(() =>
@@ -553,6 +562,7 @@ export function TreeSelect(&{
             treeData,
             state.expandedKeys,
             showFilteredOnly && searchResult ? searchResult.filteredShownKeys : null,
+            keyMaps,
         ),
     );
 
@@ -603,7 +613,7 @@ export function TreeSelect(&{
 
     function notifyChange() {
         if (multiple) {
-            const value = foundation.resolveValue(untrack(() => entities), checkRelation, { autoMergeValue, leafOnly });
+            const value = foundation.resolveValue(untrack(() => entities), checkRelation, { autoMergeValue, leafOnly, keyMaps });
             onChange?.(value);
         } else {
             const key = untrack(() => state).selectedKey;
@@ -619,8 +629,8 @@ export function TreeSelect(&{
             foundation.handleLoadStart(key);
             loadData(node)
                 .then((children) => {
-                    node.children = children;
-                    entities = buildKeyEntities(treeData);
+                    (node as any)[keyMaps?.children ?? 'children'] = children;
+                    entities = buildKeyEntities(treeData, keyMaps);
                     foundation.handleLoadEnd(key, true);
                     const next = isExpandControlled ? new Set([...untrack(() => state).expandedKeys, key]) : foundation.handleExpand(key);
                     onLoad?.([...untrack(() => state).loadedKeys], node);
@@ -649,11 +659,11 @@ export function TreeSelect(&{
     function disabledKeysFor(): Set<string> | undefined {
         if (!disableStrictly) return undefined;
         const ents = untrack(() => entities);
-        return new Set(Object.keys(ents).filter((k) => ents[k]?.data.disabled));
+        return new Set(Object.keys(ents).filter((k) => ents[k] && getNodeDisabled(ents[k]!.data, keyMaps)));
     }
 
     function handleSelectNode(key: string, node: TreeNodeData) {
-        if (disabled || node.disabled) return;
+        if (disabled || getNodeDisabled(node, keyMaps)) return;
         if (multiple) {
             foundation.handleCheck(key, untrack(() => entities), checkRelation, isValueControlled, disabledKeysFor());
             notifyChange();
@@ -670,7 +680,7 @@ export function TreeSelect(&{
 
     function handleSearchInput(event: Event) {
         const input = (event.target as HTMLInputElement).value;
-        foundation.handleSearch(input, untrack(() => entities), filterTreeNode);
+        foundation.handleSearch(input, untrack(() => entities), filterTreeNode, undefined, keyMaps);
         onSearch?.(input);
     }
 
@@ -784,20 +794,21 @@ export function TreeSelect(&{
 
     let &[singleSelectedLabel] = track<any>(() => {
         if (multiple || !state.selectedKey) return undefined;
-        return entities[state.selectedKey]?.data.label;
+        const entity = entities[state.selectedKey];
+        return entity ? getNodeLabel(entity.data, keyMaps) : undefined;
     });
 
     let &[selectedNodesData] = track<TreeNodeData[]>(() => {
         if (!multiple) return [];
         const keys = checkRelation === 'unRelated' ? state.independentCheckedKeys : state.checkedKeys;
-        const value = checkRelation === 'unRelated' ? [...keys] : normalizeCheckedKeysToValue(keys, entities, { autoMergeValue, leafOnly });
+        const value = checkRelation === 'unRelated' ? [...keys] : normalizeCheckedKeysToValue(keys, entities, { autoMergeValue, leafOnly, keyMaps });
         return value.map((k) => entities[k]?.data).filter((d): d is TreeNodeData => !!d);
     });
 
     let &[tagFold] = track(() => foldTags(selectedNodesData, maxTagCount));
 
     function removeTagValue(node: TreeNodeData) {
-        foundation.handleCheck(node.key, untrack(() => entities), checkRelation, isValueControlled, disabledKeysFor());
+        foundation.handleCheck(getNodeKey(node, keyMaps), untrack(() => entities), checkRelation, isValueControlled, disabledKeysFor());
         notifyChange();
     }
 
@@ -863,7 +874,7 @@ export function TreeSelect(&{
                                         <span
                                             class="lotus-tree-select-search-clear"
                                             aria-label={locale.Select.clear}
-                                            onClick={() => { foundation.handleSearch('', untrack(() => entities), filterTreeNode); onSearch?.(''); }}
+                                            onClick={() => { foundation.handleSearch('', untrack(() => entities), filterTreeNode, undefined, keyMaps); onSearch?.(''); }}
                                         >
                                             <IconClear />
                                         </span>
@@ -945,7 +956,7 @@ export function TreeSelect(&{
             >
                 {triggerRender ? (
                 <div onClick={handleTriggerClick} onKeyDown={handleTriggerKeyDown}>
-                    {triggerRender({ value: multiple ? foundation.resolveValue(entities, checkRelation, { autoMergeValue, leafOnly }) : (state.selectedKey ?? undefined), placeholder, open: isOpen, disabled })}
+                    {triggerRender({ value: multiple ? foundation.resolveValue(entities, checkRelation, { autoMergeValue, leafOnly, keyMaps }) : (state.selectedKey ?? undefined), placeholder, open: isOpen, disabled })}
                 </div>
                 ) : (
                 <div

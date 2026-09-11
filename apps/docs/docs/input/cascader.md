@@ -77,6 +77,14 @@ import { Cascader } from '@lotus/ripple';
 ../../src/demos/input/cascader/display-render.tsrx
 ```
 
+### 自定义字段名映射
+
+数据源字段名不是标准的 `value`/`label`/`children` 时，用 `keyMaps` 声明映射关系。
+
+```tsrx demo
+../../src/demos/input/cascader/key-maps.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -105,6 +113,7 @@ import { Cascader } from '@lotus/ripple';
 | filterTreeNode | 开启搜索：`true` 走内置路径文本匹配，函数则完全自定义 | `boolean \| function` | - |
 | getPopupContainer | 浮层挂载的目标容器，不传则挂载在 Popover 默认位置 | `() => HTMLElement` | - |
 | id | 触发器 id | string | - |
+| keyMaps | 自定义字段名映射，适配字段名不是 `value`/`label`/`children`/`disabled`/`isLeaf` 的数据源 | `{ value?, label?, disabled?, children?, isLeaf? }` | - |
 | leafOnly | 多选：value 只保留叶子节点路径，优先级高于 `autoMergeValue` | boolean | `false` |
 | loadData | 异步加载子节点，约定回调里自行更新 `treeData` 对应节点的 `children` | `(entity) => Promise<void>` | - |
 | max | 多选最多可选项数（按折叠后的外部 value 路径数计算），达上限后新增勾选被拦截并触发 onExceed | number | - |
@@ -135,7 +144,7 @@ import { Cascader } from '@lotus/ripple';
 | onLoadError | `loadData` 异步加载失败时的回调 | `(entity, error) => void` | - |
 | onSearch | 搜索框输入变化时的回调 | `(input: string) => void` | - |
 
-`CascaderNodeData` 结构：`{ value, label, disabled?, isLeaf?, children? }`；`ValuePath` 为 `Array<string \| number>`。
+`CascaderNodeData` 结构：`{ value, label, disabled?, isLeaf?, children? }`（传 `keyMaps` 时对应字段名可以不同）；`ValuePath` 为 `Array<string \| number>`。
 
 > 注意事项：lotus 尚未实现 Semi 的 `filterSorter`/`filterRender`/`treeNodeFilterProp` 搜索自定义、`autoClearSearchValue`、`remote` 远程搜索标记、`onChangeWithObject`、图标定制（`arrowIcon`/`clearIcon`/`expandIcon`）、`prefix`/`suffix`/`insetLabel`、浮层样式定制（`dropdownStyle`/`dropdownMargin`/`dropdownClassName`）、`defaultOpen`。这些是长尾自定义渲染能力，已标记为已知简化。
 

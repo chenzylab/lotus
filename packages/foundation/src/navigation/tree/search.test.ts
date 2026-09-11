@@ -75,4 +75,14 @@ describe('computeSearchResult', () => {
     expect(result.filteredKeys.size).toBe(0);
     expect(result.filteredShownKeys.size).toBe(0);
   });
+
+  it('传入 keyMaps 时默认匹配按自定义字段名读取 label（对齐 Semi Tree/Cascader keyMaps）', () => {
+    const customTree: TreeNodeData[] = [
+      { key: 'unused', label: 'unused', id: 'x1', name: '开发部', items: [{ key: 'unused', label: 'unused', id: 'x1a', name: '前端组' }] },
+    ];
+    const entities = buildKeyEntities(customTree, { key: 'id', children: 'items' });
+    const result = computeSearchResult('前端', entities, true, undefined, { label: 'name' });
+
+    expect(result.filteredKeys.has('x1a')).toBe(true);
+  });
 });

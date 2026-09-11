@@ -2,7 +2,7 @@ import { Foundation, type Adapter } from '../../base/adapter.js';
 import { calcCheckedKeysForChecked, calcCheckedKeysForUnchecked, calcCheckedKeys } from './check-cascade.js';
 import { computeSearchResult, type FilterTreeNode, type SearchResult } from './search.js';
 import { toggleExpanded } from './expand.js';
-import type { KeyEntities } from './tree-data.js';
+import type { KeyEntities, KeyMapProps, TreeNodeData } from './tree-data.js';
 import { normalizeCheckedKeysToValue } from './value.js';
 import { getDragNodesKeys, createInitialDragState, type TreeDragState } from './drag.js';
 
@@ -117,15 +117,15 @@ export class TreeFoundation extends Foundation<TreeState> {
   /** 三态级联算出的内部 checkedKeys 折叠成对外暴露的 value key 列表
    * （autoMergeValue/leafOnly，见 value.ts）。unRelated 模式下 value
    * 就是独立选中集合本身，不需要折叠。 */
-  resolveValue(entities: KeyEntities, checkRelation: TreeCheckRelation = 'related', options: { autoMergeValue?: boolean; leafOnly?: boolean } = {}): string[] {
+  resolveValue(entities: KeyEntities, checkRelation: TreeCheckRelation = 'related', options: { autoMergeValue?: boolean; leafOnly?: boolean; keyMaps?: KeyMapProps } = {}): string[] {
     const { checkedKeys, independentCheckedKeys } = this.getState();
     if (checkRelation === 'unRelated') return [...independentCheckedKeys];
     return normalizeCheckedKeysToValue(checkedKeys, entities, options);
   }
 
-  handleSearch(input: string, entities: KeyEntities, filterTreeNode: FilterTreeNode): SearchResult {
+  handleSearch(input: string, entities: KeyEntities, filterTreeNode: FilterTreeNode, labelOf?: (data: TreeNodeData) => string, keyMaps?: KeyMapProps): SearchResult {
     this.setState({ searchInput: input });
-    const result = computeSearchResult(input, entities, filterTreeNode);
+    const result = computeSearchResult(input, entities, filterTreeNode, labelOf, keyMaps);
     if (input) {
       const { expandedKeys } = this.getState();
       this.setState({ expandedKeys: new Set([...expandedKeys, ...result.expandedAncestorKeys]) });
