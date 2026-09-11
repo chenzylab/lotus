@@ -65,7 +65,7 @@ import { Transfer } from '@lotus/ripple';
 | renderSourceItem | 自定义可选项渲染，收到 `onChange` 回调 | `(item: ResolvedDataItem & { checked: boolean; onChange: () => void }) => any` | - |
 | renderSourcePanel | 完全自定义左侧（源）面板渲染，替换整个面板（含头部/搜索框/列表） | `(props: {...}) => any` | - |
 | showPath | 树形数据下已选项是否展示完整路径 | boolean | `false` |
-| treeProps | 透传给 `type="treeList"` 内部 Tree 组件的 props（`value`/`onChange`/`treeData` 仍由 Transfer 自己控制） | `Omit<TreeProps, 'value' \| 'onChange' \| 'treeData'>` | - |
+| treeProps | 透传给 `type="treeList"` 内部 Tree 组件的 props（`value`/`onChange`/`treeData`/`autoMergeValue` 仍由 Transfer 自己控制，`autoMergeValue` 固定为 `false`，保持内部选中态与 Tree 三态级联结果口径一致） | `Omit<TreeProps, 'value' \| 'onChange' \| 'treeData' \| 'autoMergeValue'>` | - |
 | type | 数据源结构类型 | `'list' \| 'groupList' \| 'treeList'` | `'list'` |
 | value | 受控的已选值数组 | `Array<string \| number>` | - |
 | virtualize | 已选列表虚拟滚动配置（数据量大时使用） | `{ height?: number; itemSize: number }` | - |

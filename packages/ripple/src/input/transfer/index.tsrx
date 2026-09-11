@@ -77,8 +77,12 @@ export interface TransferProps {
      * placeholder/disabled 仍由 Transfer 自己控制，不接受外部覆盖。 */
     inputProps?: Omit<InputProps, 'value' | 'onChange' | 'placeholder' | 'disabled'>;
     /** 透传给 treeList 模式内部 Tree 组件的 props（对齐 Semi treeProps），
-     * value/onChange 由 Transfer 自己控制，不接受外部覆盖。 */
-    treeProps?: Omit<TreeProps, 'value' | 'onChange' | 'treeData'>;
+     * value/onChange/treeData/autoMergeValue 由 Transfer 自己控制，不接受
+     * 外部覆盖——autoMergeValue 固定为 false，因为 Transfer 内部 selectedItems
+     * 存储的是打平的叶子/节点 key 全集，若允许 Tree 折叠成"父节点代表全子树"
+     * 会与这份状态的表示口径不一致，导致三态级联勾选后 selectedItems 缺失
+     * 被折叠掉的子孙 key（真实 bug，已在 e2e 回归验证）。 */
+    treeProps?: Omit<TreeProps, 'value' | 'onChange' | 'treeData' | 'autoMergeValue'>;
     onChange?: (values: Array<string | number>, items: ResolvedDataItem[]) => void;
     onSelect?: (item: ResolvedDataItem) => void;
     onDeselect?: (item: ResolvedDataItem) => void;
@@ -606,6 +610,7 @@ export function Transfer(&{
                                 {...(treeProps ?? {})}
                                 treeData={treeNodes}
                                 multiple
+                                autoMergeValue={false}
                                 value={treeCheckedKeys}
                                 onChange={(v: any) => handleTreeChange(Array.isArray(v) ? v : v ? [v] : [])}
                                 filterTreeNode={filter !== false ? ((input: string, label: string) => label.includes(input)) : false}
