@@ -167,4 +167,30 @@ test.describe('Rating', () => {
     await expect(group).not.toBeFocused();
     await expect(focusLog).toHaveText('blur');
   });
+
+  test('id/tabIndex：正确透传到根元素（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating onClick/onKeyDown 示例', { exact: true });
+    await expect(group).toHaveAttribute('id', 'rating-key-maps-demo');
+    await expect(group).toHaveAttribute('tabindex', '-1');
+  });
+
+  test('onClick：点击星星携带正确的 index（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating onClick/onKeyDown 示例', { exact: true });
+    const clickLog = page.getByLabel('Rating onClick 日志', { exact: true });
+
+    await group.locator('.lotus-rating-star').first().click();
+    await expect(clickLog).toHaveText('onClick index=0');
+  });
+
+  test('onKeyDown：方向键触发时透传原生键盘事件给外部回调（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const group = page.getByLabel('Rating onClick/onKeyDown 示例', { exact: true });
+    const clickLog = page.getByLabel('Rating onClick 日志', { exact: true });
+
+    await group.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(clickLog).toHaveText('onKeyDown key=ArrowRight');
+  });
 });

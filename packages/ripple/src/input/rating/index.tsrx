@@ -26,6 +26,9 @@ export interface RatingProps {
     size?: RatingSize;
     /** 挂载后是否自动聚焦（对齐 Semi autoFocus），disabled 时不生效。 */
     autoFocus?: boolean;
+    /** autoFocus 挂载时聚焦是否阻止浏览器滚动到该元素（对齐 Semi，透传给
+     * 原生 `focus({ preventScroll })`），避免自动聚焦污染页面滚动位置。 */
+    preventScroll?: boolean;
     /** 每颗星 hover 时展示的自定义提示文案（对齐 Semi tooltips），数组下标
      * 对应星的 index（0-based），不传或对应下标为空字符串时不展示提示。 */
     tooltips?: string[];
@@ -34,6 +37,13 @@ export interface RatingProps {
     onHoverChange?: (value: number | undefined) => void;
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
+    /** 原生键盘事件透传（对齐 Semi），在 Rating 内部方向键处理之后触发。 */
+    onKeyDown?: (event: KeyboardEvent) => void;
+    /** 点击某颗星时触发，携带被点击星的 index（0-based，对齐 Semi）。 */
+    onClick?: (event: MouseEvent, index: number) => void;
+    /** 自定义 Tab 键焦点顺序（对齐 Semi）。 */
+    tabIndex?: number;
+    id?: string;
     'aria-label'?: string;
     'aria-labelledby'?: string;
     'aria-describedby'?: string;
@@ -66,12 +76,17 @@ export function Rating(&{
     character,
     size = 'default',
     autoFocus = false,
+    preventScroll,
     tooltips,
     getRatingApi,
     onChange,
     onHoverChange,
     onFocus,
     onBlur,
+    onKeyDown: onKeyDownProp,
+    onClick,
+    tabIndex,
+    id,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
@@ -118,7 +133,7 @@ export function Rating(&{
 
     effect(() => {
         if (!autoFocus || disabled) return;
-        untrack(() => rootNode?.focus());
+        untrack(() => rootNode?.focus({ preventScroll }));
     });
 
     let starNodes: Array<HTMLElement | null> = [];
@@ -147,11 +162,15 @@ export function Rating(&{
         const fraction = fractionWithin(event.clientX, rect);
         const result = foundation.handleClick(index, fraction, isControlled);
         if (result.changed) onChange?.(result.value);
+        onClick?.(event, index);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
         if (disabled) return;
         if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        // 外部 onKeyDown 回调只在方向键分支内触发（对齐 Semi handleKeyDown：
+        // notifyKeyDown 只在这四个键命中时调用，其它按键完全不通知）。
+        onKeyDownProp?.(event);
         event.preventDefault();
         const result = foundation.handleKeyDown(event.key, isControlled);
         if (result?.changed) onChange?.(result.value);
@@ -189,6 +208,7 @@ export function Rating(&{
 
     <>
         <ul
+            id={id}
             class={classes}
             style={style}
             role="radiogroup"
@@ -198,7 +218,7 @@ export function Rating(&{
             aria-errormessage={ariaErrorMessage}
             aria-invalid={ariaInvalid}
             aria-required={ariaRequired}
-            tabIndex={disabled ? -1 : 0}
+            tabIndex={disabled ? -1 : (tabIndex ?? 0)}
             ref={(node: HTMLElement) => { rootNode = node; }}
             onKeyDown={handleKeyDown}
             onMouseLeave={handleMouseLeave}

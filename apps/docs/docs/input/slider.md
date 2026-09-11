@@ -49,6 +49,7 @@ import { Slider } from '@lotus/ripple';
 | --- | --- | --- | --- |
 | aria-label | 设置 aria-label 属性 | string | - |
 | aria-labelledby | 设置 aria-labelledby 属性 | string | - |
+| aria-valuetext | 静态覆盖 aria-valuetext；`getAriaValueText` 同时存在时优先级更高 | string | - |
 | class | 类名 | string | - |
 | defaultValue | 非受控模式下的默认值 | `number \| [number, number]` | `min`（`range` 时为 `[min, min]`） |
 | disabled | 是否禁用 | boolean | `false` |

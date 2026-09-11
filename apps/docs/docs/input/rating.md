@@ -68,14 +68,19 @@ import { Rating } from '@lotus/ripple';
 | defaultValue | 非受控模式下的默认值 | number | `0` |
 | disabled | 是否禁用 | boolean | `false` |
 | getRatingApi | 挂载时回调，传入 api 引用 | `(api: RatingApi) => void` | - |
+| id | 元素 id | string | - |
+| preventScroll | `autoFocus` 挂载聚焦时是否阻止浏览器滚动到该元素 | boolean | - |
 | size | 尺寸 | `'small' \| 'default' \| number` | `'default'` |
 | style | 自定义样式 | object | - |
+| tabIndex | 自定义 Tab 键焦点顺序 | number | `0` |
 | tooltips | 每颗星 hover 时展示的自定义提示文案，数组下标对应星的 index | string[] | - |
 | value | 受控值 | number | - |
 | onBlur | 失焦时的回调 | `(event: FocusEvent) => void` | - |
 | onChange | 值变化时的回调 | `(value: number) => void` | - |
+| onClick | 点击某颗星时的回调，携带被点击星的 index（0-based） | `(event: MouseEvent, index: number) => void` | - |
 | onFocus | 聚焦时的回调 | `(event: FocusEvent) => void` | - |
 | onHoverChange | hover 预览值变化时的回调 | `(value: number \| undefined) => void` | - |
+| onKeyDown | 方向键触发内部步进时透传原生键盘事件（其它按键不触发） | `(event: KeyboardEvent) => void` | - |
 
 ### RatingApi
 

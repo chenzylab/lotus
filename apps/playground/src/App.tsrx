@@ -514,6 +514,7 @@ export function App() @{
     let &[ratingHalfChangeLog] = track<string>('');
     let &[ratingControlledValue] = track<number>(3);
     let &[ratingFocusLog] = track<string>('');
+    let &[ratingClickLog] = track<string>('');
     let ratingApiRef: RatingApi | null = null;
     let &[colorPickerChangeLog] = track<string>('');
     let &[colorPickerNoAlphaValue] = track<ColorValue>({
@@ -5113,6 +5114,9 @@ export function App() @{
                     aria-label="Slider getAriaValueText 示例"
                 />
             </div>
+            <div style={{ width: '320px' }}>
+                <Slider defaultValue={30} aria-valuetext="静态覆盖文案" aria-label="Slider aria-valuetext 示例" />
+            </div>
         </Space>
 
         <Divider>Rating：基础用法</Divider>
@@ -5191,6 +5195,19 @@ export function App() @{
             <Button onClick={() => ratingApiRef?.focus()}>聚焦 Rating</Button>
             <Button onClick={() => ratingApiRef?.blur()}>失焦 Rating</Button>
             <TypographyText type="secondary" aria-label="Rating 聚焦日志">{ratingFocusLog}</TypographyText>
+        </div>
+
+        <Divider>Rating：onClick / onKeyDown / tabIndex / id（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div>
+            <Rating
+                id="rating-key-maps-demo"
+                tabIndex={-1}
+                onClick={(_e, index) => { ratingClickLog = `onClick index=${index}`; }}
+                onKeyDown={(e) => { ratingClickLog = `onKeyDown key=${e.key}`; }}
+                aria-label="Rating onClick/onKeyDown 示例"
+            />
+            <TypographyText type="secondary" aria-label="Rating onClick 日志">{ratingClickLog}</TypographyText>
         </div>
 
         <Divider>ColorPicker：基础用法（直接展开面板）</Divider>

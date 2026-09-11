@@ -45,6 +45,8 @@ export interface SliderProps {
     tooltipVisible?: boolean;
     /** 为滑块当前值提供用户友好的可访问性名称；参数 index 是 range 模式下的手柄序号（0=min，1=max）。 */
     getAriaValueText?: (value: number, index?: number) => string;
+    /** 静态覆盖 aria-valuetext；`getAriaValueText` 同时存在时优先级更高（对齐 Semi）。 */
+    'aria-valuetext'?: string;
     onChange?: (value: SliderValue) => void;
     onAfterChange?: (value: SliderValue) => void;
     onMouseUp?: (event: MouseEvent) => void;
@@ -92,6 +94,7 @@ export function Slider(&{
     tooltipOnMark = false,
     tooltipVisible,
     getAriaValueText,
+    'aria-valuetext': ariaValueText,
     onChange,
     onAfterChange,
     onMouseUp,
@@ -250,7 +253,7 @@ export function Slider(&{
     }
 
     function resolveAriaValueText(v: number, index?: number): string | undefined {
-        return getAriaValueText ? getAriaValueText(v, index) : undefined;
+        return getAriaValueText ? getAriaValueText(v, index) : ariaValueText;
     }
 
     let &[markList] = track<Array<{ value: number; percent: number; label: string; active: boolean }>>(() => {

@@ -220,4 +220,10 @@ test.describe('Slider', () => {
     const handle = page.getByLabel('Slider getAriaValueText 示例', { exact: true });
     await expect(handle).toHaveAttribute('aria-valuetext', '当前值 30 分');
   });
+
+  test('aria-valuetext：静态覆盖文案生效（getAriaValueText 未传时的回退路径，对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const handle = page.getByLabel('Slider aria-valuetext 示例', { exact: true });
+    await expect(handle).toHaveAttribute('aria-valuetext', '静态覆盖文案');
+  });
 });
