@@ -18,12 +18,12 @@ import type { PaletteTokenMap, DataSchemeTokenMap, ThemeMode } from '@visactor/v
 const paletteTokenMap: PaletteTokenMap = {
   backgroundColor: '--lotus-color-bg-0',
   borderColor: '--lotus-color-border',
-  // Semi 用独立的 --semi-grey-5/3/2 三级灰阶表达"深/中/浅"描边语义；
-  // lotus 没有单独的灰阶 token，但 text-1/text-2 本就是同一基色不同透明度
-  // 的两级深浅，border 是同一基色里最浅的一级，语义上正好构成递减的三级。
-  lineColor0: '--lotus-color-text-1',
-  lineColor1: '--lotus-color-text-2',
-  lineColor2: '--lotus-color-border',
+  // 实测安装的 @visactor/vchart@2.1.6，BuiltinColorPalette 类型定义（含新旧
+  // token 兼容映射表 newTokenToLegacyToken/legacyTokenToNewToken）里都不存在
+  // lineColor0/1/2、crosshairBackgroundColor 这几个槽位名——曾经映射过，属于
+  // 对当前运行时版本失效的幽灵配置，已删除；shadowColor/scrollBarSliderColor
+  // 才是当前版本真实存在但此前遗漏的槽位，见下方补齐。
+  shadowColor: '--lotus-color-shadow-border',
   hoverBackgroundColor: '--lotus-color-fill-0',
   sliderRailColor: '--lotus-color-fill-0',
   // Semi 固定给纯白/近白值（控件手柄需要与任意背景保持视觉对比），
@@ -39,10 +39,12 @@ const paletteTokenMap: PaletteTokenMap = {
   axisMarkerFontColor: '--lotus-color-bg-0',
   axisGridColor: '--lotus-color-border',
   axisDomainColor: '--lotus-color-text-2',
-  crosshairBackgroundColor: '--lotus-color-fill-0',
   dataZoomHandleStrokeColor: { light: '--lotus-color-fill-2' },
   dataZoomChartColor: '--lotus-color-fill-1',
   playerControllerColor: '--lotus-color-primary',
+  // scrollBarSliderColor 语义上与 sliderTrackColor（滚动条/进度条前景色）
+  // 一致，复用同一 token。
+  scrollBarSliderColor: '--lotus-color-primary',
   axisMarkerBackgroundColor: '--lotus-color-text-0',
   markLabelBackgroundColor: '--lotus-color-border',
   markLineStrokeColor: '--lotus-color-text-1',
