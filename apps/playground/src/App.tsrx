@@ -474,6 +474,7 @@ export function App() @{
     let &[selectEventLog] = track<string>('');
     let &[selectMultipleMaxValue] = track<Array<string | number>>([]);
     let &[selectLoading] = track<boolean>(false);
+    let &[selectChangeWithObjectLog] = track<string>('');
     let &[cascaderControlledValue] = track<Array<string | number>>(['zhejiang', 'hangzhou', 'xihu']);
     let &[cascaderMultipleValue] = track<Array<Array<string | number>>>([]);
     let &[cascaderChangeLog] = track<string>('');
@@ -4127,7 +4128,7 @@ export function App() @{
                     multiple
                     max={3}
                     value={selectMultipleMaxValue}
-                    onChange={(v) => { if (Array.isArray(v)) selectMultipleMaxValue = v; }}
+                    onChange={(v) => { if (Array.isArray(v)) selectMultipleMaxValue = v as typeof selectMultipleMaxValue; }}
                     onSelect={(v) => { selectEventLog = `onSelect: ${v}`; }}
                     onDeselect={(v) => { selectEventLog = `onDeselect: ${v}`; }}
                     onExceed={() => { selectEventLog = 'onExceed: 已达上限 3 项'; }}
@@ -4157,6 +4158,33 @@ export function App() @{
             <Button onClick={() => { selectLoading = !selectLoading; }}>切换 loading</Button>
             <div style={{ width: '200px' }}>
                 <Select optionList={[]} emptyContent="暂无可选业务线" aria-label="Select emptyContent 示例" />
+            </div>
+        </Space>
+
+        <Divider>Select：抽样核对 Semi 缺口补齐（onChangeWithObject / showArrow / insetLabel / autoFocus / defaultOpen 等，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '200px' }}>
+                <Select
+                    optionList={businessLineOptions}
+                    onChangeWithObject
+                    onChange={(v) => { selectChangeWithObjectLog = `onChangeWithObject: ${JSON.stringify(v)}`; }}
+                    defaultValue={{ value: 'douyin', label: '抖音' }}
+                    aria-label="Select onChangeWithObject 示例"
+                />
+                <TypographyText type="secondary" aria-label="Select onChangeWithObject 日志">{selectChangeWithObjectLog}</TypographyText>
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} showArrow={false} aria-label="Select showArrow false 示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} insetLabel="业务线：" aria-label="Select insetLabel 示例" />
+            </div>
+            <div style={{ width: '200px' }}>
+                <Select optionList={businessLineOptions} defaultOpen aria-label="Select defaultOpen 示例" />
+            </div>
+            <div style={{ width: '150px' }}>
+                <Select optionList={businessLineOptions} dropdownMatchSelectWidth={false} aria-label="Select dropdownMatchSelectWidth false 示例" />
             </div>
         </Space>
 

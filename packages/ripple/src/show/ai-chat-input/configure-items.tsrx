@@ -24,7 +24,9 @@ export function ConfigureSelect(&{ optionList, value, onChange, placeholder, cla
     <Select
         optionList={optionList}
         value={value}
-        onChange={onChange}
+        // onChangeWithObject 未开启，Select 只会用纯 value 调用 onChange，
+        // 与 ConfigureSelectProps 的窄类型签名实际兼容——类型断言是安全的。
+        onChange={onChange as (value: SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[] | undefined) => void}
         placeholder={placeholder}
         size="small"
         class={['lotus-ai-input-configure-select', className ?? ''].filter(Boolean).join(' ')}

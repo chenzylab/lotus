@@ -117,6 +117,14 @@ import { Select } from '@lotus/ripple';
 ../../src/demos/input/select/empty-content.tsrx
 ```
 
+### onChangeWithObject
+
+开启后 `onChange` 携带完整 option 对象（多选为数组）而非纯 value，`value`/`defaultValue` 也接受对象格式（对齐 Semi，双向都是对象）。
+
+```tsrx demo
+../../src/demos/input/select/change-with-object.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -127,40 +135,67 @@ import { Select } from '@lotus/ripple';
 | aria-label | 设置 aria-label 属性 | string | - |
 | aria-labelledby | 关联外部 label 的 id | string | - |
 | aria-required | 必填语义标记 | boolean | - |
+| arrowIcon | 自定义下拉箭头图标 | any | - |
+| autoClearSearchValue | 选中后是否清空搜索框内容 | boolean | true |
+| autoFocus | 挂载后是否自动聚焦，disabled 时不生效 | boolean | false |
 | borderless | 无边框模式 | boolean | false |
 | children | 组合式候选项声明：`SelectOption`/`SelectOptGroup`，与 `optionList` 并存，`optionList` 非空时优先 | any | - |
 | class | 类名 | string | - |
+| clearIcon | 自定义清除按钮图标 | any | - |
+| clickToHide | 点击弹出层及内部任一元素时是否自动关闭浮层 | boolean | - |
 | defaultActiveFirstOption | 打开下拉面板时是否默认高亮第一个可选项 | boolean | true |
-| defaultValue | 默认选中值（多选时为数组） | `SelectValue \| SelectValue[]` | - |
+| defaultOpen | 挂载时是否默认展开面板 | boolean | false |
+| defaultValue | 默认选中值（多选时为数组）；`onChangeWithObject` 时接受完整 option 对象（多选为数组） | `SelectValue \| SelectValue[] \| SelectOptionData \| SelectOptionData[]` | - |
 | disabled | 是否禁用 | boolean | false |
+| dropdownClassName | 下拉面板自定义类名 | string | - |
+| dropdownMargin | 下拉面板与触发器的间距 | number | - |
+| dropdownMatchSelectWidth | 下拉面板宽度是否匹配触发器宽度 | boolean | true |
+| dropdownStyle | 下拉面板自定义样式 | object | - |
+| ellipsisTrigger | 触发器文本是否用省略号截断 | boolean | false |
 | emptyContent | 自定义空状态内容，替代默认纯文本 | any | - |
+| expandRestTagsOnClick | 点击折叠的 "+N" 标签时是否在面板打开态展开全部已选 tag | boolean | false |
 | filter | 开启搜索过滤：`true` 走内置 label 包含匹配，函数则自定义匹配逻辑 | `boolean \| ((inputValue: string, option: SelectOptionData) => boolean)` | - |
+| getPopupContainer | 浮层挂载的目标容器 | `() => HTMLElement \| null` | - |
 | id | 触发器 id | string | - |
+| innerTopSlot / innerBottomSlot | 面板内层顶部/底部固定区域 | any | - |
+| inputProps | 透传给搜索框的 Input props | object | - |
+| insetLabel | 内嵌标签文案，渲染在触发器内部 | any | - |
+| insetLabelId | `insetLabel` 的 id，用于 aria-labelledby 关联 | string | - |
 | loading | 远程加载中态，显示 loading 指示替代选项列表 | boolean | false |
 | max | 多选最多可选项数，达上限后新增选中被拦截并触发 `onExceed` | number | - |
+| maxHeight | 下拉面板最大高度 | `string \| number` | - |
 | maxTagCount | 多选已选 tag 数量超出后折叠为 "+N"，0/不传表示不折叠 | number | - |
 | multiple | 是否多选 | boolean | false |
+| onChangeWithObject | `onChange` 回调传完整 option 对象（数组）而非 value；开启后 `value`/`defaultValue` 也须传对象格式 | boolean | false |
 | optionList | 选项列表，扁平项与 `{ label, options }` 分组项可混排；非空时优先于组合式 `children` | `SelectOptionListEntry[]` | [] |
+| outerTopSlot / outerBottomSlot | 面板外层顶部/底部固定区域 | any | - |
 | placeholder | 占位提示文字 | any | - |
 | position | 下拉浮层弹出方向 | `FloatingPosition` | "bottomLeft" |
+| preventScroll | `autoFocus` 挂载聚焦时是否阻止浏览器滚动到该元素 | boolean | - |
 | prefix | 前缀内容 | any | - |
 | remote | 远程搜索模式：不做本地过滤，仅回调 `onSearch`，由外部异步更新 `optionList` | boolean | false |
+| restTagsPopoverProps | 折叠气泡 Popover 的透传配置 | object | - |
 | searchPlaceholder | 搜索框占位文字（`filter` 开启时生效） | string | - |
 | searchPosition | 搜索框位置（`filter` 开启时生效）：`'trigger'` 叠加在触发器，`'dropdown'` 固定在面板顶部 | `'trigger' \| 'dropdown'` | "trigger" |
+| showArrow | 是否显示下拉箭头 | boolean | true |
 | showClear | 有选中值时展示清除按钮 | boolean | false |
+| showRestTagsPopover | 折叠时 "+N" 是否 hover 弹出展示被折叠的标签 | boolean | false |
 | size | 尺寸，可选 large、default、small | string | "default" |
 | style | 内联样式 | object | - |
 | suffix | 后缀内容 | any | - |
 | validateStatus | 校验状态，可选 default、error、warning，仅影响展示样式 | string | "default" |
-| value | 当前选中值（多选时为数组） | `SelectValue \| SelectValue[]` | - |
+| value | 当前选中值（多选时为数组）；`onChangeWithObject` 时接受完整 option 对象（多选为数组） | `SelectValue \| SelectValue[] \| SelectOptionData \| SelectOptionData[]` | - |
 | virtualize | 大数据量虚拟滚动配置，仅在 `optionList` 较大且无分组时需要传入（分组场景不支持虚拟滚动，同 Semi） | `{ height?: number; itemSize: number }` | - |
+| zIndex | 浮层层级 | number | - |
 | onBlur | 失去焦点时的回调 | `(event: FocusEvent) => void` | - |
-| onChange | 选中值变化时的回调 | `(value: SelectValue \| SelectValue[] \| undefined) => void` | - |
+| onChange | 选中值变化时的回调 | `(value: SelectValue \| SelectValue[] \| SelectOptionData \| SelectOptionData[] \| undefined) => void` | - |
 | onClear | 点击清除按钮时的回调 | `() => void` | - |
 | onDeselect | 多选取消某项选中时触发，携带被取消项的 value | `(value: SelectValue) => void` | - |
 | onDropdownVisibleChange | 下拉展开/收起时的回调 | `(visible: boolean) => void` | - |
 | onExceed | 多选达到 `max` 上限、新增选中被拦截时触发 | `() => void` | - |
 | onFocus | 获得焦点时的回调 | `(event: FocusEvent) => void` | - |
+| onListScroll | 下拉面板滚动时的回调 | `(event: Event) => void` | - |
+| onMouseEnter / onMouseLeave | 鼠标进入/离开触发器时的回调 | `(event: MouseEvent) => void` | - |
 | onSearch | 搜索框输入变化时的回调 | `(input: string) => void` | - |
 | onSelect | 选中某项时触发（单选/多选新增选中均触发），携带被选中项的 value——与 `onChange` 的区别是只含当次操作的单项 | `(value: SelectValue) => void` | - |
 
@@ -168,7 +203,7 @@ import { Select } from '@lotus/ripple';
 
 `SelectOption`/`SelectOptGroup` 是组合式候选项声明组件（对齐 Semi `Select.Option`/`Select.OptGroup`），不渲染任何可见 DOM，只把自身信息注册进 Select——只支持两层，`SelectOptGroup` 内不能再嵌套 `SelectOptGroup`（同 Semi）。
 
-> 注意事项：lotus 尚未实现 Semi 的 `allowCreate`（自定义新增选项）、`renderSelectedItem`/`renderOptionItem`/`triggerRender` 自定义渲染、`outerTopSlot`/`outerBottomSlot` 插槽、`getPopupContainer`/`zIndex` 浮层挂载与层级控制。这些是后续增强项。
+> 注意事项：lotus 尚未实现 Semi 的 `allowCreate`（自定义新增选项）、`renderSelectedItem`/`renderOptionItem`/`triggerRender` 自定义渲染。这些是后续增强项。
 
 ## Accessibility
 

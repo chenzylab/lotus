@@ -56,8 +56,10 @@ export interface SelectProps {
     /** 组合式候选项声明：`<Select.Option>`/`<Select.OptGroup>`（对齐 Semi
      * children 声明用法），与 `optionList` 并存，`optionList` 非空时优先。 */
     children?: any;
-    value?: SelectValue | SelectValue[];
-    defaultValue?: SelectValue | SelectValue[];
+    /** `onChangeWithObject=true` 时，接受完整 option 对象（多选为数组）
+     * 而非纯 value（对齐 Semi）。 */
+    value?: SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[];
+    defaultValue?: SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[];
     multiple?: boolean;
     disabled?: boolean;
     placeholder?: any;
@@ -102,7 +104,74 @@ export interface SelectProps {
     'aria-invalid'?: boolean;
     'aria-required'?: boolean;
     id?: string;
-    onChange?: (value: SelectValue | SelectValue[] | undefined) => void;
+    /** 挂载后是否自动聚焦（对齐 Semi autoFocus），disabled 时不生效。 */
+    autoFocus?: boolean;
+    /** 选中后是否清空搜索框内容（对齐 Semi autoClearSearchValue），默认 true。 */
+    autoClearSearchValue?: boolean;
+    /** 自定义下拉箭头图标（对齐 Semi arrowIcon）。 */
+    arrowIcon?: any;
+    /** 自定义清除按钮图标（对齐 Semi clearIcon）。 */
+    clearIcon?: any;
+    /** 是否显示下拉箭头（对齐 Semi showArrow），默认 true。 */
+    showArrow?: boolean;
+    /** 下拉面板最大高度（对齐 Semi maxHeight）。 */
+    maxHeight?: string | number;
+    /** 点击折叠的 "+N" 标签时是否展开全部已选 tag（对齐 Semi expandRestTagsOnClick）。 */
+    expandRestTagsOnClick?: boolean;
+    /** 折叠时 "+N" 是否 hover 弹出展示被折叠的标签（对齐 Semi showRestTagsPopover）。 */
+    showRestTagsPopover?: boolean;
+    /** 折叠气泡 Popover 的透传配置（对齐 Semi restTagsPopoverProps）。 */
+    restTagsPopoverProps?: Record<string, any>;
+    /** 浮层挂载的目标容器（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement | null;
+    /** 浮层层级（对齐 Semi zIndex）。 */
+    zIndex?: number;
+    /** 下拉面板自定义类名（对齐 Semi dropdownClassName）。 */
+    dropdownClassName?: string;
+    /** 下拉面板自定义样式（对齐 Semi dropdownStyle）。 */
+    dropdownStyle?: Record<string, any>;
+    /** 下拉面板与触发器的间距（对齐 Semi dropdownMargin）。 */
+    dropdownMargin?: number;
+    /** 下拉面板宽度是否匹配触发器宽度（对齐 Semi dropdownMatchSelectWidth），默认 true。 */
+    dropdownMatchSelectWidth?: boolean;
+    /** 挂载时是否默认展开面板（对齐 Semi defaultOpen）。 */
+    defaultOpen?: boolean;
+    /** 触发器文本是否用省略号截断（对齐 Semi ellipsisTrigger）。 */
+    ellipsisTrigger?: boolean;
+    /** onChange 回调传完整 option 对象（数组）而非 value（对齐 Semi onChangeWithObject）。 */
+    onChangeWithObject?: boolean;
+    /** 内嵌标签文案，渲染在触发器内部（对齐 Semi insetLabel）。 */
+    insetLabel?: any;
+    /** insetLabel 的 id，用于 aria-labelledby 关联（对齐 Semi insetLabelId）。 */
+    insetLabelId?: string;
+    /** 透传给搜索框的 Input props（对齐 Semi inputProps）。 */
+    inputProps?: Record<string, any>;
+    /** 面板外层顶部固定区域（对齐 Semi outerTopSlot）。 */
+    outerTopSlot?: any;
+    /** 面板内层顶部固定区域（对齐 Semi innerTopSlot）。 */
+    innerTopSlot?: any;
+    /** 面板外层底部固定区域（对齐 Semi outerBottomSlot）。 */
+    outerBottomSlot?: any;
+    /** 面板内层底部固定区域（对齐 Semi innerBottomSlot）。 */
+    innerBottomSlot?: any;
+    /** 点击弹出层及内部任一元素时是否自动关闭浮层（对齐 Semi clickToHide）。 */
+    clickToHide?: boolean;
+    /** autoFocus 挂载聚焦时是否阻止浏览器滚动到该元素（对齐 Semi preventScroll）。 */
+    preventScroll?: boolean;
+    /** 触发器/浮层间距微调（对齐 Popover spacing 的 Semi 同名字段透传）。 */
+    spacing?: number;
+    /** 浮层超出视口时是否自动调整弹出方向（对齐 Semi autoAdjustOverflow）。 */
+    autoAdjustOverflow?: boolean;
+    /** 浮层内容点击是否阻止事件冒泡到 document（对齐 Semi stopPropagation）。 */
+    stopPropagation?: boolean;
+    /** 更新该值可手动触发浮层重新定位（对齐 Semi rePosKey）。 */
+    rePosKey?: string | number;
+    /** hover 触发相关：进入延迟（对齐 Semi mouseEnterDelay，仅特定 trigger 场景有意义）。 */
+    mouseEnterDelay?: number;
+    /** hover 触发相关：离开延迟（对齐 Semi mouseLeaveDelay）。 */
+    mouseLeaveDelay?: number;
+    /** `onChangeWithObject=true` 时携带完整 option 对象（多选为数组）而非纯 value（对齐 Semi）。 */
+    onChange?: (value: SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[] | undefined) => void;
     /** 选中某项时触发（对齐 Semi `onSelect`）：单选/多选新增选中均触发，
      * 携带被选中项的 value——与 `onChange` 的区别是只含"当次操作的单项"，
      * 不是全量 value。 */
@@ -116,6 +185,10 @@ export interface SelectProps {
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
     onDropdownVisibleChange?: (visible: boolean) => void;
+    onMouseEnter?: (event: MouseEvent) => void;
+    onMouseLeave?: (event: MouseEvent) => void;
+    /** 下拉面板滚动时的回调（对齐 Semi onListScroll）。 */
+    onListScroll?: (event: Event) => void;
     style?: Record<string, any>;
     class?: string;
 }
@@ -231,6 +304,39 @@ export function Select(&{
     'aria-invalid': ariaInvalid,
     'aria-required': ariaRequired,
     id,
+    autoFocus = false,
+    autoClearSearchValue = true,
+    arrowIcon,
+    clearIcon,
+    showArrow = true,
+    maxHeight,
+    expandRestTagsOnClick = false,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    getPopupContainer,
+    zIndex,
+    dropdownClassName,
+    dropdownStyle,
+    dropdownMargin,
+    dropdownMatchSelectWidth = true,
+    defaultOpen = false,
+    ellipsisTrigger = false,
+    onChangeWithObject = false,
+    insetLabel,
+    insetLabelId,
+    inputProps,
+    outerTopSlot,
+    innerTopSlot,
+    outerBottomSlot,
+    innerBottomSlot,
+    clickToHide,
+    preventScroll,
+    spacing = 4,
+    autoAdjustOverflow,
+    stopPropagation,
+    rePosKey,
+    mouseEnterDelay,
+    mouseLeaveDelay,
     onChange,
     onSelect,
     onDeselect,
@@ -240,23 +346,47 @@ export function Select(&{
     onFocus,
     onBlur,
     onDropdownVisibleChange,
+    onMouseEnter,
+    onMouseLeave,
+    onListScroll,
     style,
     class: className,
 }: SelectProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
+    // onChangeWithObject 时外部 value/defaultValue/onChange 传的是完整
+    // option 对象（多选为数组），内部 state.value 永远只存纯 value——这样
+    // isSingleChecked/isMultipleChecked/选项匹配等内部逻辑完全不需要感知
+    // onChangeWithObject 是否开启，只有输入/输出的这两层转换需要处理。
+    function toInternalValue(v: SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[] | undefined): SelectValue | SelectValue[] | undefined {
+        if (v === undefined) return undefined;
+        if (!onChangeWithObject) return v as SelectValue | SelectValue[];
+        if (Array.isArray(v)) return (v as SelectOptionData[]).map((item) => item.value);
+        return (v as SelectOptionData).value;
+    }
+
+    function toExternalValue(v: SelectValue | SelectValue[] | undefined): SelectValue | SelectValue[] | SelectOptionData | SelectOptionData[] | undefined {
+        if (!onChangeWithObject || v === undefined) return v;
+        const options = untrack(() => flatOptions);
+        if (Array.isArray(v)) {
+            return v.map((itemValue) => options.find((o) => o.value === itemValue) ?? { value: itemValue });
+        }
+        return options.find((o) => o.value === v) ?? { value: v };
+    }
+
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // value 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
     let &[isControlled] = track<boolean>(() => value !== undefined);
     let &[state] = track<SelectState>({
-        value: isControlled ? value : defaultValue,
+        value: toInternalValue(isControlled ? value : defaultValue),
         searchInput: '',
     });
-    let &[isOpen] = track<boolean>(false);
+    let &[isOpen] = track<boolean>(defaultOpen);
     let &[rootNode] = track<HTMLElement | null>(null);
     let &[listNode] = track<HTMLElement | null>(null);
     let triggerInputNode: HTMLInputElement | null = null;
+    let triggerNode: HTMLElement | null = null;
     let &[scrollTop] = track<number>(0);
     // 键盘导航的虚拟焦点（aria-activedescendant 模式）：DOM 焦点始终留在
     // trigger 上，activeIndex 只是"当前高亮到 optionList 里第几项"，通过
@@ -349,6 +479,34 @@ export function Select(&{
         setState: (patch: Partial<SelectState>) => { state = { ...state, ...patch }; },
     });
 
+    effect(() => {
+        if (!autoFocus || disabled) return;
+        untrack(() => triggerNode?.focus({ preventScroll }));
+    });
+
+    // dropdownMatchSelectWidth（默认 true）：下拉面板宽度对齐触发器实测宽度
+    // （对齐 Semi _setDropdownWidth，触发器尺寸可能随内容/响应式布局变化，
+    // 用 ResizeObserver 持续测量而非只在挂载时读一次）。测量对象用 rootNode
+    // 而非 triggerNode——Popover 用 `<span class="lotus-popover-trigger">`
+    // 包裹 children（display:inline-block），triggerNode 是这个 span 的子级，
+    // 实测宽度会被 span 的"内容自然宽度"限制住而非撑满外部容器（真机验证
+    // 发现的真实 bug：一个 200px 宽的容器测出 triggerNode 宽度只有 64px）；
+    // rootNode 是 `.lotus-select` 最外层 div，直接继承调用方设置的容器宽度，
+    // 不经过这层 inline-block 包裹。
+    let &[triggerWidth] = track<number | null>(null);
+    effect(() => {
+        const node = untrack(() => rootNode);
+        if (!node || !dropdownMatchSelectWidth || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (!entry) return;
+            const width = entry.contentRect.width;
+            if (untrack(() => triggerWidth) !== width) triggerWidth = width;
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+    });
+
     // 受控身份会随 value 的 undefined↔有值 重新判定，但内部 state 只在非受控
     // 分支被写入——一旦组件经历过"非受控写入 state → 变为受控 → 又变回
     // undefined"（如 Form 字段初始 undefined、用户选择后受控、reset 又变回
@@ -358,26 +516,27 @@ export function Select(&{
     effect(() => {
         if (value !== undefined) {
             hasBeenControlled = true;
-            untrack(() => { state = { ...state, value }; });
+            untrack(() => { state = { ...state, value: toInternalValue(value) }; });
         } else if (untrack(() => hasBeenControlled)) {
             untrack(() => { state = { ...state, value: undefined }; });
         }
     });
 
-    let &[displayValue] = track<SelectValue | SelectValue[] | undefined>(() => (isControlled ? value : state.value));
+    let &[displayValue] = track<SelectValue | SelectValue[] | undefined>(() => (isControlled ? toInternalValue(value) : state.value));
 
     const handleSingleChange = (v: SelectValue | SelectValue[] | undefined) => {
-        onChange?.(v);
+        onChange?.(toExternalValue(v));
     };
     const handleMultipleChange = (v: SelectValue[]) => {
-        onChange?.(v);
+        onChange?.(toExternalValue(v));
     };
 
-    /** 统一的面板关闭出口：选中/Esc/点击外部均要清空搜索框（filter 开启时），
-     * 避免散落多处 `isOpen = false` 各自决定是否重置、遗漏其中一处。 */
+    /** 统一的面板关闭出口：选中/Esc/点击外部均要清空搜索框（filter 开启且
+     * autoClearSearchValue 未被显式关闭时），避免散落多处 `isOpen = false`
+     * 各自决定是否重置、遗漏其中一处。 */
     function closePanel() {
         isOpen = false;
-        if (filter) foundation.resetSearch();
+        if (filter && autoClearSearchValue) foundation.resetSearch();
         onDropdownVisibleChange?.(false);
     }
 
@@ -385,7 +544,7 @@ export function Select(&{
         if (option.disabled) return;
         if (multiple) {
             foundation.selectMultiple(option.value, isControlled, handleMultipleChange, { max, onExceed, onSelect, onDeselect });
-            if (filter) foundation.resetSearch();
+            if (filter && autoClearSearchValue) foundation.resetSearch();
             return;
         }
         foundation.selectSingle(option.value, isControlled, handleSingleChange, onSelect);
@@ -515,9 +674,11 @@ export function Select(&{
     });
 
     // 多选 tag 折叠：对齐 Semi maxTagCount，超出后截断显示 + "+N" 提示，
-    // 纯展示不影响实际选中值。
+    // 纯展示不影响实际选中值。expandRestTagsOnClick 时面板打开态展开全部
+    // （对齐 Semi renderMultipleSelection：expandRestTagsOnClick && isOpen
+    // 时不截断）。
     let &[visibleTagsResult] = track<{ visible: Array<{ value: SelectValue; label: any }>; restCount: number }>(() =>
-        SelectFoundation.resolveVisibleTags(selectedLabels, maxTagCount),
+        SelectFoundation.resolveVisibleTags(selectedLabels, expandRestTagsOnClick && isOpen ? undefined : maxTagCount),
     );
 
     // 单选场景专用：不在模板里对 selectedLabels 求两次值（一次在 @if 条件、一次在
@@ -559,10 +720,26 @@ export function Select(&{
                 trigger="custom"
                 visible={isOpen}
                 position={position}
-                spacing={4}
+                spacing={dropdownMargin ?? spacing}
                 closeOnEsc={true}
+                getPopupContainer={getPopupContainer}
+                zIndex={zIndex}
+                stopPropagation={stopPropagation}
+                autoAdjustOverflow={autoAdjustOverflow}
+                clickToHide={clickToHide}
+                rePosKey={rePosKey}
+                mouseEnterDelay={mouseEnterDelay}
+                mouseLeaveDelay={mouseLeaveDelay}
+                class={dropdownClassName}
+                style={{ ...(dropdownMatchSelectWidth && triggerWidth ? { width: `${triggerWidth}px` } : {}), ...(dropdownStyle ?? {}) }}
                 content={
                     <div class="lotus-select-panel" ref={(node: HTMLElement) => { listNode = node; }}>
+                        @if (outerTopSlot) {
+                            <div class="lotus-select-outer-slot">{outerTopSlot}</div>
+                        }
+                        @if (innerTopSlot) {
+                            <div class="lotus-select-inner-slot">{innerTopSlot}</div>
+                        }
                         @if (filter && searchPosition === 'dropdown') {
                             <div class="lotus-select-search-box">
                                 <IconSearch />
@@ -572,6 +749,7 @@ export function Select(&{
                                     value={state.searchInput}
                                     placeholder={searchPlaceholder}
                                     onInput={handleSearchInput}
+                                    {...(inputProps ?? {})}
                                 />
                             </div>
                         }
@@ -584,8 +762,8 @@ export function Select(&{
                                 class={['lotus-select-list', virtualize ? 'lotus-select-list-virtual' : ''].filter(Boolean).join(' ')}
                                 role="listbox"
                                 aria-multiselectable={multiple}
-                                style={virtualize ? { height: `${virtualize.height ?? 280}px` } : undefined}
-                                onScroll={virtualize ? handleVirtualScroll : undefined}
+                                style={{ ...(virtualize ? { height: `${virtualize.height ?? 280}px` } : {}), ...(maxHeight !== undefined ? { maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight } : {}) }}
+                                onScroll={(event: Event) => { if (virtualize) handleVirtualScroll(event); onListScroll?.(event); }}
                             >
                                 @if (filteredOptions.length === 0) {
                                     <li class="lotus-select-empty">{emptyContent ?? locale.Select.emptyText}</li>
@@ -643,6 +821,12 @@ export function Select(&{
                                 }
                             </ul>
                         }
+                        @if (innerBottomSlot) {
+                            <div class="lotus-select-inner-slot">{innerBottomSlot}</div>
+                        }
+                        @if (outerBottomSlot) {
+                            <div class="lotus-select-outer-slot">{outerBottomSlot}</div>
+                        }
                     </div>
                 }
             >
@@ -652,7 +836,7 @@ export function Select(&{
                     aria-expanded={isOpen}
                     aria-haspopup="listbox"
                     aria-label={ariaLabel}
-                    aria-labelledby={ariaLabelledby}
+                    aria-labelledby={insetLabelId ?? ariaLabelledby}
                     aria-describedby={ariaDescribedby}
                     aria-errormessage={ariaErrormessage}
                     aria-invalid={ariaInvalid}
@@ -660,12 +844,18 @@ export function Select(&{
                     aria-disabled={disabled}
                     aria-activedescendant={isOpen && activeIndex >= 0 ? optionDomId(activeIndex) : undefined}
                     tabIndex={disabled ? -1 : 0}
-                    class="lotus-select-trigger"
+                    class={['lotus-select-trigger', ellipsisTrigger ? 'lotus-select-trigger-ellipsis' : ''].filter(Boolean).join(' ')}
+                    ref={(node: HTMLElement) => { triggerNode = node; }}
                     onClick={handleTriggerClick}
                     onKeyDown={handleTriggerKeyDown}
                     onFocus={(event: FocusEvent) => onFocus?.(event)}
                     onBlur={(event: FocusEvent) => onBlur?.(event)}
+                    onMouseEnter={(event: MouseEvent) => onMouseEnter?.(event)}
+                    onMouseLeave={(event: MouseEvent) => onMouseLeave?.(event)}
                 >
+                    @if (insetLabel) {
+                        <span id={insetLabelId} class="lotus-select-inset-label">{insetLabel}</span>
+                    }
                     @if (prefix) {
                         <span class="lotus-select-prefix">{prefix}</span>
                     }
@@ -687,7 +877,25 @@ export function Select(&{
                                         </span>
                                     }
                                     @if (visibleTagsResult.restCount > 0) {
-                                        <span class="lotus-select-tag lotus-select-tag-rest">+{visibleTagsResult.restCount}</span>
+                                        <>
+                                        @if (showRestTagsPopover) {
+                                            <Popover
+                                                trigger="hover"
+                                                {...(restTagsPopoverProps ?? {})}
+                                                content={
+                                                    <div class="lotus-select-rest-popover">
+                                                        @for (const item of selectedLabels.slice(visibleTagsResult.visible.length); key item.value) {
+                                                            <span class="lotus-select-tag">{item.label}</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            >
+                                                <span class="lotus-select-tag lotus-select-tag-rest" onClick={(event: MouseEvent) => event.stopPropagation()}>+{visibleTagsResult.restCount}</span>
+                                            </Popover>
+                                        } @else {
+                                            <span class="lotus-select-tag lotus-select-tag-rest">+{visibleTagsResult.restCount}</span>
+                                        }
+                                        </>
                                     }
                                 </>
                             }
@@ -700,6 +908,7 @@ export function Select(&{
                                     onInput={handleSearchInput}
                                     onClick={(event: MouseEvent) => event.stopPropagation()}
                                     ref={(node: HTMLInputElement) => { triggerInputNode = node; }}
+                                    {...(inputProps ?? {})}
                                 />
                             }
                         </div>
@@ -712,6 +921,7 @@ export function Select(&{
                             onInput={handleSearchInput}
                             onClick={(event: MouseEvent) => event.stopPropagation()}
                             ref={(node: HTMLInputElement) => { triggerInputNode = node; }}
+                            {...(inputProps ?? {})}
                         />
                     } @else {
                         @if (singleSelectedLabel !== undefined) {
@@ -726,15 +936,17 @@ export function Select(&{
                             aria-label={locale.Select.clear}
                             onClick={handleClear}
                         >
-                            <IconClear />
+                            {clearIcon ?? <IconClear />}
                         </span>
                     }
                     @if (suffix) {
                         <span class="lotus-select-suffix">{suffix}</span>
                     }
-                    <span class="lotus-select-arrow">
-                        <IconChevronDown />
-                    </span>
+                    @if (showArrow) {
+                        <span class="lotus-select-arrow">
+                            {arrowIcon ?? <IconChevronDown />}
+                        </span>
+                    }
                 </div>
             </Popover>
         </div>
@@ -942,6 +1154,31 @@ export function Select(&{
             .lotus-select-tag-rest {
                 color: var(--lotus-color-text-2);
                 cursor: default;
+            }
+
+            .lotus-select-rest-popover {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                padding: 4px;
+            }
+
+            .lotus-select-outer-slot,
+            .lotus-select-inner-slot {
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-select-inset-label {
+                flex-shrink: 0;
+                color: var(--lotus-color-text-2);
+                font-size: var(--lotus-font-body-size);
+            }
+
+            .lotus-select-trigger-ellipsis .lotus-select-value,
+            .lotus-select-trigger-ellipsis .lotus-select-tags {
+                flex-wrap: nowrap;
+                overflow: hidden;
             }
 
             .lotus-select-loading {

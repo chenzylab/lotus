@@ -228,11 +228,12 @@ test.describe('Select', () => {
     const trigger = page.getByLabel('Select 分组 optionList 示例', { exact: true });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
+    const panel = page.locator('.lotus-select-panel').last();
 
-    await expect(page.locator('.lotus-select-group-label')).toHaveCount(2);
-    await expect(page.locator('.lotus-select-group-label').first()).toHaveText('短视频');
+    await expect(panel.locator('.lotus-select-group-label')).toHaveCount(2);
+    await expect(panel.locator('.lotus-select-group-label').first()).toHaveText('短视频');
 
-    await page.getByRole('option', { name: '西瓜视频' }).click();
+    await panel.getByRole('option', { name: '西瓜视频' }).click();
     await expect(trigger).toHaveText('西瓜视频');
   });
 
@@ -241,11 +242,12 @@ test.describe('Select', () => {
     const trigger = page.getByLabel('Select 分组 JSX 示例', { exact: true });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
+    const panel = page.locator('.lotus-select-panel').last();
 
-    await expect(page.locator('.lotus-select-group-label')).toHaveCount(2);
-    await expect(page.locator('.lotus-select-group-label').nth(1)).toHaveText('影像工具');
+    await expect(panel.locator('.lotus-select-group-label')).toHaveCount(2);
+    await expect(panel.locator('.lotus-select-group-label').nth(1)).toHaveText('影像工具');
 
-    await page.getByRole('option', { name: '轻颜相机' }).click();
+    await panel.getByRole('option', { name: '轻颜相机' }).click();
     await expect(trigger).toHaveText('轻颜相机');
   });
 
@@ -300,5 +302,57 @@ test.describe('Select', () => {
     await trigger.click();
 
     await expect(page.locator('.lotus-select-empty')).toHaveText('暂无可选业务线');
+  });
+
+  test('onChangeWithObject：onChange 携带完整 option 对象而非 value，defaultValue 也接受对象格式（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select onChangeWithObject 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger).toContainText('抖音');
+
+    await trigger.click();
+    await page.locator('.lotus-select-panel').last().locator('.lotus-select-option-label', { hasText: '轻颜相机' }).click();
+
+    await expect(page.getByLabel('Select onChangeWithObject 日志', { exact: true })).toHaveText(
+      'onChangeWithObject: {"value":"ulikecam","label":"轻颜相机"}',
+    );
+  });
+
+  test('showArrow=false：不渲染下拉箭头（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select showArrow false 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger.locator('.lotus-select-arrow')).toHaveCount(0);
+  });
+
+  test('insetLabel：内嵌标签渲染在触发器内部（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select insetLabel 示例', { exact: true });
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger.locator('.lotus-select-inset-label')).toHaveText('业务线：');
+  });
+
+  test('defaultOpen：挂载后默认展开面板（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Select defaultOpen 示例', { exact: true });
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('dropdownMatchSelectWidth：默认对齐触发器容器宽度，false 时按内容自适应（对齐 Semi，此前 lotus 完全没有实现；回归防护：ResizeObserver 曾测量 Popover 内层 span 包裹的触发器节点，被 inline-block 内容自然宽度限制住而非撑满外部容器，改为测量最外层根节点修复）', async ({ page }) => {
+    await page.goto('/');
+    const matchTrigger = page.getByLabel('Select onChangeWithObject 示例', { exact: true });
+    await matchTrigger.scrollIntoViewIfNeeded();
+    await matchTrigger.click();
+    const matchPanel = page.locator('.lotus-select-panel').last();
+    const matchWidth = await matchPanel.evaluate((el) => getComputedStyle(el).width);
+    expect(parseFloat(matchWidth)).toBeGreaterThan(150);
+    await page.keyboard.press('Escape');
+
+    const noMatchTrigger = page.getByLabel('Select dropdownMatchSelectWidth false 示例', { exact: true });
+    await noMatchTrigger.scrollIntoViewIfNeeded();
+    await noMatchTrigger.click();
+    const noMatchPanel = page.locator('.lotus-select-panel').last();
+    const noMatchWidth = await noMatchPanel.evaluate((el) => getComputedStyle(el).width);
+    expect(parseFloat(noMatchWidth)).toBeLessThan(150);
   });
 });
