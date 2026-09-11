@@ -94,4 +94,24 @@ test.describe('Progress', () => {
     await expect(progress).toHaveAttribute('aria-labelledby', 'progress-labelledby-demo');
     await expect(progress).toHaveAttribute('aria-valuetext', '自定义覆盖文案');
   });
+
+  test('indeterminate（line）：不设置 aria-valuenow，轨道内层带滚动动画 class（对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const line = page.getByLabel('line 不确定态进度条');
+    await expect(line).not.toHaveAttribute('aria-valuenow', /.*/);
+    const inner = line.locator('.lotus-progress-track-inner');
+    await expect(inner).toHaveClass(/lotus-progress-track-inner-indeterminate/);
+    const animationName = await inner.evaluate((el) => getComputedStyle(el).animationName);
+    expect(animationName).toContain('indeterminate-slide');
+  });
+
+  test('indeterminate（circle）：不设置 aria-valuenow，环形内层带旋转动画 class（对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const circle = page.getByLabel('circle 不确定态进度条');
+    await expect(circle).not.toHaveAttribute('aria-valuenow', /.*/);
+    const ring = circle.locator('.lotus-progress-circle-ring-inner');
+    await expect(ring).toHaveClass(/lotus-progress-circle-ring-inner-indeterminate/);
+    const animationName = await ring.evaluate((el) => getComputedStyle(el).animationName);
+    expect(animationName).toContain('indeterminate-rotate');
+  });
 });

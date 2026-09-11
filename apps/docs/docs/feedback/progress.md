@@ -37,6 +37,14 @@ import { Progress } from '@lotus/ripple';
 ../../src/demos/feedback/progress/controlled.tsrx
 ```
 
+### 不确定态
+
+`indeterminate` 开启后展示进度未知的加载动画，`line`/`circle` 均支持。开启后 `percent` 被忽略、`showInfo` 百分比文案隐藏、`aria-valuenow` 不设置（进度语义无意义）。
+
+```tsrx demo
+../../src/demos/feedback/progress/indeterminate.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -48,6 +56,7 @@ import { Progress } from '@lotus/ripple';
 | direction | 线形进度条方向 | `horizontal` \| `vertical` | `horizontal` |
 | id | id 标识 | string | - |
 | format | 自定义文案渲染函数，返回值用于展示文案；若返回字符串/数字也会同步到 `aria-valuetext` | `(percent: number) => any` | 无 |
+| indeterminate | 是否为不确定态（进度未知的加载动画），开启后 `percent` 被忽略 | boolean | `false` |
 | motion | 是否启用数值变化的 CSS 过渡动画 | boolean | `true` |
 | orbitStroke | 未完成部分（轨道）的颜色 | string | - |
 | percent | 当前百分比（0-100） | number | `0` |

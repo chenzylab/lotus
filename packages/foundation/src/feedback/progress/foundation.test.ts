@@ -44,6 +44,22 @@ describe('calcCircleGeometry', () => {
     const geo = calcCircleGeometry(72, 4, 50);
     expect(geo.strokeDashoffset).toBeCloseTo(geo.circumference / 2, 5);
   });
+
+  it('indeterminate=true 时忽略 percent，strokeDashoffset 固定为 0（对齐 Semi）', () => {
+    const geo = calcCircleGeometry(72, 4, 50, true);
+    expect(geo.strokeDashoffset).toBe(0);
+  });
+
+  it('indeterminate=true 时弧长固定为周长的 30%', () => {
+    const geo = calcCircleGeometry(72, 4, 0, true);
+    expect(geo.strokeDasharray).toBe(`${geo.circumference * 0.3} ${geo.circumference}`);
+  });
+
+  it('indeterminate=true 时 percent=100 与 percent=0 结果一致（percent 完全被忽略）', () => {
+    const a = calcCircleGeometry(72, 4, 0, true);
+    const b = calcCircleGeometry(72, 4, 100, true);
+    expect(a).toEqual(b);
+  });
 });
 
 describe('resolveGradientStroke', () => {

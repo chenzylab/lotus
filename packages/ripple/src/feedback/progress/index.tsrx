@@ -26,6 +26,9 @@ export interface ProgressProps {
     showInfo?: boolean;
     format?: (percent: number) => any;
     motion?: boolean;
+    /** 不确定态：展示进度未知的加载动画，line/circle 均支持。开启后 `percent`
+     * 被忽略、`showInfo` 百分比文案隐藏（对齐 Semi）。 */
+    indeterminate?: boolean;
     style?: Record<string, any>;
     class?: string;
     id?: string;
@@ -57,6 +60,7 @@ export function Progress(&{
     showInfo = false,
     format = DEFAULT_FORMAT,
     motion = true,
+    indeterminate = false,
     style,
     class: className,
     id,
@@ -87,6 +91,7 @@ export function Progress(&{
             `lotus-progress-size-${size}`,
             type === 'line' ? `lotus-progress-direction-${direction}` : '',
             motion ? '' : 'lotus-progress-no-motion',
+            indeterminate ? 'lotus-progress-indeterminate' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -94,7 +99,7 @@ export function Progress(&{
     );
 
     const resolvedWidth = width ?? (size === 'small' ? 24 : 72);
-    let &[geometry] = track(() => calcCircleGeometry(resolvedWidth, strokeWidth, displayPercent));
+    let &[geometry] = track(() => calcCircleGeometry(resolvedWidth, strokeWidth, displayPercent, indeterminate));
     let &[text] = track(() => format(displayPercent));
     // aria-valuetext 只接受纯文本，format 可以返回任意 JSX（Progress 展示层不限制
     // 自定义内容的复杂度）——只在 format 的返回值恰好是字符串/数字这类可以安全转
@@ -102,9 +107,12 @@ export function Progress(&{
     // 数值而非报错或读出 "[object Object]" 这类无意义内容。不设置时不能传空字符串
     // 占位——空字符串会被部分屏幕阅读器当成"显式覆盖为空白"而不是"未设置"，效果
     // 反而比不设置更差，所以用 undefined 让浏览器彻底忽略这个属性。
+    // indeterminate 时进度语义无意义，aria-valuenow/aria-valuetext 均不设置
+    // （对齐 Semi：indeterminate ? undefined : percNumber）。
     let &[ariaValueText] = track<string | undefined>(() =>
-        ariaValueTextProp ?? (typeof text === 'string' || typeof text === 'number' ? String(text) : undefined),
+        indeterminate ? undefined : (ariaValueTextProp ?? (typeof text === 'string' || typeof text === 'number' ? String(text) : undefined)),
     );
+    let &[ariaValueNow] = track<number | undefined>(() => (indeterminate ? undefined : displayPercent));
 
     <>
         @if (type === 'line') {
@@ -115,22 +123,22 @@ export function Progress(&{
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-valuenow={displayPercent}
+                aria-valuenow={ariaValueNow}
                 aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
                 aria-labelledby={ariaLabelledBy}
             >
                 <div class="lotus-progress-track" style={orbitStroke ? { backgroundColor: orbitStroke } : {}} aria-hidden={true}>
                     <div
-                        class="lotus-progress-track-inner"
+                        class={['lotus-progress-track-inner', indeterminate ? 'lotus-progress-track-inner-indeterminate' : ''].filter(Boolean).join(' ')}
                         style={{
                             background: resolvedStroke ?? '',
-                            [direction === 'horizontal' ? 'width' : 'height']: `${displayPercent}%`,
+                            ...(indeterminate ? {} : { [direction === 'horizontal' ? 'width' : 'height']: `${displayPercent}%` }),
                         }}
                         aria-hidden={true}
                     />
                 </div>
-                @if (showInfo) {
+                @if (showInfo && !indeterminate) {
                     <div class="lotus-progress-line-text">{text}</div>
                 }
             </div>
@@ -142,7 +150,7 @@ export function Progress(&{
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-valuenow={displayPercent}
+                aria-valuenow={ariaValueNow}
                 aria-valuetext={ariaValueText}
                 aria-label={ariaLabel}
                 aria-labelledby={ariaLabelledBy}
@@ -161,7 +169,7 @@ export function Progress(&{
                         cy={resolvedWidth / 2}
                     />
                     <circle
-                        class="lotus-progress-circle-ring-inner"
+                        class={['lotus-progress-circle-ring-inner', indeterminate ? 'lotus-progress-circle-ring-inner-indeterminate' : ''].filter(Boolean).join(' ')}
                         stroke-dashoffset={geometry.strokeDashoffset}
                         stroke-width={strokeWidth}
                         stroke-dasharray={geometry.strokeDasharray}
@@ -173,7 +181,7 @@ export function Progress(&{
                         cy={resolvedWidth / 2}
                     />
                 </svg>
-                @if (showInfo && size !== 'small') {
+                @if (showInfo && size !== 'small' && !indeterminate) {
                     <span class="lotus-progress-circle-text">{text}</span>
                 }
             </div>
@@ -239,6 +247,36 @@ export function Progress(&{
                 transition-duration: 0s;
             }
 
+            .lotus-progress-direction-horizontal .lotus-progress-track-inner-indeterminate {
+                width: 35%;
+                transition: none;
+                animation: lotus-progress-indeterminate-slide 1.6s ease-in-out infinite;
+            }
+
+            .lotus-progress-direction-vertical .lotus-progress-track-inner-indeterminate {
+                height: 35%;
+                width: 100%;
+                transition: none;
+                animation: lotus-progress-indeterminate-slide-vertical 1.6s ease-in-out infinite;
+            }
+
+            @keyframes lotus-progress-indeterminate-slide {
+                0% { transform: translateX(-120%); }
+                55% { transform: translateX(300%); }
+                100% { transform: translateX(300%); }
+            }
+
+            @keyframes lotus-progress-indeterminate-slide-vertical {
+                0% { transform: translateY(-120%); }
+                55% { transform: translateY(300%); }
+                100% { transform: translateY(300%); }
+            }
+
+            @keyframes lotus-progress-indeterminate-rotate {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
             .lotus-progress-line-text {
                 flex-shrink: 0;
                 font-size: var(--lotus-font-label-size);
@@ -267,6 +305,12 @@ export function Progress(&{
 
             .lotus-progress-no-motion .lotus-progress-circle-ring-inner {
                 transition-duration: 0s;
+            }
+
+            .lotus-progress-circle-ring-inner-indeterminate {
+                transform: rotate(0deg);
+                transform-origin: center;
+                animation: lotus-progress-indeterminate-rotate 1.2s linear infinite;
             }
 
             .lotus-progress-circle-text {

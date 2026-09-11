@@ -1233,6 +1233,8 @@ export function App() @{
             <Progress percent={motionProgressPercent} showInfo motion={false} aria-label="禁用动画的进度条（验证 motion=false 时 CSS transition 被禁用）" style={{ width: '100%' }} />
             <Button onClick={() => { motionProgressPercent = motionProgressPercent >= 100 ? 0 : motionProgressPercent + 20; }}>切换禁用动画的 Progress 百分比</Button>
             <Progress percent={40} id="progress-id-demo" aria-labelledby="progress-labelledby-demo" aria-valuetext="自定义覆盖文案" style={{ width: '100%' }} />
+            <Progress indeterminate aria-label="line 不确定态进度条" style={{ width: '100%' }} />
+            <Progress indeterminate type="circle" aria-label="circle 不确定态进度条" />
         </Space>
 
         <Divider>Spin</Divider>

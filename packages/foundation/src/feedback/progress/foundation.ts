@@ -24,9 +24,22 @@ export interface CircleGeometry {
   strokeDasharray: string;
 }
 
-export function calcCircleGeometry(width: number, strokeWidth: number, percent: number): CircleGeometry {
+/**
+ * `indeterminate=true` 时忽略 `percent`：弧长固定为周长的 30%（对齐 Semi
+ * `strokeDasharray = circumference*0.3 circumference`），偏移量固定为 0，
+ * 由 CSS `@keyframes` 旋转动画驱动视觉滚动，不随进度数值变化。
+ */
+export function calcCircleGeometry(width: number, strokeWidth: number, percent: number, indeterminate: boolean = false): CircleGeometry {
   const radius = (width - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
+  if (indeterminate) {
+    return {
+      radius,
+      circumference,
+      strokeDashoffset: 0,
+      strokeDasharray: `${circumference * 0.3} ${circumference}`,
+    };
+  }
   const strokeDashoffset = (1 - clampPercent(percent) / 100) * circumference;
   return {
     radius,
