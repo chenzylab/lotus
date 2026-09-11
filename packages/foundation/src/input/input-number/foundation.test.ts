@@ -220,6 +220,46 @@ describe('InputNumberFoundation.handleStep', () => {
     expect(adapter._raw().value).toBe(5);
     expect(onChange).toHaveBeenCalledWith(6);
   });
+
+  it('tiny step (< 1e-6): value actually changes, onChange fires with the real tiny value (no Semi _getPrecLen-style rounding-to-zero bug)', () => {
+    const adapter = createMockAdapter({ inputValue: '0', value: 0, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+    const onChange = vi.fn();
+    const tinyStepBounds: InputNumberBounds = { min: -Infinity, max: Infinity, step: 1e-8 };
+
+    foundation.handleStep(1, tinyStepBounds, false, false, onChange);
+
+    expect(adapter._raw().value).toBe(1e-8);
+    expect(onChange).toHaveBeenCalledWith(1e-8);
+  });
+
+  it('tiny step (< 1e-6): inputValue is written in fixed-point notation, not scientific notation', () => {
+    const adapter = createMockAdapter({ inputValue: '0', value: 0, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+    const tinyStepBounds: InputNumberBounds = { min: -Infinity, max: Infinity, step: 1e-8 };
+
+    foundation.handleStep(1, tinyStepBounds, false, false);
+
+    expect(adapter._raw().inputValue).toBe('0.00000001');
+  });
+});
+
+describe('InputNumberFoundation.formatStepValue (static)', () => {
+  it('regular numbers pass through String() unchanged', () => {
+    expect(InputNumberFoundation.formatStepValue(5)).toBe('5');
+    expect(InputNumberFoundation.formatStepValue(0.1)).toBe('0.1');
+    expect(InputNumberFoundation.formatStepValue(-3.5)).toBe('-3.5');
+  });
+
+  it('converts scientific notation from tiny numbers to fixed-point notation', () => {
+    expect(InputNumberFoundation.formatStepValue(1e-8)).toBe('0.00000001');
+    expect(InputNumberFoundation.formatStepValue(-1e-8)).toBe('-0.00000001');
+    expect(InputNumberFoundation.formatStepValue(1.5e-8)).toBe('0.000000015');
+  });
+
+  it('zero is unaffected', () => {
+    expect(InputNumberFoundation.formatStepValue(0)).toBe('0');
+  });
 });
 
 describe('InputNumberFoundation.roundToPrecision (static)', () => {

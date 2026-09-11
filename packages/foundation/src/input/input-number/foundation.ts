@@ -62,6 +62,21 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
   }
 
   /**
+   * 数值转字符串写入输入框展示，规避 `String()`/`toString()` 对绝对值 < 1e-21
+   * 或 >= 1e21 的数字按 ECMAScript 规范产出科学计数法字符串（如 `(1e-8).toString()
+   * === "1e-8"`）——步进器场景下 step 可以设得很小（如 1e-8），直接把这类字符串
+   * 写进输入框会让用户看到 "1e-8" 而非人类习惯的定点表示法 "0.00000001"。真实
+   * 触发过的场景：核对 Semi `_getPrecLen` 的科学计数法识别 bug 时验证发现，lotus
+   * 本身没有该 bug（precision 需显式传入才生效，不会被诡异舍入成 0），但受影响的
+   * 输入框展示字符串路径与 Semi 共有，一并修正。
+   */
+  static formatStepValue(value: number): string {
+    const raw = String(value);
+    if (!/e/i.test(raw)) return raw;
+    return value.toFixed(20).replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  /**
    * 根据 localeCode 推导默认货币代码（对齐 Semi `getCurrencyByLocaleCode`）：
    * 先精确匹配完整 locale，未命中再按语言前缀回退，最终兜底 USD。
    */
@@ -214,7 +229,7 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
     const base = value ?? 0;
     const effectiveStep = stepOverride ?? bounds.step;
     const next = InputNumberFoundation.roundToPrecision(InputNumberFoundation.clamp(base + direction * effectiveStep, bounds), precision);
-    const nextInputValue = String(next);
+    const nextInputValue = InputNumberFoundation.formatStepValue(next);
     if (!isControlled) {
       this.setState({ inputValue: nextInputValue, value: next });
     } else {
