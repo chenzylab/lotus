@@ -427,4 +427,54 @@ test.describe('DatePicker', () => {
     // defaultValue 为 UTC 12:00，timeZone="+09:00" 换算为该时区墙钟时间 21:00。
     await expect(input).toHaveValue('2026-01-01 21:00:00');
   });
+
+  test('startDateOffset/endDateOffset：hover 预览所在周后点击仍能正确触发 onChange（回归防护：offsetRangeStart/offsetRangeEnd 曾因写入顶层共享 state 导致日期格 DOM 节点被替换、hover 后紧随的点击丢失）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker startDateOffset 示例', { exact: true });
+    await input.click();
+
+    const panel = page.locator('.lotus-date-picker-panel');
+    await expect(panel).toBeVisible();
+
+    const day = panel.locator('.lotus-date-picker-day:not(.lotus-date-picker-day-empty)', { hasText: /^11$/ }).first();
+    // 先 hover 触发 offsetRange 预览高亮，再点击同一格——真机复现的丢失场景正是这个顺序。
+    await day.hover();
+    await expect(day).toHaveClass(/lotus-date-picker-day-inoffsetrange|lotus-date-picker-day-offset-start|lotus-date-picker-day-offset-end/);
+    await day.click();
+
+    await expect(page.getByLabel('DatePicker startDateOffset 事件日志', { exact: true })).toContainText('onChange：');
+    await expect(page.locator('.lotus-date-picker-panel')).toHaveCount(0);
+  });
+
+  test('onChangeWithDateFirst：onChange 回调参数顺序交换为 (dateString, dateObject)（对齐 Semi 默认行为，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker onChangeWithDateFirst 示例', { exact: true });
+    await input.click();
+
+    await page.locator('.lotus-date-picker-panel .lotus-date-picker-day:not(.lotus-date-picker-day-empty)', { hasText: /^5$/ }).first().click();
+    await expect(page.getByLabel('DatePicker onChangeWithDateFirst 事件日志', { exact: true })).toContainText('a="');
+  });
+
+  test('inputReadOnly：输入框只读但仍可点击展开面板（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker inputReadOnly 示例', { exact: true });
+    await expect(input).toHaveAttribute('readonly', '');
+
+    await input.click();
+    await expect(page.locator('.lotus-date-picker-panel')).toBeVisible();
+  });
+
+  test('onFocus/onBlur/onClickOutSide：焦点相关回调正确触发（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('DatePicker onFocus onBlur 示例', { exact: true });
+    const log = page.getByLabel('DatePicker onFocus onBlur 日志', { exact: true });
+
+    await input.click();
+    await expect(log).toContainText('onFocus');
+
+    // 点击外部会先后触发 onBlur 与 onClickOutSide，两者共用同一条 demo 日志，
+    // 最终展示的是最后一次写入——只需确认外部点击确实触发了这条回调链。
+    await page.mouse.click(10, 10);
+    await expect(log).toContainText(/onBlur|onClickOutSide/);
+  });
 });

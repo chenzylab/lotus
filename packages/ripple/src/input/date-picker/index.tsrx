@@ -10,6 +10,7 @@ import {
     isDateTimeType,
     isYearOrMonthType,
     emptyInsetInputValue,
+    getFullDateOffset,
     type DatePickerState,
     type DatePickerFoundationOptions,
     type PickerType,
@@ -156,12 +157,46 @@ export interface DatePickerProps {
     stopPropagation?: boolean;
     /** range 类型下，选择区间起点后面板是否自动跳转展示终点所在月（对齐 Semi autoSwitchDate，默认 true）。 */
     autoSwitchDate?: boolean;
+    /** 仅 `type="dateRange"` 生效：传入后点击任意日期格会以该日期为基准，用
+     * `startDateOffset(date)` 算出的日期作为区间起点，一次点击直接确定完整
+     * 区间（如周选择场景：点一天自动选中所在周）。hover 时同步预览偏移区间
+     * （对齐 Semi startDateOffset）。 */
+    startDateOffset?: (date: Date) => Date;
+    /** 与 `startDateOffset` 配套，计算区间终点（对齐 Semi endDateOffset）。 */
+    endDateOffset?: (date: Date) => Date;
+    /** 输入框是否只读（对齐 Semi inputReadOnly），透传给内部 Input。 */
+    inputReadOnly?: boolean;
+    /** 输入框自定义样式（对齐 Semi inputStyle），透传给内部 Input。 */
+    inputStyle?: Record<string, any>;
+    /** 触发器/浮层间距微调（对齐 Semi spacing），与 dropdownMargin 同时传入时
+     * dropdownMargin 优先（对齐既有 Popover spacing 透传惯例）。 */
+    spacing?: number;
+    /** 输入框失焦时的回调（对齐 Semi onBlur），与内部 range 焦点管理逻辑并存。 */
+    onBlur?: (event: FocusEvent) => void;
+    /** 输入框聚焦时的回调（对齐 Semi onFocus），第二参数标识 range 场景下聚焦的是起点还是终点。 */
+    onFocus?: (event: FocusEvent, rangeType: 'rangeStart' | 'rangeEnd' | false) => void;
+    /** 点击触发器/浮层以外区域时的回调（对齐 Semi onClickOutSide）。 */
+    onClickOutSide?: (event: MouseEvent) => void;
+    /** 面板最外层右侧固定区域（对齐 Semi rightSlot）。 */
+    rightSlot?: any;
+    /** 面板最外层左侧固定区域（对齐 Semi leftSlot）。 */
+    leftSlot?: any;
+    /** range 分隔符的自定义渲染内容，仅影响展示，不影响字符串解析/格式化
+     * （对齐 Semi rangeSeparatorNode）；不传则展示 rangeSeparator 原文。 */
+    rangeSeparatorNode?: any;
     'aria-labelledby'?: string;
     'aria-describedby'?: string;
     'aria-errormessage'?: string;
     'aria-invalid'?: boolean;
     'aria-required'?: boolean;
     id?: string;
+    /** onChange 回调携带的两个参数在 (value, dateString) 与 (dateString, value)
+     * 之间互换（对齐 Semi onChangeWithDateFirst；lotus 默认 (value, dateString)，
+     * Semi 的默认行为反而是 (dateString, value)——命名与实际参数顺序相反，是
+     * Semi 自己历史遗留的命名坑，核对 semi-foundation `disposeCallbackArgs`
+     * 确认过：notifyValue 是格式化字符串、notifyDate 才是 Date 对象。lotus
+     * 保留自己更直觉的默认顺序，仅提供这个开关兼容需要对齐 Semi 行为的场景）。 */
+    onChangeWithDateFirst?: boolean;
     onChange?: (value: DatePickerValue, dateString: string | string[]) => void;
     onPanelChange?: (date: Date) => void;
     /** 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 的全局默认值。
@@ -281,6 +316,9 @@ interface MonthGridProps {
     disabledDate?: (date: Date, options?: DisabledDateOptions) => boolean;
     weekdayLabels: string[];
     onDayClick: (fullDate: string) => void;
+    /** hover 某个日期格时触发，用于 startDateOffset/endDateOffset 场景下
+     * 联动顶层 state.offsetRangeStart/offsetRangeEnd 计算预览区间。 */
+    onDayHover?: (fullDate: string) => void;
     /** 自定义单个日期格渲染内容，仅替换格内文案（对齐 Semi renderDate）。 */
     renderDate?: (dayNumber: number | string, fullDate: string) => any;
     /** 自定义单个日期格完整渲染，替换整个格子内容，优先级高于 renderDate
@@ -313,6 +351,7 @@ function MonthGrid(&{
     disabledDate,
     weekdayLabels,
     onDayClick,
+    onDayHover,
     renderDate,
     renderFullDate,
     selectedDate = [],
@@ -350,8 +389,31 @@ function MonthGrid(&{
         ].filter(Boolean).join(' ');
     }
 
-    function handleClick(day: MonthDayInfo) {
-        if (!day.fullDate) return;
+    // 事件委托到容器（handleGridClick/handleGridMouseEnter，见下方渲染部分的
+    // .lotus-date-picker-weeks 绑定），不在每个日期格 <div> 上各自绑
+    // `onClick={() => handleClick(day)}` 这种内联箭头函数——offsetRangeStart/
+    // offsetRangeEnd 变化时 dayClass(day) 的返回值改变，Ripple 判定这个日期
+    // 格元素的渲染输出变化，若 onClick/onMouseEnter 是每次求值都重新创建的
+    // 闭包，会被当作"这个元素需要整体重建"处理，导致格子在 hover 后被替换成
+    // 全新 DOM 节点（真机复现：hover 触发 offsetRange 预览后，日期格元素与
+    // hover 前不是同一个节点，紧随其后的 click 因元素已被替换而丢失，
+    // mousedown 命中的是父级容器而非格子本身）。事件委托只在容器上绑一次
+    // 稳定引用，从根源上不受任何子级重渲染影响。
+    function findDayInfo(fullDate: string): MonthDayInfo | undefined {
+        for (const week of table.weeks) {
+            for (const day of week) {
+                if (day.fullDate === fullDate) return day;
+            }
+        }
+        return undefined;
+    }
+
+    function handleGridClick(event: MouseEvent) {
+        const target = (event.target as HTMLElement).closest('[data-fulldate]') as HTMLElement | null;
+        const fullDate = target?.dataset.fulldate;
+        if (!fullDate) return;
+        const day = findDayInfo(fullDate);
+        if (!day) return;
         const status = getDayStatus({
             fullDate: day.fullDate,
             todayText,
@@ -368,9 +430,13 @@ function MonthGrid(&{
         onDayClick(day.fullDate);
     }
 
-    function handleHover(day: MonthDayInfo) {
-        if (!isRange || !day.fullDate) return;
-        hoverDay = day.fullDate;
+    function handleGridMouseOver(event: MouseEvent) {
+        if (!isRange) return;
+        const target = (event.target as HTMLElement).closest('[data-fulldate]') as HTMLElement | null;
+        const fullDate = target?.dataset.fulldate;
+        if (!fullDate) return;
+        hoverDay = fullDate;
+        onDayHover?.(fullDate);
     }
 
     <>
@@ -380,7 +446,7 @@ function MonthGrid(&{
                     <div class="lotus-date-picker-weekday">{w}</div>
                 }
             </div>
-            <div class="lotus-date-picker-weeks">
+            <div class="lotus-date-picker-weeks" onClick={handleGridClick} onMouseOver={handleGridMouseOver}>
                 @for (const week of table.weeks; index wi) {
                     <div class="lotus-date-picker-week">
                         @for (const day of week; index di; key day.dayNumberFull || day.fullDate) {
@@ -388,8 +454,7 @@ function MonthGrid(&{
                                 role={day.fullDate ? 'gridcell' : undefined}
                                 tabIndex={day.fullDate ? 0 : undefined}
                                 class={dayClass(day)}
-                                onClick={() => handleClick(day)}
-                                onMouseEnter={() => handleHover(day)}
+                                data-fulldate={day.fullDate || undefined}
                             >
                                 {(day.fullDate && renderFullDate) ? renderFullDate(day.dayNumber, day.fullDate, selectedDate) : (day.fullDate && renderDate) ? renderDate(day.dayNumber, day.fullDate) : day.dayNumber}
                             </div>
@@ -608,6 +673,18 @@ export function DatePicker(&{
     preventScroll,
     stopPropagation = true,
     autoSwitchDate = true,
+    startDateOffset,
+    endDateOffset,
+    inputReadOnly,
+    inputStyle,
+    spacing,
+    onBlur: onBlurProp,
+    onFocus: onFocusProp,
+    onClickOutSide,
+    rightSlot,
+    leftSlot,
+    rangeSeparatorNode,
+    onChangeWithDateFirst = false,
     onChange,
     onPanelChange,
     timeZone,
@@ -745,7 +822,10 @@ export function DatePicker(&{
         }
         if (!onChange) return;
         if (Array.isArray(notifyValue) && notifyValue.length === 0) {
-            onChange(isRange ? [] : (multiple ? [] : null), isRange || multiple ? [] : '');
+            const emptyValue = isRange ? [] : (multiple ? [] : null);
+            const emptyDateString = isRange || multiple ? [] : '';
+            if (onChangeWithDateFirst) onChange(emptyDateString as any, emptyValue as any);
+            else onChange(emptyValue, emptyDateString);
             return;
         }
         const outValue = applyTimeZoneOut(notifyValue as DatePickerValue, untrack(() => effTimeZone));
@@ -753,7 +833,11 @@ export function DatePicker(&{
         const arr = Array.isArray(outValue) ? (outValue as Array<Date | null>) : [outValue as Date | null];
         const strs = arr.filter((d): d is Date => !!d).map((d) => foundation.localeFormat(d, token));
         const dateString = isRange ? strs : (multiple ? strs : (strs[0] ?? ''));
-        onChange(outValue, dateString as string | string[]);
+        // onChangeWithDateFirst：回调参数顺序交换为 (dateString, value)（对齐 Semi
+        // _notifyChange 的 onChangeWithDateFirst 分支——注意 Semi 命名的"date"实际
+        // 指格式化字符串，"value"指 Date 对象，与直觉相反，此处严格对齐其真实行为）。
+        if (onChangeWithDateFirst) onChange(dateString as any, outValue as any);
+        else onChange(outValue, dateString as string | string[]);
     }
 
     function handleTriggerClick() {
@@ -788,9 +872,44 @@ export function DatePicker(&{
         }
     }
 
+    // offsetRangeStart/offsetRangeEnd 不走 foundation.setState/顶层 state——
+    // Foundation 的 setState 是 `state = { ...untrack(() => state), ...patch }`
+    // 整体重新赋值，这个 state 是单个 track<DatePickerState> 大对象，任何字段
+    // 写入都会让 Ripple 判定整个 state 已变化，进而所有 `state.xxx` 读取点
+    // （包括 MonthGrid 的 pickerDate/selected 等其它 prop 表达式，即使它们的
+    // 值实际没变）在下一次渲染都要重新求值，最终导致 MonthGrid 内 `@for`
+    // 产出的日期格 DOM 节点被当作全新一轮渲染的产物（真机复现：node identity
+    // 对比确认 hover 后日期格不再是同一个 DOM 对象）。原生浏览器 click 合成
+    // 要求 mousedown/mouseup 落在同一元素上，节点被替换导致 click 事件丢失。
+    // 修复：offsetRangeStart/offsetRangeEnd 改用独立的细粒度 track 变量，
+    // 完全绕开顶层 state，hover 时只有这两个变量对应的窄依赖范围
+    // （MonthGrid 的这两个 prop 表达式）重新求值，不连带其它 state 字段的
+    // 读取者一起重跑，日期格 DOM 节点在 hover 前后保持同一对象。
+    let &[offsetRangeStart] = track<string>('');
+    let &[offsetRangeEnd] = track<string>('');
+
+    function handleDayHover(fullDate: string) {
+        if (!isRange || !startDateOffset && !endDateOffset) return;
+        offsetRangeStart = getFullDateOffset(startDateOffset, fullDate);
+        offsetRangeEnd = getFullDateOffset(endDateOffset, fullDate);
+    }
+
+    // 拆成两个具名函数（而非在 JSX 里写 `onDayClick={(fd) => handleDayClick(fd, 'left')}`
+    // 这种内联箭头函数），避免每次父组件渲染都给 MonthGrid 传入全新的
+    // onDayClick 引用——引用不稳定同样可能被 Ripple 判定为 props 变化。
+    function handleDayClickLeft(fullDate: string) {
+        handleDayClick(fullDate, 'left');
+    }
+
+    function handleDayClickRight(fullDate: string) {
+        handleDayClick(fullDate, 'right');
+    }
+
     function handleDayClick(fullDate: string, panelType: PanelType) {
         if (isRange) {
             const result = foundation.handleRangeSelected(fullDate, isControlled, effectiveNeedConfirm, {
+                startDateOffset,
+                endDateOffset,
                 onFocusChange: (focus) => foundation.setRangeInputFocus(focus),
             });
             if (result?.shouldNotify) emit(result.notifyValue);
@@ -1034,15 +1153,21 @@ export function DatePicker(&{
                 trigger="custom"
                 visible={state.visible}
                 position={position}
-                spacing={dropdownMargin ?? 4}
+                spacing={dropdownMargin ?? spacing ?? 4}
                 closeOnEsc={false}
                 getPopupContainer={getPopupContainer}
                 zIndex={zIndex}
                 autoAdjustOverflow={autoAdjustOverflow}
                 motion={motion}
                 stopPropagation={stopPropagation}
+                onClickOutSide={onClickOutSide}
                 content={
                     <div class={panelClasses} data-type={type} style={dropdownStyle} ref={(node: HTMLElement) => { panelNode = node; }}>
+                        <div class="lotus-date-picker-container">
+                        @if (leftSlot) {
+                            <div class="lotus-date-picker-left-slot">{leftSlot}</div>
+                        }
+                        <div class="lotus-date-picker-content">
                         @if (topSlot) {
                             <div class="lotus-date-picker-top-slot">{topSlot}</div>
                         }
@@ -1163,12 +1288,13 @@ export function DatePicker(&{
                                                         rangeStart={state.rangeStart}
                                                         rangeEnd={state.rangeEnd}
                                                         isRange={isRange}
-                                                        offsetRangeStart={state.offsetRangeStart}
-                                                        offsetRangeEnd={state.offsetRangeEnd}
+                                                        offsetRangeStart={offsetRangeStart}
+                                                        offsetRangeEnd={offsetRangeEnd}
                                                         rangeInputFocus={state.rangeInputFocus}
                                                         disabledDate={disabledDate ? panelDisabledDate : undefined}
                                                         weekdayLabels={weekdayLabels}
-                                                        onDayClick={(fd) => handleDayClick(fd, 'left')}
+                                                        onDayClick={handleDayClickLeft}
+                                                        onDayHover={handleDayHover}
                                                         renderDate={renderDate}
                                                         renderFullDate={renderFullDate}
                                                         selectedDate={selectedDateArray}
@@ -1236,12 +1362,13 @@ export function DatePicker(&{
                                                             rangeStart={state.rangeStart}
                                                             rangeEnd={state.rangeEnd}
                                                             isRange={isRange}
-                                                            offsetRangeStart={state.offsetRangeStart}
-                                                            offsetRangeEnd={state.offsetRangeEnd}
+                                                            offsetRangeStart={offsetRangeStart}
+                                                            offsetRangeEnd={offsetRangeEnd}
                                                             rangeInputFocus={state.rangeInputFocus}
                                                             disabledDate={disabledDate ? panelDisabledDate : undefined}
                                                             weekdayLabels={weekdayLabels}
-                                                            onDayClick={(fd) => handleDayClick(fd, 'right')}
+                                                            onDayClick={handleDayClickRight}
+                                                            onDayHover={handleDayHover}
                                                             renderDate={renderDate}
                                                             renderFullDate={renderFullDate}
                                                             selectedDate={selectedDateArray}
@@ -1268,14 +1395,19 @@ export function DatePicker(&{
                                 }
                             </div>
                         }
+                        @if (bottomSlot) {
+                            <div class="lotus-date-picker-bottom-slot">{bottomSlot}</div>
+                        }
+                        </div>
+                        @if (rightSlot) {
+                            <div class="lotus-date-picker-right-slot">{rightSlot}</div>
+                        }
+                        </div>
                         @if (effectiveNeedConfirm) {
                             <div class="lotus-date-picker-footer">
                                 <Button theme="borderless" onClick={handleCancel}>{locale.DatePicker.cancel}</Button>
                                 <Button theme="solid" onClick={handleConfirm}>{locale.DatePicker.confirm}</Button>
                             </div>
-                        }
-                        @if (bottomSlot) {
-                            <div class="lotus-date-picker-bottom-slot">{bottomSlot}</div>
                         }
                     </div>
                 }
@@ -1297,6 +1429,8 @@ export function DatePicker(&{
                             prefix={renderLabelNode()}
                             suffix={<IconCalendar />}
                             clearIcon={clearIcon}
+                            readOnly={inputReadOnly}
+                            style={inputStyle}
                             aria-label={ariaLabel}
                             aria-labelledby={ariaLabelledby}
                             aria-describedby={ariaDescribedby}
@@ -1304,10 +1438,10 @@ export function DatePicker(&{
                             aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
                             aria-required={ariaRequired}
                             getInputApi={(api) => { inputApi = api; }}
-                            onFocus={() => foundation.setRangeInputFocus('rangeStart')}
-                            onBlur={(e) => handleInputBlur(`${(e.target as HTMLInputElement).value}${rangeSeparator}${rangeRightValue}`)}
+                            onFocus={(e: FocusEvent) => { foundation.setRangeInputFocus('rangeStart'); onFocusProp?.(e, 'rangeStart'); }}
+                            onBlur={(e: FocusEvent) => { handleInputBlur(`${(e.target as HTMLInputElement).value}${rangeSeparator}${rangeRightValue}`); onBlurProp?.(e); }}
                         />
-                        <span class="lotus-date-picker-range-separator">{rangeSeparator}</span>
+                        <span class="lotus-date-picker-range-separator">{rangeSeparatorNode ?? rangeSeparator}</span>
                         <Input
                             value={rangeRightValue}
                             disabled={disabled}
@@ -1317,8 +1451,10 @@ export function DatePicker(&{
                             showClear={showClear && !insetInput}
                             placeholder={effPlaceholder}
                             clearIcon={clearIcon}
-                            onFocus={() => foundation.setRangeInputFocus('rangeEnd')}
-                            onBlur={(e) => handleInputBlur(`${rangeLeftValue}${rangeSeparator}${(e.target as HTMLInputElement).value}`)}
+                            readOnly={inputReadOnly}
+                            style={inputStyle}
+                            onFocus={(e: FocusEvent) => { foundation.setRangeInputFocus('rangeEnd'); onFocusProp?.(e, 'rangeEnd'); }}
+                            onBlur={(e: FocusEvent) => { handleInputBlur(`${rangeLeftValue}${rangeSeparator}${(e.target as HTMLInputElement).value}`); onBlurProp?.(e); }}
                             onClear={handleClear}
                         />
                     </div>
@@ -1342,8 +1478,11 @@ export function DatePicker(&{
                             aria-errormessage={ariaErrormessage}
                             aria-invalid={ariaInvalid !== undefined ? String(ariaInvalid) : undefined}
                             aria-required={ariaRequired}
+                            readOnly={inputReadOnly}
+                            style={inputStyle}
                             getInputApi={(api) => { inputApi = api; }}
-                            onBlur={(e) => handleInputBlur((e.target as HTMLInputElement).value)}
+                            onFocus={(e: FocusEvent) => onFocusProp?.(e, false)}
+                            onBlur={(e: FocusEvent) => { handleInputBlur((e.target as HTMLInputElement).value); onBlurProp?.(e); }}
                             onClear={handleClear}
                         />
                     </div>
@@ -1494,6 +1633,33 @@ export function DatePicker(&{
 
             .lotus-date-picker-bottom-slot {
                 border-top: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-date-picker-container {
+                display: flex;
+                align-items: stretch;
+            }
+
+            .lotus-date-picker-content {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .lotus-date-picker-left-slot,
+            .lotus-date-picker-right-slot {
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+            }
+
+            .lotus-date-picker-left-slot {
+                border-inline-end: 1px solid var(--lotus-color-border);
+            }
+
+            .lotus-date-picker-right-slot {
+                border-inline-start: 1px solid var(--lotus-color-border);
             }
 
             .lotus-date-picker-inset-input-wrapper {

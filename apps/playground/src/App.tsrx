@@ -508,6 +508,9 @@ export function App() @{
     let &[datePickerConfirmLog] = track<string>('');
     let &[datePickerAutoSwitchLog] = track<string>('');
     let &[datePickerTimeZoneLog] = track<string>('');
+    let &[datePickerOffsetLog] = track<string>('');
+    let &[datePickerDateFirstLog] = track<string>('');
+    let &[datePickerFocusLog] = track<string>('');
     let &[sliderChangeLog] = track<string>('');
     let &[sliderRangeChangeLog] = track<string>('');
     let &[sliderControlledValue] = track<number>(30);
@@ -5062,6 +5065,44 @@ export function App() @{
             />
             <TypographyText type="secondary" aria-label="DatePicker timeZone 事件日志">{datePickerTimeZoneLog}</TypographyText>
         </div>
+
+        <Divider>DatePicker：startDateOffset / endDateOffset（周选择场景，点一天自动选中所在周，对齐 Semi，此前 lotus 完全没有接线）</Divider>
+
+        <div style={{ width: '280px' }}>
+            <DatePicker
+                type="dateRange"
+                startDateOffset={(d) => { const r = new Date(d); r.setDate(r.getDate() - r.getDay()); return r; }}
+                endDateOffset={(d) => { const r = new Date(d); r.setDate(r.getDate() + (6 - r.getDay())); return r; }}
+                onChange={(v) => { datePickerOffsetLog = `onChange：${Array.isArray(v) ? v.map((d) => d ? (d as Date).toDateString() : 'null').join(' ~ ') : ''}`; }}
+                aria-label="DatePicker startDateOffset 示例"
+            />
+            <TypographyText type="secondary" aria-label="DatePicker startDateOffset 事件日志">{datePickerOffsetLog}</TypographyText>
+        </div>
+
+        <Divider>DatePicker：onChangeWithDateFirst / inputReadOnly / spacing / onFocus / onBlur / onClickOutSide（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '16px' }}>
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    onChangeWithDateFirst
+                    onChange={(a, b) => { datePickerDateFirstLog = `onChangeWithDateFirst：a=${JSON.stringify(a)} b=${b instanceof Date ? b.toDateString() : b}`; }}
+                    aria-label="DatePicker onChangeWithDateFirst 示例"
+                />
+                <TypographyText type="secondary" aria-label="DatePicker onChangeWithDateFirst 事件日志">{datePickerDateFirstLog}</TypographyText>
+            </div>
+            <div style={{ width: '260px' }}>
+                <DatePicker inputReadOnly defaultValue={new Date('2026-01-01')} aria-label="DatePicker inputReadOnly 示例" />
+            </div>
+            <div style={{ width: '260px' }}>
+                <DatePicker
+                    onFocus={(_e, rangeType) => { datePickerFocusLog = `onFocus rangeType=${rangeType}`; }}
+                    onBlur={() => { datePickerFocusLog = 'onBlur'; }}
+                    onClickOutSide={() => { datePickerFocusLog = 'onClickOutSide'; }}
+                    aria-label="DatePicker onFocus onBlur 示例"
+                />
+                <TypographyText type="secondary" aria-label="DatePicker onFocus onBlur 日志">{datePickerFocusLog}</TypographyText>
+            </div>
+        </Space>
 
         <Divider>Slider：基础用法</Divider>
 

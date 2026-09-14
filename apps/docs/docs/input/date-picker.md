@@ -73,6 +73,14 @@ import { DatePicker } from '@lotus/ripple';
 ../../src/demos/input/date-picker/trigger-render.tsrx
 ```
 
+### 按周选择
+
+`startDateOffset`/`endDateOffset` 传入函数时，鼠标 hover 某一天会预览把该天扩展成 `[startDateOffset(day), endDateOffset(day)]` 区间，点击后直接提交扩展后的完整区间——典型场景是"点任意一天自动选中所在周"。
+
+```tsrx demo
+../../src/demos/input/date-picker/offset.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -101,18 +109,24 @@ import { DatePicker } from '@lotus/ripple';
 | dropdownClassName | 浮层内容自定义类名 | string | - |
 | dropdownMargin | 浮层与触发器的间距微调 | number | - |
 | dropdownStyle | 浮层内容自定义样式 | object | - |
+| endDateOffset | 与 startDateOffset 搭配，计算预览/提交区间的结束日期 | `(date: Date) => Date` | - |
 | endYear | 年份滚轮结束年份 | number | - |
 | format | 输入框显示的日期格式 | string | - |
 | getPopupContainer | 浮层挂载的目标容器，不传则挂载在 Popover 默认位置 | `() => HTMLElement` | - |
 | hideDisabledOptions | 时间列表隐藏禁用项而非置灰显示 | boolean | `false` |
 | id | 触发器 id | string | - |
+| inputProps | 透传给触发器 Input 的 props | object | - |
+| inputReadOnly | 输入框只读（不可手动编辑文本），仍可点击展开面板 | boolean | `false` |
+| inputStyle | 触发器 Input 的自定义样式 | object | - |
 | insetInput | 面板内直接输入日期（分段 Input），而非只能点选；开启后触发器本身视觉禁用（不可手动编辑），焦点转移到面板内输入框 | boolean | `false` |
 | insetLabel | 内嵌标签文案，渲染在输入框内部；与 prefix 同时传入时 prefix 优先 | any | - |
 | insetLabelId | insetLabel 关联的 id | string | - |
+| leftSlot / rightSlot | 触发器左右两侧的自定义内容 | any | - |
 | max | `multiple` 模式下最多可选数量 | number | - |
 | motion | 面板展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
 | multiple | 是否允许多选（`type="date"` 下生效） | boolean | `false` |
 | needConfirm | 范围/多选类型是否需要点击确认按钮才提交 | boolean | - |
+| onChangeWithDateFirst | 开启后 `onChange` 回调参数顺序交换为 `(dateString, dateObject)`（对齐 Semi 默认行为），默认 lotus 顺序为 `(value, dateString)` | boolean | `false` |
 | open | 受控的面板展开状态 | boolean | - |
 | placeholder | 占位提示文字 | string | - |
 | position | 下拉浮层弹出方向 | `FloatingPosition` | - |
@@ -121,10 +135,13 @@ import { DatePicker } from '@lotus/ripple';
 | presets | 快捷预设选项 | `PresetType[]` | - |
 | presetPosition | 快捷预设区域位置 | `'left' \| 'right' \| 'top' \| 'bottom'` | - |
 | rangeSeparator | 范围类型输入框内两端日期的分隔符 | string | - |
+| rangeSeparatorNode | 范围类型输入框内两端日期分隔符的自定义渲染，优先级高于 rangeSeparator | any | - |
 | renderDate | 自定义单个日期格渲染内容，仅替换格内文案 | `(dayNumber, fullDate) => any` | - |
 | renderFullDate | 自定义单个日期格完整渲染，替换整个格子内容，优先级高于 renderDate | `(dayNumber, fullDate, selectedDate) => any` | - |
 | showClear | 有选中值时展示清除按钮 | boolean | `false` |
 | size | 尺寸 | string | - |
+| spacing | 浮层与触发器的间距，未传时回退到 dropdownMargin | number | - |
+| startDateOffset | 传入函数后，hover/点击某一天会预览并提交扩展成 `[startDateOffset(day), endDateOffset(day)]` 的区间（仅 dateRange 生效），典型场景是点任意一天自动选中所在周 | `(date: Date) => Date` | - |
 | startYear | 年份滚轮起始年份 | number | - |
 | stopPropagation | 浮层内容点击是否阻止事件冒泡到 document | boolean | `true` |
 | style | 自定义样式 | object | - |
@@ -140,9 +157,12 @@ import { DatePicker } from '@lotus/ripple';
 | value | 受控值 | `DatePickerValue` | - |
 | weekStartsOn | 周起始日 | `WeekStartNumber` | - |
 | zIndex | 浮层层级，不传由 CSS 层级 token 控制 | number | - |
+| onBlur | 触发器失去焦点时的回调 | `(event: FocusEvent, rangeType?: 'rangeStart' \| 'rangeEnd') => void` | - |
 | onCancel | needConfirm 模式下点击取消按钮时触发 | `() => void` | - |
-| onChange | 值变化时的回调，同时给出格式化后的字符串 | `(value, dateString) => void` | - |
+| onChange | 值变化时的回调，同时给出格式化后的字符串（onChangeWithDateFirst 开启后两个参数顺序交换） | `(value, dateString) => void` | - |
+| onClickOutSide | 点击触发器与浮层以外区域时触发 | `() => void` | - |
 | onConfirm | needConfirm 模式下点击确认按钮时触发，携带最终提交的值 | `(value: DatePickerValue) => void` | - |
+| onFocus | 触发器获得焦点时的回调 | `(event: FocusEvent, rangeType?: 'rangeStart' \| 'rangeEnd') => void` | - |
 | onOpenChange | 面板展开/收起时的回调 | `(open: boolean) => void` | - |
 | onPanelChange | 面板翻月/翻年时的回调 | `(date: Date) => void` | - |
 | onPresetClick | 点击快捷预设时的回调 | `(item: PresetType) => void` | - |
