@@ -502,6 +502,7 @@ export function App() @{
     let &[timePickerControlledValue] = track<Date | null>(null);
     let &[timePickerFocusBlurLog] = track<string>('');
     let &[timePickerTimeZoneLog] = track<string>('');
+    let &[timePickerDateFirstLog] = track<string>('');
     let &[datePickerChangeLog] = track<string>('');
     let &[datePickerRangeChangeLog] = track<string>('');
     let &[datePickerControlledValue] = track<Date | null>(new Date(2024, 2, 5));
@@ -4830,6 +4831,25 @@ export function App() @{
                 aria-label="TimePicker timeZone 示例"
             />
             <TypographyText type="secondary" aria-label="TimePicker timeZone 事件日志">{timePickerTimeZoneLog}</TypographyText>
+        </div>
+
+        <Divider>TimePicker：panelHeader/panelFooter + popupClassName/popupStyle + inputStyle/insetLabelId + onChangeWithDateFirst + motion=false（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '240px' }}>
+            <TimePicker
+                panelHeader="选择时间"
+                panelFooter="确认后自动收起"
+                popupClassName="playground-time-picker-popup-demo"
+                popupStyle={{ border: '1px dashed var(--lotus-color-primary)' }}
+                inputStyle={{ fontStyle: 'italic' }}
+                insetLabel="时间"
+                insetLabelId="time-picker-inset-label-demo"
+                motion={false}
+                onChangeWithDateFirst
+                onChange={(a, b) => { timePickerDateFirstLog = `onChangeWithDateFirst：a=${JSON.stringify(a)} b=${b instanceof Date ? b.toTimeString().slice(0, 8) : b}`; }}
+                aria-label="TimePicker panelHeader 示例"
+            />
+            <TypographyText type="secondary" aria-label="TimePicker panelHeader 事件日志">{timePickerDateFirstLog}</TypographyText>
         </div>
 
         <Divider>DatePicker：基础用法（type=date）</Divider>

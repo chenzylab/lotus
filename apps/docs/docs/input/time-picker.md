@@ -67,9 +67,16 @@ import { TimePicker } from '@lotus/ripple';
 | hideDisabledOptions | 是否隐藏（而非置灰）禁用项 | boolean | `false` |
 | hourStep / minuteStep / secondStep | 时/分/秒滚轮步长 | number | - |
 | insetLabel | 内嵌标签文案，渲染在输入框内部（桥接到 Input 的 prefix） | any | - |
+| insetLabelId | insetLabel 关联的 id，用于 aria-labelledby | string | - |
 | inputReadOnly | 输入框是否只读，阻止软键盘弹出等移动端场景 | boolean | `false` |
+| inputStyle | 输入框自定义样式 | object | - |
+| motion | 浮层展开/收起是否带 fade+scale 过渡动画 | boolean | `true` |
+| onChangeWithDateFirst | 开启后 `onChange` 回调参数顺序交换为 `(dateString, dateObject)`（对齐 Semi 默认行为），默认 lotus 顺序为 `(value, dateString)` | boolean | `false` |
 | open | 受控的面板展开状态 | boolean | - |
+| panelHeader / panelFooter | 面板顶部/底部自定义内容，`timeRange` 下传数组分别指定左右两侧，不传则该面板不展示 | `any \| [any, any]` | - |
 | placeholder | 占位提示文字 | string | - |
+| popupClassName | 浮层内容自定义类名 | string | - |
+| popupStyle | 浮层内容自定义样式 | object | - |
 | position | 下拉浮层弹出方向 | `FloatingPosition` | - |
 | preventScroll | 聚焦时是否阻止浏览器自动滚动到视口，配合 `focusOnOpen` 使用 | boolean | - |
 | rangeSeparator | 范围类型输入框内两端时间的分隔符 | string | - |
@@ -86,7 +93,7 @@ import { TimePicker } from '@lotus/ripple';
 | value | 受控值 | `TimePickerValue \| [TimePickerValue, TimePickerValue]` | - |
 | zIndex | 浮层层级 | number | - |
 | onBlur | 输入框失焦时的回调 | `(event: FocusEvent) => void` | - |
-| onChange | 值变化时的回调 | `(value: Date \| null \| [Date \| null, Date \| null]) => void` | - |
+| onChange | 值变化时的回调，同时给出格式化后的字符串（`onChangeWithDateFirst` 开启后两个参数顺序交换） | `(value, dateString) => void` | - |
 | onClear | 点击清除按钮时的回调 | `() => void` | - |
 | onFocus | 输入框聚焦时的回调 | `(event: FocusEvent) => void` | - |
 | onOpenChange | 面板展开/收起时的回调 | `(open: boolean) => void` | - |

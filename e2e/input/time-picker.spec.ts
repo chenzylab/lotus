@@ -228,4 +228,35 @@ test.describe('TimePicker', () => {
     // 的偏移关系保持一致：22:00（+09:00 视角）= UTC 13:00。
     await expect(page.getByLabel('TimePicker timeZone 事件日志')).toContainText('2026-01-01T13:');
   });
+
+  test('panelHeader/panelFooter + popupClassName/popupStyle + inputStyle/insetLabelId + onChangeWithDateFirst + motion=false（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('TimePicker panelHeader 示例', { exact: true });
+    await input.scrollIntoViewIfNeeded();
+
+    // insetLabelId 关联的 span 正确渲染标签文案。
+    await expect(page.locator('#time-picker-inset-label-demo')).toHaveText('时间');
+    // inputStyle 落在 Input 的 wrapper 容器上。
+    const wrapper = input.locator('xpath=ancestor::div[contains(@class,"lotus-input-wrapper")]');
+    await expect(wrapper).toHaveCSS('font-style', 'italic');
+
+    await input.click();
+    const panel = page.locator('.lotus-time-picker-panel');
+    await expect(panel).toBeVisible();
+    // popupClassName/popupStyle 透传到面板容器。
+    await expect(panel).toHaveClass(/playground-time-picker-popup-demo/);
+    await expect(panel).toHaveCSS('border-style', 'dashed');
+    // panelHeader/panelFooter 渲染在滚动列表内部。
+    await expect(panel.locator('.lotus-scroll-list-header')).toHaveText('选择时间');
+    await expect(panel.locator('.lotus-scroll-list-footer')).toHaveText('确认后自动收起');
+    // motion=false：浮层没有过渡动画的 enter class。
+    const popover = page.locator('.lotus-popover').filter({ has: panel });
+    await expect(popover).not.toHaveClass(/lotus-popover-enter/);
+
+    const hourOption = panel.locator('[role="option"]').filter({ hasText: /^05时$/ }).first();
+    await hourOption.click();
+
+    // onChangeWithDateFirst：回调参数顺序交换为 (dateString, value)，a 是字符串。
+    await expect(page.getByLabel('TimePicker panelHeader 事件日志')).toContainText('a="');
+  });
 });

@@ -61,7 +61,14 @@ export interface TimePickerProps {
     disabledTime?: (dates: Date[], panelType?: 'left' | 'right') => DisabledTimeRules | undefined;
     hideDisabledOptions?: boolean;
     rangeSeparator?: string;
-    onChange?: (value: Date | null | [Date | null, Date | null]) => void;
+    /** onChange 回调参数顺序交换为 (dateString, value)（对齐 Semi
+     * onChangeWithDateFirst；lotus 默认 (value, dateString)，核对
+     * semi-foundation `_notifyChange` 确认过 Semi 自己默认值 true 的实际
+     * 顺序反而是 (value, dateString)——命名与实际参数顺序相反，是 Semi
+     * 历史遗留的命名坑，同 DatePicker 已核实的结论。lotus 保留自己更直觉
+     * 的默认顺序，仅提供这个开关兼容需要 (dateString, value) 顺序的场景）。 */
+    onChangeWithDateFirst?: boolean;
+    onChange?: (value: Date | null | [Date | null, Date | null] | string | string[], dateString: string | string[]) => void;
     onClear?: () => void;
     /** 完全自定义触发器渲染，替换默认 Input（对齐 Semi triggerRender）；
      * 不传时用内置 Input 触发器。 */
@@ -76,6 +83,8 @@ export interface TimePickerProps {
     stopPropagation?: boolean;
     /** 挂载时是否自动聚焦并全选输入框内容（对齐 Semi focusOnOpen）。 */
     focusOnOpen?: boolean;
+    /** 浮层展开/收起是否带 fade+scale 过渡动画（对齐 Semi motion，默认开启）。 */
+    motion?: boolean;
     /** 聚焦时是否阻止浏览器自动滚动到视口，透传给原生 focus() 同名选项
      * （对齐 Semi preventScroll，配合 focusOnOpen 使用）。 */
     preventScroll?: boolean;
@@ -87,8 +96,21 @@ export interface TimePickerProps {
     inputReadOnly?: boolean;
     /** 内嵌标签文案，渲染在输入框内部（对齐 Semi insetLabel，桥接到 Input 的 prefix）。 */
     insetLabel?: any;
+    /** insetLabel 关联的 id，用于 aria-labelledby（对齐 Semi insetLabelId）。 */
+    insetLabelId?: string;
+    /** 输入框自定义样式（对齐 Semi inputStyle），透传给内部 Input。 */
+    inputStyle?: Record<string, any>;
     /** 原样透传给每一列（时/分/秒/AM-PM）ScrollItem 的 props（对齐 Semi scrollItemProps）。 */
     scrollItemProps?: Partial<ScrollItemProps<number | 'AM' | 'PM'>>;
+    /** 面板顶部自定义内容（对齐 Semi panelHeader）。timeRange 下传数组分别指定左右两侧，
+     * 不传则该面板不展示；传单个值时两侧面板共用同一内容。 */
+    panelHeader?: any | [any, any];
+    /** 面板底部自定义内容（对齐 Semi panelFooter），传值规则同 panelHeader。 */
+    panelFooter?: any | [any, any];
+    /** 浮层内容自定义类名（对齐 Semi popupClassName）。 */
+    popupClassName?: string;
+    /** 浮层内容自定义样式（对齐 Semi popupStyle）。 */
+    popupStyle?: Record<string, any>;
     /** 时区（IANA 名/`GMT±HH:00`/数值小时偏移），未传时读取 ConfigProvider 的全局默认值。
      * 语义对齐 Semi：组件内部始终按“本机墙钟时间”保存 state，value 传入与 onChange 传出
      * 这两个边界把 timeZone 时刻与本机时刻做互转（不是整体切换显示时区）。 */
@@ -142,6 +164,10 @@ export interface ColumnsProps {
     triggerLabel: string;
     onSelect: (h: number, m: number, s: number) => void;
     scrollItemProps?: Partial<ScrollItemProps<number | 'AM' | 'PM'>>;
+    /** 面板顶部/底部自定义内容，透传给内部 ScrollList 的 header/footer
+     * （对齐 Semi panelHeader/panelFooter，渲染在滚动列表内部而非整个浮层外层）。 */
+    panelHeader?: any;
+    panelFooter?: any;
     class?: string;
 }
 
@@ -168,6 +194,8 @@ export function TimeColumns(&{
     triggerLabel,
     onSelect,
     scrollItemProps,
+    panelHeader,
+    panelFooter,
     class: className,
 }: ColumnsProps) @{
     let &[spec] = track(() => parseFormatSpec(format));
@@ -226,7 +254,7 @@ export function TimeColumns(&{
         commit(h, current.getMinutes(), current.getSeconds());
     }
 
-    <ScrollList class={className} bodyHeight={224}>
+    <ScrollList class={className} bodyHeight={224} header={panelHeader} footer={panelFooter}>
         @if (use12Hours) {
             <ScrollItem
                 mode="normal"
@@ -302,6 +330,7 @@ export function TimePicker(&{
     disabledTime,
     hideDisabledOptions = false,
     rangeSeparator = ' ~ ',
+    onChangeWithDateFirst = false,
     onChange,
     onClear,
     triggerRender,
@@ -310,18 +339,31 @@ export function TimePicker(&{
     dropdownMargin,
     stopPropagation = true,
     focusOnOpen = false,
+    motion = true,
     preventScroll,
     onFocus,
     onBlur,
     clearIcon,
     inputReadOnly = false,
     insetLabel,
+    insetLabelId,
+    inputStyle,
     scrollItemProps,
+    panelHeader,
+    panelFooter,
+    popupClassName,
+    popupStyle,
     timeZone,
     'aria-label': ariaLabel,
     style,
     class: className,
 }: TimePickerProps) @{
+    function panelHeaderAt(index: 0 | 1): any {
+        return Array.isArray(panelHeader) ? panelHeader[index] : panelHeader;
+    }
+    function panelFooterAt(index: 0 | 1): any {
+        return Array.isArray(panelFooter) ? panelFooter[index] : panelFooter;
+    }
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
     const configTracked = ConfigContext.get();
@@ -377,10 +419,20 @@ export function TimePicker(&{
     });
 
     function notify(pair: TimePickerPair) {
+        if (!onChange) return;
         const outPair: TimePickerPair = isValidTimeZone(untrack(() => effTimeZone))
             ? [pair[0] ? zonedTimeToUtc(pair[0], untrack(() => effTimeZone) as string | number) : null, pair[1] ? zonedTimeToUtc(pair[1], untrack(() => effTimeZone) as string | number) : null]
             : pair;
-        onChange?.(isRange ? outPair : outPair[0]);
+        const outValue = isRange ? outPair : outPair[0];
+        const fmt = (d: Date | null) => (d ? formatTime({ hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() }, untrack(() => effFormat)) : null);
+        const strs = [fmt(outPair[0]), fmt(outPair[1])].filter((s): s is string => s !== null);
+        const dateString = isRange ? strs : (strs[0] ?? '');
+        // onChangeWithDateFirst：回调参数顺序交换为 (dateString, value)（对齐
+        // Semi TimePickerFoundation._notifyChange 的分支——命名与实际参数顺序
+        // 相反的历史遗留坑，同 DatePicker 已核实的结论）。lotus 保留自己更
+        // 直觉的默认顺序 (value, dateString)，仅提供开关兼容 Semi 场景。
+        if (onChangeWithDateFirst) onChange(dateString, outValue as any);
+        else onChange(outValue, dateString);
     }
 
     function handleTriggerClick() {
@@ -504,8 +556,13 @@ export function TimePicker(&{
                 getPopupContainer={getPopupContainer}
                 zIndex={zIndex}
                 stopPropagation={stopPropagation}
+                motion={motion}
                 content={
-                    <div class="lotus-time-picker-panel" ref={(node: HTMLElement) => { panelNode = node; }}>
+                    <div
+                        class={['lotus-time-picker-panel', popupClassName ?? ''].filter(Boolean).join(' ')}
+                        style={popupStyle}
+                        ref={(node: HTMLElement) => { panelNode = node; }}
+                    >
                         @if (isRange) {
                             <div class="lotus-time-picker-lists">
                                 <TimeColumns
@@ -530,6 +587,8 @@ export function TimePicker(&{
                                     triggerLabel={locale.TimePicker.begin}
                                     onSelect={(h, m, s) => handleColumnSelect(0, h, m, s)}
                                     scrollItemProps={scrollItemProps}
+                                    panelHeader={panelHeaderAt(0)}
+                                    panelFooter={panelFooterAt(0)}
                                     class="lotus-time-picker-list-left"
                                 />
                                 <TimeColumns
@@ -554,6 +613,8 @@ export function TimePicker(&{
                                     triggerLabel={locale.TimePicker.end}
                                     onSelect={(h, m, s) => handleColumnSelect(1, h, m, s)}
                                     scrollItemProps={scrollItemProps}
+                                    panelHeader={panelHeaderAt(1)}
+                                    panelFooter={panelFooterAt(1)}
                                     class="lotus-time-picker-list-right"
                                 />
                             </div>
@@ -580,6 +641,8 @@ export function TimePicker(&{
                                 triggerLabel={locale.TimePicker.hourLabel}
                                 onSelect={(h, m, s) => handleColumnSelect(0, h, m, s)}
                                 scrollItemProps={scrollItemProps}
+                                panelHeader={panelHeaderAt(0)}
+                                panelFooter={panelFooterAt(0)}
                             />
                         }
                     </div>
@@ -596,9 +659,10 @@ export function TimePicker(&{
                             borderless={borderless}
                             showClear={showClear}
                             clearIcon={clearIcon}
-                            prefix={insetLabel}
+                            prefix={insetLabel ? <span id={insetLabelId}>{insetLabel}</span> : undefined}
                             placeholder={effPlaceholder}
                             suffix={<IconClock />}
+                            style={inputStyle}
                             aria-label={ariaLabel}
                             onChange={handleInputChange}
                             onFocus={handleInputFocus}
