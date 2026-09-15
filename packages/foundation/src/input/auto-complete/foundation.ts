@@ -26,16 +26,29 @@ export function normalizeOptions(data: AutoCompleteDataItem[]): AutoCompleteOpti
 }
 
 /** 根据当前 inputValue 在候选项里找精确匹配的索引（打开面板/defaultActiveFirstOption
- * 时用来决定初始高亮项），找不到返回 -1。 */
-export function findMatchedOptionIndex(options: AutoCompleteOptionItem[], inputValue: AutoCompleteValue | undefined): number {
+ * 时用来决定初始高亮项），找不到返回 -1。传入 renderSelectedItem 时按它算出的
+ * 回填值匹配而非 option.value（对齐 Semi `_modifyFocusIndex`：自定义了
+ * renderSelectedItem 后，输入框里的文本是回填值而非原始 value，仍按 value
+ * 匹配会导致选中项打开面板后匹配不上、不高亮）。 */
+export function findMatchedOptionIndex(
+  options: AutoCompleteOptionItem[],
+  inputValue: AutoCompleteValue | undefined,
+  renderSelectedItem?: (option: AutoCompleteOptionItem) => string,
+): number {
   if (inputValue === undefined) return -1;
+  if (renderSelectedItem) return options.findIndex((o) => renderSelectedItem(o) === inputValue);
   return options.findIndex((o) => String(o.value) === String(inputValue));
 }
 
 /** 打开面板时的初始高亮索引：优先精确匹配当前 inputValue，否则
  * defaultActiveFirstOption 时高亮第一个非 disabled 项，否则不高亮。 */
-export function computeInitialFocusIndex(options: AutoCompleteOptionItem[], inputValue: AutoCompleteValue | undefined, defaultActiveFirstOption: boolean): number {
-  const matched = findMatchedOptionIndex(options, inputValue);
+export function computeInitialFocusIndex(
+  options: AutoCompleteOptionItem[],
+  inputValue: AutoCompleteValue | undefined,
+  defaultActiveFirstOption: boolean,
+  renderSelectedItem?: (option: AutoCompleteOptionItem) => string,
+): number {
+  const matched = findMatchedOptionIndex(options, inputValue, renderSelectedItem);
   if (matched >= 0 && !options[matched]!.disabled) return matched;
   if (!defaultActiveFirstOption) return -1;
   return options.findIndex((o) => !o.disabled);
@@ -71,10 +84,10 @@ export class AutoCompleteFoundation extends Foundation<AutoCompleteState> {
     super(adapter);
   }
 
-  open(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean): void {
+  open(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean, renderSelectedItem?: (option: AutoCompleteOptionItem) => string): void {
     const { inputValue, visible } = this.getState();
     if (visible) return;
-    const focusIndex = computeInitialFocusIndex(options, inputValue, defaultActiveFirstOption);
+    const focusIndex = computeInitialFocusIndex(options, inputValue, defaultActiveFirstOption, renderSelectedItem);
     this.setState({ visible: true, focusIndex });
   }
 
@@ -82,27 +95,33 @@ export class AutoCompleteFoundation extends Foundation<AutoCompleteState> {
     this.setState({ visible: false, focusIndex: -1 });
   }
 
-  toggle(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean): void {
+  toggle(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean, renderSelectedItem?: (option: AutoCompleteOptionItem) => string): void {
     const { visible } = this.getState();
     if (visible) this.close();
-    else this.open(options, defaultActiveFirstOption);
+    else this.open(options, defaultActiveFirstOption, renderSelectedItem);
   }
 
   /** 点击触发器（输入框本身）：只负责确保面板打开，已打开时不做任何事。
    * 不能像 Cascader/TreeSelect 那样无条件 toggle——AutoComplete 的触发器
    * 是可编辑的文本框，用户输入过程中再次点击（如移动光标）也会冒泡到这里，
    * 若 toggle 会把正在使用的面板意外关闭。真正的关闭交给失焦/点击外部/Esc。 */
-  openOnTriggerClick(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean): void {
+  openOnTriggerClick(options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean, renderSelectedItem?: (option: AutoCompleteOptionItem) => string): void {
     const { visible } = this.getState();
-    if (!visible) this.open(options, defaultActiveFirstOption);
+    if (!visible) this.open(options, defaultActiveFirstOption, renderSelectedItem);
   }
 
   /** 输入变化：更新 inputValue，重新定位 focusIndex，未打开则打开面板。
    * 不做过滤——onSearch 交给调用方处理，Foundation 只管自己的展示状态。 */
-  handleSearch(value: AutoCompleteValue, options: AutoCompleteOptionItem[], defaultActiveFirstOption: boolean, isControlled: boolean): void {
+  handleSearch(
+    value: AutoCompleteValue,
+    options: AutoCompleteOptionItem[],
+    defaultActiveFirstOption: boolean,
+    isControlled: boolean,
+    renderSelectedItem?: (option: AutoCompleteOptionItem) => string,
+  ): void {
     const { visible } = this.getState();
     if (!isControlled) this.setState({ inputValue: value });
-    const focusIndex = computeInitialFocusIndex(options, value, defaultActiveFirstOption);
+    const focusIndex = computeInitialFocusIndex(options, value, defaultActiveFirstOption, renderSelectedItem);
     if (!visible) {
       this.setState({ visible: true, focusIndex });
     } else {
@@ -130,10 +149,15 @@ export class AutoCompleteFoundation extends Foundation<AutoCompleteState> {
     return inputValue;
   }
 
-  handleArrowKey(options: AutoCompleteOptionItem[], direction: 1 | -1, defaultActiveFirstOption: boolean): void {
+  handleArrowKey(
+    options: AutoCompleteOptionItem[],
+    direction: 1 | -1,
+    defaultActiveFirstOption: boolean,
+    renderSelectedItem?: (option: AutoCompleteOptionItem) => string,
+  ): void {
     const { visible, focusIndex } = this.getState();
     if (!visible) {
-      this.open(options, defaultActiveFirstOption);
+      this.open(options, defaultActiveFirstOption, renderSelectedItem);
       return;
     }
     const next = moveFocusIndex(options, focusIndex, direction);

@@ -59,6 +59,14 @@ describe('findMatchedOptionIndex', () => {
     const numOptions = normalizeOptions([1, 2, 3]);
     expect(findMatchedOptionIndex(numOptions, '2')).toBe(1);
   });
+
+  it('传入 renderSelectedItem 时按回填后的展示值匹配，而非 option.value（对齐 Semi _modifyFocusIndex）', () => {
+    const withLabel = normalizeOptions([{ value: 'a', label: 'A标签' }, { value: 'b', label: 'B标签' }]);
+    const renderSelectedItem = (option: AutoCompleteOptionItem) => `【${option.label}】`;
+    expect(findMatchedOptionIndex(withLabel, '【B标签】', renderSelectedItem)).toBe(1);
+    // 按原始 value 已经找不到了——回填值与 value 不再是同一个字符串。
+    expect(findMatchedOptionIndex(withLabel, 'b', renderSelectedItem)).toBe(-1);
+  });
 });
 
 describe('computeInitialFocusIndex', () => {
@@ -84,6 +92,12 @@ describe('computeInitialFocusIndex', () => {
   it('匹配到的项恰好是 disabled 时不高亮它，走 defaultActiveFirstOption 逻辑', () => {
     const withDisabled = normalizeOptions([{ value: 'apple', disabled: true }, 'banana']);
     expect(computeInitialFocusIndex(withDisabled, 'apple', true)).toBe(1);
+  });
+
+  it('传入 renderSelectedItem 时用它计算的回填值匹配已选中项', () => {
+    const withLabel = normalizeOptions([{ value: 'a', label: 'A标签' }, { value: 'b', label: 'B标签' }]);
+    const renderSelectedItem = (option: AutoCompleteOptionItem) => `【${option.label}】`;
+    expect(computeInitialFocusIndex(withLabel, '【A标签】', false, renderSelectedItem)).toBe(0);
   });
 });
 

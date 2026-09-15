@@ -178,7 +178,7 @@ export function AutoComplete(&{
     });
 
     function handleInputChange(nextValue: string) {
-        foundation.handleSearch(nextValue, untrack(() => options), defaultActiveFirstOption, isControlled);
+        foundation.handleSearch(nextValue, untrack(() => options), defaultActiveFirstOption, isControlled, renderSelectedItem);
         onSearch?.(nextValue);
         onChange?.(nextValue);
     }
@@ -206,7 +206,7 @@ export function AutoComplete(&{
         if (disabled) return;
         const wasVisible = untrack(() => state).visible;
         if (wasVisible) return;
-        foundation.openOnTriggerClick(untrack(() => options), defaultActiveFirstOption);
+        foundation.openOnTriggerClick(untrack(() => options), defaultActiveFirstOption, renderSelectedItem);
         onDropdownVisibleChange?.(true);
     }
 
@@ -216,14 +216,14 @@ export function AutoComplete(&{
         if (event.key === 'ArrowDown') {
             event.preventDefault();
             const wasVisible = untrack(() => state).visible;
-            foundation.handleArrowKey(untrack(() => options), 1, defaultActiveFirstOption);
+            foundation.handleArrowKey(untrack(() => options), 1, defaultActiveFirstOption, renderSelectedItem);
             if (!wasVisible) onDropdownVisibleChange?.(true);
             return;
         }
         if (event.key === 'ArrowUp') {
             event.preventDefault();
             const wasVisible = untrack(() => state).visible;
-            foundation.handleArrowKey(untrack(() => options), -1, defaultActiveFirstOption);
+            foundation.handleArrowKey(untrack(() => options), -1, defaultActiveFirstOption, renderSelectedItem);
             if (!wasVisible) onDropdownVisibleChange?.(true);
             return;
         }
@@ -231,7 +231,7 @@ export function AutoComplete(&{
             event.preventDefault();
             const current = untrack(() => state);
             if (!current.visible) {
-                foundation.open(untrack(() => options), defaultActiveFirstOption);
+                foundation.open(untrack(() => options), defaultActiveFirstOption, renderSelectedItem);
                 onDropdownVisibleChange?.(true);
                 return;
             }

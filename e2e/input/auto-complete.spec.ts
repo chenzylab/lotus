@@ -138,6 +138,19 @@ test.describe('AutoComplete', () => {
     await expect(log).toContainText('"label":"北京"');
   });
 
+  test('renderSelectedItem 自定义回填后，重新打开面板仍能按回填值匹配并高亮已选项（回归防护：曾固定按 option.value 匹配，自定义回填值后永远匹配不上）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('AutoComplete 高级示例', { exact: true });
+
+    await input.click();
+    const panel = page.locator('.lotus-auto-complete-panel');
+    await panel.locator('.lotus-auto-complete-option', { hasText: '北京' }).first().click();
+    await expect(input).toHaveValue('已选：北京');
+
+    await input.click();
+    await expect(panel.locator('.lotus-auto-complete-option-focused')).toHaveText('北京');
+  });
+
   test('triggerRender：完全自定义触发器渲染，仍可打开面板并完成选中', async ({ page }) => {
     await page.goto('/');
     const trigger = page.getByLabel('AutoComplete triggerRender 示例', { exact: true });
