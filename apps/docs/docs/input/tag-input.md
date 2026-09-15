@@ -53,6 +53,14 @@ import { TagInput } from '@lotus/ripple';
 ../../src/demos/input/tag-input/render-tag-item.tsrx
 ```
 
+### insetLabel 内嵌标签
+
+`insetLabel` 渲染在输入框内部，`insetLabelId` 关联到 `aria-labelledby`；与 `prefix` 同时传入时 `prefix` 优先。
+
+```tsrx demo
+../../src/demos/input/tag-input/inset-label.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -67,6 +75,8 @@ import { TagInput } from '@lotus/ripple';
 | disabled | 是否禁用 | boolean | `false` |
 | draggable | 是否支持拖拽排序 | boolean | `false` |
 | expandRestTagsOnClick | 点击折叠气泡本身是否展开剩余标签 | boolean | `true` |
+| insetLabel | 内嵌标签文案，渲染在输入框内部；与 prefix 同时传入时 prefix 优先 | any | - |
+| insetLabelId | insetLabel 关联的 id，用于 aria-labelledby | string | - |
 | inputValue | 受控的输入框文本 | string | - |
 | max | 最多允许的标签数量 | number | - |
 | maxLength | 单个标签片段（按 separator 拆分后每一段）的最大字符数，超限拒绝该次输入并触发 `onInputExceed` | number | - |

@@ -232,4 +232,11 @@ test.describe('TagInput', () => {
     await expect(root.locator('.lotus-tag-content')).toHaveCount(2);
     await expect(restButton).toHaveText('+3');
   });
+
+  test('insetLabel/insetLabelId：内嵌标签正确渲染并携带关联 id（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('TagInput insetLabel 示例', { exact: true });
+    const label = root.locator('#tag-input-inset-label-demo');
+    await expect(label).toHaveText('标签');
+  });
 });

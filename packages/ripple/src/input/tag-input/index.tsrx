@@ -71,6 +71,12 @@ export interface TagInputProps {
     draggable?: boolean;
     prefix?: any;
     suffix?: any;
+    /** 内嵌标签文案，渲染在输入框内部；与 prefix 同时传入时 prefix 优先
+     * （对齐 Semi `labelNode = prefix || insetLabel`）。 */
+    insetLabel?: any;
+    /** insetLabel 关联的 id，用于 aria-labelledby，只在渲染 insetLabel
+     * （而非 prefix）时附着（对齐 Semi）。 */
+    insetLabelId?: string;
     autoFocus?: boolean;
     /** autoFocus 聚焦时是否阻止浏览器自动滚动到视口（对齐 Semi
      * preventScroll，透传给原生 focus() 的同名选项）。 */
@@ -144,6 +150,8 @@ export function TagInput(&{
     draggable = false,
     prefix,
     suffix,
+    insetLabel,
+    insetLabelId,
     autoFocus = false,
     preventScroll,
     'aria-label': ariaLabel,
@@ -388,6 +396,8 @@ export function TagInput(&{
         >
             @if (prefix) {
                 <span class="lotus-tag-input-prefix">{prefix}</span>
+            } @else if (insetLabel) {
+                <span class="lotus-tag-input-prefix" id={insetLabelId}>{insetLabel}</span>
             }
             <div class="lotus-tag-input-tags">
                 @for (const item of visibleTags; index ti; key item) {

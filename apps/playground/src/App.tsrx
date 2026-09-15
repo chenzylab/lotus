@@ -5753,6 +5753,17 @@ export function App() @{
             <TagInput defaultValue={['只读1', '只读2']} disabled aria-label="TagInput 禁用" />
         </div>
 
+        <Divider>TagInput：insetLabel/insetLabelId（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TagInput
+                defaultValue={['标签一']}
+                insetLabel="标签"
+                insetLabelId="tag-input-inset-label-demo"
+                aria-label="TagInput insetLabel 示例"
+            />
+        </div>
+
         <Divider>TagInput：受控（外部按钮驱动）</Divider>
 
         <div style={{ width: '360px' }}>
