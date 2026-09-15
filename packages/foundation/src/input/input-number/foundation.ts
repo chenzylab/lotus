@@ -90,6 +90,9 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
    * 货币格式化：基于原生 `Intl.NumberFormat`（不引入第三方货币库，对齐
    * AGENTS.md「基础能力自研」——`Intl.NumberFormat` 是 JS 标准内置 API）。
    * `currency` 为字符串时直接当货币代码用；为 `true` 时按 localeCode 推导。
+   * `minimumFractionDigits`/`maximumFractionDigits` 优先于 `precision`
+   * （对齐 Semi `minimumFractionDigits || precision || undefined`），
+   * 用于分别控制小数位数上下限而非统一精度。
    */
   static formatCurrency(
     value: number,
@@ -98,22 +101,26 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
     currencyDisplay: 'symbol' | 'code' | 'name' = 'symbol',
     showCurrencySymbol = true,
     precision?: number,
+    minimumFractionDigits?: number,
+    maximumFractionDigits?: number,
   ): string {
     const currencyCode = typeof currency === 'string' && currency.trim() !== ''
       ? currency
       : InputNumberFoundation.resolveCurrencyByLocale(localeCode);
+    const minDigits = minimumFractionDigits ?? precision;
+    const maxDigits = maximumFractionDigits ?? precision;
     const formatter = new Intl.NumberFormat(localeCode, {
       style: 'currency',
       currency: currencyCode,
       currencyDisplay,
-      minimumFractionDigits: precision,
-      maximumFractionDigits: precision,
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
     });
     if (showCurrencySymbol) return formatter.format(value);
     // 不展示符号/代码/名称部分时，退化为纯数字格式化（沿用同一 locale 的分组/小数规则）。
     const plain = new Intl.NumberFormat(localeCode, {
-      minimumFractionDigits: precision,
-      maximumFractionDigits: precision,
+      minimumFractionDigits: minDigits,
+      maximumFractionDigits: maxDigits,
     });
     return plain.format(value);
   }
@@ -223,8 +230,8 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
     onChange?: (value: number | undefined) => void,
     precision?: number,
     stepOverride?: number,
-  ): void {
-    if (disabled) return;
+  ): string | undefined {
+    if (disabled) return undefined;
     const { value } = this.getState();
     const base = value ?? 0;
     const effectiveStep = stepOverride ?? bounds.step;
@@ -236,6 +243,7 @@ export class InputNumberFoundation extends Foundation<InputNumberState> {
       this.setState({ inputValue: nextInputValue });
     }
     onChange?.(next);
+    return nextInputValue;
   }
 
   static isStepDisabled(direction: 1 | -1, value: number | undefined, bounds: InputNumberBounds, disabled: boolean): boolean {

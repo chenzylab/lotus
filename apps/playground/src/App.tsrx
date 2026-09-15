@@ -411,6 +411,7 @@ export function App() @{
     let &[inputExternalControlledValue] = track<string>('初始值');
     let inputImperativeApi: InputApi | null = null;
     let inputNumberImperativeApi: InputNumberApi | null = null;
+    let &[inputNumberEventLog] = track<string>('');
     let textAreaImperativeApi: TextAreaApi | null = null;
     let checkboxImperativeApi: CheckboxApi | null = null;
     let radioImperativeApi: RadioApi | null = null;
@@ -3990,6 +3991,26 @@ export function App() @{
             </div>
             <div style={{ width: '200px' }}>
                 <InputNumber defaultValue={1234.5} currency="CNY" localeCode="zh-CN" aria-label="InputNumber 货币示例" />
+            </div>
+            <div style={{ width: '220px' }}>
+                <InputNumber
+                    defaultValue={1234}
+                    currency="USD"
+                    localeCode="en-US"
+                    minimumFractionDigits={0}
+                    maximumFractionDigits={4}
+                    aria-label="InputNumber minFractionDigits 示例"
+                />
+            </div>
+            <div style={{ width: '200px' }}>
+                <InputNumber
+                    defaultValue={0}
+                    onKeyDown={(e) => { inputNumberEventLog = `onKeyDown: ${e.key}`; }}
+                    onUpClick={(value) => { inputNumberEventLog = `onUpClick: ${value}`; }}
+                    onDownClick={(value) => { inputNumberEventLog = `onDownClick: ${value}`; }}
+                    aria-label="InputNumber onKeyDown/onUpClick/onDownClick 示例"
+                />
+                <TypographyText type="secondary" aria-label="InputNumber 事件日志">{inputNumberEventLog}</TypographyText>
             </div>
             <Space>
                 <div style={{ width: '200px' }}>

@@ -37,6 +37,10 @@ export interface InputNumberProps {
     clearIcon?: any;
     /** 数值精度：blur/步进后四舍五入到指定小数位数。 */
     precision?: number;
+    /** 货币模式下小数位数下限，覆盖 precision（对齐 Semi minimumFractionDigits）。 */
+    minimumFractionDigits?: number;
+    /** 货币模式下小数位数上限，覆盖 precision（对齐 Semi maximumFractionDigits）。 */
+    maximumFractionDigits?: number;
     /** 自定义输入框展示值的格式（如千分位）；聚焦与失焦态都会应用。 */
     formatter?: (value: number | string) => string;
     /** 配合 formatter 使用，把展示字符串转换回可解析的原始数字字符串。 */
@@ -60,6 +64,12 @@ export interface InputNumberProps {
     onNumberChange?: (value: number) => void;
     onFocus?: (event: FocusEvent) => void;
     onBlur?: (event: FocusEvent) => void;
+    /** 原生 keydown 事件透传通知（对齐 Semi），在内部方向键步进处理之后仍会触发。 */
+    onKeyDown?: (event: KeyboardEvent) => void;
+    /** 点击/长按加号步进按钮时的回调，携带步进后的字符串值（对齐 Semi）。 */
+    onUpClick?: (value: string, event: MouseEvent) => void;
+    /** 点击/长按减号步进按钮时的回调，携带步进后的字符串值（对齐 Semi）。 */
+    onDownClick?: (value: string, event: MouseEvent) => void;
     style?: Record<string, any>;
     class?: string;
 }
@@ -81,6 +91,8 @@ export function InputNumber(&{
     showClear = false,
     clearIcon,
     precision,
+    minimumFractionDigits,
+    maximumFractionDigits,
     formatter,
     parser,
     scientificNotation = false,
@@ -99,6 +111,9 @@ export function InputNumber(&{
     onNumberChange,
     onFocus,
     onBlur,
+    onKeyDown,
+    onUpClick,
+    onDownClick,
     style,
     class: className,
 }: InputNumberProps) @{
@@ -163,7 +178,7 @@ export function InputNumber(&{
         if (num === undefined) return rawInputValue;
         let formatted: string;
         if (isCurrencyMode) {
-            formatted = InputNumberFoundation.formatCurrency(num, currency, resolvedLocaleCode, currencyDisplay, showCurrencySymbol, precision);
+            formatted = InputNumberFoundation.formatCurrency(num, currency, resolvedLocaleCode, currencyDisplay, showCurrencySymbol, precision, minimumFractionDigits, maximumFractionDigits);
         } else if (isScientificMode) {
             formatted = InputNumberFoundation.toScientificNotationIfNeeded(num, scientificNotation);
         } else {
@@ -202,25 +217,31 @@ export function InputNumber(&{
         onBlur?.(event);
     };
 
-    function handleStepUp(useShiftStep: boolean) {
-        foundation.handleStep(1, untrack(() => bounds), isControlled, disabled, handleChange, precision, useShiftStep ? shiftStep : undefined);
+    function handleStepUp(useShiftStep: boolean, event?: MouseEvent) {
+        const nextInputValue = foundation.handleStep(1, untrack(() => bounds), isControlled, disabled, handleChange, precision, useShiftStep ? shiftStep : undefined);
+        if (nextInputValue !== undefined && event) onUpClick?.(nextInputValue, event);
     }
-    function handleStepDown(useShiftStep: boolean) {
-        foundation.handleStep(-1, untrack(() => bounds), isControlled, disabled, handleChange, precision, useShiftStep ? shiftStep : undefined);
+    function handleStepDown(useShiftStep: boolean, event?: MouseEvent) {
+        const nextInputValue = foundation.handleStep(-1, untrack(() => bounds), isControlled, disabled, handleChange, precision, useShiftStep ? shiftStep : undefined);
+        if (nextInputValue !== undefined && event) onDownClick?.(nextInputValue, event);
     }
 
     // 无障碍键盘步进：ArrowUp/ArrowDown 等价于点击加减按钮，对齐原生
     // <input type="number"> 的方向键行为（自定义控件必须自己实现，浏览器
     // 不会对 type="text" 的 input 提供这个默认交互）。按住 Shift 时用 shiftStep。
+    // 内部步进处理完之后仍把原生事件转发给 onKeyDown（对齐 Semi notifyKeyDown），
+    // 供调用方扩展额外快捷键。
     function handleInputKeyDown(event: KeyboardEvent) {
-        if (disabled) return;
-        if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            handleStepUp(event.shiftKey);
-        } else if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            handleStepDown(event.shiftKey);
+        if (!disabled) {
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                handleStepUp(event.shiftKey);
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                handleStepDown(event.shiftKey);
+            }
         }
+        onKeyDown?.(event);
     }
 
     let &[stepUpDisabled] = track<boolean>(() => InputNumberFoundation.isStepDisabled(1, displayValue, bounds, disabled));
@@ -306,7 +327,7 @@ export function InputNumber(&{
                         onMouseDown={(event: MouseEvent) => { if (keepFocus) event.preventDefault(); startPress(1, event); }}
                         onMouseUp={clearPressTimers}
                         onMouseLeave={clearPressTimers}
-                        onClick={(event: MouseEvent) => handleStepUp(event.shiftKey)}
+                        onClick={(event: MouseEvent) => handleStepUp(event.shiftKey, event)}
                     >
                         <IconChevronUp />
                     </button>
@@ -318,7 +339,7 @@ export function InputNumber(&{
                         onMouseDown={(event: MouseEvent) => { if (keepFocus) event.preventDefault(); startPress(-1, event); }}
                         onMouseUp={clearPressTimers}
                         onMouseLeave={clearPressTimers}
-                        onClick={(event: MouseEvent) => handleStepDown(event.shiftKey)}
+                        onClick={(event: MouseEvent) => handleStepDown(event.shiftKey, event)}
                     >
                         <IconChevronDown />
                     </button>
@@ -334,7 +355,7 @@ export function InputNumber(&{
                         onMouseDown={(event: MouseEvent) => { event.preventDefault(); startPress(-1, event); }}
                         onMouseUp={clearPressTimers}
                         onMouseLeave={clearPressTimers}
-                        onClick={(event: MouseEvent) => handleStepDown(event.shiftKey)}
+                        onClick={(event: MouseEvent) => handleStepDown(event.shiftKey, event)}
                     >
                         <IconChevronDown />
                     </button>
@@ -346,7 +367,7 @@ export function InputNumber(&{
                         onMouseDown={(event: MouseEvent) => { event.preventDefault(); startPress(1, event); }}
                         onMouseUp={clearPressTimers}
                         onMouseLeave={clearPressTimers}
-                        onClick={(event: MouseEvent) => handleStepUp(event.shiftKey)}
+                        onClick={(event: MouseEvent) => handleStepUp(event.shiftKey, event)}
                     >
                         <IconChevronUp />
                     </button>

@@ -242,6 +242,20 @@ describe('InputNumberFoundation.handleStep', () => {
 
     expect(adapter._raw().inputValue).toBe('0.00000001');
   });
+
+  it('returns the formatted step value string (对齐 Semi upClick/downClick 通知给 onUpClick/onDownClick 的 value)', () => {
+    const adapter = createMockAdapter({ inputValue: '5', value: 5, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+
+    expect(foundation.handleStep(1, bounds, false, false)).toBe('6');
+  });
+
+  it('disabled: returns undefined (no value to notify)', () => {
+    const adapter = createMockAdapter({ inputValue: '5', value: 5, isFocus: false });
+    const foundation = new InputNumberFoundation(adapter);
+
+    expect(foundation.handleStep(1, bounds, false, true)).toBeUndefined();
+  });
 });
 
 describe('InputNumberFoundation.formatStepValue (static)', () => {
@@ -313,6 +327,16 @@ describe('InputNumberFoundation.formatCurrency (static)', () => {
 
   it('applies precision to the fraction digits', () => {
     expect(InputNumberFoundation.formatCurrency(1234.567, 'USD', 'en-US', 'symbol', true, 0)).toBe('$1,235');
+  });
+
+  it('minimumFractionDigits/maximumFractionDigits override precision independently (对齐 Semi minimumFractionDigits || precision || undefined)', () => {
+    // min=0/max=4：整数不补零，小数最多展示到 4 位。
+    expect(InputNumberFoundation.formatCurrency(1234, 'USD', 'en-US', 'symbol', true, 2, 0, 4)).toBe('$1,234');
+    expect(InputNumberFoundation.formatCurrency(1234.5678, 'USD', 'en-US', 'symbol', true, 2, 0, 4)).toBe('$1,234.5678');
+  });
+
+  it('minimumFractionDigits alone falls back to precision for maximumFractionDigits', () => {
+    expect(InputNumberFoundation.formatCurrency(1234.5, 'USD', 'en-US', 'symbol', true, 2, 2)).toBe('$1,234.50');
   });
 });
 

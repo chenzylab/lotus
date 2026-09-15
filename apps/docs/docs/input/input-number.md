@@ -79,7 +79,7 @@ import { InputNumber } from '@lotus/ripple';
 
 ### 货币模式
 
-`currency` 为 `true` 时按 `localeCode`（或跟随 `ConfigProvider` 当前语言）自动推导货币种类展示，也可直接传货币代码；`currencyDisplay` 控制符号/代码/名称展示方式；`showCurrencySymbol=false` 时只展示纯数字格式。
+`currency` 为 `true` 时按 `localeCode`（或跟随 `ConfigProvider` 当前语言）自动推导货币种类展示，也可直接传货币代码；`currencyDisplay` 控制符号/代码/名称展示方式；`showCurrencySymbol=false` 时只展示纯数字格式。`minimumFractionDigits`/`maximumFractionDigits` 可分别控制小数位数上下限（优先于 `precision`），例如 `minimumFractionDigits={0}` 让整数不强制补零小数位。
 
 ```tsrx demo
 ../../src/demos/input/input-number/currency.tsrx
@@ -110,7 +110,9 @@ import { InputNumber } from '@lotus/ripple';
 | keepFocus | 点击步进按钮时保持输入框聚焦；innerButtons=true 时天然保持聚焦 | boolean | false |
 | localeCode | 货币模式下的国家/地区代码；不传时跟随 ConfigProvider 当前语言 | string | - |
 | max | 允许的最大值 | number | Infinity |
+| maximumFractionDigits | 货币模式下小数位数上限，覆盖 precision | number | - |
 | min | 允许的最小值 | number | -Infinity |
+| minimumFractionDigits | 货币模式下小数位数下限，覆盖 precision | number | - |
 | parser | 配合 formatter 使用，把展示字符串转换回可解析的原始数字字符串 | `(str: string) => string` | - |
 | precision | 数值精度，失焦/步进时四舍五入到指定小数位数 | number | - |
 | placeholder | 占位提示文字 | string | - |
@@ -128,8 +130,11 @@ import { InputNumber } from '@lotus/ripple';
 | value | 当前值 | number | - |
 | onBlur | 失去焦点时的回调 | `(event: FocusEvent) => void` | - |
 | onChange | 值变化时的回调（含步进器操作、清除） | `(value: number \| undefined) => void` | - |
+| onDownClick | 点击/长按减号步进按钮时的回调，携带步进后的字符串值 | `(value: string, event: MouseEvent) => void` | - |
 | onFocus | 获得焦点时的回调 | `(event: FocusEvent) => void` | - |
+| onKeyDown | 原生 keydown 事件透传通知，在内部方向键步进处理之后仍会触发 | `(event: KeyboardEvent) => void` | - |
 | onNumberChange | 值变化且为合法数字时的回调（`undefined` 不触发） | `(value: number) => void` | - |
+| onUpClick | 点击/长按加号步进按钮时的回调，携带步进后的字符串值 | `(value: string, event: MouseEvent) => void` | - |
 
 ### InputNumberApi
 

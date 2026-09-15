@@ -187,4 +187,27 @@ test.describe('InputNumber', () => {
     await group.getByRole('button', { name: '失焦' }).click();
     await expect(input).not.toBeFocused();
   });
+
+  test('minimumFractionDigits/maximumFractionDigits：货币模式下分别控制小数位上下限，独立于 precision（对齐 Semi，此前 lotus 只有单一 precision）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('InputNumber minFractionDigits 示例');
+    // 整数不补零（min=0），跟单一 precision=2 的行为不同。
+    await expect(input).toHaveValue('$1,234');
+  });
+
+  test('onKeyDown/onUpClick/onDownClick：事件对外通知（对齐 Semi，此前 lotus 内部已有处理逻辑但没对外暴露）', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('InputNumber onKeyDown/onUpClick/onDownClick 示例');
+    const container = input.locator('xpath=..');
+    const log = page.getByLabel('InputNumber 事件日志', { exact: true });
+
+    await container.getByLabel('增加').click();
+    await expect(log).toHaveText('onUpClick: 1');
+
+    await container.getByLabel('减少').click();
+    await expect(log).toHaveText('onDownClick: 0');
+
+    await input.press('a');
+    await expect(log).toHaveText('onKeyDown: a');
+  });
 });
