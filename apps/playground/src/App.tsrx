@@ -540,6 +540,9 @@ export function App() @{
     let &[uploadCustomFileList] = track<FileItem[]>([
         { uid: 'custom-1', name: 'report.pdf', size: 20480, status: 'success', percent: 100 },
     ]);
+    let &[uploadPicRenderFileList] = track<FileItem[]>([]);
+    let &[uploadCropFileList] = track<FileItem[]>([]);
+    let &[uploadCropLog] = track<string>('');
     let &[tagInputValue] = track<string[]>(['苹果', '香蕉']);
     let &[tagInputChangeLog] = track<string>('');
     let &[tagInputFoldValue] = track<string[]>(['tag1', 'tag2', 'tag3', 'tag4', 'tag5', 'tag6']);
@@ -5659,6 +5662,43 @@ export function App() @{
                 )}
                 aria-label="Upload renderFileItem 示例"
             />
+        </div>
+
+        <Divider>Upload：children 自定义触发区 + fileListTitle + picture 类型下 renderThumbnail/renderPicPreviewIcon/renderPicClose/renderPicInfo（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                listType="picture"
+                fileList={uploadPicRenderFileList}
+                onChange={(list) => { uploadPicRenderFileList = list; }}
+                showPicInfo
+                fileListTitle="自定义标题文案"
+                renderThumbnail={() => <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--lotus-color-fill-1)' }}>🖼️</div>}
+                renderPicPreviewIcon={() => <span>🔍</span>}
+                renderPicClose={({ remove }) => <Button size="small" theme="borderless" onClick={remove}>✕</Button>}
+                renderPicInfo={(props) => <span>{props.name}（自定义信息）</span>}
+                aria-label="Upload picture 自定义渲染示例"
+            >
+                <Button aria-label="Upload children 自定义触发区示例">自定义上传按钮</Button>
+            </Upload>
+        </div>
+
+        <Divider>Upload：crop 图片裁剪集成（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <Upload
+                action="https://example.com/upload"
+                customRequest={mockUploadRequest}
+                listType="picture"
+                crop
+                fileList={uploadCropFileList}
+                onChange={(list) => { uploadCropFileList = list; uploadCropLog = `文件数：${list.length}`; }}
+                onCropError={(error) => { uploadCropLog = `裁剪出错：${error.message}`; }}
+                aria-label="Upload crop 示例"
+            />
+            <TypographyText type="secondary" aria-label="Upload crop 事件日志">{uploadCropLog}</TypographyText>
         </div>
 
         <Divider>TagInput：基础用法（Enter/逗号新增，Backspace 删除最后一个）</Divider>

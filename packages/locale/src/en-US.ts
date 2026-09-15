@@ -108,6 +108,9 @@ const enUS: LocaleShape = {
     uploadButton: 'Upload file',
     fileListLabel: 'Uploaded files',
     clear: 'Clear file list',
+    cropTitle: 'Crop image',
+    cropOk: 'OK',
+    cropCancel: 'Cancel',
   },
   ColorPicker: {
     saturationValue: 'Saturation and value',

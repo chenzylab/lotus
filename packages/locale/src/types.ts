@@ -104,6 +104,9 @@ export interface UploadLocale {
   uploadButton: string;
   fileListLabel: string;
   clear: string;
+  cropTitle: string;
+  cropOk: string;
+  cropCancel: string;
 }
 
 export interface ColorPickerLocale {

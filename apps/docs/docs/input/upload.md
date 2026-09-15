@@ -45,6 +45,22 @@ import { Upload } from '@lotus/ripple';
 ../../src/demos/input/upload/advanced-hooks.tsrx
 ```
 
+### children 自定义触发区 + fileListTitle + picture 类型细粒度渲染点
+
+`children` 传入后完全替换默认的触发区展示（点击按钮/拖拽区图标文案）；`fileListTitle`/`renderThumbnail`/`renderPicPreviewIcon`/`renderPicClose`/`renderPicInfo`/`renderFileOperation` 分别替换文件列表标题与 `listType="picture"` 卡片内部的各个局部区域，不影响其余默认外观。
+
+```tsrx demo
+../../src/demos/input/upload/custom-trigger.tsrx
+```
+
+### crop 图片裁剪
+
+`crop` 开启后，选中/拖入/粘贴的图片文件会先弹出裁剪 Modal，确认后用裁剪结果（保留原文件名）替换原文件再继续走正常上传流程；多张图片按顺序逐张裁剪，非图片文件不受影响。`crop` 传对象可自定义裁剪框形状、缩放范围、输出质量等，`beforeCrop` 可跳过裁剪、`cropModalProps` 可透传给底层 Modal。
+
+```tsrx demo
+../../src/demos/input/upload/crop.tsrx
+```
+
 ## API 参考
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -56,17 +72,22 @@ import { Upload } from '@lotus/ripple';
 | beforeClear | 清空前的确认钩子，返回 `false`/`Promise<false>` 阻止清空 | `(fileList) => boolean \| Promise<boolean>` | - |
 | beforeRemove | 移除前的确认钩子，返回 `false`/`Promise<false>` 阻止移除 | `(file, fileList) => boolean \| Promise<boolean>` | - |
 | beforeUpload | 上传前的校验/转换钩子，返回 `false` 阻止上传 | `(file, fileItem) => boolean \| BeforeUploadResult \| Promise<...>` | - |
+| beforeCrop | crop 开启时，每批文件的第一张图片弹出裁剪 Modal 前调用，返回 `false`（或 reject）则整批文件跳过裁剪直接走正常上传 | `(file: File, files: File[]) => boolean \| Promise<boolean>` | - |
 | capture | 移动端拍照/录制来源 | `boolean \| 'user' \| 'environment'` | - |
+| children | 自定义触发区域内容，替换默认的"点击上传"按钮/拖拽区图标+文案 | any | - |
 | class | 类名 | string | - |
+| crop | 开启图片裁剪：选中/拖入/粘贴的图片先弹出裁剪 Modal，确认后用裁剪结果替换原文件继续上传；传对象自定义裁剪框形状/缩放范围/输出质量等 | `boolean \| CropProps` | - |
+| cropModalProps | 透传给裁剪 Modal 的额外 props | object | - |
 | customRequest | 自定义上传实现，接管默认的网络请求逻辑 | `(args: CustomRequestArgs) => void` | - |
 | data | 附加到请求的额外字段 | `Record<string, unknown> \| ((file) => Record<string, unknown>)` | - |
 | defaultFileList | 非受控模式下的默认文件列表 | `FileItem[]` | - |
 | directory | 是否支持选择整个目录上传 | boolean | `false` |
 | disabled | 是否禁用 | boolean | `false` |
 | draggable | 是否支持拖拽上传 | boolean | `false` |
-| dragIcon | 拖拽区域自定义图标 | any | - |
-| dragMainText / dragSubText | 拖拽区域主/副文案 | string | 本地化默认值 |
+| dragIcon | 拖拽区域自定义图标（`children` 传入后不再生效） | any | - |
+| dragMainText / dragSubText | 拖拽区域主/副文案（`children` 传入后不再生效） | string | 本地化默认值 |
 | fileList | 受控的文件列表 | `FileItem[]` | - |
+| fileListTitle | 文件列表标题区域自定义：传非函数值只替换标题文案，清空按钮仍由组件渲染；传函数则完全接管整个标题区域，携带 `{ fileList, onClear, clearText }` | `any \| ((props) => any)` | - |
 | fileName | 请求中文件字段名（`name` 的别名，用于规避与 `Form.Upload` 的 `name` prop 冲突） | string | - |
 | headers | 请求头 | `UploadHeaders \| ((file) => UploadHeaders)` | - |
 | hotSpotLocation | 操作按钮（重试/替换/删除）的排列位置 | `'start' \| 'end'` | `'end'` |
@@ -81,6 +102,11 @@ import { Upload } from '@lotus/ripple';
 | prompt | 提示文案 | any | - |
 | promptPosition | 提示文案位置 | `'left' \| 'right' \| 'bottom'` | `'right'` |
 | renderFileItem | 完全自定义单个文件项渲染，替换默认卡片 | `(props: RenderFileItemProps) => any` | - |
+| renderFileOperation | `listType="list"` 下替换默认的移除按钮操作区 | `(props: RenderFileItemProps) => any` | - |
+| renderPicClose | `listType="picture"` 下替换关闭按钮 | `(props: { className: string; remove: () => void }) => any` | - |
+| renderPicInfo | `listType="picture"` 下替换角标信息区域，默认展示文件大小/错误信息 | `(props: RenderFileItemProps) => any` | - |
+| renderPicPreviewIcon | `listType="picture"` 下替换预览图标，success 状态且非 replace 模式时展示 | `(props: RenderFileItemProps) => any` | - |
+| renderThumbnail | `listType="picture"` 下替换缩略图区域 | `(props: RenderFileItemProps) => any` | - |
 | showClear | 是否展示清空按钮 | boolean | `false` |
 | showPicInfo | 图片墙模式下是否展示文件名/大小信息 | boolean | `false` |
 | showReplace | 是否展示替换按钮 | boolean | - |
@@ -97,6 +123,7 @@ import { Upload } from '@lotus/ripple';
 | onAcceptInvalid | 文件类型不匹配 `accept` 时的回调 | `(files: File[]) => void` | - |
 | onChange | 文件列表变化时的回调 | `(fileList: FileItem[]) => void` | - |
 | onClear | 清空文件列表后的回调 | `() => void` | - |
+| onCropError | 裁剪流程出错时触发 | `(error: Error) => void` | - |
 | onDrop | 拖拽释放文件时的回调 | `(event, files, fileList) => void` | - |
 | onError | 上传失败时的回调 | `(error: unknown, file: FileItem) => void` | - |
 | onExceed | 超过 `limit` 时的回调 | `(files: File[]) => void` | - |
@@ -111,6 +138,8 @@ import { Upload } from '@lotus/ripple';
 | onSuccess | 上传成功时的回调 | `(response: unknown, file: FileItem) => void` | - |
 
 `FileItem` 结构：`{ uid, name, size?, status?, percent?, url? }`；`status` 取值 `'wait' | 'uploading' | 'success' | 'uploadFail' | 'validateFail'`。
+
+`CropProps` 结构：`{ aspectRatio?, shape?, minZoom?, maxZoom?, zoomStep?, quality?, fill?, modalTitle?, modalOkText?, modalCancelText? }`，`quality` 为输出图片质量（0-1，默认 0.92）。
 
 > 明确不做：`crop`/`beforeCrop`/`onCropError`/`cropModalProps` 等裁剪相关能力——lotus 已有独立的 `Cropper` 组件，不在 Upload 内重复实现。不做并发队列/pause/abort——Semi 本身没有这些能力。
 

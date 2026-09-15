@@ -10,6 +10,8 @@ import {
 } from '@lotus/foundation/input/upload';
 import { Progress } from '../../feedback/progress/index.tsrx';
 import { IconButton } from '../../basic/icon-button/index.tsrx';
+import { Modal } from '../../show/modal/index.tsrx';
+import { Cropper } from '../../show/cropper/index.tsrx';
 import { IconUpload, IconUploadError, IconClose, IconFile, IconRefresh } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -43,6 +45,21 @@ export interface AfterUploadResult {
     url?: string;
 }
 
+/** `crop` 传对象形式时的配置（对齐 Semi CropProps）。 */
+export interface CropProps {
+    aspectRatio?: number;
+    shape?: 'rect' | 'round' | 'roundRect';
+    minZoom?: number;
+    maxZoom?: number;
+    zoomStep?: number;
+    /** 输出图片质量，0-1，默认 0.92（对齐 Semi）。 */
+    quality?: number;
+    fill?: string;
+    modalTitle?: string;
+    modalOkText?: string;
+    modalCancelText?: string;
+}
+
 export interface RenderFileItemProps {
     fileInstance?: File;
     name: string;
@@ -52,10 +69,18 @@ export interface RenderFileItemProps {
     uid: string;
     url?: string;
     validateMessage?: string;
+    /** 文件在当前列表中的位置（从 0 开始），对齐 Semi renderPicInfo 默认展示 index+1 编号。 */
+    index: number;
     onRemove: () => void;
     onRetry: () => void;
     onReplace: () => void;
     onPreviewClick: () => void;
+}
+
+/** picture 卡片专属的自定义渲染点：`renderPicClose` 携带的参数（对齐 Semi）。 */
+export interface RenderPicCloseProps {
+    className: string;
+    remove: () => void;
 }
 
 export interface UploadProps {
@@ -80,6 +105,10 @@ export interface UploadProps {
     dragMainText?: string;
     dragSubText?: string;
     dragIcon?: any;
+    /** 自定义触发区域内容，替换默认的"点击上传"按钮/拖拽区图标+文案
+     * （对齐 Semi children）。传入后 draggable 模式下 dragIcon/dragMainText/
+     * dragSubText 不再生效——children 完全接管拖拽区展示。 */
+    children?: any;
     showRetry?: boolean;
     showReplace?: boolean;
     showClear?: boolean;
@@ -103,6 +132,22 @@ export interface UploadProps {
     transformFile?: (file: File) => FileItem;
     previewFile?: (props: RenderFileItemProps) => any;
     renderFileItem?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换缩略图区域（对齐 Semi renderThumbnail）。 */
+    renderThumbnail?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换预览图标，success 状态且非 replace 模式时展示（对齐 Semi renderPicPreviewIcon）。 */
+    renderPicPreviewIcon?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换关闭按钮（对齐 Semi renderPicClose）。 */
+    renderPicClose?: (props: RenderPicCloseProps) => any;
+    /** picture 类型下替换角标信息区域，默认展示文件大小/错误信息（对齐 Semi renderPicInfo；
+     * 注意 Semi 默认展示 index+1 编号，lotus 沿用自己既有的"文件大小/错误信息"默认展示，
+     * 仅在传入此 prop 时切换为自定义内容，不改变既有默认行为）。 */
+    renderPicInfo?: (props: RenderFileItemProps) => any;
+    /** list 类型下替换默认的移除按钮操作区（对齐 Semi renderFileOperation）。 */
+    renderFileOperation?: (props: RenderFileItemProps) => any;
+    /** 文件列表标题区域自定义（对齐 Semi fileListTitle）：传非函数值只替换标题文案，
+     * 清空按钮仍由组件渲染；传函数则完全接管整个标题区域（含清空按钮），函数携带
+     * `{ fileList, onClear, clearText }`。 */
+    fileListTitle?: any | ((props: { fileList: FileItem[]; onClear: () => void; clearText: string }) => any);
     customRequest?: (args: CustomRequestArgs) => void;
     onChange?: (fileList: FileItem[]) => void;
     onSuccess?: (response: unknown, file: FileItem) => void;
@@ -120,6 +165,18 @@ export interface UploadProps {
     onSizeError?: (file: FileItem, fileList: FileItem[]) => void;
     onPastingError?: (error: Error) => void;
     afterUpload?: (args: { response: unknown; file: FileItem; fileList: FileItem[] }) => AfterUploadResult | void;
+    /** 开启图片裁剪：选中/拖入/粘贴的图片文件会先弹出裁剪 Modal，确认后用裁剪结果
+     * 替换原文件再继续走正常上传流程（对齐 Semi crop）。传 true 用默认配置，
+     * 传对象自定义裁剪框形状/缩放范围/输出质量等。多张图片按选中顺序逐张裁剪，
+     * 非图片文件不受影响、与裁剪结果一起在队列处理完后统一提交。 */
+    crop?: boolean | CropProps;
+    /** 每批文件里第一张图片弹出裁剪 Modal 前调用，返回 false（或 reject）则整批文件
+     * 跳过裁剪直接走正常上传（对齐 Semi beforeCrop）。 */
+    beforeCrop?: (file: File, fileList: File[]) => boolean | Promise<boolean>;
+    /** 裁剪流程出错时触发（对齐 Semi onCropError）。 */
+    onCropError?: (error: Error) => void;
+    /** 透传给裁剪 Modal 的额外 props（对齐 Semi cropModalProps）。 */
+    cropModalProps?: Record<string, any>;
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -180,6 +237,7 @@ function xhrUpload(args: CustomRequestArgs, locale: import('@lotus/locale').Loca
 
 interface FileCardProps {
     item: FileItem;
+    index: number;
     listType: ListType;
     showRetry: boolean;
     showReplace: boolean;
@@ -192,13 +250,23 @@ interface FileCardProps {
     disabled: boolean;
     renderFileItem?: (props: RenderFileItemProps) => any;
     previewFile?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换缩略图区域（对齐 Semi renderThumbnail）。 */
+    renderThumbnail?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换预览图标（success 状态且非 replace 模式时展示，对齐 Semi renderPicPreviewIcon）。 */
+    renderPicPreviewIcon?: (props: RenderFileItemProps) => any;
+    /** picture 类型下替换关闭按钮（对齐 Semi renderPicClose）。 */
+    renderPicClose?: (props: RenderPicCloseProps) => any;
+    /** picture 类型下替换角标信息，默认展示 index+1 编号（对齐 Semi renderPicInfo）。 */
+    renderPicInfo?: (props: RenderFileItemProps) => any;
+    /** list 类型下替换默认的移除按钮操作区（对齐 Semi renderFileOperation）。 */
+    renderFileOperation?: (props: RenderFileItemProps) => any;
     onRemove: (item: FileItem) => void;
     onRetryClick: (item: FileItem) => void;
     onReplaceClick: (item: FileItem) => void;
     onPreviewClick: (item: FileItem) => void;
 }
 
-function toRenderFileItemProps(item: FileItem, handlers: {
+function toRenderFileItemProps(item: FileItem, index: number, handlers: {
     onRemove: () => void;
     onRetry: () => void;
     onReplace: () => void;
@@ -213,6 +281,7 @@ function toRenderFileItemProps(item: FileItem, handlers: {
         uid: item.uid,
         url: item.url,
         validateMessage: item.validateMessage,
+        index,
         ...handlers,
     };
 }
@@ -226,13 +295,14 @@ function statusLabel(status: FileItem['status'], locale: import('@lotus/locale')
 }
 
 function FileCard(&{
-    item, listType, showRetry, showReplace, showTooltip, showPicInfo, picWidth, picHeight, itemStyle,
-    hotSpotLocation, disabled, renderFileItem, previewFile, onRemove, onRetryClick, onReplaceClick, onPreviewClick,
+    item, index, listType, showRetry, showReplace, showTooltip, showPicInfo, picWidth, picHeight, itemStyle,
+    hotSpotLocation, disabled, renderFileItem, previewFile, renderThumbnail, renderPicPreviewIcon, renderPicClose,
+    renderPicInfo, renderFileOperation, onRemove, onRetryClick, onReplaceClick, onPreviewClick,
 }: FileCardProps) @{
     const localeTracked = LocaleContext.get();
     let &[locale] = track(() => localeTracked?.value ?? zhCN);
 
-    const renderProps = toRenderFileItemProps(item, {
+    const renderProps = toRenderFileItemProps(item, index, {
         onRemove: () => onRemove(item),
         onRetry: () => onRetryClick(item),
         onReplace: () => onReplaceClick(item),
@@ -256,7 +326,10 @@ function FileCard(&{
             title={showTooltip ? item.name : undefined}
             onClick={() => onPreviewClick(item)}
         >
-            @if (previewFile) {
+            <>
+            @if (renderThumbnail) {
+                <span style="display:contents">{renderThumbnail(renderProps)}</span>
+            } @else if (previewFile) {
                 <span class="lotus-upload-preview-slot" style="display:contents">{previewFile(renderProps)}</span>
             } @else if (isImageFile(item) && item.fileInstance) {
                 <img
@@ -270,10 +343,16 @@ function FileCard(&{
             } @else {
                 <IconFile />
             }
+            @if (listType === 'picture' && renderPicPreviewIcon && item.status === 'success' && !showReplace) {
+                <span class="lotus-upload-picture-preview-icon" style="display:contents">{renderPicPreviewIcon(renderProps)}</span>
+            }
+            </>
         </div>
         <div class="lotus-upload-file-info">
             <div class="lotus-upload-file-name" title={showTooltip ? item.name : undefined}>{item.name}</div>
-            @if (listType !== 'picture' || showPicInfo) {
+            @if (listType === 'picture' && showPicInfo && renderPicInfo) {
+                <span style="display:contents">{renderPicInfo(renderProps)}</span>
+            } @else if (listType !== 'picture' || showPicInfo) {
                 <div class="lotus-upload-file-meta">
                     <span class="lotus-upload-file-size">{formatFileSize(item.size)}</span>
                     @if (item.status === 'uploadFail' || item.status === 'validateFail') {
@@ -313,15 +392,21 @@ function FileCard(&{
                     onClick={() => onReplaceClick(item)}
                 />
             }
-            <IconButton
-                icon={<IconClose />}
-                theme="borderless"
-                type="tertiary"
-                size="small"
-                disabled={disabled}
-                aria-label={locale.Upload.remove(item.name)}
-                onClick={() => onRemove(item)}
-            />
+            @if (listType === 'picture' && renderPicClose) {
+                <span style="display:contents">{renderPicClose({ className: 'lotus-upload-file-close-custom', remove: () => onRemove(item) })}</span>
+            } @else if (listType !== 'picture' && renderFileOperation) {
+                <span style="display:contents">{renderFileOperation(renderProps)}</span>
+            } @else {
+                <IconButton
+                    icon={<IconClose />}
+                    theme="borderless"
+                    type="tertiary"
+                    size="small"
+                    disabled={disabled}
+                    aria-label={locale.Upload.remove(item.name)}
+                    onClick={() => onRemove(item)}
+                />
+            }
         </div>
     </div>
     }
@@ -451,6 +536,7 @@ export function Upload(&{
     dragMainText,
     dragSubText,
     dragIcon,
+    children,
     showRetry = true,
     showReplace = false,
     showClear = false,
@@ -474,6 +560,12 @@ export function Upload(&{
     transformFile,
     previewFile,
     renderFileItem,
+    renderThumbnail,
+    renderPicPreviewIcon,
+    renderPicClose,
+    renderPicInfo,
+    renderFileOperation,
+    fileListTitle,
     customRequest,
     onChange,
     onSuccess,
@@ -491,6 +583,10 @@ export function Upload(&{
     onSizeError,
     onPastingError,
     afterUpload,
+    crop,
+    beforeCrop,
+    onCropError,
+    cropModalProps,
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -529,6 +625,125 @@ export function Upload(&{
     let inputNode: HTMLInputElement | null = null;
     let replaceInputNode: HTMLInputElement | null = null;
     let replaceTargetUid: string | null = null;
+
+    // crop 状态机（对齐 Semi handleCropFiles/handleCropOk/handleCropCancel）：
+    // 选中的图片文件先逐张过 Cropper Modal，确认后用裁剪结果（保留原文件名/
+    // lastModified）替换原文件，非图片文件原样保留，队列耗尽后把"裁剪结果 +
+    // 非图片文件"合并成一批，一次性走 handleFilesSelected/replace 正常流程。
+    // 取消裁剪则整批（含已裁剪但未提交的、队列里剩下的、非图片文件）全部丢弃，
+    // 不触发任何上传——对齐 Semi closeCropperAndReset 的语义。
+    let &[cropState] = track<{
+        visible: boolean;
+        currentFile: File | null;
+        currentSrc: string;
+        pendingImages: File[];
+        nonImageFiles: File[];
+        croppedFiles: File[];
+        isReplaceOperation: boolean;
+    }>({
+        visible: false,
+        currentFile: null,
+        currentSrc: '',
+        pendingImages: [],
+        nonImageFiles: [],
+        croppedFiles: [],
+        isReplaceOperation: false,
+    });
+    let cropperGetCanvas: (() => HTMLCanvasElement | null) | null = null;
+
+    function isImageFileNative(file: File): boolean {
+        return file.type.startsWith('image/');
+    }
+
+    function dispatchUpload(files: File[], isReplaceOperation: boolean) {
+        if (isReplaceOperation) {
+            const file = files[0];
+            if (file) applyReplace(file);
+        } else {
+            handleFilesSelected(files);
+        }
+    }
+
+    async function shouldCropFile(file: File, files: File[]): Promise<boolean> {
+        if (!beforeCrop) return true;
+        try {
+            const result = await beforeCrop(file, files);
+            return result !== false;
+        } catch (error) {
+            onCropError?.(error as Error);
+            return false;
+        }
+    }
+
+    async function maybeStartCrop(files: File[], isReplaceOperation: boolean): Promise<boolean> {
+        if (!crop) return false;
+        const imageFiles = files.filter(isImageFileNative);
+        const nonImageFiles = files.filter((f) => !isImageFileNative(f));
+        if (imageFiles.length === 0) return false;
+
+        const shouldCrop = await shouldCropFile(imageFiles[0]!, files);
+        if (!shouldCrop) return false;
+
+        const queue = isReplaceOperation ? [imageFiles[0]!] : imageFiles;
+        const [first, ...rest] = queue;
+        if (!first) return false;
+        cropState = {
+            visible: true,
+            currentFile: first,
+            currentSrc: URL.createObjectURL(first),
+            pendingImages: rest,
+            nonImageFiles: isReplaceOperation ? [] : nonImageFiles,
+            croppedFiles: [],
+            isReplaceOperation,
+        };
+        return true;
+    }
+
+    function closeCropperAndReset() {
+        const cur = untrack(() => cropState);
+        if (cur.currentSrc) URL.revokeObjectURL(cur.currentSrc);
+        cropState = {
+            visible: false,
+            currentFile: null,
+            currentSrc: '',
+            pendingImages: [],
+            nonImageFiles: [],
+            croppedFiles: [],
+            isReplaceOperation: false,
+        };
+    }
+
+    async function handleCropOk() {
+        const cur = untrack(() => cropState);
+        try {
+            const canvas = cropperGetCanvas?.();
+            if (!canvas || !cur.currentFile) throw new Error('Cropper instance not found');
+            const cropConfig = typeof crop === 'object' ? crop : {};
+            const quality = cropConfig.quality ?? 0.92;
+            const type = cur.currentFile.type || 'image/png';
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Failed to create blob'))), type, quality);
+            });
+            const croppedFile = new File([blob], cur.currentFile.name, { type, lastModified: cur.currentFile.lastModified });
+            const nextCropped = [...cur.croppedFiles, croppedFile];
+
+            if (cur.pendingImages.length > 0) {
+                const [next, ...rest] = cur.pendingImages;
+                if (cur.currentSrc) URL.revokeObjectURL(cur.currentSrc);
+                cropState = { ...cur, currentFile: next!, currentSrc: URL.createObjectURL(next!), pendingImages: rest, croppedFiles: nextCropped };
+                return;
+            }
+
+            closeCropperAndReset();
+            dispatchUpload([...nextCropped, ...cur.nonImageFiles], cur.isReplaceOperation);
+        } catch (error) {
+            onCropError?.(error as Error);
+        }
+    }
+
+    function handleCropCancel() {
+        closeCropperAndReset();
+    }
 
     function startXhr(item: FileItem) {
         if (!item.fileInstance) return;
@@ -589,22 +804,34 @@ export function Upload(&{
         }
     }
 
-    function handleInputChange(event: Event) {
-        const input = event.target as HTMLInputElement;
-        const files = input.files ? Array.from(input.files) : [];
-        handleFilesSelected(files);
-        input.value = '';
+    async function handleFilesSelectedMaybeCrop(files: File[]) {
+        if (disabled || files.length === 0) return;
+        const cropped = await maybeStartCrop(files, false);
+        if (!cropped) handleFilesSelected(files);
     }
 
-    function handleReplaceInputChange(event: Event) {
-        const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-        input.value = '';
-        if (!file || !replaceTargetUid) return;
+    function applyReplace(file: File) {
+        if (!replaceTargetUid) return;
         const result = foundation.replace(replaceTargetUid, file, isControlled);
         replaceTargetUid = null;
         if (result) emitChange(result.fileList);
         if (result && result.replaced.status === 'uploading') maybeStartUpload(result.replaced);
+    }
+
+    function handleInputChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const files = input.files ? Array.from(input.files) : [];
+        handleFilesSelectedMaybeCrop(files);
+        input.value = '';
+    }
+
+    async function handleReplaceInputChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file || !replaceTargetUid) return;
+        const cropped = await maybeStartCrop([file], true);
+        if (!cropped) applyReplace(file);
     }
 
     function openFileDialog() {
@@ -640,7 +867,7 @@ export function Upload(&{
         if (disabled) return;
         const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : [];
         onDrop?.(event, files, untrack(() => state.fileList));
-        handleFilesSelected(files);
+        handleFilesSelectedMaybeCrop(files);
     }
 
     async function handleRemove(item: FileItem) {
@@ -693,7 +920,7 @@ export function Upload(&{
                 if (file) files.push(file);
             }
             if (files.length === 0) return;
-            handleFilesSelected(files);
+            handleFilesSelectedMaybeCrop(files);
         };
         document.body.addEventListener('paste', handlePaste as EventListener);
         return () => document.body.removeEventListener('paste', handlePaste as EventListener);
@@ -755,16 +982,22 @@ export function Upload(&{
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                     >
-                        <div class="lotus-upload-drag-icon">
-                            @if (dragIcon) {
-                                <span style="display:contents">{dragIcon}</span>
-                            } @else {
-                                <IconUpload />
+                        @if (children) {
+                            <span style="display:contents">{children}</span>
+                        } @else {
+                            <>
+                            <div class="lotus-upload-drag-icon">
+                                @if (dragIcon) {
+                                    <span style="display:contents">{dragIcon}</span>
+                                } @else {
+                                    <IconUpload />
+                                }
+                            </div>
+                            <div class="lotus-upload-drag-main-text">{dragMainText ?? locale.Upload.dragMainText}</div>
+                            @if (dragSubText) {
+                                <div class="lotus-upload-drag-sub-text">{dragSubText}</div>
                             }
-                        </div>
-                        <div class="lotus-upload-drag-main-text">{dragMainText ?? locale.Upload.dragMainText}</div>
-                        @if (dragSubText) {
-                            <div class="lotus-upload-drag-sub-text">{dragSubText}</div>
+                            </>
                         }
                     </div>
                 } @else {
@@ -777,8 +1010,14 @@ export function Upload(&{
                         onClick={openFileDialog}
                         onKeyDown={handleTriggerKeyDown}
                     >
-                        <IconUpload />
-                        <span>{locale.Upload.uploadButton}</span>
+                        @if (children) {
+                            <span style="display:contents">{children}</span>
+                        } @else {
+                            <>
+                            <IconUpload />
+                            <span>{locale.Upload.uploadButton}</span>
+                            </>
+                        }
                     </div>
                 }
                 @if (promptPosition === 'right' && prompt) {
@@ -797,23 +1036,30 @@ export function Upload(&{
             @if (showUploadList && listType !== 'none' && state.fileList.length > 0) {
                 <>
                 <div class="lotus-upload-file-list-header">
-                    <span class="lotus-upload-file-list-title">{locale.Upload.fileListLabel}</span>
-                    @if (showClear) {
-                        <IconButton
-                            icon={<IconClose />}
-                            theme="borderless"
-                            type="tertiary"
-                            size="small"
-                            disabled={disabled}
-                            aria-label={locale.Upload.clear}
-                            onClick={handleClear}
-                        />
+                    @if (typeof fileListTitle === 'function') {
+                        <span style="display:contents">{fileListTitle({ fileList: state.fileList, onClear: handleClear, clearText: locale.Upload.clear })}</span>
+                    } @else {
+                        <>
+                        <span class="lotus-upload-file-list-title">{fileListTitle ?? locale.Upload.fileListLabel}</span>
+                        @if (showClear) {
+                            <IconButton
+                                icon={<IconClose />}
+                                theme="borderless"
+                                type="tertiary"
+                                size="small"
+                                disabled={disabled}
+                                aria-label={locale.Upload.clear}
+                                onClick={handleClear}
+                            />
+                        }
+                        </>
                     }
                 </div>
                 <div class={['lotus-upload-file-list', `lotus-upload-file-list-${listType}`].join(' ')} role="list" aria-label={locale.Upload.fileListLabel}>
                     @for (const item of state.fileList; index fi; key item.uid) {
                         <FileCard
                             item={item}
+                            index={fi}
                             listType={listType}
                             showRetry={showRetry}
                             showReplace={showReplace}
@@ -826,6 +1072,11 @@ export function Upload(&{
                             disabled={disabled}
                             renderFileItem={renderFileItem}
                             previewFile={previewFile}
+                            renderThumbnail={renderThumbnail}
+                            renderPicPreviewIcon={renderPicPreviewIcon}
+                            renderPicClose={renderPicClose}
+                            renderPicInfo={renderPicInfo}
+                            renderFileOperation={renderFileOperation}
                             onRemove={handleRemove}
                             onRetryClick={handleRetryClick}
                             onReplaceClick={handleReplaceClick}
@@ -836,6 +1087,35 @@ export function Upload(&{
                 </>
             }
         </div>
+
+        @if (crop) {
+            <Modal
+                {...(cropModalProps ?? {})}
+                width={cropModalProps?.width ?? 600}
+                height={cropModalProps?.height ?? '500px'}
+                title={cropModalProps?.title ?? (typeof crop === 'object' ? crop.modalTitle : undefined) ?? locale.Upload.cropTitle}
+                visible={cropState.visible}
+                onOk={handleCropOk}
+                onCancel={handleCropCancel}
+                okText={cropModalProps?.okText ?? (typeof crop === 'object' ? crop.modalOkText : undefined) ?? locale.Upload.cropOk}
+                cancelText={cropModalProps?.cancelText ?? (typeof crop === 'object' ? crop.modalCancelText : undefined) ?? locale.Upload.cropCancel}
+                bodyStyle={{ height: '400px', ...(cropModalProps?.bodyStyle ?? {}) }}
+            >
+                @if (cropState.currentSrc) {
+                    <Cropper
+                        src={cropState.currentSrc}
+                        shape={typeof crop === 'object' ? crop.shape : undefined}
+                        aspectRatio={typeof crop === 'object' ? crop.aspectRatio : undefined}
+                        minZoom={typeof crop === 'object' ? crop.minZoom : undefined}
+                        maxZoom={typeof crop === 'object' ? crop.maxZoom : undefined}
+                        zoomStep={typeof crop === 'object' ? crop.zoomStep : undefined}
+                        fill={typeof crop === 'object' ? crop.fill : undefined}
+                        style={{ width: '100%', height: '100%' }}
+                        getCropperApi={(api) => { cropperGetCanvas = api.getCropperCanvas; }}
+                    />
+                }
+            </Modal>
+        }
 
         <style>
             .lotus-upload {

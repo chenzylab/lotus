@@ -196,4 +196,62 @@ test.describe('Upload', () => {
     const card = root.locator('.lotus-upload-file-card').last();
     await expect(card.locator('.lotus-upload-file-meta')).toHaveCount(0);
   });
+
+  test('children：自定义触发区内容替换默认按钮/拖拽区展示（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const trigger = page.getByLabel('Upload children 自定义触发区示例', { exact: true });
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toHaveText('自定义上传按钮');
+  });
+
+  test('fileListTitle + picture 类型下 renderThumbnail/renderPicPreviewIcon/renderPicClose/renderPicInfo（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload picture 自定义渲染示例', { exact: true });
+    const pngPath = makeTempPng('e2e-upload-pic-render.png');
+    await root.locator('input[type="file"]').first().setInputFiles(pngPath);
+
+    await expect(root.locator('.lotus-upload-file-list-title')).toHaveText('自定义标题文案');
+    const card = root.locator('.lotus-upload-file-card');
+    await expect(card.locator('.lotus-upload-file-thumbnail')).toContainText('🖼️');
+    await expect(card).toContainText('自定义信息', { timeout: 3000 });
+    await expect(card.locator('.lotus-upload-picture-preview-icon')).toContainText('🔍', { timeout: 3000 });
+
+    const closeBtn = card.getByRole('button', { name: '✕' });
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+    await expect(card).toHaveCount(0);
+  });
+
+  test('crop：选中图片先弹出裁剪 Modal，确认后用裁剪结果替换原文件继续上传（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload crop 示例', { exact: true });
+    const pngPath = makeTempPng('e2e-upload-crop.png');
+    await root.locator('input[type="file"]').first().setInputFiles(pngPath);
+
+    const modal = page.locator('.lotus-modal-content-visible');
+    await expect(modal).toBeVisible();
+    await expect(modal).toContainText('裁切图片');
+    await expect(modal.locator('.lotus-cropper')).toBeVisible();
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(0);
+
+    await modal.getByRole('button', { name: '确定' }).click();
+    await expect(modal).toHaveCount(0);
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(1);
+    await expect(root.locator('.lotus-upload-file-name')).toHaveText('e2e-upload-crop.png');
+    await expect(page.getByLabel('Upload crop 事件日志', { exact: true })).toContainText('文件数：1');
+  });
+
+  test('crop：取消裁剪后不上传任何文件（回归防护：曾因 Modal 高度未正确设置导致 Cropper 容器高度为 0，裁剪确认时抛 getImageData 异常）', async ({ page }) => {
+    await page.goto('/');
+    const root = page.getByLabel('Upload crop 示例', { exact: true });
+    const beforeCount = await root.locator('.lotus-upload-file-card').count();
+    const pngPath = makeTempPng('e2e-upload-crop-cancel.png');
+    await root.locator('input[type="file"]').first().setInputFiles(pngPath);
+
+    const modal = page.locator('.lotus-modal-content-visible');
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: '取消' }).click();
+    await expect(modal).toHaveCount(0);
+    await expect(root.locator('.lotus-upload-file-card')).toHaveCount(beforeCount);
+  });
 });

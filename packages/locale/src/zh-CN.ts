@@ -98,6 +98,9 @@ const zhCN: LocaleShape = {
     uploadButton: '上传文件',
     fileListLabel: '已上传文件',
     clear: '清空文件列表',
+    cropTitle: '裁切图片',
+    cropOk: '确定',
+    cropCancel: '取消',
   },
   ColorPicker: {
     saturationValue: '饱和度与明度',
