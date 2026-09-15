@@ -29,10 +29,12 @@ test.describe('TextArea', () => {
   test('maxCount：字数统计随内容变化更新', async ({ page }) => {
     await page.goto('/');
     const countedTextarea = page.locator('.lotus-textarea-native').nth(2);
-    await expect(page.locator('.lotus-textarea-count')).toHaveText('9/50');
+    const wrapper = countedTextarea.locator('xpath=ancestor::div[contains(@class,"lotus-textarea-wrapper")][1]');
+    const counter = wrapper.locator('.lotus-textarea-count');
+    await expect(counter).toHaveText('9/50');
 
     await countedTextarea.fill('新内容');
-    await expect(page.locator('.lotus-textarea-count')).toHaveText('3/50');
+    await expect(counter).toHaveText('3/50');
   });
 
   test('showClear：hover 后出现清除按钮，点击后清空内容', async ({ page }) => {
@@ -83,5 +85,44 @@ test.describe('TextArea', () => {
     await textarea.click();
     await page.keyboard.type('追加内容');
     await expect(textarea).toHaveValue('只读多行内容不可编辑');
+  });
+
+  test('validateStatus：校验状态应用对应样式类（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('TextArea validateStatus 示例', { exact: true });
+    const wrapper = textarea.locator('xpath=ancestor::div[contains(@class,"lotus-textarea-wrapper")][1]');
+    await expect(wrapper).toHaveClass(/lotus-textarea-status-error/);
+  });
+
+  test('showCounter：不传 maxCount 也单独显示字符计数，不带 "/总数"（对齐 Semi，此前 lotus 只在 maxCount 存在时才显示计数器）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('TextArea showCounter 示例', { exact: true });
+    const wrapper = textarea.locator('xpath=ancestor::div[contains(@class,"lotus-textarea-wrapper")][1]');
+    const counter = wrapper.locator('.lotus-textarea-count');
+    await expect(counter).toHaveText('21');
+    await expect(counter).not.toContainText('/');
+  });
+
+  test('autoFocus：透传给原生 autofocus 属性（对齐 Semi）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('TextArea autoFocus 示例', { exact: true });
+    await expect(textarea).toHaveJSProperty('autofocus', true);
+  });
+
+  test('showLineNumber：左侧行号栏按逻辑行渲染行号，起始行号跟随 lineNumberStart（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const textarea = page.getByLabel('TextArea showLineNumber 示例', { exact: true });
+    const wrapper = textarea.locator('xpath=ancestor::div[contains(@class,"lotus-textarea-wrapper")][1]');
+    const lineNumberItems = wrapper.locator('.lotus-textarea-line-number-item');
+
+    await expect(lineNumberItems).toHaveCount(3);
+    await expect(lineNumberItems.nth(0)).toHaveText('1');
+    await expect(lineNumberItems.nth(1)).toHaveText('2');
+    await expect(lineNumberItems.nth(2)).toHaveText('3');
+
+    // 回归防护：行号栏与 textarea 曾因 flex 默认 stretch 布局互相撑高，
+    // 触发 ResizeObserver 读写死循环（真机复现高度膨胀到 1 万+ px）。
+    const textareaHeight = await textarea.evaluate((el) => el.clientHeight);
+    expect(textareaHeight).toBeLessThan(300);
   });
 });

@@ -33,6 +33,37 @@ function pxToNumber(value: string): number {
     return match ? Number(match[0]) : 0;
 }
 
+let measureCanvasCtx: CanvasRenderingContext2D | null = null;
+
+function ensureMeasureCtx(): CanvasRenderingContext2D | null {
+    if (measureCanvasCtx) return measureCanvasCtx;
+    const canvas = document.createElement('canvas');
+    measureCanvasCtx = canvas.getContext('2d');
+    return measureCanvasCtx;
+}
+
+/** 用 canvas.measureText 测量单行文本在给定字体下的像素宽度（对齐 Semi
+ * calculateWrappedLines：`ctx.font = fontSize + ' ' + fontFamily` 后
+ * `ctx.measureText(line).width`）。测不到 2d context 时返回 0（调用方
+ * 兜底为 1 行，见 TextAreaFoundation.calculateWrappedLineCount）。 */
+export function measureTextWidth(line: string, fontSize: string, fontFamily: string): number {
+    const ctx = ensureMeasureCtx();
+    if (!ctx) return 0;
+    ctx.font = `${fontSize} ${fontFamily}`;
+    return ctx.measureText(line).width;
+}
+
+/** 读取 textarea 的实际行高像素值；`line-height: normal` 或解析失败时按
+ * `fontSize * 1.5` 兜底（对齐 Semi getTextareaLineHeightPx）。 */
+export function getLineHeightPx(node: HTMLTextAreaElement): number {
+    const style = window.getComputedStyle(node);
+    const fontSize = parseFloat(style.fontSize) || 14;
+    const lineHeightStr = style.lineHeight;
+    if (!lineHeightStr || lineHeightStr === 'normal') return fontSize * 1.5;
+    const parsed = parseFloat(lineHeightStr);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fontSize * 1.5;
+}
+
 export function calculateAutosizeHeight(node: HTMLTextAreaElement, value: string, option: AutosizeOption): number {
     const shadow = ensureShadow();
     const style = window.getComputedStyle(node);

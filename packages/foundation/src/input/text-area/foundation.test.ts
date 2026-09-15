@@ -76,3 +76,36 @@ describe('TextAreaFoundation.isAllowClear', () => {
     expect(TextAreaFoundation.isAllowClear('text', true, false, false, true, false)).toBe(true);
   });
 });
+
+describe('TextAreaFoundation.splitLinesForNumbering', () => {
+  it('按换行符拆分为多行', () => {
+    expect(TextAreaFoundation.splitLinesForNumbering('a\nb\nc')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('空字符串展示单个空行（对齐 Semi 空值时仍展示第 1 行行号）', () => {
+    expect(TextAreaFoundation.splitLinesForNumbering('')).toEqual(['']);
+  });
+
+  it('末尾换行符产生一个额外空行', () => {
+    expect(TextAreaFoundation.splitLinesForNumbering('a\n')).toEqual(['a', '']);
+  });
+});
+
+describe('TextAreaFoundation.calculateWrappedLineCount', () => {
+  it('文本宽度小于容器宽度时占 1 行', () => {
+    expect(TextAreaFoundation.calculateWrappedLineCount(50, 200)).toBe(1);
+  });
+
+  it('文本宽度超出容器宽度时按比例向上取整', () => {
+    expect(TextAreaFoundation.calculateWrappedLineCount(450, 200)).toBe(3);
+  });
+
+  it('容器宽度尚未完成布局测量（<=0）时兜底为 1 行', () => {
+    expect(TextAreaFoundation.calculateWrappedLineCount(450, 0)).toBe(1);
+    expect(TextAreaFoundation.calculateWrappedLineCount(450, -10)).toBe(1);
+  });
+
+  it('恰好等宽时占 1 行（不会因浮点误差多算一行）', () => {
+    expect(TextAreaFoundation.calculateWrappedLineCount(200, 200)).toBe(1);
+  });
+});

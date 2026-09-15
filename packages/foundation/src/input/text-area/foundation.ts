@@ -80,4 +80,19 @@ export class TextAreaFoundation extends Foundation<TextAreaState> {
   static isAllowClear(value: string, showClear: boolean, disabled: boolean, readonly: boolean, isFocus: boolean, isHovering: boolean): boolean {
     return !!value && showClear && !disabled && !readonly && (isFocus || isHovering);
   }
+
+  /** 按 `\n` 拆分为行号栏所需的逻辑行数组，空值时对齐 Semi 展示单个空行（对齐 renderLineNumbers `value ? value.split('\n') : ['']`）。 */
+  static splitLinesForNumbering(value: string): string[] {
+    return value ? value.split('\n') : [''];
+  }
+
+  /** 单个逻辑行在给定可用宽度下实际占据的视觉行数（自动换行导致的视觉行数
+   * 大于 1），基于外部测量出的文本像素宽度计算，向上取整、至少 1 行
+   * （对齐 Semi calculateWrappedLines：canvas.measureText 得到 textWidth 后
+   * `Math.ceil(textWidth / textareaWidth)`）。textareaWidth <= 0 时视为 1 行
+   * （容器还未完成布局测量的兜底）。 */
+  static calculateWrappedLineCount(textWidth: number, textareaWidth: number): number {
+    if (textareaWidth <= 0) return 1;
+    return Math.max(1, Math.ceil(textWidth / textareaWidth));
+  }
 }

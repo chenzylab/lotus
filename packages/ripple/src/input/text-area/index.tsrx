@@ -1,6 +1,6 @@
 import { track, effect, untrack } from 'ripple';
 import { TextAreaFoundation, type TextAreaState } from '@lotus/foundation/input/text-area';
-import { calculateAutosizeHeight, type AutosizeOption } from './measure';
+import { calculateAutosizeHeight, measureTextWidth, getLineHeightPx, type AutosizeOption } from './measure';
 import { IconClear } from '@lotus/icons';
 import { zhCN } from '@lotus/locale';
 import { LocaleContext } from '../../other/config-provider/locale-context.js';
@@ -32,6 +32,20 @@ export interface TextAreaProps {
     getTextAreaApi?: (api: TextAreaApi) => void;
     showClear?: boolean;
     borderless?: boolean;
+    /** 校验状态，仅影响展示样式（对齐 Semi）。 */
+    validateStatus?: 'default' | 'warning' | 'error';
+    /** 挂载时是否自动聚焦，透传给原生 autofocus 属性（对齐 Semi）。 */
+    autoFocus?: boolean;
+    /** 独立开关，不传 maxCount 也单独显示当前字符计数（不带 "/总数"）；
+     * 传 maxCount 时无论是否传这个 prop 都会显示计数器（对齐 Semi
+     * `showCounter || maxCount` 的判定条件）。 */
+    showCounter?: boolean;
+    /** 左侧行号栏（代码编辑器式），对齐 Semi。 */
+    showLineNumber?: boolean;
+    /** 起始行号（对齐 Semi，默认 1）。 */
+    lineNumberStart?: number;
+    lineNumberClassName?: string;
+    lineNumberStyle?: Record<string, any>;
     composition?: boolean;
     style?: Record<string, any>;
     textareaStyle?: Record<string, any>;
@@ -73,6 +87,13 @@ export function TextArea(&{
     getTextAreaApi,
     showClear = false,
     borderless = false,
+    validateStatus = 'default',
+    autoFocus = false,
+    showCounter = false,
+    showLineNumber = false,
+    lineNumberStart = 1,
+    lineNumberClassName,
+    lineNumberStyle,
     composition = false,
     style,
     textareaStyle,
@@ -157,6 +178,58 @@ export function TextArea(&{
         }
     });
 
+    // 行号栏：每个逻辑行（按 \n 拆分）在自动换行下可能占据多个视觉行，
+    // 需要按实际测量宽度算出每行的换行数，让行号栏的每一项 minHeight
+    // 跟 textarea 里对应文本块的视觉高度对齐（对齐 Semi renderLineNumbers +
+    // calculateWrappedLines）。lineNumberVersion 只是一个纯粹的“重算触发器”
+    // ——textarea 宽度变化（ResizeObserver）时递增，配合 displayValue 一起
+    // 作为下面 track 的依赖，触发 lineNumberHeights 重新计算。
+    let &[lineNumberVersion] = track<number>(0);
+    let &[lineNumberNode] = track<HTMLElement | null>(null);
+    // 行号栏高度钳制在 textarea 实测 clientHeight 内，避免行号栏自身内容
+    // 撑高外层容器（对齐 Semi textareaHeight state，来自 ResizeObserver 实测）。
+    let &[textareaClientHeight] = track<number>(0);
+
+    effect(() => {
+        if (!showLineNumber) return;
+        const node = untrack(() => textareaNode);
+        if (!node || typeof ResizeObserver === 'undefined') return;
+        textareaClientHeight = node.clientHeight;
+        const observer = new ResizeObserver(() => {
+            lineNumberVersion++;
+            textareaClientHeight = node.clientHeight;
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+    });
+
+    let &[lineNumberHeights] = track<number[]>(() => {
+        void lineNumberVersion;
+        if (!showLineNumber) return [];
+        const node = untrack(() => textareaNode);
+        const lines = TextAreaFoundation.splitLinesForNumbering(displayValue);
+        if (!node) return lines.map(() => 21);
+        const style = window.getComputedStyle(node);
+        const lineHeightPx = getLineHeightPx(node);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const textareaWidth = node.clientWidth - paddingLeft - paddingRight;
+        return lines.map((line) => {
+            if (!line) return lineHeightPx;
+            const width = measureTextWidth(line, style.fontSize, style.fontFamily);
+            const wrapped = TextAreaFoundation.calculateWrappedLineCount(width, textareaWidth);
+            return wrapped * lineHeightPx;
+        });
+    });
+
+    function handleTextAreaScroll(event: Event) {
+        if (!showLineNumber) return;
+        const panel = untrack(() => lineNumberNode);
+        if (!panel) return;
+        const scrollTop = (event.target as HTMLTextAreaElement).scrollTop;
+        requestAnimationFrame(() => { panel.scrollTop = scrollTop; });
+    }
+
     const resolveValueLength = (text: string) => (getValueLength ? getValueLength(text) : text.length);
 
     const handleInputEvent = (event: Event) => {
@@ -180,6 +253,7 @@ export function TextArea(&{
             borderless ? 'lotus-textarea-borderless' : '',
             disabled ? 'lotus-textarea-disabled' : '',
             state.isFocus ? 'lotus-textarea-focus' : '',
+            validateStatus !== 'default' ? `lotus-textarea-status-${validateStatus}` : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -199,6 +273,20 @@ export function TextArea(&{
             onMouseEnter={() => foundation.handleMouseEnter()}
             onMouseLeave={() => foundation.handleMouseLeave()}
         >
+            <div class={showLineNumber ? 'lotus-textarea-content-row' : ''}>
+            @if (showLineNumber) {
+                <div
+                    class={['lotus-textarea-line-number', lineNumberClassName ?? ''].filter(Boolean).join(' ')}
+                    style={{ ...(textareaClientHeight ? { height: `${textareaClientHeight}px`, maxHeight: `${textareaClientHeight}px` } : {}), ...lineNumberStyle }}
+                    ref={(node: HTMLElement) => { lineNumberNode = node; }}
+                >
+                    @for (const h of lineNumberHeights; index li) {
+                        <div class="lotus-textarea-line-number-item" style={{ minHeight: `${h}px`, lineHeight: `${h}px` }}>
+                            {lineNumberStart + li}
+                        </div>
+                    }
+                </div>
+            }
             <textarea
                 id={id}
                 class="lotus-textarea-native"
@@ -206,6 +294,7 @@ export function TextArea(&{
                 placeholder={placeholder}
                 disabled={disabled}
                 readonly={readonly}
+                autofocus={autoFocus}
                 rows={rows}
                 cols={cols}
                 style={mergedTextareaStyle}
@@ -222,6 +311,7 @@ export function TextArea(&{
                 onKeyDown={handleKeyDownEvent}
                 onKeyUp={(event: KeyboardEvent) => onKeyUp?.(event)}
                 onKeyPress={(event: KeyboardEvent) => onKeyPress?.(event)}
+                onScroll={handleTextAreaScroll}
                 onCompositionStart={(event: CompositionEvent) => foundation.handleCompositionStart(event, onCompositionStart)}
                 onCompositionUpdate={(event: CompositionEvent) => foundation.handleCompositionUpdate(event, onCompositionUpdate)}
                 onCompositionEnd={(event: CompositionEvent) => {
@@ -229,6 +319,7 @@ export function TextArea(&{
                     foundation.handleCompositionEnd(target.value, event, isControlled, composition, onChange, onCompositionEnd);
                 }}
             />
+            </div>
             <div class="lotus-textarea-footer">
                 @if (allowClear) {
                     <button
@@ -241,8 +332,8 @@ export function TextArea(&{
                         <IconClear />
                     </button>
                 }
-                @if (maxCount !== undefined) {
-                    <span class="lotus-textarea-count">{resolveValueLength(displayValue)}/{maxCount}</span>
+                @if (showCounter || maxCount !== undefined) {
+                    <span class="lotus-textarea-count">{resolveValueLength(displayValue)}{maxCount !== undefined ? `/${maxCount}` : ''}</span>
                 }
             </div>
         </div>
@@ -272,6 +363,54 @@ export function TextArea(&{
             .lotus-textarea-wrapper.lotus-textarea-disabled {
                 background: var(--lotus-color-disabled-bg);
                 cursor: not-allowed;
+            }
+
+            .lotus-textarea-wrapper.lotus-textarea-status-warning {
+                border-color: var(--lotus-color-warning);
+            }
+
+            .lotus-textarea-wrapper.lotus-textarea-status-error {
+                border-color: var(--lotus-color-danger);
+            }
+
+            .lotus-textarea-content-row {
+                display: flex;
+                align-items: flex-start;
+                width: 100%;
+                min-width: 0;
+            }
+
+            .lotus-textarea-line-number {
+                flex-shrink: 0;
+                padding: var(--lotus-spacing-tight) var(--lotus-spacing-base);
+                background: var(--lotus-color-fill-1);
+                border-right: 1px solid var(--lotus-color-border);
+                color: var(--lotus-color-text-2);
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+                font-size: inherit;
+                line-height: 1.5;
+                text-align: right;
+                user-select: none;
+                min-width: 36px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                scrollbar-width: none;
+            }
+
+            .lotus-textarea-line-number::-webkit-scrollbar {
+                display: none;
+            }
+
+            .lotus-textarea-line-number-item {
+                display: flex;
+                align-items: flex-start;
+                justify-content: flex-end;
+                box-sizing: border-box;
+            }
+
+            .lotus-textarea-content-row .lotus-textarea-native {
+                flex: 1;
+                min-width: 0;
             }
 
             .lotus-textarea-native {

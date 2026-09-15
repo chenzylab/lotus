@@ -3691,6 +3691,31 @@ export function App() @{
             <TextArea readonly rows={2} defaultValue="只读多行内容不可编辑" aria-label="readonly 多行输入框" />
         </Space>
 
+        <Divider>TextArea：validateStatus/autoFocus/showCounter（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space vertical align="start" style={{ width: '100%', gap: '12px' }}>
+            <div style={{ width: '360px' }}>
+                <TextArea validateStatus="error" rows={2} defaultValue="校验错误态样式" aria-label="TextArea validateStatus 示例" />
+            </div>
+            <div style={{ width: '360px' }}>
+                <TextArea showCounter rows={2} defaultValue="不传 maxCount 也单独显示字符计数" aria-label="TextArea showCounter 示例" />
+            </div>
+            <div style={{ width: '360px' }}>
+                <TextArea autoFocus rows={2} placeholder="挂载后自动聚焦" aria-label="TextArea autoFocus 示例" />
+            </div>
+        </Space>
+
+        <Divider>TextArea：showLineNumber 行号栏（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <div style={{ width: '360px' }}>
+            <TextArea
+                showLineNumber
+                rows={6}
+                defaultValue={'第一行\n第二行较长内容用于测试自动换行时行号是否跟随视觉行对齐用于测试自动换行\n第三行'}
+                aria-label="TextArea showLineNumber 示例"
+            />
+        </div>
+
         <Divider>Icons：@lotus/icons 验证图标</Divider>
 
         <Space style={{ fontSize: '24px' }}>
