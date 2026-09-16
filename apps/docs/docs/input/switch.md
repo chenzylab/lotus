@@ -59,6 +59,9 @@ Switch 提供三种尺寸：`large`、`default`、`small`。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| aria-describedby | 关联描述性文本的 id | string | - |
+| aria-errormessage | 关联校验错误信息的 id | string | - |
+| aria-invalid | 校验失败语义标记 | boolean | - |
 | aria-label | aria-label 属性 | string | - |
 | aria-labelledby | aria-labelledby 属性 | string | - |
 | checked | 指示当前是否选中，配合 onChange 使用 | boolean | - |
@@ -66,6 +69,7 @@ Switch 提供三种尺寸：`large`、`default`、`small`。
 | class | 类名 | string | - |
 | defaultChecked | 初始是否选中 | boolean | false |
 | disabled | 是否禁用 | boolean | false |
+| id | 原生元素的 id | string | - |
 | loading | 设置加载状态 | boolean | false |
 | size | 尺寸，可选 large、default、small | string | "default" |
 | style | 内联样式 | object | - |

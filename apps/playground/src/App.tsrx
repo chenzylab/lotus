@@ -1018,6 +1018,14 @@ export function App() @{
             />
         </Space>
 
+        <Divider>Switch：id/aria-describedby/aria-errormessage/aria-invalid（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Switch id="switch-id-demo" aria-label="Switch id 示例" />
+            <Switch aria-invalid aria-errormessage="switch-error-demo" aria-label="Switch aria-invalid 示例" />
+        </Space>
+        <span id="switch-error-demo" style={{ display: 'none' }}>校验错误提示</span>
+
         <Divider />
 
         <Space>

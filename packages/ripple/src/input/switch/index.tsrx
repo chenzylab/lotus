@@ -2,6 +2,8 @@ import { track, untrack, effect } from 'ripple';
 import { SwitchFoundation, type SwitchState } from '@lotus/foundation/input/switch';
 
 export interface SwitchProps {
+    /** 原生 input 元素的 id（对齐 Semi）。 */
+    id?: string;
     checked?: boolean;
     defaultChecked?: boolean;
     disabled?: boolean;
@@ -14,11 +16,18 @@ export interface SwitchProps {
     onMouseLeave?: (event: MouseEvent) => void;
     'aria-label'?: string;
     'aria-labelledby'?: string;
+    /** 关联描述性文本的 id（对齐 Semi）。 */
+    'aria-describedby'?: string;
+    /** 关联校验错误信息的 id（对齐 Semi）。 */
+    'aria-errormessage'?: string;
+    /** 校验失败语义标记（对齐 Semi）。 */
+    'aria-invalid'?: boolean;
     style?: Record<string, any>;
     class?: string;
 }
 
 export function Switch(&{
+    id,
     checked,
     defaultChecked = false,
     disabled = false,
@@ -31,6 +40,9 @@ export function Switch(&{
     onMouseLeave,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrormessage,
+    'aria-invalid': ariaInvalid,
     style,
     class: className,
 }: SwitchProps) @{
@@ -84,11 +96,15 @@ export function Switch(&{
 
     <>
         <button
+            id={id}
             type="button"
             role="switch"
             aria-checked={displayChecked}
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
+            aria-describedby={ariaDescribedBy}
+            aria-errormessage={ariaErrormessage}
+            aria-invalid={ariaInvalid}
             disabled={disabled || loading}
             class={classes}
             style={style}

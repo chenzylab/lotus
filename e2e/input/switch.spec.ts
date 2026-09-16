@@ -73,4 +73,14 @@ test.describe('Switch', () => {
     await page.mouse.move(0, 0);
     expect(logs).toContain('switch onMouseLeave fired');
   });
+
+  test('id/aria-describedby/aria-errormessage/aria-invalid：正确透传给原生元素（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const idSwitch = page.locator('#switch-id-demo');
+    await expect(idSwitch).toBeVisible();
+
+    const invalidSwitch = page.getByLabel('Switch aria-invalid 示例', { exact: true });
+    await expect(invalidSwitch).toHaveAttribute('aria-invalid', 'true');
+    await expect(invalidSwitch).toHaveAttribute('aria-errormessage', 'switch-error-demo');
+  });
 });
