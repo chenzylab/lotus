@@ -79,6 +79,14 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 ../../src/demos/input/checkbox/imperative.tsrx
 ```
 
+### 单独设置卡片样式
+
+不通过 `CheckboxGroup` 也能给单个 `Checkbox` 独立设置 `type="card"`/`type="pureCard"`。
+
+```tsrx demo
+../../src/demos/input/checkbox/standalone-type.tsrx
+```
+
 ## API 参考
 
 ### Checkbox
@@ -94,10 +102,16 @@ import { Checkbox, CheckboxGroup } from '@lotus/ripple';
 | extra | 选项右侧额外内容 | any | - |
 | extraId | extra 副文本的 id，配合 aria-describedby 建立语义关联，不传则自动生成 | string | - |
 | getCheckboxApi | 交出命令式 API（focus/blur） | `(api: CheckboxApi) => void` | - |
+| id | 最外层 label 的原生 id | string | - |
 | indeterminate | 半选中态（纯视觉，不影响 checked 实际值） | boolean | false |
+| role | 覆盖最外层 label 默认的无障碍角色，在 CheckboxGroup 内默认为 "listitem"，单独使用时默认不设置 | string | - |
 | style | 内联样式 | object | - |
+| tabIndex | 最外层 label 的 tabIndex，配合自定义 role 把 Checkbox 包装成其它交互语义时使用；设置后可通过 Enter 键触发切换 | number | - |
+| type | 卡片样式变体，单独使用时生效；在 CheckboxGroup 内使用时由 Group 的 type 接管，此 prop 被忽略 | `'default'` \| `'card'` \| `'pureCard'` | `'default'` |
 | value | 在 CheckboxGroup 中使用时的选项值 | string \| number | - |
 | onChange | 选中状态变化时的回调 | `(checked: boolean) => void` | - |
+| onMouseEnter | 鼠标进入时的回调 | `(event: MouseEvent) => void` | - |
+| onMouseLeave | 鼠标离开时的回调 | `(event: MouseEvent) => void` | - |
 
 ### CheckboxApi
 

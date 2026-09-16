@@ -12,6 +12,8 @@ export interface CheckboxApi {
 }
 
 export interface CheckboxProps {
+    /** 最外层 label 的原生 id（对齐 Semi）。 */
+    id?: string;
     children?: any;
     checked?: boolean;
     defaultChecked?: boolean;
@@ -25,6 +27,16 @@ export interface CheckboxProps {
     value?: string | number;
     getCheckboxApi?: (api: CheckboxApi) => void;
     onChange?: (checked: boolean) => void;
+    onMouseEnter?: (event: MouseEvent) => void;
+    onMouseLeave?: (event: MouseEvent) => void;
+    /** 覆盖最外层 label 默认的无障碍角色（对齐 Semi，非 Group 场景默认不设置）。 */
+    role?: string;
+    /** 最外层 label 的 tabIndex，配合自定义 role 把 Checkbox 包装成其它交互语义时使用；
+     * 设置后可通过 Enter 键触发切换（对齐 Semi handleEnterPress）。 */
+    tabIndex?: number;
+    /** 卡片样式变体（对齐 Semi）。在 CheckboxGroup 内使用时由 Group 的 type 接管，
+     * 此 prop 被忽略；单独使用时生效。 */
+    type?: 'default' | 'card' | 'pureCard';
     'aria-label'?: string;
     style?: Record<string, any>;
     class?: string;
@@ -33,6 +45,7 @@ export interface CheckboxProps {
 let checkboxIdCounter = 0;
 
 export function Checkbox(&{
+    id,
     children,
     checked,
     defaultChecked = false,
@@ -44,6 +57,11 @@ export function Checkbox(&{
     value,
     getCheckboxApi,
     onChange,
+    onMouseEnter,
+    onMouseLeave,
+    role,
+    tabIndex,
+    type = 'default',
     'aria-label': ariaLabel,
     style,
     class: className,
@@ -63,10 +81,13 @@ export function Checkbox(&{
     let &[inGroup] = track(() => contextTracked != null);
     let &[groupChecked] = track(() => value !== undefined && (contextTracked?.value.value.includes(value) ?? false));
     let &[groupDisabled] = track(() => contextTracked?.value.disabled ?? false);
-    // type 只能通过 CheckboxGroup 设置（对齐 Semi），单独使用的 Checkbox 恒为 default。
-    let &[groupType] = track(() => contextTracked?.value.type ?? 'default');
-    let &[isCardType] = track(() => groupType !== 'default');
-    let &[isPureCardType] = track(() => groupType === 'pureCard');
+    // Group 内使用时 type 由 Context 接管，自身 type prop 被忽略（同 checked/
+    // disabled 的既有规则）；单独使用时用自己的 type，默认 default（对齐
+    // Semi 单体 Checkbox 也能独立设置 type，此前 lotus 曾把这个能力限定为
+    // 只能通过 CheckboxGroup 设置，现按 Semi 行为重新开放）。
+    let &[effectiveType] = track(() => inGroup ? (contextTracked?.value.type ?? 'default') : type);
+    let &[isCardType] = track(() => effectiveType !== 'default');
+    let &[isPureCardType] = track(() => effectiveType === 'pureCard');
 
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
@@ -127,10 +148,22 @@ export function Checkbox(&{
 
     <>
         <label
+            id={id}
             class={classes}
             style={style}
-            role={inGroup ? 'listitem' : undefined}
+            role={role ?? (inGroup ? 'listitem' : undefined)}
+            tabIndex={tabIndex}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             onClick={(event: MouseEvent) => { event.preventDefault(); handleClick(); }}
+            onKeyDown={(event: KeyboardEvent) => {
+                // 对齐 Semi handleEnterPress 的语义（外层容器可通过 Enter 键触发
+                // 切换），但改用 keydown 而非 Semi 原本的 keypress——keypress 是
+                // 已废弃事件，真机验证（CDP 派发的 Enter 按键）确认现代浏览器
+                // 完全不再触发它，keydown 才是可靠的等价实现。
+                if (tabIndex === undefined) return;
+                if (event.key === 'Enter') handleClick();
+            }}
         >
             <input
                 ref={(node: HTMLInputElement) => { checkboxEl = node; }}

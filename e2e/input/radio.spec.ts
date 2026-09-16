@@ -135,4 +135,23 @@ test.describe('Radio', () => {
     const firstRadio = group.getByRole('radio').nth(0);
     await expect(firstRadio).toBeChecked();
   });
+
+  test('单独设置 type：不通过 RadioGroup 也能独立开启 button/card 样式（对齐 Semi，此前 lotus 限定只能通过 RadioGroup 设置）', async ({ page }) => {
+    await page.goto('/');
+    const buttonRadio = page.getByLabel('单独 type=button', { exact: true });
+    const buttonLabel = buttonRadio.locator('xpath=..');
+    await expect(buttonLabel).toHaveClass(/lotus-radio-buttonType/);
+
+    const cardRadio = page.getByLabel('单独 type=card', { exact: true });
+    const cardLabel = cardRadio.locator('xpath=..');
+    await expect(cardLabel).toHaveClass(/lotus-radio-cardType/);
+  });
+
+  test('displayMode=vertical：应用 display:block 独占一行（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const radio = page.getByLabel('垂直排列 1', { exact: true });
+    const label = radio.locator('xpath=..');
+    await expect(label).toHaveClass(/lotus-radio-vertical/);
+    await expect(label).toHaveCSS('display', 'block');
+  });
 });

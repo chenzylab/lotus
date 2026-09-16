@@ -128,4 +128,42 @@ test.describe('Checkbox', () => {
     await group.getByRole('button', { name: '失焦' }).click();
     await expect(checkbox).not.toBeFocused();
   });
+
+  test('id：透传给最外层 label（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const label = page.locator('#checkbox-id-demo');
+    await expect(label).toBeVisible();
+  });
+
+  test('onMouseEnter/onMouseLeave：hover 事件正确触发（对齐 Semi，此前 lotus 完全没有实现）', async ({ page }) => {
+    await page.goto('/');
+    const checkbox = page.getByLabel('hover 我', { exact: true });
+    const label = checkbox.locator('xpath=..');
+    const log = page.getByLabel('Checkbox hover 日志', { exact: true });
+
+    await label.hover();
+    await expect(log).toHaveText('onMouseEnter');
+    await page.mouse.move(0, 0);
+    await expect(log).toHaveText('onMouseLeave');
+  });
+
+  test('role/tabIndex：外层容器可聚焦并通过 Enter 键触发切换（对齐 Semi handleEnterPress，改用 keydown 而非 Semi 原本的 keypress——真机验证确认 keypress 是已废弃事件，现代浏览器不再触发）', async ({ page }) => {
+    await page.goto('/');
+    const checkbox = page.getByLabel('外层容器可回车触发', { exact: true });
+    const label = checkbox.locator('xpath=..');
+    await expect(label).toHaveAttribute('role', 'button');
+    await expect(label).toHaveAttribute('tabindex', '0');
+
+    await label.focus();
+    await expect(checkbox).not.toBeChecked();
+    await page.keyboard.press('Enter');
+    await expect(checkbox).toBeChecked();
+  });
+
+  test('单独设置 type：不通过 CheckboxGroup 也能独立开启卡片样式（对齐 Semi，此前 lotus 限定只能通过 CheckboxGroup 设置）', async ({ page }) => {
+    await page.goto('/');
+    const checkbox = page.getByLabel('单独设置 type=card', { exact: true });
+    const label = checkbox.locator('xpath=..');
+    await expect(label).toHaveClass(/lotus-checkbox-cardType/);
+  });
 });

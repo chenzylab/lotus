@@ -85,6 +85,14 @@ import { Radio, RadioGroup } from '@lotus/ripple';
 ../../src/demos/input/radio/imperative.tsrx
 ```
 
+### 单独设置样式变体
+
+不通过 `RadioGroup` 也能给单个 `Radio` 独立设置 `type`。
+
+```tsrx demo
+../../src/demos/input/radio/standalone-type.tsrx
+```
+
 ## API 参考
 
 ### Radio
@@ -100,12 +108,14 @@ import { Radio, RadioGroup } from '@lotus/ripple';
 | class | 类名 | string | - |
 | defaultChecked | 初始是否选中 | boolean | false |
 | disabled | 是否禁用 | boolean | false |
+| displayMode | `"vertical"` 时应用 `display:block`，让 Radio 独占一行 | `'vertical'` \| `''` | - |
 | extra | 选项右侧额外内容 | any | - |
 | extraId | extra 副文本的 id，配合 aria-describedby 建立语义关联，不传则自动生成 | string | - |
 | getRadioApi | 交出命令式 API（focus/blur） | `(api: RadioApi) => void` | - |
 | mode | 交互模式，可选 default、advanced（advanced 时已选中项可再次点击取消） | string | "default" |
 | name | 原生 `name` 属性 | string | - |
 | style | 内联样式 | object | - |
+| type | 视觉变体，单独使用时生效；在 RadioGroup 内使用时由 Group 的 type 接管，此 prop 被忽略 | `'default'` \| `'button'` \| `'card'` \| `'pureCard'` | `'default'` |
 | value | 在 RadioGroup 中使用时的选项值 | string \| number | - |
 | onChange | 选中状态变化时的回调 | `(checked: boolean) => void` | - |
 | onMouseEnter | 鼠标移入时的回调 | `(event: MouseEvent) => void` | - |

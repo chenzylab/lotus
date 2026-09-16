@@ -3,6 +3,7 @@ import { RadioFoundation, type RadioState } from '@lotus/foundation/input/radio'
 import { RadioContext } from './radio-context.js';
 
 export type RadioMode = 'default' | 'advanced';
+export type RadioType = 'default' | 'button' | 'card' | 'pureCard';
 
 export interface RadioApi {
     /** 命令式聚焦原生 radio（对齐 Semi 的 ref.current.focus()；与 Input 的
@@ -28,6 +29,11 @@ export interface RadioProps {
     addonId?: string;
     autoFocus?: boolean;
     mode?: RadioMode;
+    /** 视觉变体（对齐 Semi）。在 RadioGroup 内使用时由 Group 的 type 接管，
+     * 此 prop 被忽略；单独使用时生效。 */
+    type?: RadioType;
+    /** displayMode="vertical" 时 display:block，让 Radio 独占一行（对齐 Semi）。 */
+    displayMode?: 'vertical' | '';
     value?: string | number;
     name?: string;
     getRadioApi?: (api: RadioApi) => void;
@@ -53,6 +59,8 @@ export function Radio(&{
     addonId,
     autoFocus = false,
     mode = 'default',
+    type = 'default',
+    displayMode,
     value,
     name,
     getRadioApi,
@@ -79,12 +87,17 @@ export function Radio(&{
     let &[groupChecked] = track(() => value !== undefined && contextTracked?.value.value === value);
     let &[groupDisabled] = track(() => contextTracked?.value.disabled ?? false);
     let &[groupName] = track(() => contextTracked?.value.name);
-    // type/buttonSize 只能通过 RadioGroup 设置（对齐 Semi），单独使用的 Radio 恒为 default。
-    let &[groupType] = track(() => contextTracked?.value.type ?? 'default');
+    // Group 内使用时 type 由 Context 接管，自身 type prop 被忽略（同 checked/
+    // disabled 的既有规则）；单独使用时用自己的 type，默认 default（对齐
+    // Semi 单体 Radio 也能独立设置 type，此前 lotus 曾把这个能力限定为只能
+    // 通过 RadioGroup 设置，现按 Semi 行为重新开放；buttonSize 只在
+    // RadioGroup 场景下有意义，单体 type="button" 时用固定的 'middle'，
+    // 对齐 Semi 单体 Radio 没有独立的 buttonSize prop）。
+    let &[effectiveType] = track(() => inGroup ? (contextTracked?.value.type ?? 'default') : type);
     let &[groupButtonSize] = track(() => contextTracked?.value.buttonSize ?? 'middle');
-    let &[isButtonType] = track(() => groupType === 'button');
-    let &[isCardType] = track(() => groupType === 'card' || groupType === 'pureCard');
-    let &[isPureCardType] = track(() => groupType === 'pureCard');
+    let &[isButtonType] = track(() => effectiveType === 'button');
+    let &[isCardType] = track(() => effectiveType === 'card' || effectiveType === 'pureCard');
+    let &[isPureCardType] = track(() => effectiveType === 'pureCard');
 
     // track() 而非普通 const——见 input/index.tsrx 同名注释，受控身份要能随
     // checked 的 undefined↔有值 变化重新判定，否则外部表单 reset 无法清空展示值。
@@ -138,6 +151,7 @@ export function Radio(&{
             isCardType ? 'lotus-radio-cardType' : '',
             isCardType && displayChecked ? 'lotus-radio-cardType-checked' : '',
             isCardType && effectiveDisabled ? 'lotus-radio-cardType-disabled' : '',
+            displayMode === 'vertical' ? 'lotus-radio-vertical' : '',
             className ?? '',
         ]
             .filter(Boolean)
@@ -188,6 +202,10 @@ export function Radio(&{
                 gap: 8px;
                 cursor: pointer;
                 user-select: none;
+            }
+
+            .lotus-radio-vertical {
+                display: block;
             }
 
             .lotus-radio-native {

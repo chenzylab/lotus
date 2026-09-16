@@ -414,6 +414,7 @@ export function App() @{
     let &[inputNumberEventLog] = track<string>('');
     let textAreaImperativeApi: TextAreaApi | null = null;
     let checkboxImperativeApi: CheckboxApi | null = null;
+    let &[checkboxHoverLog] = track<string>('');
     let radioImperativeApi: RadioApi | null = null;
     let &[textAreaControlledValue] = track<string>('初始内容');
     let &[switchControlledChecked] = track<boolean>(false);
@@ -3775,6 +3776,26 @@ export function App() @{
             <Button onClick={() => checkboxImperativeApi?.blur()}>失焦</Button>
         </Space>
 
+        <Divider>Checkbox：id/onMouseEnter/onMouseLeave/role+tabIndex/单独设置 type（对齐 Semi，此前 lotus 完全没有实现）</Divider>
+
+        <Space>
+            <Checkbox id="checkbox-id-demo" aria-label="Checkbox id 示例">带 id 的示例</Checkbox>
+            <Checkbox
+                onMouseEnter={() => { checkboxHoverLog = 'onMouseEnter'; }}
+                onMouseLeave={() => { checkboxHoverLog = 'onMouseLeave'; }}
+                aria-label="Checkbox hover 示例"
+            >
+                hover 我
+            </Checkbox>
+            <TypographyText type="secondary" aria-label="Checkbox hover 日志">{checkboxHoverLog}</TypographyText>
+            <Checkbox role="button" tabIndex={0} aria-label="Checkbox role/tabIndex 示例">
+                外层容器可回车触发
+            </Checkbox>
+            <Checkbox type="card" aria-label="Checkbox 单独 type=card 示例">
+                单独设置 type=card
+            </Checkbox>
+        </Space>
+
         <Divider>CheckboxGroup：数组方式 / 垂直</Divider>
 
         <CheckboxGroup
@@ -3904,6 +3925,17 @@ export function App() @{
                 的显示阈值，参照 PinCode 既有 demo 的同类规避方式。真实 autoFocus 效果见 docs 的
                 imperative demo（每个组件独立页面，不受此限制）。 */}
             <Radio name="radio-autofocus-demo" autoFocus={false}>autoFocus 示例</Radio>
+        </Space>
+
+        <Divider>Radio：单独设置 type / displayMode（对齐 Semi，此前 lotus 只能通过 RadioGroup 设置 type，无 displayMode）</Divider>
+
+        <Space vertical align="start">
+            <Radio name="radio-standalone-button" type="button" aria-label="Radio 单独 type=button 示例">单独 type=button</Radio>
+            <Radio name="radio-standalone-card" type="card" aria-label="Radio 单独 type=card 示例">单独 type=card</Radio>
+            <div>
+                <Radio name="radio-display-mode" displayMode="vertical" aria-label="Radio displayMode 示例 1">垂直排列 1</Radio>
+                <Radio name="radio-display-mode" displayMode="vertical" aria-label="Radio displayMode 示例 2">垂直排列 2</Radio>
+            </div>
         </Space>
 
         <Divider>RadioGroup：type=button（Semi 独有于 Radio，此前 lotus 完全没有实现）</Divider>
