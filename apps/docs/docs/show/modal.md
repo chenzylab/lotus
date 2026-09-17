@@ -111,6 +111,7 @@ import { Modal } from '@lotus/ripple';
 - 打开时启用焦点陷阱（Tab 循环限制在 Modal 内部），关闭后焦点归还到触发元素。
 - `closeOnEsc` 默认开启，Esc 键关闭。
 - 打开时锁定 `body` 滚动（引用计数实现，与 SideSheet 共用同一套滚动锁定逻辑，多个浮层嵌套时互不干扰）。
+- 跟随 `ConfigProvider` 的 `direction="rtl"` 自动镜像：关闭按钮/图标位置互换，底部按钮改为靠左排列。
 
 ## 设计变量
 

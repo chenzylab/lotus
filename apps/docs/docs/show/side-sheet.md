@@ -85,6 +85,7 @@ import { SideSheet } from '@lotus/ripple';
 - 打开时启用焦点陷阱，关闭后焦点归还到触发元素。
 - `closeOnEsc` 默认开启，Esc 键关闭。
 - 打开时锁定 `body` 滚动（引用计数实现，与 Modal 共用同一套滚动锁定逻辑）；`disableScroll={false}` 可关闭这个行为。
+- 跟随 `ConfigProvider` 的 `direction="rtl"` 自动应用 `direction:rtl` 与标题右对齐（`placement` 本身不受 RTL 影响，仍按原始方向挂载）。
 
 ## 设计变量
 

@@ -196,4 +196,18 @@ test.describe('SideSheet', () => {
     await sheet.locator('.lotus-side-sheet-close').click();
     await expect(sheet).toBeHidden();
   });
+
+  test('RTL：ConfigProvider direction="rtl" 时应用 direction:rtl 与标题右对齐（对齐 Semi rtl.scss，此前 lotus 完全没有接入全局 RTL 机制）', async ({ page }) => {
+    await page.goto('/');
+    const toggleBtn = page.getByRole('button', { name: '切换到 rtl' });
+    await toggleBtn.scrollIntoViewIfNeeded();
+    await toggleBtn.click();
+
+    await page.getByRole('button', { name: '打开 RTL 示例 SideSheet' }).click();
+    const content = page.getByLabel('ConfigProvider direction 示例 SideSheet');
+    await expect(content).toHaveClass(/lotus-side-sheet-rtl/);
+    await expect(content.locator('.lotus-side-sheet-title')).toHaveCSS('text-align', 'right');
+
+    await content.locator('.lotus-side-sheet-close').click();
+  });
 });

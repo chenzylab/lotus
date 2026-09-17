@@ -195,6 +195,13 @@ export function SideSheet(&{
         ].filter(Boolean).join(' '),
     );
 
+    // RTL 方向读 locale.dir（对齐 DatePicker/Modal 等已有组件的既有模式）。
+    // 只加 direction:rtl + 标题文字对齐镜像（对齐 semi-foundation
+    // sideSheet/rtl.scss 一手来源）——placement="left"/"right" 本身不因
+    // RTL 互换视觉位置，Semi 源码确认 class 直接用原始 placement 值生成，
+    // RTL 不改变 SideSheet 挂载的物理侧边。
+    let &[isRtl] = track<boolean>(() => locale.dir === 'rtl');
+
     let &[contentClasses] = track<string>(() =>
         [
             'lotus-side-sheet-content',
@@ -202,6 +209,7 @@ export function SideSheet(&{
             visible ? 'lotus-side-sheet-content-visible' : '',
             keepDOM && !visible ? 'lotus-side-sheet-hidden' : '',
             motion ? '' : 'lotus-side-sheet-no-motion',
+            isRtl ? 'lotus-side-sheet-rtl' : '',
             className ?? '',
         ].filter(Boolean).join(' '),
     );
@@ -349,6 +357,17 @@ export function SideSheet(&{
                 font-size: var(--lotus-font-h5-size);
                 font-weight: 600;
                 color: var(--lotus-color-text-0);
+            }
+
+            /* RTL：只加 direction:rtl + 标题文字对齐镜像，对齐 semi-foundation
+             * sideSheet/rtl.scss 一手来源——该文件没有对 close 按钮位置或
+             * placement 做任何镜像调整，不额外发明 Semi 没有的行为。 */
+            .lotus-side-sheet-rtl {
+                direction: rtl;
+            }
+
+            .lotus-side-sheet-rtl .lotus-side-sheet-title {
+                text-align: right;
             }
 
             .lotus-side-sheet-close {

@@ -748,6 +748,8 @@ export function App() @{
     let &[configProviderModalVisible] = track<boolean>(false);
     let &[configProviderDirection] = track<'ltr' | 'rtl'>('ltr');
     let &[rtlSidebarVisible] = track<boolean>(false);
+    let &[rtlModalVisible] = track<boolean>(false);
+    let &[rtlSideSheetVisible] = track<boolean>(false);
     let &[rtlSidebarMode] = track<'main' | 'code'>('main');
     let &[configProviderPopupContainerNode] = track<HTMLDivElement | null>(null);
     let &[configProviderTimeZoneLog] = track<string>('');
@@ -6447,7 +6449,27 @@ export function App() @{
                         {configProviderDirection === 'rtl' ? '切换到 ltr' : '切换到 rtl'}
                     </Button>
                     <Button onClick={() => { rtlSidebarVisible = true; }}>打开 RTL 示例 Sidebar</Button>
+                    <Button onClick={() => { rtlModalVisible = true; }}>打开 RTL 示例 Modal</Button>
+                    <Button onClick={() => { rtlSideSheetVisible = true; }}>打开 RTL 示例 SideSheet</Button>
                 </Space>
+                <SideSheet
+                    visible={rtlSideSheetVisible}
+                    title="RTL 示例 SideSheet"
+                    onCancel={() => { rtlSideSheetVisible = false; }}
+                    aria-label="ConfigProvider direction 示例 SideSheet"
+                >
+                    标题文字应右对齐。
+                </SideSheet>
+                <Modal
+                    visible={rtlModalVisible}
+                    title="RTL 示例 Modal"
+                    icon={<span style={{ fontSize: '18px' }}>⚠️</span>}
+                    onOk={() => { rtlModalVisible = false; }}
+                    onCancel={() => { rtlModalVisible = false; }}
+                    aria-label="ConfigProvider direction 示例 Modal"
+                >
+                    关闭按钮应贴左上角，图标应贴右上角，底部确认/取消按钮应靠左排列。
+                </Modal>
                 <div style={{ marginBottom: '12px' }}>
                     <Tag closable aria-label="ConfigProvider direction 示例 Tag">RTL 示例标签</Tag>
                 </div>

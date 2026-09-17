@@ -186,4 +186,27 @@ test.describe('Modal', () => {
     await modal.getByRole('button', { name: '取消' }).click();
     await expect(modal).toBeHidden();
   });
+
+  test('RTL：ConfigProvider direction="rtl" 时关闭按钮/图标/footer 按钮位置镜像（对齐 Semi rtl.scss，此前 lotus 完全没有接入全局 RTL 机制）', async ({ page }) => {
+    await page.goto('/');
+    const toggleBtn = page.getByRole('button', { name: '切换到 rtl' });
+    await toggleBtn.scrollIntoViewIfNeeded();
+    await toggleBtn.click();
+
+    await page.getByRole('button', { name: '打开 RTL 示例 Modal' }).click();
+    const content = page.getByLabel('ConfigProvider direction 示例 Modal');
+    await expect(content).toHaveClass(/lotus-modal-rtl/);
+
+    const contentBox = await content.boundingBox();
+    const iconBox = await content.locator('.lotus-modal-icon').boundingBox();
+    const closeBox = await content.locator('.lotus-modal-close').boundingBox();
+    const footer = content.locator('.lotus-modal-footer');
+
+    // icon 贴右上角，关闭按钮贴左上角（LTR 下反过来）。
+    expect(iconBox!.x + iconBox!.width).toBeGreaterThan(contentBox!.x + contentBox!.width - 40);
+    expect(closeBox!.x).toBeLessThan(contentBox!.x + 40);
+    await expect(footer).toHaveCSS('justify-content', 'flex-start');
+
+    await content.getByRole('button', { name: '取消' }).click();
+  });
 });

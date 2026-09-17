@@ -260,6 +260,12 @@ export function Modal(&{
         ].filter(Boolean).join(' ');
     });
 
+    // RTL 方向读 locale.dir（对齐 DatePicker 等已有组件的既有模式）——
+    // ConfigProvider 的 direction prop 已经在其内部合并进 LocaleContext 下发
+    // 的 locale.dir，消费组件只需要读这一处就能拿到"最终生效方向"，不需要
+    // 单独接 ConfigContext。
+    let &[isRtl] = track<boolean>(() => locale.dir === 'rtl');
+
     let &[contentClasses] = track<string>(() =>
         [
             'lotus-modal-content',
@@ -272,6 +278,7 @@ export function Modal(&{
             // 从视觉/布局上隐藏（对齐 Semi `.dialog-displayNone { display: none }`），
             // 否则元素仍占据文档流、Playwright/屏幕阅读器都会判定为可见。
             keptButHidden ? 'lotus-modal-displaynone' : '',
+            isRtl ? 'lotus-modal-rtl' : '',
             className ?? '',
             modalContentClass ?? '',
         ].filter(Boolean).join(' '),
@@ -487,6 +494,38 @@ export function Modal(&{
 
             .lotus-modal-footer-fill {
                 justify-content: stretch;
+            }
+
+            /* RTL：direction:rtl 让浏览器原生处理文本方向与大多数布局镜像，
+             * 这里只补 Semi rtl.scss 里额外手动覆盖的三处——icon 位置/留白、
+             * 关闭按钮位置、footer 按钮靠右改靠左（对齐 semi-foundation
+             * modal/rtl.scss 一手来源）。 */
+            .lotus-modal-rtl {
+                direction: rtl;
+            }
+
+            .lotus-modal-rtl.lotus-modal-content-with-icon {
+                padding-left: var(--lotus-spacing-base-loose);
+                padding-right: calc(var(--lotus-spacing-base-loose) + 28px);
+            }
+
+            .lotus-modal-rtl .lotus-modal-icon {
+                left: auto;
+                right: var(--lotus-spacing-base-loose);
+            }
+
+            .lotus-modal-rtl .lotus-modal-close {
+                right: auto;
+                left: var(--lotus-spacing-base);
+            }
+
+            .lotus-modal-rtl .lotus-modal-header {
+                padding-right: var(--lotus-spacing-base-loose);
+                padding-left: calc(var(--lotus-spacing-base-loose) + 32px);
+            }
+
+            .lotus-modal-rtl .lotus-modal-footer {
+                justify-content: flex-start;
             }
 
             .lotus-modal-footer-fill > :global(.lotus-button) {
